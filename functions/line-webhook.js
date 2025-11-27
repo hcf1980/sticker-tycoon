@@ -149,10 +149,37 @@ function getStageDescription(stage) {
  */
 async function handleCreationFlow(replyToken, userId, text, stage, state) {
   let message;
-  
+
   switch (stage) {
     case ConversationStage.NAMING:
       message = await handleNaming(userId, text);
+      break;
+    case ConversationStage.STYLING:
+      // 處理風格選擇（可能是按鈕點擊 "風格:xxx" 或直接輸入）
+      if (text.startsWith('風格:')) {
+        const styleId = text.replace('風格:', '');
+        message = await handleStyleSelection(userId, styleId);
+      } else {
+        message = { type: 'text', text: '⚠️ 請點擊上方按鈕選擇風格！' };
+      }
+      break;
+    case ConversationStage.EXPRESSIONS:
+      // 處理表情選擇
+      if (text.startsWith('表情模板:')) {
+        const templateId = text.replace('表情模板:', '');
+        message = await handleExpressionTemplate(userId, templateId);
+      } else {
+        message = { type: 'text', text: '⚠️ 請點擊上方按鈕選擇表情模板！' };
+      }
+      break;
+    case ConversationStage.COUNT_SELECT:
+      // 處理數量選擇
+      if (text.startsWith('數量:')) {
+        const count = parseInt(text.replace('數量:', ''));
+        message = await handleCountSelection(userId, count);
+      } else {
+        message = { type: 'text', text: '⚠️ 請點擊上方按鈕選擇數量！' };
+      }
       break;
     case ConversationStage.CHARACTER:
       message = await handleCharacterDescription(userId, text);
@@ -160,7 +187,7 @@ async function handleCreationFlow(replyToken, userId, text, stage, state) {
     default:
       message = { type: 'text', text: '⚠️ 請按照提示操作或輸入「取消」重新開始' };
   }
-  
+
   return getLineClient().replyMessage(replyToken, message);
 }
 
