@@ -4,10 +4,13 @@
  */
 
 const { v4: uuidv4 } = require('uuid');
-const { supabase, updateStickerSetStatus, getStickerSet } = require('./supabase-client');
+const { getSupabaseClient, updateStickerSetStatus, getStickerSet } = require('./supabase-client');
 const { generateStickerSet } = require('./ai-generator');
 const { processStickerSet, generateMainImage, generateTabImage } = require('./image-processor');
 const { DefaultExpressions } = require('./sticker-styles');
+
+// 取得 Supabase 客戶端
+const getSupabase = () => getSupabaseClient();
 
 /**
  * 建立生成任務
@@ -17,6 +20,8 @@ async function createGenerationTask(userId, setData) {
   const setId = uuidv4();
 
   try {
+    const supabase = getSupabase();
+
     // 建立貼圖組記錄
     const { error: setError } = await supabase
       .from('sticker_sets')
@@ -61,6 +66,7 @@ async function createGenerationTask(userId, setData) {
  */
 async function updateTaskProgress(taskId, progress, status = 'processing') {
   try {
+    const supabase = getSupabase();
     const { error } = await supabase
       .from('generation_tasks')
       .update({
@@ -144,6 +150,7 @@ async function executeGeneration(taskId, setId) {
     console.error(`❌ 生成任務失敗 (${taskId}):`, error);
 
     // 標記任務失敗
+    const supabase = getSupabase();
     await supabase
       .from('generation_tasks')
       .update({
@@ -165,6 +172,7 @@ async function executeGeneration(taskId, setId) {
 async function uploadImagesToStorage(setId, processedImages, mainImageBuffer, tabImageBuffer) {
   const bucket = 'sticker-images';
   const uploadResults = { imageUrls: [], mainImageUrl: null, tabImageUrl: null };
+  const supabase = getSupabase();
 
   try {
     // 上傳主圖
@@ -194,7 +202,7 @@ async function uploadImagesToStorage(setId, processedImages, mainImageBuffer, ta
     // 上傳貼圖
     for (const img of processedImages) {
       if (img.status !== 'completed' || !img.buffer) continue;
-      
+
       const stickerPath = `${setId}/sticker_${String(img.index).padStart(2, '0')}.png`;
       const { error } = await supabase.storage.from(bucket).upload(stickerPath, img.buffer, {
         contentType: 'image/png', upsert: true
