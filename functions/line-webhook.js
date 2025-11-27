@@ -246,26 +246,47 @@ async function handleImageMessage(replyToken, userId, messageId) {
 }
 
 /**
+ * 安全地回覆 LINE 訊息（失敗不拋出錯誤）
+ */
+async function safeReply(replyToken, message) {
+  try {
+    await getLineClient().replyMessage(replyToken, message);
+    return true;
+  } catch (error) {
+    // 400 錯誤通常是 replyToken 過期或已使用，不需要重試
+    if (error.statusCode === 400) {
+      console.log('⚠️ Reply token 已過期或已使用，跳過回覆');
+    } else {
+      console.error('❌ 回覆訊息失敗:', error.message);
+    }
+    return false;
+  }
+}
+
+/**
  * Netlify Function Handler
  */
 exports.handler = async function(event, context) {
   console.log('🔔 LINE Webhook 被呼叫');
 
+  // 無論發生什麼，都要返回 200 給 LINE（避免重試循環）
   try {
     if (event.httpMethod !== 'POST') {
-      return { statusCode: 405, body: JSON.stringify({ error: 'Method Not Allowed' }) };
+      return { statusCode: 200, body: JSON.stringify({ message: 'Method Not Allowed but OK' }) };
     }
 
     // 驗證 LINE Signature
     const signature = event.headers['x-line-signature'];
     if (!signature) {
-      return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) };
+      console.log('⚠️ 缺少 signature');
+      return { statusCode: 200, body: JSON.stringify({ message: 'No signature but OK' }) };
     }
 
     const crypto = require('crypto');
     const hash = crypto.createHmac('SHA256', getChannelSecret()).update(event.body).digest('base64');
     if (hash !== signature) {
-      return { statusCode: 403, body: JSON.stringify({ error: 'Invalid signature' }) };
+      console.log('⚠️ 簽名驗證失敗');
+      return { statusCode: 200, body: JSON.stringify({ message: 'Invalid signature but OK' }) };
     }
 
     const body = JSON.parse(event.body);
@@ -279,24 +300,37 @@ exports.handler = async function(event, context) {
 
       // 去重檢查
       const isUsed = await isReplyTokenUsed(replyToken);
-      if (isUsed) continue;
-
-      // 根據訊息類型處理
-      if (ev.message.type === 'text') {
-        const text = ev.message.text.trim();
-        await handleTextMessage(replyToken, userId, text);
-      } else if (ev.message.type === 'image') {
-        await handleImageMessage(replyToken, userId, ev.message.id);
+      if (isUsed) {
+        console.log(`⚠️ ReplyToken 已處理過: ${replyToken.substring(0, 8)}...`);
+        continue;
       }
 
+      // 先記錄 token（確保不會重複處理）
       await recordReplyToken(replyToken);
+
+      // 根據訊息類型處理
+      try {
+        if (ev.message.type === 'text') {
+          const text = ev.message.text.trim();
+          await handleTextMessage(replyToken, userId, text);
+        } else if (ev.message.type === 'image') {
+          await handleImageMessage(replyToken, userId, ev.message.id);
+        }
+      } catch (innerError) {
+        console.error('❌ 處理訊息失敗:', innerError.message);
+        // 嘗試回覆錯誤訊息，但失敗也沒關係
+        await safeReply(replyToken, {
+          type: 'text',
+          text: '❌ 系統發生錯誤，請稍後再試'
+        });
+      }
     }
 
-    return { statusCode: 200, body: JSON.stringify({ message: 'OK' }) };
-
   } catch (error) {
-    console.error('❌ Webhook 處理失敗:', error);
-    return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
+    console.error('❌ Webhook 處理失敗:', error.message);
   }
+
+  // 永遠返回 200，避免 LINE 重試
+  return { statusCode: 200, body: JSON.stringify({ message: 'OK' }) };
 };
 
