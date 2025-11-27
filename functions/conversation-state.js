@@ -3,7 +3,7 @@
  * 管理用戶的對話狀態（貼圖創建流程）
  */
 
-const { supabase } = require('./supabase-client');
+const { getSupabaseClient } = require('./supabase-client');
 
 // 對話階段定義
 const ConversationStage = {
@@ -23,7 +23,7 @@ const ConversationStage = {
  */
 async function getConversationState(userId) {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
       .from('conversation_states')
       .select('*')
       .eq('user_id', userId)
@@ -53,7 +53,7 @@ async function getConversationState(userId) {
  */
 async function updateConversationState(userId, stage, tempData = {}, setId = null) {
   try {
-    const { error } = await supabase
+    const { error } = await getSupabaseClient()
       .from('conversation_states')
       .upsert({
         user_id: userId,
@@ -99,7 +99,7 @@ function isInCreationFlow(stage) {
  */
 async function getExpressionTemplates() {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
       .from('expression_templates')
       .select('*')
       .eq('is_active', true);

@@ -9,17 +9,29 @@ const { ConversationStage, getConversationState, updateConversationState, resetC
 const { generateWelcomeFlexMessage } = require('./sticker-flex-message');
 const { handleStartCreate, handleNaming, handleStyleSelection, handleCharacterDescription, handleExpressionTemplate, handleCountSelection } = require('./handlers/create-handler');
 
-// LINE Bot 設定
-const config = {
-  channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN,
-  channelSecret: process.env.LINE_CHANNEL_SECRET
-};
+// LINE Bot 設定 - 延遲初始化
+let client = null;
 
-if (!config.channelAccessToken || !config.channelSecret) {
-  throw new Error('❌ LINE 環境變數未設定：需要 LINE_CHANNEL_ACCESS_TOKEN 和 LINE_CHANNEL_SECRET');
+function getLineClient() {
+  if (client) return client;
+
+  const config = {
+    channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN,
+    channelSecret: process.env.LINE_CHANNEL_SECRET
+  };
+
+  if (!config.channelAccessToken || !config.channelSecret) {
+    console.error('❌ LINE 環境變數未設定：需要 LINE_CHANNEL_ACCESS_TOKEN 和 LINE_CHANNEL_SECRET');
+    throw new Error('LINE 環境變數未設定');
+  }
+
+  client = new line.Client(config);
+  return client;
 }
 
-const client = new line.Client(config);
+function getChannelSecret() {
+  return process.env.LINE_CHANNEL_SECRET;
+}
 
 /**
  * 處理文字訊息
@@ -35,7 +47,7 @@ async function handleTextMessage(replyToken, userId, text) {
     // 1. 檢查是否要取消
     if (text === '取消' || text === '取消創建') {
       await resetConversationState(userId);
-      return client.replyMessage(replyToken, {
+      return getLineClient().replyMessage(replyToken, {
         type: 'text',
         text: '❌ 已取消創建流程\n\n輸入「創建貼圖」重新開始！'
       });
@@ -44,19 +56,19 @@ async function handleTextMessage(replyToken, userId, text) {
     // 2. 檢查主要指令
     if (text === '創建貼圖' || text === '開始' || text === '新增貼圖') {
       const message = await handleStartCreate(userId);
-      return client.replyMessage(replyToken, message);
+      return getLineClient().replyMessage(replyToken, message);
     }
     
     if (text === '我的貼圖' || text === '貼圖列表') {
       const sets = await getUserStickerSets(userId);
       if (sets.length === 0) {
-        return client.replyMessage(replyToken, {
+        return getLineClient().replyMessage(replyToken, {
           type: 'text',
           text: '📁 你還沒有創建任何貼圖組\n\n輸入「創建貼圖」開始創建你的第一組貼圖！'
         });
       }
       // TODO: 生成貼圖列表 Flex Message
-      return client.replyMessage(replyToken, {
+      return getLineClient().replyMessage(replyToken, {
         type: 'text',
         text: `📁 你有 ${sets.length} 組貼圖\n\n（詳細列表功能開發中）`
       });
@@ -71,19 +83,19 @@ async function handleTextMessage(replyToken, userId, text) {
     if (text.startsWith('風格:')) {
       const styleId = text.replace('風格:', '');
       const message = await handleStyleSelection(userId, styleId);
-      return client.replyMessage(replyToken, message);
+      return getLineClient().replyMessage(replyToken, message);
     }
     
     if (text.startsWith('表情模板:')) {
       const templateId = text.replace('表情模板:', '');
       const message = await handleExpressionTemplate(userId, templateId);
-      return client.replyMessage(replyToken, message);
+      return getLineClient().replyMessage(replyToken, message);
     }
     
     if (text.startsWith('數量:')) {
       const count = parseInt(text.replace('數量:', ''));
       const message = await handleCountSelection(userId, count);
-      return client.replyMessage(replyToken, message);
+      return getLineClient().replyMessage(replyToken, message);
     }
     
     if (text === '確認生成') {
@@ -91,11 +103,11 @@ async function handleTextMessage(replyToken, userId, text) {
     }
     
     // 5. 預設回覆 - 歡迎訊息
-    return client.replyMessage(replyToken, generateWelcomeFlexMessage());
+    return getLineClient().replyMessage(replyToken, generateWelcomeFlexMessage());
     
   } catch (error) {
     console.error('❌ 處理訊息失敗:', error);
-    return client.replyMessage(replyToken, {
+    return getLineClient().replyMessage(replyToken, {
       type: 'text',
       text: '❌ 系統發生錯誤，請稍後再試'
     });
@@ -119,7 +131,7 @@ async function handleCreationFlow(replyToken, userId, text, stage, state) {
       message = { type: 'text', text: '⚠️ 請按照提示操作或輸入「取消」重新開始' };
   }
   
-  return client.replyMessage(replyToken, message);
+  return getLineClient().replyMessage(replyToken, message);
 }
 
 /**
@@ -129,7 +141,7 @@ async function handleConfirmGeneration(replyToken, userId, state) {
   const tempData = state.temp_data;
   
   if (!tempData || !tempData.name || !tempData.style || !tempData.character) {
-    return client.replyMessage(replyToken, {
+    return getLineClient().replyMessage(replyToken, {
       type: 'text',
       text: '⚠️ 創建資料不完整，請輸入「創建貼圖」重新開始'
     });
@@ -139,7 +151,7 @@ async function handleConfirmGeneration(replyToken, userId, state) {
   await updateConversationState(userId, ConversationStage.GENERATING, tempData);
   
   // 回覆生成中訊息
-  await client.replyMessage(replyToken, {
+  await getLineClient().replyMessage(replyToken, {
     type: 'text',
     text: '🎨 開始生成貼圖！\n\n' +
           `📛 名稱：${tempData.name}\n` +
@@ -173,7 +185,7 @@ exports.handler = async function(event, context) {
     }
 
     const crypto = require('crypto');
-    const hash = crypto.createHmac('SHA256', config.channelSecret).update(event.body).digest('base64');
+    const hash = crypto.createHmac('SHA256', getChannelSecret()).update(event.body).digest('base64');
     if (hash !== signature) {
       return { statusCode: 403, body: JSON.stringify({ error: 'Invalid signature' }) };
     }

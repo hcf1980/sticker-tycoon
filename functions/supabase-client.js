@@ -5,28 +5,36 @@
 
 const { createClient } = require('@supabase/supabase-js');
 
-// 驗證環境變數
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+// 延遲初始化 Supabase client
+let supabase = null;
 
-if (!SUPABASE_URL || !SUPABASE_KEY) {
-  throw new Error('❌ Supabase 環境變數未設定：需要 SUPABASE_URL 和 SUPABASE_SERVICE_ROLE_KEY');
-}
+function getSupabaseClient() {
+  if (supabase) return supabase;
 
-// 建立 Supabase client
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
+  const SUPABASE_URL = process.env.SUPABASE_URL;
+  const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    console.error('❌ Supabase 環境變數未設定：需要 SUPABASE_URL 和 SUPABASE_SERVICE_ROLE_KEY');
+    throw new Error('Supabase 環境變數未設定');
   }
-});
+
+  supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  });
+
+  return supabase;
+}
 
 /**
  * 檢查 reply token 是否已使用（去重機制）
  */
 async function isReplyTokenUsed(replyToken) {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
       .from('line_events')
       .select('reply_token')
       .eq('reply_token', replyToken)
@@ -45,7 +53,7 @@ async function isReplyTokenUsed(replyToken) {
  */
 async function recordReplyToken(replyToken) {
   try {
-    const { error } = await supabase
+    const { error } = await getSupabaseClient()
       .from('line_events')
       .insert([{ reply_token: replyToken, created_at: new Date().toISOString() }]);
     
@@ -63,7 +71,7 @@ async function recordReplyToken(replyToken) {
 async function getOrCreateUser(lineUserId, displayName = null, pictureUrl = null) {
   try {
     // 先查詢是否存在
-    const { data: existing, error: selectError } = await supabase
+    const { data: existing, error: selectError } = await getSupabaseClient()
       .from('users')
       .select('*')
       .eq('line_user_id', lineUserId)
@@ -76,7 +84,7 @@ async function getOrCreateUser(lineUserId, displayName = null, pictureUrl = null
     }
 
     // 建立新用戶
-    const { data: newUser, error: insertError } = await supabase
+    const { data: newUser, error: insertError } = await getSupabaseClient()
       .from('users')
       .insert([{
         line_user_id: lineUserId,
@@ -100,7 +108,7 @@ async function getOrCreateUser(lineUserId, displayName = null, pictureUrl = null
  */
 async function getUserStickerSets(userId) {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
       .from('sticker_sets')
       .select('*')
       .eq('user_id', userId)
@@ -119,7 +127,7 @@ async function getUserStickerSets(userId) {
  */
 async function createStickerSet(setData) {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
       .from('sticker_sets')
       .insert([setData])
       .select()
@@ -138,7 +146,7 @@ async function createStickerSet(setData) {
  */
 async function updateStickerSetStatus(setId, status, additionalData = {}) {
   try {
-    const { error } = await supabase
+    const { error } = await getSupabaseClient()
       .from('sticker_sets')
       .update({ status, ...additionalData, updated_at: new Date().toISOString() })
       .eq('set_id', setId);
@@ -156,7 +164,7 @@ async function updateStickerSetStatus(setId, status, additionalData = {}) {
  */
 async function getStickerSet(setId) {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
       .from('sticker_sets')
       .select('*')
       .eq('set_id', setId)
@@ -171,7 +179,7 @@ async function getStickerSet(setId) {
 }
 
 module.exports = {
-  supabase,
+  getSupabaseClient,
   isReplyTokenUsed,
   recordReplyToken,
   getOrCreateUser,
