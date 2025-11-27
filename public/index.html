@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>貼圖大亨 - AI 智慧貼圖生成器</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    .gradient-bg {
+      background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+    }
+    .card-shadow {
+      box-shadow: 0 10px 40px rgba(255, 107, 107, 0.2);
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <!-- Header -->
+  <header class="gradient-bg text-white py-20">
+    <div class="container mx-auto px-4 text-center">
+      <h1 class="text-5xl font-bold mb-4">🎨 貼圖大亨</h1>
+      <p class="text-xl opacity-90 mb-8">AI 智慧貼圖生成器 - 三步驟創建專屬 LINE 貼圖</p>
+      <a href="https://line.me/R/ti/p/@YOUR_BOT_ID" 
+         class="inline-block bg-white text-pink-500 font-bold py-3 px-8 rounded-full text-lg hover:shadow-lg transition">
+        🚀 立即開始使用
+      </a>
+    </div>
+  </header>
+
+  <!-- Features -->
+  <section class="py-16">
+    <div class="container mx-auto px-4">
+      <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">✨ 三步驟創建專屬貼圖</h2>
+      <div class="grid md:grid-cols-3 gap-8">
+        <div class="bg-white rounded-2xl p-8 card-shadow text-center">
+          <div class="text-5xl mb-4">1️⃣</div>
+          <h3 class="text-xl font-bold text-gray-800 mb-2">選擇風格</h3>
+          <p class="text-gray-600">可愛風、酷炫風、搞笑風、簡約風等多種風格任你選</p>
+        </div>
+        <div class="bg-white rounded-2xl p-8 card-shadow text-center">
+          <div class="text-5xl mb-4">2️⃣</div>
+          <h3 class="text-xl font-bold text-gray-800 mb-2">描述角色</h3>
+          <p class="text-gray-600">告訴 AI 你想要的角色特徵，越詳細越好</p>
+        </div>
+        <div class="bg-white rounded-2xl p-8 card-shadow text-center">
+          <div class="text-5xl mb-4">3️⃣</div>
+          <h3 class="text-xl font-bold text-gray-800 mb-2">自動生成</h3>
+          <p class="text-gray-600">AI 自動生成 8-40 張貼圖，符合 LINE 官方規格</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Styles Preview -->
+  <section class="py-16 bg-white">
+    <div class="container mx-auto px-4">
+      <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">🎨 多種風格選擇</h2>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-pink-50 rounded-xl p-6 text-center">
+          <span class="text-4xl">🥰</span>
+          <p class="mt-2 font-medium">可愛風</p>
+        </div>
+        <div class="bg-blue-50 rounded-xl p-6 text-center">
+          <span class="text-4xl">😎</span>
+          <p class="mt-2 font-medium">酷炫風</p>
+        </div>
+        <div class="bg-yellow-50 rounded-xl p-6 text-center">
+          <span class="text-4xl">🤣</span>
+          <p class="mt-2 font-medium">搞笑風</p>
+        </div>
+        <div class="bg-gray-50 rounded-xl p-6 text-center">
+          <span class="text-4xl">✨</span>
+          <p class="mt-2 font-medium">簡約風</p>
+        </div>
+        <div class="bg-purple-50 rounded-xl p-6 text-center">
+          <span class="text-4xl">🎌</span>
+          <p class="mt-2 font-medium">動漫風</p>
+        </div>
+        <div class="bg-indigo-50 rounded-xl p-6 text-center">
+          <span class="text-4xl">👾</span>
+          <p class="mt-2 font-medium">像素風</p>
+        </div>
+        <div class="bg-cyan-50 rounded-xl p-6 text-center">
+          <span class="text-4xl">🎨</span>
+          <p class="mt-2 font-medium">水彩風</p>
+        </div>
+        <div class="bg-orange-50 rounded-xl p-6 text-center">
+          <span class="text-4xl">✏️</span>
+          <p class="mt-2 font-medium">塗鴉風</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LINE Specs -->
+  <section class="py-16">
+    <div class="container mx-auto px-4">
+      <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">📋 符合 LINE 官方規格</h2>
+      <div class="bg-white rounded-2xl p-8 card-shadow max-w-2xl mx-auto">
+        <ul class="space-y-4 text-gray-700">
+          <li class="flex items-center">
+            <span class="text-green-500 mr-3">✅</span>
+            主要圖片 240×240px PNG 格式
+          </li>
+          <li class="flex items-center">
+            <span class="text-green-500 mr-3">✅</span>
+            貼圖圖片最大 370×320px，自動去背
+          </li>
+          <li class="flex items-center">
+            <span class="text-green-500 mr-3">✅</span>
+            聊天室標籤圖片 96×74px
+          </li>
+          <li class="flex items-center">
+            <span class="text-green-500 mr-3">✅</span>
+            支援 8/16/24/32/40 張貼圖
+          </li>
+          <li class="flex items-center">
+            <span class="text-green-500 mr-3">✅</span>
+            一鍵打包下載，直接上傳 LINE Creators Market
+          </li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="gradient-bg py-16">
+    <div class="container mx-auto px-4 text-center text-white">
+      <h2 class="text-3xl font-bold mb-4">準備好創建你的專屬貼圖了嗎？</h2>
+      <p class="text-xl opacity-90 mb-8">加入 LINE 好友，立即開始創作！</p>
+      <a href="https://line.me/R/ti/p/@YOUR_BOT_ID" 
+         class="inline-block bg-white text-pink-500 font-bold py-4 px-10 rounded-full text-lg hover:shadow-lg transition">
+        加入 LINE 好友
+      </a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-gray-800 text-gray-400 py-8">
+    <div class="container mx-auto px-4 text-center">
+      <p>© 2024 貼圖大亨 Sticker Tycoon. All rights reserved.</p>
+      <p class="mt-2 text-sm">AI 圖片生成服務由 OpenAI / Stability AI 提供</p>
+    </div>
+  </footer>
+</body>
+</html>
+

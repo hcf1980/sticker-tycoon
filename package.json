@@ -1,0 +1,41 @@
+{
+  "name": "sticker-tycoon-linebot",
+  "version": "1.0.0",
+  "description": "LINE Bot for AI-powered sticker generation - 貼圖大亨",
+  "main": "index.js",
+  "scripts": {
+    "dev": "netlify dev",
+    "build": "echo 'No build step required'",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "deploy": "netlify deploy --prod"
+  },
+  "keywords": [
+    "line-bot",
+    "sticker",
+    "ai-generation",
+    "image-processing",
+    "line-sticker"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@line/bot-sdk": "^9.3.0",
+    "@supabase/supabase-js": "^2.45.4",
+    "axios": "^1.7.7",
+    "dotenv": "^16.4.5",
+    "sharp": "^0.34.5",
+    "archiver": "^7.0.1",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "jest": "^30.2.0",
+    "netlify-cli": "^17.36.4"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
+

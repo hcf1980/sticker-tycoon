@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>貼圖管理 - 貼圖大亨</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <nav class="bg-gradient-to-r from-pink-500 to-orange-400 text-white p-4">
+    <div class="container mx-auto flex justify-between items-center">
+      <h1 class="text-2xl font-bold">🎨 貼圖管理後台</h1>
+      <div id="user-info" class="text-sm"></div>
+    </div>
+  </nav>
+
+  <div class="container mx-auto p-6">
+    <!-- 搜尋區 -->
+    <div class="bg-white rounded-lg shadow p-4 mb-6">
+      <div class="flex gap-4">
+        <input type="text" id="search-input" placeholder="搜尋貼圖組名稱..." 
+               class="flex-1 border rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-pink-500">
+        <select id="status-filter" class="border rounded px-4 py-2">
+          <option value="">全部狀態</option>
+          <option value="completed">已完成</option>
+          <option value="generating">生成中</option>
+          <option value="draft">草稿</option>
+          <option value="failed">失敗</option>
+        </select>
+        <button onclick="loadStickerSets()" class="bg-pink-500 text-white px-6 py-2 rounded hover:bg-pink-600">
+          搜尋
+        </button>
+      </div>
+    </div>
+
+    <!-- 統計區 -->
+    <div class="grid grid-cols-4 gap-4 mb-6">
+      <div class="bg-white rounded-lg shadow p-4 text-center">
+        <div class="text-3xl font-bold text-pink-500" id="stat-total">0</div>
+        <div class="text-gray-500">總貼圖組</div>
+      </div>
+      <div class="bg-white rounded-lg shadow p-4 text-center">
+        <div class="text-3xl font-bold text-green-500" id="stat-completed">0</div>
+        <div class="text-gray-500">已完成</div>
+      </div>
+      <div class="bg-white rounded-lg shadow p-4 text-center">
+        <div class="text-3xl font-bold text-yellow-500" id="stat-generating">0</div>
+        <div class="text-gray-500">生成中</div>
+      </div>
+      <div class="bg-white rounded-lg shadow p-4 text-center">
+        <div class="text-3xl font-bold text-red-500" id="stat-failed">0</div>
+        <div class="text-gray-500">失敗</div>
+      </div>
+    </div>
+
+    <!-- 貼圖組列表 -->
+    <div id="sticker-list" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div class="text-center py-10 text-gray-500">載入中...</div>
+    </div>
+  </div>
+
+  <!-- 詳情 Modal -->
+  <div id="detail-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg max-w-4xl w-full m-4 max-h-screen overflow-auto">
+      <div class="p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-2xl font-bold" id="modal-title">貼圖組詳情</h2>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+        </div>
+        <div id="modal-content"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Supabase 設定（需替換為實際值）
+    const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+    const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // 載入貼圖組
+    async function loadStickerSets() {
+      const search = document.getElementById('search-input').value;
+      const status = document.getElementById('status-filter').value;
+
+      let query = supabase.from('sticker_sets').select('*').order('created_at', { ascending: false });
+      if (search) query = query.ilike('name', `%${search}%`);
+      if (status) query = query.eq('status', status);
+
+      const { data, error } = await query;
+      if (error) { console.error(error); return; }
+
+      updateStats(data);
+      renderStickerList(data);
+    }
+
+    // 更新統計
+    function updateStats(data) {
+      document.getElementById('stat-total').textContent = data.length;
+      document.getElementById('stat-completed').textContent = data.filter(s => s.status === 'completed').length;
+      document.getElementById('stat-generating').textContent = data.filter(s => s.status === 'generating').length;
+      document.getElementById('stat-failed').textContent = data.filter(s => s.status === 'failed').length;
+    }
+
+    // 渲染貼圖列表
+    function renderStickerList(sets) {
+      const container = document.getElementById('sticker-list');
+      if (sets.length === 0) {
+        container.innerHTML = '<div class="col-span-3 text-center py-10 text-gray-500">沒有找到貼圖組</div>';
+        return;
+      }
+
+      container.innerHTML = sets.map(set => `
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+          <div class="h-40 bg-gray-200 flex items-center justify-center">
+            ${set.main_image_url ? `<img src="${set.main_image_url}" class="h-full object-contain">` : '<span class="text-gray-400">無預覽圖</span>'}
+          </div>
+          <div class="p-4">
+            <h3 class="font-bold text-lg mb-2">${set.name}</h3>
+            <div class="flex items-center gap-2 mb-2">
+              <span class="px-2 py-1 rounded text-xs ${getStatusClass(set.status)}">${getStatusText(set.status)}</span>
+              <span class="text-gray-500 text-sm">${set.sticker_count} 張</span>
+            </div>
+            <div class="text-gray-500 text-sm mb-4">${new Date(set.created_at).toLocaleDateString('zh-TW')}</div>
+            <div class="flex gap-2">
+              <button onclick="showDetail('${set.set_id}')" class="flex-1 bg-pink-500 text-white py-2 rounded hover:bg-pink-600">查看</button>
+              ${set.status === 'completed' ? `<button onclick="downloadPack('${set.set_id}')" class="flex-1 bg-green-500 text-white py-2 rounded hover:bg-green-600">下載</button>` : ''}
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function getStatusClass(status) {
+      const classes = { completed: 'bg-green-100 text-green-800', generating: 'bg-yellow-100 text-yellow-800', draft: 'bg-gray-100 text-gray-800', failed: 'bg-red-100 text-red-800' };
+      return classes[status] || 'bg-gray-100 text-gray-800';
+    }
+
+    function getStatusText(status) {
+      const texts = { completed: '已完成', generating: '生成中', draft: '草稿', failed: '失敗' };
+      return texts[status] || status;
+    }
+
+    async function showDetail(setId) {
+      const { data: set } = await supabase.from('sticker_sets').select('*').eq('set_id', setId).single();
+      const { data: stickers } = await supabase.storage.from('sticker-images').list(setId);
+
+      document.getElementById('modal-title').textContent = set.name;
+      document.getElementById('modal-content').innerHTML = `
+        <div class="grid grid-cols-4 gap-4">
+          ${(stickers || []).filter(f => f.name.startsWith('sticker_')).map(f => `
+            <div class="bg-gray-100 rounded p-2">
+              <img src="${SUPABASE_URL}/storage/v1/object/public/sticker-images/${setId}/${f.name}" class="w-full">
+            </div>
+          `).join('')}
+        </div>
+      `;
+      document.getElementById('detail-modal').classList.remove('hidden');
+      document.getElementById('detail-modal').classList.add('flex');
+    }
+
+    function closeModal() {
+      document.getElementById('detail-modal').classList.add('hidden');
+      document.getElementById('detail-modal').classList.remove('flex');
+    }
+
+    async function downloadPack(setId) {
+      const response = await fetch(`/api/download-pack?setId=${setId}`);
+      const result = await response.json();
+      if (result.downloadUrl) window.open(result.downloadUrl, '_blank');
+    }
+
+    // 初始載入
+    loadStickerSets();
+  </script>
+</body>
+</html>
+
