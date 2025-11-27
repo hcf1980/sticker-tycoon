@@ -4,7 +4,7 @@
  */
 
 const { createGenerationTask } = require('../sticker-generator-worker');
-const fetch = require('node-fetch');
+// 使用 Node 18+ 內建 fetch（無需 node-fetch）
 
 /**
  * 觸發貼圖生成任務
