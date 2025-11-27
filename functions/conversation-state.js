@@ -9,8 +9,9 @@ const { getSupabaseClient } = require('./supabase-client');
 const ConversationStage = {
   IDLE: 'idle',                    // 閒置
   NAMING: 'naming',                // 輸入貼圖組名稱
+  UPLOAD_PHOTO: 'upload_photo',    // 上傳照片（新增）
   STYLING: 'styling',              // 選擇風格
-  CHARACTER: 'character',          // 描述角色
+  CHARACTER: 'character',          // 描述角色（舊流程保留）
   EXPRESSIONS: 'expressions',      // 選擇/輸入表情
   COUNT_SELECT: 'count_select',    // 選擇貼圖數量
   CONFIRMING: 'confirming',        // 確認生成
@@ -86,6 +87,7 @@ async function resetConversationState(userId) {
 function isInCreationFlow(stage) {
   return [
     ConversationStage.NAMING,
+    ConversationStage.UPLOAD_PHOTO,
     ConversationStage.STYLING,
     ConversationStage.CHARACTER,
     ConversationStage.EXPRESSIONS,

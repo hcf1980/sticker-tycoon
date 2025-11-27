@@ -14,20 +14,41 @@ const { generateStyleSelectionFlexMessage, generateExpressionSelectionFlexMessag
  */
 async function handleStartCreate(userId) {
   console.log(`🚀 用戶 ${userId} 開始創建貼圖`);
-  
+
   // 確保用戶存在
   await getOrCreateUser(userId);
-  
+
   // 更新對話狀態到命名階段
   await updateConversationState(userId, ConversationStage.NAMING, {});
-  
+
   return {
     type: 'text',
     text: '🎨 開始創建你的專屬貼圖！\n\n' +
           '📝 第一步：請輸入貼圖組名稱\n\n' +
-          '例如：「小熊日常」、「辦公室趣事」\n\n' +
+          '例如：「我的日常」、「辦公室趣事」\n\n' +
           '💡 名稱最長 40 字，請盡量簡潔有創意！'
   };
+}
+
+/**
+ * 處理照片上傳完成
+ */
+async function handlePhotoUpload(userId, photoResult) {
+  console.log(`📷 用戶 ${userId} 上傳照片完成`);
+
+  // 取得當前暫存資料
+  const state = await getConversationState(userId);
+  const tempData = {
+    ...state.temp_data,
+    photoUrl: photoResult.publicUrl,
+    photoPath: photoResult.storagePath,
+    photoBase64: photoResult.base64
+  };
+
+  // 進入風格選擇階段
+  await updateConversationState(userId, ConversationStage.STYLING, tempData);
+
+  return generateStyleSelectionFlexMessage();
 }
 
 /**
@@ -35,7 +56,7 @@ async function handleStartCreate(userId) {
  */
 async function handleNaming(userId, name) {
   console.log(`📝 用戶 ${userId} 設定名稱：${name}`);
-  
+
   // 驗證名稱
   if (!name || name.length > 40) {
     return {
@@ -43,11 +64,20 @@ async function handleNaming(userId, name) {
       text: '⚠️ 名稱請在 40 字以內，請重新輸入！'
     };
   }
-  
-  // 儲存名稱並進入風格選擇
-  await updateConversationState(userId, ConversationStage.STYLING, { name });
-  
-  return generateStyleSelectionFlexMessage();
+
+  // 儲存名稱並進入照片上傳階段
+  await updateConversationState(userId, ConversationStage.UPLOAD_PHOTO, { name });
+
+  return {
+    type: 'text',
+    text: '✅ 名稱設定完成！\n\n' +
+          '📷 第二步：請上傳一張你的照片\n\n' +
+          '建議：\n' +
+          '• 正面清晰的大頭照\n' +
+          '• 光線充足、背景簡單\n' +
+          '• 表情自然最佳\n\n' +
+          '🤖 AI 會保留你的臉部特徵，生成各種表情的貼圖！'
+  };
 }
 
 /**
@@ -55,7 +85,7 @@ async function handleNaming(userId, name) {
  */
 async function handleStyleSelection(userId, styleId) {
   console.log(`🎨 用戶 ${userId} 選擇風格：${styleId}`);
-  
+
   const style = StickerStyles[styleId];
   if (!style) {
     return {
@@ -63,23 +93,28 @@ async function handleStyleSelection(userId, styleId) {
       text: '⚠️ 請選擇有效的風格！'
     };
   }
-  
+
   // 取得當前暫存資料
   const state = await getConversationState(userId);
   const tempData = { ...state.temp_data, style: styleId };
-  
-  // 更新到角色描述階段
-  await updateConversationState(userId, ConversationStage.CHARACTER, tempData);
-  
-  return {
-    type: 'text',
-    text: `✅ 已選擇「${style.emoji} ${style.name}」風格\n\n` +
-          '👤 第二步：描述你的角色\n\n' +
-          '請詳細描述你想要的角色特徵，例如：\n\n' +
-          '• 「一隻圓滾滾的白色小熊，有粉紅色的臉頰和小小的黑眼睛」\n\n' +
-          '• 「一個戴眼鏡的上班族貓咪，穿著西裝打領帶」\n\n' +
-          '💡 描述越詳細，生成的貼圖越符合你的想像！'
-  };
+
+  // 如果有照片，直接進入表情選擇；否則進入角色描述
+  if (tempData.photoUrl) {
+    await updateConversationState(userId, ConversationStage.EXPRESSIONS, tempData);
+    return generateExpressionSelectionFlexMessage();
+  } else {
+    // 舊流程：沒有照片時要求描述角色
+    await updateConversationState(userId, ConversationStage.CHARACTER, tempData);
+    return {
+      type: 'text',
+      text: `✅ 已選擇「${style.emoji} ${style.name}」風格\n\n` +
+            '👤 描述你的角色\n\n' +
+            '請詳細描述你想要的角色特徵，例如：\n\n' +
+            '• 「一隻圓滾滾的白色小熊，有粉紅色的臉頰和小小的黑眼睛」\n\n' +
+            '• 「一個戴眼鏡的上班族貓咪，穿著西裝打領帶」\n\n' +
+            '💡 描述越詳細，生成的貼圖越符合你的想像！'
+    };
+  }
 }
 
 /**
@@ -224,6 +259,7 @@ function generateConfirmationMessage(data) {
 module.exports = {
   handleStartCreate,
   handleNaming,
+  handlePhotoUpload,
   handleStyleSelection,
   handleCharacterDescription,
   handleExpressionTemplate,

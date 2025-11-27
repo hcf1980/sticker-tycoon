@@ -121,10 +121,15 @@ ALTER TABLE stickers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE generation_tasks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE conversation_states ENABLE ROW LEVEL SECURITY;
 
--- 9. 建立 Storage Bucket
+-- 9. 建立 Storage Buckets
 -- 注意：這需要在 Supabase Dashboard 的 Storage 介面手動建立
--- Bucket 名稱：sticker-images
+
+-- Bucket 1: sticker-images（生成的貼圖）
 -- 設定為 Public（公開存取）
+
+-- Bucket 2: user-photos（用戶上傳的照片）
+-- 設定為 Public（公開存取）
+-- 用於儲存用戶上傳的照片，作為 AI 生成貼圖的來源
 
 -- 10. 清理舊資料的函數
 CREATE OR REPLACE FUNCTION cleanup_old_data()

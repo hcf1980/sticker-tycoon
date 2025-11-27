@@ -7,7 +7,8 @@ const line = require('@line/bot-sdk');
 const { isReplyTokenUsed, recordReplyToken, getOrCreateUser, getUserStickerSets } = require('./supabase-client');
 const { ConversationStage, getConversationState, updateConversationState, resetConversationState, isInCreationFlow } = require('./conversation-state');
 const { generateWelcomeFlexMessage } = require('./sticker-flex-message');
-const { handleStartCreate, handleNaming, handleStyleSelection, handleCharacterDescription, handleExpressionTemplate, handleCountSelection } = require('./handlers/create-handler');
+const { handleStartCreate, handleNaming, handleStyleSelection, handleCharacterDescription, handleExpressionTemplate, handleCountSelection, handlePhotoUpload } = require('./handlers/create-handler');
+const { handleUserPhoto } = require('./photo-handler');
 
 // LINE Bot 設定 - 延遲初始化
 let client = null;
@@ -163,8 +164,56 @@ async function handleConfirmGeneration(replyToken, userId, state) {
   
   // TODO: 觸發異步生成任務
   // 這裡會調用 sticker-generator-worker 進行實際生成
-  
+
   return;
+}
+
+/**
+ * 處理圖片訊息
+ */
+async function handleImageMessage(replyToken, userId, messageId) {
+  try {
+    console.log(`📷 處理圖片訊息：${messageId} (User: ${userId})`);
+
+    // 取得用戶對話狀態
+    const state = await getConversationState(userId);
+    const currentStage = state.current_stage;
+
+    // 檢查是否在等待上傳照片的階段
+    if (currentStage !== ConversationStage.UPLOAD_PHOTO) {
+      return getLineClient().replyMessage(replyToken, {
+        type: 'text',
+        text: '📷 如果想用照片製作貼圖，請先輸入「創建貼圖」開始！'
+      });
+    }
+
+    // 顯示處理中訊息
+    await getLineClient().replyMessage(replyToken, {
+      type: 'text',
+      text: '📥 正在處理你的照片...'
+    });
+
+    // 處理照片
+    const photoResult = await handleUserPhoto(messageId, userId);
+
+    if (!photoResult.success) {
+      return getLineClient().pushMessage(userId, {
+        type: 'text',
+        text: '❌ 照片處理失敗，請重新上傳一張清晰的正面照片！'
+      });
+    }
+
+    // 調用 handler 處理下一步
+    const message = await handlePhotoUpload(userId, photoResult);
+    return getLineClient().pushMessage(userId, message);
+
+  } catch (error) {
+    console.error('❌ 處理圖片失敗:', error);
+    return getLineClient().replyMessage(replyToken, {
+      type: 'text',
+      text: '❌ 系統發生錯誤，請稍後再試'
+    });
+  }
 }
 
 /**
@@ -194,18 +243,23 @@ exports.handler = async function(event, context) {
     const events = body.events || [];
 
     for (const ev of events) {
-      if (ev.type !== 'message' || ev.message.type !== 'text') continue;
+      if (ev.type !== 'message') continue;
 
       const replyToken = ev.replyToken;
       const userId = ev.source.userId;
-      const text = ev.message.text.trim();
 
       // 去重檢查
       const isUsed = await isReplyTokenUsed(replyToken);
       if (isUsed) continue;
 
-      // 處理訊息
-      await handleTextMessage(replyToken, userId, text);
+      // 根據訊息類型處理
+      if (ev.message.type === 'text') {
+        const text = ev.message.text.trim();
+        await handleTextMessage(replyToken, userId, text);
+      } else if (ev.message.type === 'image') {
+        await handleImageMessage(replyToken, userId, ev.message.id);
+      }
+
       await recordReplyToken(replyToken);
     }
 
