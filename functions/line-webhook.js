@@ -57,12 +57,27 @@ async function handleTextMessage(replyToken, userId, text) {
       });
     }
     
-    // 2. 檢查主要指令
+    // 2. 優先處理創建流程中的輸入（避免被其他指令中斷）
+    console.log(`🔍 isInCreationFlow: ${isInCreationFlow(currentStage)} (stage: ${currentStage})`);
+    if (isInCreationFlow(currentStage)) {
+      // 如果在流程中又輸入「創建貼圖」，詢問是否要重新開始
+      if (text === '創建貼圖' || text === '開始' || text === '新增貼圖') {
+        return getLineClient().replyMessage(replyToken, {
+          type: 'text',
+          text: '⚠️ 你正在創建貼圖中\n\n' +
+                `目前階段：${getStageDescription(currentStage)}\n\n` +
+                '輸入「取消」可以重新開始'
+        });
+      }
+      return await handleCreationFlow(replyToken, userId, text, currentStage, state);
+    }
+
+    // 3. 檢查主要指令（只有在非流程中才處理）
     if (text === '創建貼圖' || text === '開始' || text === '新增貼圖') {
       const message = await handleStartCreate(userId);
       return getLineClient().replyMessage(replyToken, message);
     }
-    
+
     if (text === '我的貼圖' || text === '貼圖列表') {
       const sets = await getUserStickerSets(userId);
       if (sets.length === 0) {
@@ -76,12 +91,6 @@ async function handleTextMessage(replyToken, userId, text) {
         type: 'text',
         text: `📁 你有 ${sets.length} 組貼圖\n\n（詳細列表功能開發中）`
       });
-    }
-    
-    // 3. 處理創建流程中的輸入
-    console.log(`🔍 isInCreationFlow: ${isInCreationFlow(currentStage)} (stage: ${currentStage})`);
-    if (isInCreationFlow(currentStage)) {
-      return await handleCreationFlow(replyToken, userId, text, currentStage, state);
     }
     
     // 4. 處理特殊指令格式
@@ -117,6 +126,22 @@ async function handleTextMessage(replyToken, userId, text) {
       text: '❌ 系統發生錯誤，請稍後再試'
     });
   }
+}
+
+/**
+ * 取得階段描述
+ */
+function getStageDescription(stage) {
+  const descriptions = {
+    [ConversationStage.NAMING]: '輸入貼圖組名稱',
+    [ConversationStage.UPLOAD_PHOTO]: '上傳照片',
+    [ConversationStage.STYLING]: '選擇風格',
+    [ConversationStage.CHARACTER]: '描述角色',
+    [ConversationStage.EXPRESSIONS]: '選擇表情',
+    [ConversationStage.COUNT_SELECT]: '選擇數量',
+    [ConversationStage.CONFIRMING]: '確認生成'
+  };
+  return descriptions[stage] || '進行中';
 }
 
 /**
