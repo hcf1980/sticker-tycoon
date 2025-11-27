@@ -222,7 +222,30 @@ async function handleCountSelection(userId, count) {
  */
 function generateConfirmationMessage(data) {
   const style = StickerStyles[data.style];
-  
+
+  // 構建內容陣列
+  const bodyContents = [
+    { type: 'text', text: '✅ 確認貼圖設定', weight: 'bold', size: 'lg', color: '#FF6B6B' },
+    { type: 'separator', margin: 'lg' },
+    { type: 'text', text: `📛 名稱：${data.name}`, size: 'sm', margin: 'lg' },
+    { type: 'text', text: `🎨 風格：${style.emoji} ${style.name}`, size: 'sm', margin: 'sm' }
+  ];
+
+  // 根據模式添加不同內容
+  if (data.photoUrl) {
+    bodyContents.push({ type: 'text', text: '📷 照片：已上傳', size: 'sm', margin: 'sm' });
+  }
+  if (data.character) {
+    const charDisplay = data.character.length > 30 ? data.character.substring(0, 30) + '...' : data.character;
+    bodyContents.push({ type: 'text', text: `👤 角色：${charDisplay}`, size: 'sm', margin: 'sm', wrap: true });
+  }
+  if (data.expressions && data.expressions.length > 0) {
+    bodyContents.push({ type: 'text', text: `😀 表情：${data.expressions.slice(0, 3).join('、')}...`, size: 'sm', margin: 'sm', wrap: true });
+  }
+
+  bodyContents.push({ type: 'text', text: `📊 數量：${data.count} 張`, size: 'sm', margin: 'sm' });
+  bodyContents.push({ type: 'separator', margin: 'lg' });
+
   return {
     type: 'flex',
     altText: '確認貼圖設定',
@@ -230,15 +253,7 @@ function generateConfirmationMessage(data) {
       type: 'bubble',
       body: {
         type: 'box', layout: 'vertical',
-        contents: [
-          { type: 'text', text: '✅ 確認貼圖設定', weight: 'bold', size: 'lg', color: '#FF6B6B' },
-          { type: 'separator', margin: 'lg' },
-          { type: 'text', text: `📛 名稱：${data.name}`, size: 'sm', margin: 'lg' },
-          { type: 'text', text: `🎨 風格：${style.emoji} ${style.name}`, size: 'sm', margin: 'sm' },
-          { type: 'text', text: `👤 角色：${data.character.substring(0, 30)}...`, size: 'sm', margin: 'sm', wrap: true },
-          { type: 'text', text: `📊 數量：${data.count} 張`, size: 'sm', margin: 'sm' },
-          { type: 'separator', margin: 'lg' }
-        ]
+        contents: bodyContents
       },
       footer: {
         type: 'box', layout: 'horizontal', spacing: 'sm',
