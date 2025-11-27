@@ -184,6 +184,16 @@ async function handleCreationFlow(replyToken, userId, text, stage, state) {
     case ConversationStage.CHARACTER:
       message = await handleCharacterDescription(userId, text);
       break;
+    case ConversationStage.CONFIRMING:
+      // 處理確認生成
+      if (text === '確認生成') {
+        return handleConfirmGeneration(replyToken, userId, state);
+      } else if (text === '取消') {
+        return null; // 取消由上層處理
+      } else {
+        message = { type: 'text', text: '⚠️ 請點擊「開始生成」或「取消」！' };
+      }
+      break;
     default:
       message = { type: 'text', text: '⚠️ 請按照提示操作或輸入「取消」重新開始' };
   }
@@ -196,17 +206,21 @@ async function handleCreationFlow(replyToken, userId, text, stage, state) {
  */
 async function handleConfirmGeneration(replyToken, userId, state) {
   const tempData = state.temp_data;
-  
-  if (!tempData || !tempData.name || !tempData.style || !tempData.character) {
+
+  // 檢查必要欄位（照片模式需要 photoUrl，文字模式需要 character）
+  const hasPhoto = tempData && tempData.photoUrl;
+  const hasCharacter = tempData && tempData.character;
+
+  if (!tempData || !tempData.name || !tempData.style || (!hasPhoto && !hasCharacter)) {
     return getLineClient().replyMessage(replyToken, {
       type: 'text',
       text: '⚠️ 創建資料不完整，請輸入「創建貼圖」重新開始'
     });
   }
-  
+
   // 更新狀態為生成中
   await updateConversationState(userId, ConversationStage.GENERATING, tempData);
-  
+
   // 回覆生成中訊息
   await getLineClient().replyMessage(replyToken, {
     type: 'text',
@@ -217,9 +231,16 @@ async function handleConfirmGeneration(replyToken, userId, state) {
           '生成完成後會通知你！\n\n' +
           '💡 可以先去做其他事情，完成後會收到通知'
   });
-  
-  // TODO: 觸發異步生成任務
-  // 這裡會調用 sticker-generator-worker 進行實際生成
+
+  // 觸發異步生成任務
+  try {
+    const { triggerStickerGeneration } = require('./services/generation-trigger');
+    await triggerStickerGeneration(userId, tempData);
+    console.log('✅ 已觸發貼圖生成任務');
+  } catch (error) {
+    console.error('❌ 觸發生成任務失敗:', error.message);
+    // 即使觸發失敗也不影響用戶體驗，後台會重試
+  }
 
   return;
 }
