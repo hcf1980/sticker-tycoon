@@ -170,7 +170,15 @@ async function handleExpressionTemplate(userId, templateId) {
  */
 function generateCountSelectionMessage(expressions) {
   const validCounts = LineStickerSpecs.validCounts;
-  
+
+  // 生成按鈕列表
+  const buttons = validCounts.map(count => ({
+    type: 'button',
+    style: 'secondary',
+    height: 'sm',
+    action: { type: 'message', label: `${count}張`, text: `數量:${count}` }
+  }));
+
   return {
     type: 'flex',
     altText: '選擇貼圖數量',
@@ -181,22 +189,9 @@ function generateCountSelectionMessage(expressions) {
         layout: 'vertical',
         contents: [
           { type: 'text', text: '📊 選擇貼圖數量', weight: 'bold', size: 'lg', color: '#FF6B6B' },
-          { type: 'text', text: `已選擇 ${expressions.length} 個表情`, size: 'sm', color: '#666', margin: 'md' },
+          { type: 'text', text: `已選擇 ${expressions.length} 個表情`, size: 'sm', color: '#666666', margin: 'md' },
           { type: 'separator', margin: 'lg' },
-          {
-            type: 'box', layout: 'horizontal', margin: 'lg', spacing: 'sm',
-            contents: validCounts.slice(0, 3).map(count => ({
-              type: 'button', style: 'secondary', height: 'sm', flex: 1,
-              action: { type: 'message', label: `${count}張`, text: `數量:${count}` }
-            }))
-          },
-          {
-            type: 'box', layout: 'horizontal', margin: 'sm', spacing: 'sm',
-            contents: validCounts.slice(3).map(count => ({
-              type: 'button', style: 'secondary', height: 'sm', flex: 1,
-              action: { type: 'message', label: `${count}張`, text: `數量:${count}` }
-            }))
-          }
+          ...buttons.map(btn => ({ ...btn, margin: 'md' }))
         ]
       }
     }
