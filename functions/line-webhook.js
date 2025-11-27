@@ -210,14 +210,15 @@ async function handleImageMessage(replyToken, userId, messageId) {
 
     // 檢查是否在等待上傳照片的階段
     if (currentStage !== ConversationStage.UPLOAD_PHOTO) {
-      return getLineClient().replyMessage(replyToken, {
+      await safeReply(replyToken, {
         type: 'text',
         text: '📷 如果想用照片製作貼圖，請先輸入「創建貼圖」開始！'
       });
+      return;
     }
 
     // 顯示處理中訊息
-    await getLineClient().replyMessage(replyToken, {
+    await safeReply(replyToken, {
       type: 'text',
       text: '📥 正在處理你的照片...'
     });
@@ -226,19 +227,33 @@ async function handleImageMessage(replyToken, userId, messageId) {
     const photoResult = await handleUserPhoto(messageId, userId);
 
     if (!photoResult.success) {
-      return getLineClient().pushMessage(userId, {
-        type: 'text',
-        text: '❌ 照片處理失敗，請重新上傳一張清晰的正面照片！'
-      });
+      console.log('❌ 照片處理失敗');
+      try {
+        await getLineClient().pushMessage(userId, {
+          type: 'text',
+          text: '❌ 照片處理失敗，請重新上傳一張清晰的正面照片！'
+        });
+      } catch (e) {
+        console.error('pushMessage 失敗:', e.message);
+      }
+      return;
     }
 
     // 調用 handler 處理下一步
+    console.log('📤 準備發送風格選擇訊息');
     const message = await handlePhotoUpload(userId, photoResult);
-    return getLineClient().pushMessage(userId, message);
+    console.log('📤 發送風格選擇 Flex Message');
+
+    try {
+      await getLineClient().pushMessage(userId, message);
+      console.log('✅ 風格選擇訊息發送成功');
+    } catch (pushError) {
+      console.error('❌ pushMessage 失敗:', pushError.message);
+    }
 
   } catch (error) {
     console.error('❌ 處理圖片失敗:', error);
-    return getLineClient().replyMessage(replyToken, {
+    await safeReply(replyToken, {
       type: 'text',
       text: '❌ 系統發生錯誤，請稍後再試'
     });
