@@ -54,7 +54,9 @@ async function getConversationState(userId) {
  */
 async function updateConversationState(userId, stage, tempData = {}, setId = null) {
   try {
-    const { error } = await getSupabaseClient()
+    console.log(`📝 更新對話狀態: userId=${userId}, stage=${stage}`);
+
+    const { data, error } = await getSupabaseClient()
       .from('conversation_states')
       .upsert({
         user_id: userId,
@@ -64,12 +66,18 @@ async function updateConversationState(userId, stage, tempData = {}, setId = nul
         updated_at: new Date().toISOString()
       }, {
         onConflict: 'user_id'
-      });
+      })
+      .select();
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Supabase upsert 錯誤:', error);
+      throw error;
+    }
+
+    console.log(`✅ 對話狀態更新成功:`, data);
     return true;
   } catch (error) {
-    console.error('更新對話狀態失敗:', error);
+    console.error('❌ 更新對話狀態失敗:', error);
     return false;
   }
 }

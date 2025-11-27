@@ -40,10 +40,13 @@ function getChannelSecret() {
 async function handleTextMessage(replyToken, userId, text) {
   try {
     console.log(`📝 處理訊息：${text} (User: ${userId})`);
-    
+
     // 取得用戶對話狀態
     const state = await getConversationState(userId);
     const currentStage = state.current_stage;
+
+    // 詳細日誌
+    console.log(`🔍 用戶狀態: stage=${currentStage}, temp_data=${JSON.stringify(state.temp_data)}`);
     
     // 1. 檢查是否要取消
     if (text === '取消' || text === '取消創建') {
@@ -76,6 +79,7 @@ async function handleTextMessage(replyToken, userId, text) {
     }
     
     // 3. 處理創建流程中的輸入
+    console.log(`🔍 isInCreationFlow: ${isInCreationFlow(currentStage)} (stage: ${currentStage})`);
     if (isInCreationFlow(currentStage)) {
       return await handleCreationFlow(replyToken, userId, text, currentStage, state);
     }
