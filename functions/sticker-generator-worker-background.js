@@ -102,8 +102,14 @@ async function executeGeneration(taskId, setId) {
 
     const { style, character_prompt, sticker_count, photo_base64 } = stickerSet;
 
+    // 詳細日誌
+    console.log(`📋 貼圖組資料：style=${style}, count=${sticker_count}`);
+    console.log(`📋 photo_base64 長度: ${photo_base64 ? photo_base64.length : 0}`);
+    console.log(`📋 character_prompt: ${character_prompt || '(無)'}`);
+
     // 取得表情列表（預設使用基本日常）
     const expressions = DefaultExpressions.basic.expressions.slice(0, sticker_count);
+    console.log(`📋 表情列表: ${expressions.join(', ')}`);
 
     // 更新進度：開始 AI 生成
     await updateTaskProgress(taskId, 10, 'processing');
@@ -121,11 +127,15 @@ async function executeGeneration(taskId, setId) {
       console.log('✏️ 使用角色描述模式生成');
       generatedImages = await generateStickerSet(style, character_prompt, expressions);
     }
+
+    // 詳細日誌 - 生成結果
+    console.log(`📊 AI 生成結果：${JSON.stringify(generatedImages.map(img => ({ index: img.index, status: img.status, hasUrl: !!img.imageUrl })))}`);
     await updateTaskProgress(taskId, 50, 'processing');
 
     // 2. 處理圖片（符合 LINE 規格）
     const successImages = generatedImages.filter(img => img.status === 'completed');
     const imageUrls = successImages.map(img => img.imageUrl);
+    console.log(`📊 成功的圖片: ${successImages.length} 張, URLs: ${imageUrls.length} 個`);
 
     console.log(`🖼️ 開始處理 ${imageUrls.length} 張圖片...`);
     const processedImages = await processStickerSet(imageUrls);
