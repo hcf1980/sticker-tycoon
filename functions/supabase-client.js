@@ -193,19 +193,102 @@ async function getStickerSet(setId) {
 
 /**
  * 取得貼圖組的所有貼圖圖片
+ * 如果 stickers 資料表沒有資料，會嘗試從 Storage 掃描並補寫
  */
 async function getStickerImages(setId) {
   try {
-    const { data, error } = await getSupabaseClient()
+    const supabase = getSupabaseClient();
+
+    // 先從資料庫查詢
+    const { data, error } = await supabase
       .from('stickers')
       .select('sticker_id, index_number, expression, image_url, status')
       .eq('set_id', setId)
       .order('index_number', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+
+    // 如果有資料，直接返回
+    if (data && data.length > 0) {
+      return data;
+    }
+
+    // 沒有資料，嘗試從 Storage 掃描
+    console.log(`📂 stickers 資料表沒有記錄，嘗試從 Storage 掃描: ${setId}`);
+    const scannedStickers = await scanAndCreateStickerRecords(setId);
+    return scannedStickers;
+
   } catch (error) {
     console.error('取得貼圖圖片失敗:', error);
+    return [];
+  }
+}
+
+/**
+ * 從 Storage 掃描貼圖並補寫到資料庫
+ */
+async function scanAndCreateStickerRecords(setId) {
+  const supabase = getSupabaseClient();
+  const bucket = 'sticker-images';
+  const stickers = [];
+
+  try {
+    // 列出此 setId 資料夾下的所有檔案
+    const { data: files, error } = await supabase.storage
+      .from(bucket)
+      .list(setId, { limit: 50 });
+
+    if (error || !files) {
+      console.error('掃描 Storage 失敗:', error);
+      return [];
+    }
+
+    // 篩選出貼圖檔案 (sticker_01.png, sticker_02.png, ...)
+    const stickerFiles = files.filter(f => f.name.startsWith('sticker_') && f.name.endsWith('.png'));
+    stickerFiles.sort((a, b) => a.name.localeCompare(b.name));
+
+    console.log(`🔍 找到 ${stickerFiles.length} 個貼圖檔案`);
+
+    // 為每個檔案建立記錄
+    const { v4: uuidv4 } = require('uuid');
+
+    for (let i = 0; i < stickerFiles.length; i++) {
+      const file = stickerFiles[i];
+      const indexMatch = file.name.match(/sticker_(\d+)\.png/);
+      const indexNumber = indexMatch ? parseInt(indexMatch[1]) : i + 1;
+
+      // 取得公開 URL
+      const { data: urlData } = supabase.storage
+        .from(bucket)
+        .getPublicUrl(`${setId}/${file.name}`);
+
+      const stickerId = uuidv4();
+      const stickerRecord = {
+        sticker_id: stickerId,
+        set_id: setId,
+        index_number: indexNumber,
+        expression: `表情 ${indexNumber}`,
+        image_url: urlData.publicUrl,
+        status: 'completed'
+      };
+
+      // 寫入資料庫
+      const { error: insertError } = await supabase
+        .from('stickers')
+        .insert([stickerRecord]);
+
+      if (insertError) {
+        console.error(`❌ 補寫貼圖記錄失敗 (${indexNumber}):`, insertError);
+      } else {
+        stickers.push(stickerRecord);
+      }
+    }
+
+    console.log(`✅ 已補寫 ${stickers.length} 筆貼圖記錄`);
+    return stickers;
+
+  } catch (error) {
+    console.error('掃描並補寫貼圖記錄失敗:', error);
     return [];
   }
 }
