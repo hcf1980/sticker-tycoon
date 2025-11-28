@@ -1,14 +1,12 @@
 /**
- * 貼圖生成 Worker（長時間運行，最長 15 分鐘）
- * 這是一個普通的 Netlify Function，但配置了 900 秒 timeout
+ * Sticker Generator Worker（長時間運行，最長 15 分鐘）
+ * Netlify Function，需於 netlify.toml 設定 timeout = 900
  */
 
-const { executeGeneration } = require('./sticker-generator-worker-background');
+const { executeGeneration, getSupabase } = require('./sticker-generator-worker-background');
 
 exports.handler = async function(event, context) {
   console.log('🔔 Sticker Generator Worker 啟動');
-  console.log('📦 Event:', JSON.stringify(event));
-  console.log('📦 Context:', JSON.stringify(context));
 
   let taskId, setId;
 
@@ -24,21 +22,26 @@ exports.handler = async function(event, context) {
       return { statusCode: 400, body: JSON.stringify({ error: 'Missing taskId or setId' }) };
     }
 
-    // 立即寫入資料庫確認 Worker 已啟動
-    const { getSupabase } = require('./sticker-generator-worker-background');
+    // --- 寫入 DB：Worker 已成功啟動 ---
     const supabase = getSupabase();
     await supabase
       .from('generation_tasks')
       .update({
-        result_json: { worker_invoked: new Date().toISOString(), taskId, setId }
+        status: 'processing',
+        progress: 5,
+        result_json: {
+          worker_started: new Date().toISOString(),
+          invoked_from: 'worker-direct'
+        }
       })
       .eq('task_id', taskId);
-    console.log('✅ Worker 啟動確認已寫入資料庫');
 
-    // 直接執行生成（會阻塞直到完成，最長 15 分鐘）
-    console.log('✅ 開始執行生成任務...');
+    console.log('✅ Worker 啟動狀態已寫入資料庫');
+
+    // --- 執行主流程（阻塞最多 15 分鐘） ---
+    console.log('🚀 正在執行貼圖生成任務...');
     const result = await executeGeneration(taskId, setId);
-    console.log('✅ 生成完成:', result);
+    console.log('🎉 生成完成:', result);
 
     return {
       statusCode: 200,
@@ -47,8 +50,27 @@ exports.handler = async function(event, context) {
 
   } catch (error) {
     console.error('❌ Worker 執行失敗:', error);
-    console.error('❌ 錯誤堆疊:', error.stack);
-    
+
+    // --- 回寫錯誤到資料庫 ---
+    try {
+      if (taskId) {
+        const supabase = getSupabase();
+        await supabase
+          .from('generation_tasks')
+          .update({
+            status: 'failed',
+            error_message: error.message,
+            result_json: {
+              error: error.message,
+              stack: error.stack
+            }
+          })
+          .eq('task_id', taskId);
+      }
+    } catch (dbError) {
+      console.error('❌ 無法更新錯誤狀態:', dbError);
+    }
+
     return { 
       statusCode: 500, 
       body: JSON.stringify({ 
