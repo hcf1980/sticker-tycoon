@@ -141,7 +141,7 @@ Please generate the image directly.`;
 /**
  * 使用照片生成貼圖（保留臉部特徵）- Chat Completions 格式
  */
-async function generateStickerFromPhoto(photoBase64, style, expression) {
+async function generateStickerFromPhoto(photoBase64, style, expression, consistencyGuide = null) {
   const AI_API_KEY = process.env.AI_IMAGE_API_KEY;
   const AI_API_URL = process.env.AI_IMAGE_API_URL || 'https://newapi.pockgo.com';
   const AI_MODEL = process.env.AI_MODEL || 'gemini-2.5-flash-image';
@@ -152,22 +152,41 @@ async function generateStickerFromPhoto(photoBase64, style, expression) {
 
   const styleConfig = require('./sticker-styles').StickerStyles[style] || require('./sticker-styles').StickerStyles.cute;
 
-  const prompt = `Transform this photo into a LINE sticker illustration.
+  // 一致性指南（第一張生成後會傳入）
+  const consistencyText = consistencyGuide ? `
+CONSISTENCY REFERENCE (MUST FOLLOW):
+- Outfit: ${consistencyGuide.outfit}
+- Hair style: ${consistencyGuide.hair}
+- Character size: ${consistencyGuide.size}
+- Line thickness: ${consistencyGuide.lineStyle}
+` : '';
 
-CRITICAL REQUIREMENTS:
-1. PRESERVE the person's facial features - same face shape, eyes, nose, mouth proportions
-2. Keep the person recognizable - this should look like the SAME PERSON
-3. Apply ${styleConfig.name} art style (${styleConfig.promptBase})
-4. Show expression: ${expression}
-5. Transparent/white background suitable for LINE sticker
-6. Single character, centered composition
-7. No text, no watermark
+  const prompt = `Create a LINE sticker illustration from this photo.
 
-Style: ${styleConfig.promptBase}
-Expression to show: ${expression}
+=== ABSOLUTE REQUIREMENTS ===
+1. SAME PERSON: Preserve EXACT facial features - face shape, eye shape, nose, mouth
+2. PURE WHITE BACKGROUND (#FFFFFF) - no gradients, no shadows, no decorations
+3. NO TEXT whatsoever - no labels, no words, no captions
+4. Character must fill 70-80% of the image, centered
+5. Consistent thick black outlines around the character
+6. Upper body only (head to chest), facing forward or 3/4 view
+${consistencyText}
+=== STYLE ===
+Art style: ${styleConfig.name} (${styleConfig.promptBase})
 
-Make sure the result looks like the person in the photo but in ${styleConfig.name} illustration style.
-Please generate the image directly.`;
+=== THIS STICKER'S EXPRESSION ===
+Show the emotion: "${expression}"
+- Adjust facial expression to clearly show this emotion
+- Can add simple hand gestures if appropriate
+- Keep body pose simple and clear
+
+=== TECHNICAL SPECS ===
+- Square format (1:1 ratio)
+- Clean vector-like illustration
+- Solid colors, no gradients
+- High contrast for visibility
+
+Generate the sticker image now.`;
 
   console.log(`🎨 生成照片貼圖：${expression} (${style}風格)`);
 
@@ -310,20 +329,32 @@ async function generateStickerSet(style, characterDescription, expressions) {
 }
 
 /**
- * 批次從照片生成貼圖組
+ * 批次從照片生成貼圖組（加強一致性）
  */
 async function generateStickerSetFromPhoto(photoBase64, style, expressions) {
   const results = [];
   const total = expressions.length;
 
-  console.log(`📷 開始從照片批次生成 ${total} 張貼圖`);
+  console.log(`📷 開始從照片批次生成 ${total} 張貼圖（加強一致性模式）`);
+
+  // 一致性指南 - 所有貼圖都使用相同設定
+  const styleConfig = require('./sticker-styles').StickerStyles[style] || require('./sticker-styles').StickerStyles.cute;
+  const consistencyGuide = {
+    outfit: 'same outfit in all stickers - casual t-shirt, same color throughout the set',
+    hair: 'exact same hairstyle and hair color in every image',
+    size: 'character fills exactly 75% of image height, consistently sized',
+    lineStyle: 'medium-thick black outlines (2-3px equivalent), consistent throughout'
+  };
+
+  console.log(`📐 一致性設定：`, consistencyGuide);
 
   for (let i = 0; i < expressions.length; i++) {
     const expression = expressions[i];
     console.log(`⏳ 生成中 (${i + 1}/${total}): ${expression}`);
 
     try {
-      const imageUrl = await generateStickerFromPhoto(photoBase64, style, expression);
+      // 傳入一致性指南
+      const imageUrl = await generateStickerFromPhoto(photoBase64, style, expression, consistencyGuide);
       results.push({
         index: i + 1,
         expression,

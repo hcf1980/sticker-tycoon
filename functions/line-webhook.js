@@ -687,7 +687,7 @@ async function handleViewStickerSet(replyToken, userId, setId) {
 }
 
 /**
- * 發送貼圖輪播訊息
+ * 發送貼圖輪播訊息 - 每格一張大圖
  */
 async function sendStickerCarousel(replyToken, set, stickers) {
   const statusText = {
@@ -717,20 +717,20 @@ async function sendStickerCarousel(replyToken, set, stickers) {
         { type: 'text', text: statusText[set.status] || set.status, size: 'md', color: '#06C755', weight: 'bold' },
         { type: 'text', text: `📊 共 ${stickers.length} 張貼圖`, size: 'sm', margin: 'md' },
         { type: 'text', text: `🎨 風格：${set.style || '未指定'}`, size: 'sm', margin: 'sm' },
-        { type: 'text', text: `📅 ${new Date(set.created_at).toLocaleDateString('zh-TW')}`, size: 'xs', color: '#999999', margin: 'lg' }
+        { type: 'text', text: `📅 ${new Date(set.created_at).toLocaleDateString('zh-TW')}`, size: 'xs', color: '#999999', margin: 'lg' },
+        { type: 'text', text: '👈 左滑查看所有貼圖', size: 'xs', color: '#06C755', margin: 'md' }
       ]
     }
   };
 
-  // 每 2 張貼圖一個 bubble
-  const stickerBubbles = [];
-  for (let i = 0; i < stickers.length; i += 2) {
-    const pair = stickers.slice(i, i + 2);
-
-    const contents = pair.map(s => ({
+  // 每張貼圖一個 bubble
+  const stickerBubbles = stickers.map((s, index) => ({
+    type: 'bubble',
+    size: 'kilo',
+    body: {
       type: 'box',
       layout: 'vertical',
-      flex: 1,
+      paddingAll: 'sm',
       contents: [
         {
           type: 'image',
@@ -738,58 +738,36 @@ async function sendStickerCarousel(replyToken, set, stickers) {
           size: 'full',
           aspectRatio: '1:1',
           aspectMode: 'fit',
-          backgroundColor: '#F5F5F5'
-        },
+          backgroundColor: '#FFFFFF'
+        }
+      ]
+    },
+    footer: {
+      type: 'box',
+      layout: 'vertical',
+      paddingAll: 'sm',
+      contents: [
         {
           type: 'text',
           text: s.expression || `#${s.index_number}`,
-          size: 'xxs',
-          color: '#666666',
+          size: 'sm',
+          color: '#333333',
           align: 'center',
-          margin: 'xs',
-          wrap: true,
-          maxLines: 1
+          weight: 'bold'
+        },
+        {
+          type: 'text',
+          text: `${index + 1} / ${stickers.length}`,
+          size: 'xs',
+          color: '#999999',
+          align: 'center',
+          margin: 'xs'
         }
       ]
-    }));
-
-    // 如果只有一張，填充空白
-    if (contents.length === 1) {
-      contents.push({
-        type: 'box',
-        layout: 'vertical',
-        flex: 1,
-        contents: [{ type: 'filler' }]
-      });
     }
+  }));
 
-    stickerBubbles.push({
-      type: 'bubble',
-      size: 'kilo',
-      body: {
-        type: 'box',
-        layout: 'horizontal',
-        spacing: 'sm',
-        paddingAll: 'md',
-        contents: contents
-      },
-      footer: {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
-          {
-            type: 'text',
-            text: `${Math.floor(i / 2) + 1} / ${Math.ceil(stickers.length / 2)}`,
-            size: 'xs',
-            color: '#999999',
-            align: 'center'
-          }
-        ]
-      }
-    });
-  }
-
-  // 組合輪播（最多 12 個 bubble）
+  // 組合輪播（最多 12 個 bubble，LINE 限制）
   const allBubbles = [infoBubble, ...stickerBubbles].slice(0, 12);
 
   const carouselMessage = {
