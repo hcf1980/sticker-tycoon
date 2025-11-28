@@ -39,13 +39,13 @@ async function triggerStickerGeneration(userId, tempData) {
     const { taskId, setId } = await createGenerationTask(userId, setData);
     console.log(`✅ 已建立任務：taskId=${taskId}, setId=${setId}`);
 
-    // 異步調用 worker（非阻塞）
-    const workerUrl = process.env.STICKER_WORKER_URL || '/.netlify/functions/sticker-generator-worker';
-    const fullUrl = workerUrl.startsWith('http')
-      ? workerUrl
-      : `${process.env.URL || 'https://sticker-tycoon.netlify.app'}${workerUrl}`;
+    // 調用 Background Function（非阻塞，最長可運行 15 分鐘）
+    const workerUrl = '/.netlify/functions/sticker-generator-worker-background';
+    const fullUrl = `${process.env.URL || 'https://sticker-tycoon.netlify.app'}${workerUrl}`;
 
-    // Fire and forget
+    console.log(`📡 調用 Background Worker: ${fullUrl}`);
+
+    // Fire and forget - Background Function 會在背景執行
     fetch(fullUrl, {
       method: 'POST',
       headers: {
@@ -53,9 +53,9 @@ async function triggerStickerGeneration(userId, tempData) {
       },
       body: JSON.stringify({ taskId, setId })
     }).then(response => {
-      console.log(`📡 Worker 響應狀態: ${response.status}`);
+      console.log(`📡 Background Worker 已接受任務: ${response.status}`);
     }).catch(error => {
-      console.error('📡 Worker 調用失敗:', error.message);
+      console.error('📡 Background Worker 調用失敗:', error.message);
     });
 
     return { triggered: true, taskId, setId };

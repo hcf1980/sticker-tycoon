@@ -262,21 +262,33 @@ async function uploadImagesToStorage(setId, processedImages, mainImageBuffer, ta
 }
 
 /**
- * Netlify Function Handler（供內部調用）
+ * Netlify Background Function Handler
+ * 文件名包含 -background 所以會作為 Background Function 運行（最長 15 分鐘）
  */
 exports.handler = async function(event, context) {
-  console.log('🔔 Sticker Generator Worker 被呼叫');
+  console.log('🔔 Sticker Generator Background Worker 啟動');
+  console.log('📦 Event body:', event.body);
 
   try {
     const body = JSON.parse(event.body || '{}');
     const { taskId, setId } = body;
 
+    console.log(`📋 收到任務: taskId=${taskId}, setId=${setId}`);
+
     if (!taskId || !setId) {
+      console.error('❌ 缺少必要參數');
       return { statusCode: 400, body: JSON.stringify({ error: 'Missing taskId or setId' }) };
     }
 
+    // Background Function 可以長時間運行，直接執行生成
+    console.log('✅ 開始背景生成任務...');
     const result = await executeGeneration(taskId, setId);
-    return { statusCode: 200, body: JSON.stringify(result) };
+    console.log('✅ 背景生成完成:', result);
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify(result)
+    };
 
   } catch (error) {
     console.error('❌ Worker 執行失敗:', error);
