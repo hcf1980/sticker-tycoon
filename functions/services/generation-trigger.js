@@ -3,11 +3,10 @@
  * 負責觸發異步生成任務
  */
 
-const { createGenerationTask } = require('../sticker-generator-worker-background');
-// 使用 Node 18+ 內建 fetch（無需 node-fetch）
+const { createGenerationTask, executeGeneration } = require('../sticker-generator-worker-background');
 
 /**
- * 觸發貼圖生成任務
+ * 觸發貼圖生成任務（直接執行，不使用 Background Function）
  */
 async function triggerStickerGeneration(userId, tempData) {
   console.log(`🚀 觸發貼圖生成：userId=${userId}`);
@@ -39,32 +38,32 @@ async function triggerStickerGeneration(userId, tempData) {
     const { taskId, setId } = await createGenerationTask(userId, setData);
     console.log(`✅ 已建立任務：taskId=${taskId}, setId=${setId}`);
 
-    // 調用 Background Function（非阻塞，最長可運行 15 分鐘）
-    const workerUrl = '/.netlify/functions/sticker-generator-worker-background';
+    // 調用長時間運行的 Worker 函數
+    const workerUrl = '/.netlify/functions/sticker-generator-worker';
     const fullUrl = `${process.env.URL || 'https://sticker-tycoon.netlify.app'}${workerUrl}`;
 
-    console.log(`📡 調用 Background Worker: ${fullUrl}`);
+    console.log(`📡 調用 Worker: ${fullUrl}`);
 
-    // 等待請求發送完成（Background Function 會在後台繼續運行）
-    try {
-      const response = await fetch(fullUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ taskId, setId })
-      });
-      console.log(`📡 Background Worker 回應: ${response.status}`);
+    // Fire-and-forget：發送請求但不等待完成
+    // 使用 Promise 確保請求被發送，但立即返回
+    const workerPromise = fetch(fullUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ taskId, setId })
+    }).then(response => {
+      console.log(`📡 Worker 已接受任務: ${response.status}`);
+      return response;
+    }).catch(error => {
+      console.error('📡 Worker 調用失敗:', error.message);
+    });
 
-      // 202 = 已接受（Background Function）
-      // 200 = 同步完成
-      if (response.status !== 200 && response.status !== 202) {
-        const text = await response.text();
-        console.error(`❌ Background Worker 錯誤: ${text}`);
-      }
-    } catch (fetchError) {
-      console.error('📡 Background Worker 調用失敗:', fetchError.message);
-    }
+    // 等待請求發送（但不等待 Worker 執行完成）
+    await Promise.race([
+      workerPromise,
+      new Promise(resolve => setTimeout(resolve, 1000)) // 最多等 1 秒
+    ]);
 
     console.log('✅ 已觸發貼圖生成任務');
     return { triggered: true, taskId, setId };

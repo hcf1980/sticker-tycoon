@@ -11,9 +11,9 @@
 [functions."line-webhook"]
   timeout = 10
 
-# 貼圖生成 Worker（需要較長時間執行 AI 生成）
+# 貼圖生成 Worker（長時間運行，最長 15 分鐘）
 [functions."sticker-generator-worker"]
-  timeout = 60
+  timeout = 900
 
 # 貼圖生成 Background Worker（異步執行，最長 15 分鐘）
 [functions."sticker-generator-worker-background"]
