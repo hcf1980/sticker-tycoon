@@ -69,16 +69,32 @@ function extractImageFromResponse(response) {
     }
   }
 
-  // 如果是字串，檢查是否包含 base64 圖片或 URL
+  // 如果是字串，檢查各種格式
   if (typeof content === 'string') {
     // 檢查是否為 base64 data URL
     if (content.startsWith('data:image')) {
       return content;
     }
-    // 檢查是否為圖片 URL
-    if (content.match(/https?:\/\/.*\.(png|jpg|jpeg|webp)/i)) {
-      const match = content.match(/(https?:\/\/[^\s]+\.(png|jpg|jpeg|webp))/i);
-      if (match) return match[1];
+
+    // 檢查 Markdown 圖片格式: ![alt](url) 或 |>![alt](url)
+    const markdownMatch = content.match(/!\[.*?\]\((https?:\/\/[^\s\)]+)\)/);
+    if (markdownMatch) {
+      console.log(`📷 從 Markdown 格式提取圖片 URL: ${markdownMatch[1]}`);
+      return markdownMatch[1];
+    }
+
+    // 檢查是否為直接的圖片 URL
+    const urlMatch = content.match(/(https?:\/\/[^\s]+\.(png|jpg|jpeg|webp|gif))/i);
+    if (urlMatch) {
+      console.log(`📷 提取圖片 URL: ${urlMatch[1]}`);
+      return urlMatch[1];
+    }
+
+    // 檢查任何 https URL（可能是圖片）
+    const anyUrlMatch = content.match(/(https?:\/\/[^\s\)\]]+)/);
+    if (anyUrlMatch) {
+      console.log(`📷 提取可能的圖片 URL: ${anyUrlMatch[1]}`);
+      return anyUrlMatch[1];
     }
   }
 
