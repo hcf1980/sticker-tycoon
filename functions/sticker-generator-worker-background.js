@@ -5,7 +5,7 @@
 
 const { v4: uuidv4 } = require('uuid');
 const { getSupabaseClient, updateStickerSetStatus, getStickerSet } = require('./supabase-client');
-const { generateStickerSet } = require('./ai-generator');
+const { generateStickerSet, generateStickerSetFromPhoto } = require('./ai-generator');
 const { processStickerSet, generateMainImage, generateTabImage } = require('./image-processor');
 const { DefaultExpressions } = require('./sticker-styles');
 
@@ -38,16 +38,21 @@ async function createGenerationTask(userId, setData) {
 
     if (setError) throw setError;
 
-    // 建立任務記錄
+    // 建立任務記錄（包含照片資料）
     const { error: taskError } = await supabase
       .from('generation_tasks')
       .insert([{
         task_id: taskId,
         user_id: userId,
         set_id: setId,
-        task_type: 'create_set',
+        task_type: setData.photoBase64 ? 'create_set_photo' : 'create_set',
         status: 'pending',
-        progress: 0
+        progress: 0,
+        result_json: {
+          photoBase64: setData.photoBase64 || null,
+          photoUrl: setData.photoUrl || null,
+          expressions: setData.expressions || []
+        }
       }]);
 
     if (taskError) throw taskError;
@@ -117,18 +122,42 @@ async function executeGeneration(taskId, setId) {
     userId = stickerSet.user_id;
     const { style, character_prompt, sticker_count, name } = stickerSet;
 
+    // 取得任務資料（包含照片資訊）
+    const supabase = getSupabase();
+    const { data: taskData } = await supabase
+      .from('generation_tasks')
+      .select('task_type, result_json')
+      .eq('task_id', taskId)
+      .single();
+
+    const isPhotoMode = taskData?.task_type === 'create_set_photo';
+    const photoBase64 = taskData?.result_json?.photoBase64;
+    const customExpressions = taskData?.result_json?.expressions;
+
+    console.log(`📋 任務類型: ${isPhotoMode ? '照片模式' : '文字模式'}`);
+
     // 通知用戶開始生成
     await sendLineNotification(userId, `🎨 開始生成「${name}」...\n\n📊 共 ${sticker_count} 張貼圖\n⏳ 請稍候...`);
 
-    // 取得表情列表（預設使用基本日常）
-    const expressions = DefaultExpressions.basic.expressions.slice(0, sticker_count);
+    // 取得表情列表
+    const expressions = (customExpressions && customExpressions.length > 0)
+      ? customExpressions.slice(0, sticker_count)
+      : DefaultExpressions.basic.expressions.slice(0, sticker_count);
+
+    console.log(`😀 使用表情: ${expressions.join(', ')}`);
 
     // 更新進度：開始生成
     await updateTaskProgress(taskId, 10);
 
     // 1. AI 生成圖片
-    console.log(`🎨 開始 AI 生成 ${sticker_count} 張貼圖...`);
-    const generatedImages = await generateStickerSet(style, character_prompt, expressions);
+    let generatedImages;
+    if (isPhotoMode && photoBase64) {
+      console.log(`📷 使用照片模式生成 ${sticker_count} 張貼圖...`);
+      generatedImages = await generateStickerSetFromPhoto(photoBase64, style, expressions);
+    } else {
+      console.log(`🎨 使用文字模式生成 ${sticker_count} 張貼圖...`);
+      generatedImages = await generateStickerSet(style, character_prompt, expressions);
+    }
     await updateTaskProgress(taskId, 50);
 
     // 2. 處理圖片（符合 LINE 規格）
