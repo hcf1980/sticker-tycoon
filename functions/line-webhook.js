@@ -5,7 +5,7 @@
 
 const line = require('@line/bot-sdk');
 const axios = require('axios');
-const { isReplyTokenUsed, recordReplyToken, getOrCreateUser, getUserStickerSets, getUserLatestTask, getUserPendingTasks, getStickerSet } = require('./supabase-client');
+const { isReplyTokenUsed, recordReplyToken, getOrCreateUser, getUserStickerSets, getUserLatestTask, getUserPendingTasks, getStickerSet, deleteStickerSet } = require('./supabase-client');
 const { ConversationStage, getConversationState, updateConversationState, resetConversationState, isInCreationFlow } = require('./conversation-state');
 const { generateWelcomeFlexMessage } = require('./sticker-flex-message');
 const { handleStartCreate, handleNaming, handleStyleSelection, handleCharacterDescription, handleExpressionTemplate, handleCountSelection, handlePhotoUpload } = require('./handlers/create-handler');
@@ -98,7 +98,19 @@ async function handleTextMessage(replyToken, userId, text) {
       const setId = text.replace('查看貼圖:', '');
       return await handleViewStickerSet(replyToken, userId, setId);
     }
-    
+
+    // 刪除貼圖組
+    if (text.startsWith('刪除貼圖:')) {
+      const setId = text.replace('刪除貼圖:', '');
+      return await handleDeleteStickerSet(replyToken, userId, setId);
+    }
+
+    // 確認刪除貼圖組
+    if (text.startsWith('確認刪除:')) {
+      const setId = text.replace('確認刪除:', '');
+      return await handleConfirmDeleteStickerSet(replyToken, userId, setId);
+    }
+
     // 4. 處理特殊指令格式
     if (text.startsWith('風格:')) {
       const styleId = text.replace('風格:', '');
@@ -520,6 +532,9 @@ function generateStickerListFlexMessage(sets) {
     const emoji = statusEmoji[set.status] || '📁';
     const createdDate = new Date(set.created_at).toLocaleDateString('zh-TW');
 
+    // 使用 set_id 優先，否則使用 id
+    const setId = set.set_id || set.id;
+
     // 取得第一張貼圖作為預覽圖（如果有）
     const previewUrl = set.main_image_url || set.preview_url || null;
 
@@ -528,6 +543,37 @@ function generateStickerListFlexMessage(sets) {
       { type: 'text', text: `📊 ${set.sticker_count || 0} 張貼圖`, size: 'sm', color: '#666666', margin: 'md' },
       { type: 'text', text: `📅 ${createdDate}`, size: 'xs', color: '#999999', margin: 'sm' }
     ];
+
+    // 根據狀態決定按鈕
+    const footerContents = [];
+
+    // 已完成的顯示查看詳情
+    if (set.status === 'completed') {
+      footerContents.push({
+        type: 'button',
+        style: 'primary',
+        color: '#FF6B6B',
+        height: 'sm',
+        action: {
+          type: 'message',
+          label: '查看詳情',
+          text: `查看貼圖:${setId}`
+        }
+      });
+    }
+
+    // 所有貼圖組都可以刪除
+    footerContents.push({
+      type: 'button',
+      style: set.status === 'completed' ? 'secondary' : 'primary',
+      color: set.status === 'completed' ? undefined : '#999999',
+      height: 'sm',
+      action: {
+        type: 'message',
+        label: '🗑️ 刪除',
+        text: `刪除貼圖:${setId}`
+      }
+    });
 
     return {
       type: 'bubble',
@@ -547,19 +593,8 @@ function generateStickerListFlexMessage(sets) {
       footer: {
         type: 'box',
         layout: 'vertical',
-        contents: [
-          {
-            type: 'button',
-            style: 'primary',
-            color: '#FF6B6B',
-            height: 'sm',
-            action: {
-              type: 'message',
-              label: '查看詳情',
-              text: `查看貼圖:${set.id}`
-            }
-          }
-        ]
+        spacing: 'sm',
+        contents: footerContents
       }
     };
   });
@@ -679,6 +714,111 @@ async function handleViewStickerSet(replyToken, userId, setId) {
 
   } catch (error) {
     console.error('❌ 查看貼圖組失敗:', error);
+    return getLineClient().replyMessage(replyToken, {
+      type: 'text',
+      text: '❌ 系統錯誤，請稍後再試'
+    });
+  }
+}
+
+/**
+ * 處理刪除貼圖組請求（顯示確認訊息）
+ */
+async function handleDeleteStickerSet(replyToken, userId, setId) {
+  try {
+    const set = await getStickerSet(setId);
+
+    if (!set) {
+      return getLineClient().replyMessage(replyToken, {
+        type: 'text',
+        text: '❌ 找不到此貼圖組'
+      });
+    }
+
+    // 確認是用戶自己的貼圖組
+    if (set.user_id !== userId) {
+      return getLineClient().replyMessage(replyToken, {
+        type: 'text',
+        text: '❌ 你沒有權限刪除此貼圖組'
+      });
+    }
+
+    // 顯示確認刪除的訊息
+    const confirmMessage = {
+      type: 'flex',
+      altText: '確認刪除貼圖組',
+      contents: {
+        type: 'bubble',
+        body: {
+          type: 'box',
+          layout: 'vertical',
+          contents: [
+            { type: 'text', text: '⚠️ 確認刪除', weight: 'bold', size: 'lg', color: '#FF6B6B' },
+            { type: 'text', text: `確定要刪除「${set.name || '未命名'}」嗎？`, size: 'md', margin: 'lg', wrap: true },
+            { type: 'text', text: '此操作無法復原！', size: 'sm', color: '#FF0000', margin: 'md' }
+          ]
+        },
+        footer: {
+          type: 'box',
+          layout: 'horizontal',
+          spacing: 'sm',
+          contents: [
+            {
+              type: 'button',
+              style: 'primary',
+              color: '#FF6B6B',
+              action: {
+                type: 'message',
+                label: '✅ 確認刪除',
+                text: `確認刪除:${setId}`
+              }
+            },
+            {
+              type: 'button',
+              style: 'secondary',
+              action: {
+                type: 'message',
+                label: '❌ 取消',
+                text: '我的貼圖'
+              }
+            }
+          ]
+        }
+      }
+    };
+
+    return getLineClient().replyMessage(replyToken, confirmMessage);
+
+  } catch (error) {
+    console.error('❌ 處理刪除請求失敗:', error);
+    return getLineClient().replyMessage(replyToken, {
+      type: 'text',
+      text: '❌ 系統錯誤，請稍後再試'
+    });
+  }
+}
+
+/**
+ * 處理確認刪除貼圖組
+ */
+async function handleConfirmDeleteStickerSet(replyToken, userId, setId) {
+  try {
+    const result = await deleteStickerSet(setId, userId);
+
+    if (!result.success) {
+      return getLineClient().replyMessage(replyToken, {
+        type: 'text',
+        text: `❌ 刪除失敗：${result.error}`
+      });
+    }
+
+    return getLineClient().replyMessage(replyToken, {
+      type: 'text',
+      text: '✅ 貼圖組已成功刪除！\n\n輸入「我的貼圖」查看剩餘貼圖組'
+    });
+
+  } catch (error) {
+    console.error('❌ 確認刪除失敗:', error);
     return getLineClient().replyMessage(replyToken, {
       type: 'text',
       text: '❌ 系統錯誤，請稍後再試'

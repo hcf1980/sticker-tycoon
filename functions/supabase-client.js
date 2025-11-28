@@ -160,21 +160,68 @@ async function updateStickerSetStatus(setId, status, additionalData = {}) {
 }
 
 /**
- * 取得貼圖組詳情
+ * 取得貼圖組詳情（支援 set_id 或 id 查詢）
  */
 async function getStickerSet(setId) {
   try {
-    const { data, error } = await getSupabaseClient()
+    // 先嘗試用 set_id 查詢
+    let { data, error } = await getSupabaseClient()
       .from('sticker_sets')
       .select('*')
       .eq('set_id', setId)
       .single();
+
+    // 如果找不到，再嘗試用 id 查詢
+    if (error || !data) {
+      const result = await getSupabaseClient()
+        .from('sticker_sets')
+        .select('*')
+        .eq('id', setId)
+        .single();
+
+      data = result.data;
+      error = result.error;
+    }
 
     if (error) throw error;
     return data;
   } catch (error) {
     console.error('取得貼圖組詳情失敗:', error);
     return null;
+  }
+}
+
+/**
+ * 刪除貼圖組
+ */
+async function deleteStickerSet(setId, userId) {
+  try {
+    // 先確認是用戶自己的貼圖組
+    const set = await getStickerSet(setId);
+    if (!set) {
+      return { success: false, error: '找不到此貼圖組' };
+    }
+    if (set.user_id !== userId) {
+      return { success: false, error: '沒有權限刪除此貼圖組' };
+    }
+
+    // 刪除相關的生成任務
+    await getSupabaseClient()
+      .from('generation_tasks')
+      .delete()
+      .eq('sticker_set_id', set.set_id || set.id);
+
+    // 刪除貼圖組
+    const { error } = await getSupabaseClient()
+      .from('sticker_sets')
+      .delete()
+      .or(`set_id.eq.${setId},id.eq.${setId}`);
+
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    console.error('刪除貼圖組失敗:', error);
+    return { success: false, error: error.message };
   }
 }
 
@@ -265,6 +312,7 @@ module.exports = {
   createStickerSet,
   updateStickerSetStatus,
   getStickerSet,
+  deleteStickerSet,
   getUserLatestTask,
   getUserPendingTasks
 };
