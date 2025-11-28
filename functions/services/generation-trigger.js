@@ -44,16 +44,29 @@ async function triggerStickerGeneration(userId, tempData) {
 
     console.log(`📡 調用生成端點: ${fullUrl}`);
 
-    // Fire-and-forget：不等待回應
-    fetch(fullUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ taskId, setId })
-    }).catch(error => {
-      console.error('📡 調用失敗:', error.message);
-    });
+    // 發送請求並等待連接建立（但設置短超時，不等待執行完成）
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000); // 2秒超時
+
+    try {
+      const response = await fetch(fullUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ taskId, setId }),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      console.log(`📡 生成端點回應: ${response.status}`);
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error.name === 'AbortError') {
+        console.log('📡 請求已發送（超時但這是預期的）');
+      } else {
+        console.error('📡 調用失敗:', error.message);
+      }
+    }
 
     console.log('✅ 已觸發貼圖生成任務');
     return { triggered: true, taskId, setId };
