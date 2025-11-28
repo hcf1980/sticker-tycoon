@@ -5,23 +5,19 @@
 
 const { v4: uuidv4 } = require('uuid');
 const { getSupabaseClient, updateStickerSetStatus, getStickerSet } = require('./supabase-client');
-const { generateStickerSet } = require('./ai-generator');
+const { generateStickerSet, generateStickerSetFromPhoto } = require('./ai-generator');
 const { processStickerSet, generateMainImage, generateTabImage } = require('./image-processor');
 const { DefaultExpressions } = require('./sticker-styles');
-
-// 取得 Supabase 客戶端
-const getSupabase = () => getSupabaseClient();
 
 /**
  * 建立生成任務
  */
 async function createGenerationTask(userId, setData) {
+  const supabase = getSupabaseClient();
   const taskId = uuidv4();
   const setId = uuidv4();
 
   try {
-    const supabase = getSupabase();
-
     // 建立貼圖組記錄
     const { error: setError } = await supabase
       .from('sticker_sets')
@@ -31,7 +27,9 @@ async function createGenerationTask(userId, setData) {
         name: setData.name,
         description: setData.description || '',
         style: setData.style,
-        character_prompt: setData.character,
+        character_prompt: setData.character || '',  // 照片流程可能沒有
+        photo_url: setData.photoUrl || null,        // 照片 URL
+        photo_base64: setData.photoBase64 || null,  // 照片 Base64（用於 AI 生成）
         sticker_count: setData.count,
         status: 'generating'
       }]);
@@ -66,7 +64,7 @@ async function createGenerationTask(userId, setData) {
  */
 async function updateTaskProgress(taskId, progress, status = 'processing') {
   try {
-    const supabase = getSupabase();
+    const supabase = getSupabaseClient();
     const { error } = await supabase
       .from('generation_tasks')
       .update({
@@ -84,26 +82,10 @@ async function updateTaskProgress(taskId, progress, status = 'processing') {
 }
 
 /**
- * 發送 LINE 推送訊息
- */
-async function sendLineNotification(userId, message) {
-  try {
-    const line = require('@line/bot-sdk');
-    const client = new line.Client({
-      channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN,
-    });
-    await client.pushMessage(userId, { type: 'text', text: message });
-    console.log(`📤 已發送通知給用戶 ${userId}`);
-  } catch (error) {
-    console.error('發送 LINE 通知失敗:', error.message);
-  }
-}
-
-/**
  * 執行貼圖生成
  */
 async function executeGeneration(taskId, setId) {
-  let userId = null;
+  const supabase = getSupabaseClient();
 
   try {
     console.log(`🚀 開始執行生成任務：${taskId}`);
@@ -114,11 +96,7 @@ async function executeGeneration(taskId, setId) {
       throw new Error('找不到貼圖組資料');
     }
 
-    userId = stickerSet.user_id;
-    const { style, character_prompt, sticker_count, name } = stickerSet;
-
-    // 通知用戶開始生成
-    await sendLineNotification(userId, `🎨 開始生成「${name}」...\n\n📊 共 ${sticker_count} 張貼圖\n⏳ 請稍候...`);
+    const { style, character_prompt, sticker_count, photo_base64 } = stickerSet;
 
     // 取得表情列表（預設使用基本日常）
     const expressions = DefaultExpressions.basic.expressions.slice(0, sticker_count);
@@ -126,9 +104,19 @@ async function executeGeneration(taskId, setId) {
     // 更新進度：開始生成
     await updateTaskProgress(taskId, 10);
 
-    // 1. AI 生成圖片
+    // 1. AI 生成圖片（根據是否有照片選擇不同方式）
     console.log(`🎨 開始 AI 生成 ${sticker_count} 張貼圖...`);
-    const generatedImages = await generateStickerSet(style, character_prompt, expressions);
+    let generatedImages;
+
+    if (photo_base64) {
+      // 照片流程：使用照片生成
+      console.log('📷 使用照片模式生成');
+      generatedImages = await generateStickerSetFromPhoto(photo_base64, style, expressions);
+    } else {
+      // 傳統流程：使用角色描述生成
+      console.log('✏️ 使用角色描述模式生成');
+      generatedImages = await generateStickerSet(style, character_prompt, expressions);
+    }
     await updateTaskProgress(taskId, 50);
 
     // 2. 處理圖片（符合 LINE 規格）
@@ -162,25 +150,16 @@ async function executeGeneration(taskId, setId) {
     await updateTaskProgress(taskId, 100, 'completed');
     console.log(`✅ 貼圖組 ${setId} 生成完成！`);
 
-    // 通知用戶完成
-    const successCount = processedImages.filter(p => p.status === 'completed').length;
-    await sendLineNotification(userId,
-      `🎉 「${name}」貼圖組生成完成！\n\n` +
-      `✅ 成功：${successCount} 張\n\n` +
-      `💡 輸入「我的貼圖」查看作品`
-    );
-
     return {
       success: true,
       setId,
-      imageCount: successCount
+      imageCount: processedImages.filter(p => p.status === 'completed').length
     };
 
   } catch (error) {
     console.error(`❌ 生成任務失敗 (${taskId}):`, error);
 
     // 標記任務失敗
-    const supabase = getSupabase();
     await supabase
       .from('generation_tasks')
       .update({
@@ -192,15 +171,6 @@ async function executeGeneration(taskId, setId) {
 
     await updateStickerSetStatus(setId, 'failed');
 
-    // 通知用戶失敗
-    if (userId) {
-      await sendLineNotification(userId,
-        `❌ 貼圖生成失敗\n\n` +
-        `錯誤：${error.message}\n\n` +
-        `請輸入「創建貼圖」重新開始`
-      );
-    }
-
     throw error;
   }
 }
@@ -209,9 +179,9 @@ async function executeGeneration(taskId, setId) {
  * 上傳圖片到 Supabase Storage
  */
 async function uploadImagesToStorage(setId, processedImages, mainImageBuffer, tabImageBuffer) {
+  const supabase = getSupabaseClient();
   const bucket = 'sticker-images';
   const uploadResults = { imageUrls: [], mainImageUrl: null, tabImageUrl: null };
-  const supabase = getSupabase();
 
   try {
     // 上傳主圖
@@ -262,47 +232,82 @@ async function uploadImagesToStorage(setId, processedImages, mainImageBuffer, ta
 }
 
 /**
- * Netlify Function Handler（供內部調用）
+ * 通知用戶生成結果
+ */
+async function notifyUser(userId, success, setId, errorMessage = null) {
+  const line = require('@line/bot-sdk');
+  const client = new line.messagingApi.MessagingApiClient({
+    channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN
+  });
+
+  try {
+    if (success) {
+      await client.pushMessage({
+        to: userId,
+        messages: [{
+          type: 'text',
+          text: `🎉 貼圖生成完成！\n\n` +
+                `貼圖組 ID：${setId}\n\n` +
+                `輸入「我的貼圖」查看所有貼圖組`
+        }]
+      });
+    } else {
+      await client.pushMessage({
+        to: userId,
+        messages: [{
+          type: 'text',
+          text: `❌ 貼圖生成失敗\n\n` +
+                `錯誤：${errorMessage || '未知錯誤'}\n\n` +
+                `請輸入「創建貼圖」重試`
+        }]
+      });
+    }
+    console.log(`📨 已通知用戶 ${userId} 生成結果`);
+  } catch (error) {
+    console.error('❌ 通知用戶失敗:', error.message);
+  }
+}
+
+/**
+ * Netlify Background Function Handler
+ * 最多可執行 15 分鐘
  */
 exports.handler = async function(event, context) {
-  console.log('🔔 Sticker Generator Worker 被呼叫');
-  console.log('📦 Event body:', event.body);
+  console.log('🔔 Sticker Generator Background Worker 開始執行');
 
   try {
     const body = JSON.parse(event.body || '{}');
-    const { taskId, setId } = body;
+    const { taskId, setId, userId } = body;
 
-    console.log(`📋 收到任務: taskId=${taskId}, setId=${setId}`);
-
-    if (!taskId || !setId) {
-      console.error('❌ 缺少必要參數');
-      return { statusCode: 400, body: JSON.stringify({ error: 'Missing taskId or setId' }) };
+    if (!taskId || !setId || !userId) {
+      console.error('❌ 缺少必要參數:', { taskId, setId, userId });
+      return { statusCode: 400, body: JSON.stringify({ error: 'Missing taskId, setId or userId' }) };
     }
 
-    // 立即返回 200，讓生成在背景執行
-    // 這是因為 Netlify Functions 有超時限制
-    console.log('✅ 開始背景生成任務...');
+    console.log(`🚀 開始生成任務：taskId=${taskId}, setId=${setId}, userId=${userId}`);
 
-    // 不 await，讓它在背景執行
-    executeGeneration(taskId, setId)
-      .then(result => {
-        console.log('✅ 背景生成完成:', result);
-      })
-      .catch(err => {
-        console.error('❌ 背景生成失敗:', err.message);
-      });
+    // 執行生成（這可能需要幾分鐘）
+    const result = await executeGeneration(taskId, setId);
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({
-        message: 'Generation started',
-        taskId,
-        setId
-      })
-    };
+    // 通知用戶完成
+    await notifyUser(userId, true, setId);
+
+    console.log(`✅ Background Worker 完成：${JSON.stringify(result)}`);
+    return { statusCode: 200, body: JSON.stringify(result) };
 
   } catch (error) {
-    console.error('❌ Worker 執行失敗:', error);
+    console.error('❌ Background Worker 執行失敗:', error);
+
+    // 嘗試通知用戶失敗
+    try {
+      const body = JSON.parse(event.body || '{}');
+      if (body.userId) {
+        await notifyUser(body.userId, false, body.setId, error.message);
+      }
+    } catch (e) {
+      console.error('❌ 通知失敗:', e.message);
+    }
+
     return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
   }
 };

@@ -5,12 +5,12 @@
 
 const line = require('@line/bot-sdk');
 const axios = require('axios');
-const { isReplyTokenUsed, recordReplyToken, getOrCreateUser, getUserStickerSets } = require('./supabase-client');
+const { isReplyTokenUsed, recordReplyToken, getOrCreateUser, getUserStickerSets, getUserLatestTask, getUserPendingTasks } = require('./supabase-client');
 const { ConversationStage, getConversationState, updateConversationState, resetConversationState, isInCreationFlow } = require('./conversation-state');
 const { generateWelcomeFlexMessage } = require('./sticker-flex-message');
 const { handleStartCreate, handleNaming, handleStyleSelection, handleCharacterDescription, handleExpressionTemplate, handleCountSelection, handlePhotoUpload } = require('./handlers/create-handler');
 const { handleUserPhoto } = require('./photo-handler');
-const { createGenerationTask } = require('./sticker-generator-worker');
+const { createGenerationTask } = require('./sticker-generator-worker-background');
 
 // LINE Bot 設定 - 延遲初始化
 let client = null;
@@ -117,7 +117,12 @@ async function handleTextMessage(replyToken, userId, text) {
     if (text === '確認生成') {
       return await handleConfirmGeneration(replyToken, userId, state);
     }
-    
+
+    // 查詢進度
+    if (text === '查詢進度' || text === '進度') {
+      return await handleCheckProgress(replyToken, userId);
+    }
+
     // 5. 預設回覆 - 歡迎訊息
     return getLineClient().replyMessage(replyToken, generateWelcomeFlexMessage());
     
@@ -246,39 +251,16 @@ async function handleConfirmGeneration(replyToken, userId, state) {
 
     console.log(`✅ 已建立生成任務: taskId=${taskId}, setId=${setId}`);
 
-    // 異步調用 worker（不等待結果）
+    // 調用 Background Worker（不等待，立即返回）
     const workerUrl = process.env.URL
-      ? `${process.env.URL}/.netlify/functions/sticker-generator-worker`
-      : 'http://localhost:8888/.netlify/functions/sticker-generator-worker';
+      ? `${process.env.URL}/.netlify/functions/sticker-generator-worker-background`
+      : 'http://localhost:8888/.netlify/functions/sticker-generator-worker-background';
 
-    // 使用 fire-and-forget 方式調用 worker
-    axios.post(workerUrl, { taskId, setId })
-      .then(async (response) => {
-        console.log(`✅ Worker 執行完成: ${JSON.stringify(response.data)}`);
-        // 生成完成後通知用戶
-        try {
-          await getLineClient().pushMessage(userId, {
-            type: 'text',
-            text: `🎉 貼圖生成完成！\n\n` +
-                  `📛 名稱：${tempData.name}\n` +
-                  `輸入「我的貼圖」查看並下載`
-          });
-        } catch (e) {
-          console.error('通知用戶失敗:', e.message);
-        }
-      })
-      .catch(async (error) => {
-        console.error(`❌ Worker 執行失敗: ${error.message}`);
-        // 通知用戶失敗
-        try {
-          await getLineClient().pushMessage(userId, {
-            type: 'text',
-            text: `❌ 貼圖生成失敗\n\n錯誤：${error.message}\n\n請輸入「創建貼圖」重試`
-          });
-        } catch (e) {
-          console.error('通知用戶失敗:', e.message);
-        }
-      });
+    // Fire-and-forget：發送請求後不等待回應
+    // Background Function 會在後台執行最多 15 分鐘
+    axios.post(workerUrl, { taskId, setId, userId })
+      .then(() => console.log('📤 已發送 Background Worker 請求'))
+      .catch(err => console.log('📤 Background Worker 請求已發送（可能超時但仍在執行）'));
 
     // 重置對話狀態
     await resetConversationState(userId);
@@ -292,6 +274,73 @@ async function handleConfirmGeneration(replyToken, userId, state) {
   }
 
   return;
+}
+
+/**
+ * 處理查詢進度
+ */
+async function handleCheckProgress(replyToken, userId) {
+  try {
+    // 取得進行中的任務
+    const pendingTasks = await getUserPendingTasks(userId);
+
+    if (pendingTasks.length === 0) {
+      // 沒有進行中的任務，查詢最新的任務
+      const latestTask = await getUserLatestTask(userId);
+
+      if (!latestTask) {
+        return getLineClient().replyMessage(replyToken, {
+          type: 'text',
+          text: '📭 目前沒有任何生成任務\n\n輸入「創建貼圖」開始創建！'
+        });
+      }
+
+      // 顯示最新任務狀態
+      const statusEmoji = {
+        'completed': '✅',
+        'failed': '❌',
+        'pending': '⏳',
+        'processing': '🔄'
+      };
+
+      const setInfo = latestTask.sticker_sets;
+      return getLineClient().replyMessage(replyToken, {
+        type: 'text',
+        text: `📋 最新任務狀態\n\n` +
+              `📛 名稱：${setInfo?.name || '未命名'}\n` +
+              `${statusEmoji[latestTask.status] || '❓'} 狀態：${latestTask.status}\n` +
+              `📊 進度：${latestTask.progress || 0}%\n\n` +
+              (latestTask.status === 'completed'
+                ? '輸入「我的貼圖」查看結果'
+                : latestTask.status === 'failed'
+                  ? '輸入「創建貼圖」重試'
+                  : '請稍候...')
+      });
+    }
+
+    // 有進行中的任務
+    let message = `🔄 進行中的任務：${pendingTasks.length} 個\n\n`;
+
+    pendingTasks.forEach((task, index) => {
+      const setInfo = task.sticker_sets;
+      message += `${index + 1}. ${setInfo?.name || '未命名'}\n`;
+      message += `   進度：${task.progress || 0}%\n`;
+    });
+
+    message += '\n生成完成後會自動通知你！';
+
+    return getLineClient().replyMessage(replyToken, {
+      type: 'text',
+      text: message
+    });
+
+  } catch (error) {
+    console.error('❌ 查詢進度失敗:', error);
+    return getLineClient().replyMessage(replyToken, {
+      type: 'text',
+      text: '❌ 查詢失敗，請稍後再試'
+    });
+  }
 }
 
 /**

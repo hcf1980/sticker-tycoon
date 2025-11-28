@@ -178,6 +178,71 @@ async function getStickerSet(setId) {
   }
 }
 
+/**
+ * 取得用戶最新的生成任務（含貼圖組資訊）
+ */
+async function getUserLatestTask(userId) {
+  try {
+    const { data, error } = await getSupabaseClient()
+      .from('generation_tasks')
+      .select(`
+        task_id,
+        status,
+        progress,
+        created_at,
+        sticker_sets (
+          set_id,
+          name,
+          status,
+          sticker_count
+        )
+      `)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') return null; // 沒有記錄
+      throw error;
+    }
+    return data;
+  } catch (error) {
+    console.error('取得最新任務失敗:', error);
+    return null;
+  }
+}
+
+/**
+ * 取得用戶所有進行中的任務
+ */
+async function getUserPendingTasks(userId) {
+  try {
+    const { data, error } = await getSupabaseClient()
+      .from('generation_tasks')
+      .select(`
+        task_id,
+        status,
+        progress,
+        created_at,
+        sticker_sets (
+          set_id,
+          name,
+          status
+        )
+      `)
+      .eq('user_id', userId)
+      .in('status', ['pending', 'processing'])
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('取得進行中任務失敗:', error);
+    return [];
+  }
+}
+
 module.exports = {
   getSupabaseClient,
   isReplyTokenUsed,
@@ -186,6 +251,8 @@ module.exports = {
   getUserStickerSets,
   createStickerSet,
   updateStickerSetStatus,
-  getStickerSet
+  getStickerSet,
+  getUserLatestTask,
+  getUserPendingTasks
 };
 
