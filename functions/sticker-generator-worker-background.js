@@ -314,6 +314,18 @@ exports.handler = async function(event, context) {
       return { statusCode: 400, body: JSON.stringify({ error: 'Missing taskId or setId' }) };
     }
 
+    // 立即更新狀態為 "processing"，確認 Worker 已啟動
+    const supabase = getSupabase();
+    await supabase
+      .from('generation_tasks')
+      .update({
+        status: 'processing',
+        progress: 5,
+        result_json: { worker_started: new Date().toISOString() }
+      })
+      .eq('task_id', taskId);
+    console.log('✅ Worker 已啟動，狀態已更新為 processing');
+
     // 直接執行生成（會阻塞直到完成）
     console.log('✅ 開始執行生成任務...');
     const result = await executeGeneration(taskId, setId);
