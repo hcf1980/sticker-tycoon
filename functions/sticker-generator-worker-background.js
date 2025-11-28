@@ -362,5 +362,5 @@ exports.handler = async function(event, context) {
   }
 };
 
-module.exports = { createGenerationTask, executeGeneration };
+module.exports = { createGenerationTask, executeGeneration, getSupabase };
 
