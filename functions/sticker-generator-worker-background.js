@@ -5,7 +5,7 @@
 
 const { v4: uuidv4 } = require('uuid');
 const { getSupabaseClient, updateStickerSetStatus, getStickerSet } = require('./supabase-client');
-const { generateStickerSet, generateStickerSetFromPhoto } = require('./ai-generator');
+const { generateStickerSet } = require('./ai-generator');
 const { processStickerSet, generateMainImage, generateTabImage } = require('./image-processor');
 const { DefaultExpressions } = require('./sticker-styles');
 
@@ -38,21 +38,16 @@ async function createGenerationTask(userId, setData) {
 
     if (setError) throw setError;
 
-    // 建立任務記錄（包含照片資料）
+    // 建立任務記錄
     const { error: taskError } = await supabase
       .from('generation_tasks')
       .insert([{
         task_id: taskId,
         user_id: userId,
         set_id: setId,
-        task_type: setData.photoBase64 ? 'create_set_photo' : 'create_set',
+        task_type: 'create_set',
         status: 'pending',
-        progress: 0,
-        result_json: {
-          photoBase64: setData.photoBase64 || null,
-          photoUrl: setData.photoUrl || null,
-          expressions: setData.expressions || []
-        }
+        progress: 0
       }]);
 
     if (taskError) throw taskError;
@@ -122,42 +117,18 @@ async function executeGeneration(taskId, setId) {
     userId = stickerSet.user_id;
     const { style, character_prompt, sticker_count, name } = stickerSet;
 
-    // 取得任務資料（包含照片資訊）
-    const supabase = getSupabase();
-    const { data: taskData } = await supabase
-      .from('generation_tasks')
-      .select('task_type, result_json')
-      .eq('task_id', taskId)
-      .single();
-
-    const isPhotoMode = taskData?.task_type === 'create_set_photo';
-    const photoBase64 = taskData?.result_json?.photoBase64;
-    const customExpressions = taskData?.result_json?.expressions;
-
-    console.log(`📋 任務類型: ${isPhotoMode ? '照片模式' : '文字模式'}`);
-
     // 通知用戶開始生成
     await sendLineNotification(userId, `🎨 開始生成「${name}」...\n\n📊 共 ${sticker_count} 張貼圖\n⏳ 請稍候...`);
 
-    // 取得表情列表
-    const expressions = (customExpressions && customExpressions.length > 0)
-      ? customExpressions.slice(0, sticker_count)
-      : DefaultExpressions.basic.expressions.slice(0, sticker_count);
-
-    console.log(`😀 使用表情: ${expressions.join(', ')}`);
+    // 取得表情列表（預設使用基本日常）
+    const expressions = DefaultExpressions.basic.expressions.slice(0, sticker_count);
 
     // 更新進度：開始生成
     await updateTaskProgress(taskId, 10);
 
     // 1. AI 生成圖片
-    let generatedImages;
-    if (isPhotoMode && photoBase64) {
-      console.log(`📷 使用照片模式生成 ${sticker_count} 張貼圖...`);
-      generatedImages = await generateStickerSetFromPhoto(photoBase64, style, expressions);
-    } else {
-      console.log(`🎨 使用文字模式生成 ${sticker_count} 張貼圖...`);
-      generatedImages = await generateStickerSet(style, character_prompt, expressions);
-    }
+    console.log(`🎨 開始 AI 生成 ${sticker_count} 張貼圖...`);
+    const generatedImages = await generateStickerSet(style, character_prompt, expressions);
     await updateTaskProgress(taskId, 50);
 
     // 2. 處理圖片（符合 LINE 規格）
@@ -291,21 +262,15 @@ async function uploadImagesToStorage(setId, processedImages, mainImageBuffer, ta
 }
 
 /**
- * Netlify Function Handler (Long-running)
- * 配置 timeout = 900 (15分鐘) 在 netlify.toml
- *
- * 注意：這個函數會阻塞執行直到完成，Netlify 會等待最多 15 分鐘
+ * Netlify Function Handler（供內部調用）
  */
 exports.handler = async function(event, context) {
-  console.log('🔔 Sticker Generator Worker 啟動');
+  console.log('🔔 Sticker Generator Worker 被呼叫');
   console.log('📦 Event body:', event.body);
-
-  let taskId, setId;
 
   try {
     const body = JSON.parse(event.body || '{}');
-    taskId = body.taskId;
-    setId = body.setId;
+    const { taskId, setId } = body;
 
     console.log(`📋 收到任務: taskId=${taskId}, setId=${setId}`);
 
@@ -314,53 +279,33 @@ exports.handler = async function(event, context) {
       return { statusCode: 400, body: JSON.stringify({ error: 'Missing taskId or setId' }) };
     }
 
-    // 立即更新狀態為 "processing"，確認 Worker 已啟動
-    const supabase = getSupabase();
-    await supabase
-      .from('generation_tasks')
-      .update({
-        status: 'processing',
-        progress: 5,
-        result_json: { worker_started: new Date().toISOString() }
-      })
-      .eq('task_id', taskId);
-    console.log('✅ Worker 已啟動，狀態已更新為 processing');
+    // 立即返回 200，讓生成在背景執行
+    // 這是因為 Netlify Functions 有超時限制
+    console.log('✅ 開始背景生成任務...');
 
-    // 直接執行生成（會阻塞直到完成）
-    console.log('✅ 開始執行生成任務...');
-    const result = await executeGeneration(taskId, setId);
-    console.log('✅ 生成完成:', result);
+    // 不 await，讓它在背景執行
+    executeGeneration(taskId, setId)
+      .then(result => {
+        console.log('✅ 背景生成完成:', result);
+      })
+      .catch(err => {
+        console.error('❌ 背景生成失敗:', err.message);
+      });
 
     return {
       statusCode: 200,
-      body: JSON.stringify(result)
+      body: JSON.stringify({
+        message: 'Generation started',
+        taskId,
+        setId
+      })
     };
 
   } catch (error) {
     console.error('❌ Worker 執行失敗:', error);
-    console.error('❌ 錯誤堆疊:', error.stack);
-
-    // 將錯誤寫入資料庫
-    if (taskId) {
-      try {
-        const supabase = getSupabase();
-        await supabase
-          .from('generation_tasks')
-          .update({
-            status: 'failed',
-            error_message: error.message,
-            result_json: { error: error.message, stack: error.stack }
-          })
-          .eq('task_id', taskId);
-        console.log('✅ 錯誤狀態已更新到資料庫');
-      } catch (dbError) {
-        console.error('❌ 無法更新錯誤狀態:', dbError);
-      }
-    }
-
-    return { statusCode: 500, body: JSON.stringify({ error: error.message, stack: error.stack }) };
+    return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
   }
 };
 
-module.exports = { createGenerationTask, executeGeneration, getSupabase };
+module.exports = { createGenerationTask, executeGeneration };
 

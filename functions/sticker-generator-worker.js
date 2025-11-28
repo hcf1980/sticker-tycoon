@@ -1,83 +1,258 @@
 /**
- * Sticker Generator Worker（長時間運行，最長 15 分鐘）
- * Netlify Function，需於 netlify.toml 設定 timeout = 900
+ * Sticker Generator Worker
+ * 異步執行貼圖生成任務
  */
 
-const { executeGeneration, getSupabase } = require('./sticker-generator-worker-background');
+const { v4: uuidv4 } = require('uuid');
+const { getSupabaseClient, updateStickerSetStatus, getStickerSet } = require('./supabase-client');
+const { generateStickerSet, generateStickerSetFromPhoto } = require('./ai-generator');
+const { processStickerSet, generateMainImage, generateTabImage } = require('./image-processor');
+const { DefaultExpressions } = require('./sticker-styles');
 
-exports.handler = async function(event, context) {
-  console.log('🔔 Sticker Generator Worker 啟動');
-
-  let taskId, setId;
+/**
+ * 建立生成任務
+ */
+async function createGenerationTask(userId, setData) {
+  const supabase = getSupabaseClient();
+  const taskId = uuidv4();
+  const setId = uuidv4();
 
   try {
-    const body = JSON.parse(event.body || '{}');
-    taskId = body.taskId;
-    setId = body.setId;
+    // 建立貼圖組記錄
+    const { error: setError } = await supabase
+      .from('sticker_sets')
+      .insert([{
+        set_id: setId,
+        user_id: userId,
+        name: setData.name,
+        description: setData.description || '',
+        style: setData.style,
+        character_prompt: setData.character || '',  // 照片流程可能沒有
+        photo_url: setData.photoUrl || null,        // 照片 URL
+        photo_base64: setData.photoBase64 || null,  // 照片 Base64（用於 AI 生成）
+        sticker_count: setData.count,
+        status: 'generating'
+      }]);
 
-    console.log(`📋 收到任務: taskId=${taskId}, setId=${setId}`);
+    if (setError) throw setError;
 
-    if (!taskId || !setId) {
-      console.error('❌ 缺少必要參數');
-      return { statusCode: 400, body: JSON.stringify({ error: 'Missing taskId or setId' }) };
-    }
+    // 建立任務記錄
+    const { error: taskError } = await supabase
+      .from('generation_tasks')
+      .insert([{
+        task_id: taskId,
+        user_id: userId,
+        set_id: setId,
+        task_type: 'create_set',
+        status: 'pending',
+        progress: 0
+      }]);
 
-    // --- 寫入 DB：Worker 已成功啟動 ---
-    const supabase = getSupabase();
-    await supabase
+    if (taskError) throw taskError;
+
+    console.log(`✅ 已建立生成任務：${taskId}, 貼圖組：${setId}`);
+    return { taskId, setId };
+
+  } catch (error) {
+    console.error('❌ 建立任務失敗:', error);
+    throw error;
+  }
+}
+
+/**
+ * 更新任務進度
+ */
+async function updateTaskProgress(taskId, progress, status = 'processing') {
+  try {
+    const supabase = getSupabaseClient();
+    const { error } = await supabase
       .from('generation_tasks')
       .update({
-        status: 'processing',
-        progress: 5,
-        result_json: {
-          worker_started: new Date().toISOString(),
-          invoked_from: 'worker-direct'
-        }
+        progress,
+        status,
+        updated_at: new Date().toISOString()
       })
       .eq('task_id', taskId);
 
-    console.log('✅ Worker 啟動狀態已寫入資料庫');
+    if (error) throw error;
+    console.log(`📊 任務 ${taskId} 進度：${progress}%`);
+  } catch (error) {
+    console.error('❌ 更新進度失敗:', error);
+  }
+}
 
-    // --- 執行主流程（阻塞最多 15 分鐘） ---
-    console.log('🚀 正在執行貼圖生成任務...');
-    const result = await executeGeneration(taskId, setId);
-    console.log('🎉 生成完成:', result);
+/**
+ * 執行貼圖生成
+ */
+async function executeGeneration(taskId, setId) {
+  const supabase = getSupabaseClient();
+
+  try {
+    console.log(`🚀 開始執行生成任務：${taskId}`);
+
+    // 取得貼圖組資料
+    const stickerSet = await getStickerSet(setId);
+    if (!stickerSet) {
+      throw new Error('找不到貼圖組資料');
+    }
+
+    const { style, character_prompt, sticker_count, photo_base64 } = stickerSet;
+
+    // 取得表情列表（預設使用基本日常）
+    const expressions = DefaultExpressions.basic.expressions.slice(0, sticker_count);
+
+    // 更新進度：開始生成
+    await updateTaskProgress(taskId, 10);
+
+    // 1. AI 生成圖片（根據是否有照片選擇不同方式）
+    console.log(`🎨 開始 AI 生成 ${sticker_count} 張貼圖...`);
+    let generatedImages;
+
+    if (photo_base64) {
+      // 照片流程：使用照片生成
+      console.log('📷 使用照片模式生成');
+      generatedImages = await generateStickerSetFromPhoto(photo_base64, style, expressions);
+    } else {
+      // 傳統流程：使用角色描述生成
+      console.log('✏️ 使用角色描述模式生成');
+      generatedImages = await generateStickerSet(style, character_prompt, expressions);
+    }
+    await updateTaskProgress(taskId, 50);
+
+    // 2. 處理圖片（符合 LINE 規格）
+    const successImages = generatedImages.filter(img => img.status === 'completed');
+    const imageUrls = successImages.map(img => img.imageUrl);
+
+    console.log(`🖼️ 開始處理 ${imageUrls.length} 張圖片...`);
+    const processedImages = await processStickerSet(imageUrls);
+    await updateTaskProgress(taskId, 80);
+
+    // 3. 生成主圖和標籤圖
+    let mainImageBuffer = null;
+    let tabImageBuffer = null;
+
+    if (imageUrls.length > 0) {
+      mainImageBuffer = await generateMainImage(imageUrls[0]);
+      tabImageBuffer = await generateTabImage(imageUrls[0]);
+    }
+    await updateTaskProgress(taskId, 90);
+
+    // 4. 上傳圖片到 Storage
+    const uploadResults = await uploadImagesToStorage(setId, processedImages, mainImageBuffer, tabImageBuffer);
+
+    // 5. 更新貼圖組狀態
+    await updateStickerSetStatus(setId, 'completed', {
+      main_image_url: uploadResults.mainImageUrl,
+      tab_image_url: uploadResults.tabImageUrl
+    });
+
+    // 6. 完成任務
+    await updateTaskProgress(taskId, 100, 'completed');
+    console.log(`✅ 貼圖組 ${setId} 生成完成！`);
 
     return {
-      statusCode: 200,
-      body: JSON.stringify(result)
+      success: true,
+      setId,
+      imageCount: processedImages.filter(p => p.status === 'completed').length
     };
 
   } catch (error) {
-    console.error('❌ Worker 執行失敗:', error);
+    console.error(`❌ 生成任務失敗 (${taskId}):`, error);
 
-    // --- 回寫錯誤到資料庫 ---
-    try {
-      if (taskId) {
-        const supabase = getSupabase();
-        await supabase
-          .from('generation_tasks')
-          .update({
-            status: 'failed',
-            error_message: error.message,
-            result_json: {
-              error: error.message,
-              stack: error.stack
-            }
-          })
-          .eq('task_id', taskId);
+    // 標記任務失敗
+    await supabase
+      .from('generation_tasks')
+      .update({
+        status: 'failed',
+        error_message: error.message,
+        updated_at: new Date().toISOString()
+      })
+      .eq('task_id', taskId);
+
+    await updateStickerSetStatus(setId, 'failed');
+
+    throw error;
+  }
+}
+
+/**
+ * 上傳圖片到 Supabase Storage
+ */
+async function uploadImagesToStorage(setId, processedImages, mainImageBuffer, tabImageBuffer) {
+  const supabase = getSupabaseClient();
+  const bucket = 'sticker-images';
+  const uploadResults = { imageUrls: [], mainImageUrl: null, tabImageUrl: null };
+
+  try {
+    // 上傳主圖
+    if (mainImageBuffer) {
+      const mainPath = `${setId}/main.png`;
+      const { error } = await supabase.storage.from(bucket).upload(mainPath, mainImageBuffer, {
+        contentType: 'image/png', upsert: true
+      });
+      if (!error) {
+        const { data } = supabase.storage.from(bucket).getPublicUrl(mainPath);
+        uploadResults.mainImageUrl = data.publicUrl;
       }
-    } catch (dbError) {
-      console.error('❌ 無法更新錯誤狀態:', dbError);
     }
 
-    return { 
-      statusCode: 500, 
-      body: JSON.stringify({ 
-        error: error.message, 
-        stack: error.stack 
-      }) 
-    };
+    // 上傳標籤圖
+    if (tabImageBuffer) {
+      const tabPath = `${setId}/tab.png`;
+      const { error } = await supabase.storage.from(bucket).upload(tabPath, tabImageBuffer, {
+        contentType: 'image/png', upsert: true
+      });
+      if (!error) {
+        const { data } = supabase.storage.from(bucket).getPublicUrl(tabPath);
+        uploadResults.tabImageUrl = data.publicUrl;
+      }
+    }
+
+    // 上傳貼圖
+    for (const img of processedImages) {
+      if (img.status !== 'completed' || !img.buffer) continue;
+
+      const stickerPath = `${setId}/sticker_${String(img.index).padStart(2, '0')}.png`;
+      const { error } = await supabase.storage.from(bucket).upload(stickerPath, img.buffer, {
+        contentType: 'image/png', upsert: true
+      });
+      if (!error) {
+        const { data } = supabase.storage.from(bucket).getPublicUrl(stickerPath);
+        uploadResults.imageUrls.push(data.publicUrl);
+      }
+    }
+
+    console.log(`📤 已上傳 ${uploadResults.imageUrls.length} 張貼圖到 Storage`);
+    return uploadResults;
+
+  } catch (error) {
+    console.error('❌ 上傳圖片失敗:', error);
+    return uploadResults;
+  }
+}
+
+/**
+ * Netlify Function Handler（供內部調用）
+ */
+exports.handler = async function(event, context) {
+  console.log('🔔 Sticker Generator Worker 被呼叫');
+
+  try {
+    const body = JSON.parse(event.body || '{}');
+    const { taskId, setId } = body;
+
+    if (!taskId || !setId) {
+      return { statusCode: 400, body: JSON.stringify({ error: 'Missing taskId or setId' }) };
+    }
+
+    const result = await executeGeneration(taskId, setId);
+    return { statusCode: 200, body: JSON.stringify(result) };
+
+  } catch (error) {
+    console.error('❌ Worker 執行失敗:', error);
+    return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
   }
 };
+
+module.exports = { createGenerationTask, executeGeneration };
 

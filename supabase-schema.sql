@@ -34,7 +34,9 @@ CREATE TABLE IF NOT EXISTS sticker_sets (
   name TEXT NOT NULL,
   description TEXT,
   style TEXT NOT NULL,  -- 風格：cute, cool, funny, simple, anime
-  character_prompt TEXT,  -- 角色描述
+  character_prompt TEXT,  -- 角色描述（傳統流程）
+  photo_url TEXT,  -- 用戶上傳的照片 URL（照片流程）
+  photo_base64 TEXT,  -- 照片 Base64 編碼（用於 AI 生成）
   sticker_count INTEGER DEFAULT 8,  -- 8, 16, 24, 32, 40
   status TEXT DEFAULT 'draft',  -- draft, generating, completed, failed
   main_image_url TEXT,  -- 主要圖片 URL

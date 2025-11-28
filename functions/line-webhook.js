@@ -4,11 +4,13 @@
  */
 
 const line = require('@line/bot-sdk');
+const axios = require('axios');
 const { isReplyTokenUsed, recordReplyToken, getOrCreateUser, getUserStickerSets } = require('./supabase-client');
 const { ConversationStage, getConversationState, updateConversationState, resetConversationState, isInCreationFlow } = require('./conversation-state');
 const { generateWelcomeFlexMessage } = require('./sticker-flex-message');
 const { handleStartCreate, handleNaming, handleStyleSelection, handleCharacterDescription, handleExpressionTemplate, handleCountSelection, handlePhotoUpload } = require('./handlers/create-handler');
 const { handleUserPhoto } = require('./photo-handler');
+const { createGenerationTask } = require('./sticker-generator-worker');
 
 // LINE Bot 設定 - 延遲初始化
 let client = null;
@@ -115,12 +117,7 @@ async function handleTextMessage(replyToken, userId, text) {
     if (text === '確認生成') {
       return await handleConfirmGeneration(replyToken, userId, state);
     }
-
-    // 查詢生成進度
-    if (text === '查詢進度' || text === '進度' || text === '生成進度') {
-      return await handleCheckProgress(replyToken, userId);
-    }
-
+    
     // 5. 預設回覆 - 歡迎訊息
     return getLineClient().replyMessage(replyToken, generateWelcomeFlexMessage());
     
@@ -189,16 +186,6 @@ async function handleCreationFlow(replyToken, userId, text, stage, state) {
     case ConversationStage.CHARACTER:
       message = await handleCharacterDescription(userId, text);
       break;
-    case ConversationStage.CONFIRMING:
-      // 處理確認生成
-      if (text === '確認生成') {
-        return handleConfirmGeneration(replyToken, userId, state);
-      } else if (text === '取消') {
-        return null; // 取消由上層處理
-      } else {
-        message = { type: 'text', text: '⚠️ 請點擊「開始生成」或「取消」！' };
-      }
-      break;
     default:
       message = { type: 'text', text: '⚠️ 請按照提示操作或輸入「取消」重新開始' };
   }
@@ -212,9 +199,9 @@ async function handleCreationFlow(replyToken, userId, text, stage, state) {
 async function handleConfirmGeneration(replyToken, userId, state) {
   const tempData = state.temp_data;
 
-  // 檢查必要欄位（照片模式需要 photoUrl，文字模式需要 character）
-  const hasPhoto = tempData && tempData.photoUrl;
-  const hasCharacter = tempData && tempData.character;
+  // 驗證資料完整性（照片流程不需要 character）
+  const hasPhoto = tempData?.photoUrl || tempData?.photoBase64;
+  const hasCharacter = tempData?.character;
 
   if (!tempData || !tempData.name || !tempData.style || (!hasPhoto && !hasCharacter)) {
     return getLineClient().replyMessage(replyToken, {
@@ -239,73 +226,64 @@ async function handleConfirmGeneration(replyToken, userId, state) {
 
   // 觸發異步生成任務
   try {
-    const { triggerStickerGeneration } = require('./services/generation-trigger');
-    await triggerStickerGeneration(userId, tempData);
-    console.log('✅ 已觸發貼圖生成任務');
+    // 建立生成任務
+    const { taskId, setId } = await createGenerationTask(userId, {
+      name: tempData.name,
+      style: tempData.style,
+      character: tempData.character || '',
+      count: tempData.count || 8,
+      photoUrl: tempData.photoUrl,
+      photoBase64: tempData.photoBase64
+    });
+
+    console.log(`✅ 已建立生成任務: taskId=${taskId}, setId=${setId}`);
+
+    // 異步調用 worker（不等待結果）
+    const workerUrl = process.env.URL
+      ? `${process.env.URL}/.netlify/functions/sticker-generator-worker`
+      : 'http://localhost:8888/.netlify/functions/sticker-generator-worker';
+
+    // 使用 fire-and-forget 方式調用 worker
+    axios.post(workerUrl, { taskId, setId })
+      .then(async (response) => {
+        console.log(`✅ Worker 執行完成: ${JSON.stringify(response.data)}`);
+        // 生成完成後通知用戶
+        try {
+          await getLineClient().pushMessage(userId, {
+            type: 'text',
+            text: `🎉 貼圖生成完成！\n\n` +
+                  `📛 名稱：${tempData.name}\n` +
+                  `輸入「我的貼圖」查看並下載`
+          });
+        } catch (e) {
+          console.error('通知用戶失敗:', e.message);
+        }
+      })
+      .catch(async (error) => {
+        console.error(`❌ Worker 執行失敗: ${error.message}`);
+        // 通知用戶失敗
+        try {
+          await getLineClient().pushMessage(userId, {
+            type: 'text',
+            text: `❌ 貼圖生成失敗\n\n錯誤：${error.message}\n\n請輸入「創建貼圖」重試`
+          });
+        } catch (e) {
+          console.error('通知用戶失敗:', e.message);
+        }
+      });
+
+    // 重置對話狀態
+    await resetConversationState(userId);
+
   } catch (error) {
-    console.error('❌ 觸發生成任務失敗:', error.message);
-    // 即使觸發失敗也不影響用戶體驗，後台會重試
+    console.error('❌ 建立生成任務失敗:', error);
+    await getLineClient().pushMessage(userId, {
+      type: 'text',
+      text: '❌ 系統錯誤，無法建立生成任務，請稍後再試'
+    });
   }
 
   return;
-}
-
-/**
- * 查詢生成進度
- */
-async function handleCheckProgress(replyToken, userId) {
-  try {
-    const { getLatestGenerationTask } = require('./supabase-client');
-    const task = await getLatestGenerationTask(userId);
-
-    if (!task) {
-      return getLineClient().replyMessage(replyToken, {
-        type: 'text',
-        text: '📊 目前沒有正在生成的任務\n\n輸入「創建貼圖」開始創建新貼圖！'
-      });
-    }
-
-    const statusEmoji = {
-      'pending': '⏳',
-      'processing': '🔄',
-      'completed': '✅',
-      'failed': '❌'
-    };
-
-    const statusText = {
-      'pending': '等待中',
-      'processing': '生成中',
-      'completed': '已完成',
-      'failed': '失敗'
-    };
-
-    const emoji = statusEmoji[task.status] || '❓';
-    const status = statusText[task.status] || task.status;
-
-    let message = `${emoji} 生成進度\n\n`;
-    message += `📊 狀態：${status}\n`;
-    message += `📈 進度：${task.progress || 0}%\n`;
-
-    if (task.status === 'completed') {
-      message += `\n✅ 生成完成！輸入「我的貼圖」查看作品`;
-    } else if (task.status === 'failed') {
-      message += `\n❌ 錯誤：${task.error_message || '未知錯誤'}\n請輸入「創建貼圖」重新開始`;
-    } else {
-      message += `\n⏳ 請稍候，完成後會通知你`;
-    }
-
-    return getLineClient().replyMessage(replyToken, {
-      type: 'text',
-      text: message
-    });
-
-  } catch (error) {
-    console.error('查詢進度失敗:', error);
-    return getLineClient().replyMessage(replyToken, {
-      type: 'text',
-      text: '⚠️ 查詢進度失敗，請稍後再試'
-    });
-  }
 }
 
 /**

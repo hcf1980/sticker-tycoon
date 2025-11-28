@@ -170,15 +170,7 @@ async function handleExpressionTemplate(userId, templateId) {
  */
 function generateCountSelectionMessage(expressions) {
   const validCounts = LineStickerSpecs.validCounts;
-
-  // 生成按鈕列表
-  const buttons = validCounts.map(count => ({
-    type: 'button',
-    style: 'secondary',
-    height: 'sm',
-    action: { type: 'message', label: `${count}張`, text: `數量:${count}` }
-  }));
-
+  
   return {
     type: 'flex',
     altText: '選擇貼圖數量',
@@ -189,9 +181,22 @@ function generateCountSelectionMessage(expressions) {
         layout: 'vertical',
         contents: [
           { type: 'text', text: '📊 選擇貼圖數量', weight: 'bold', size: 'lg', color: '#FF6B6B' },
-          { type: 'text', text: `已選擇 ${expressions.length} 個表情`, size: 'sm', color: '#666666', margin: 'md' },
+          { type: 'text', text: `已選擇 ${expressions.length} 個表情`, size: 'sm', color: '#666', margin: 'md' },
           { type: 'separator', margin: 'lg' },
-          ...buttons.map(btn => ({ ...btn, margin: 'md' }))
+          {
+            type: 'box', layout: 'horizontal', margin: 'lg', spacing: 'sm',
+            contents: validCounts.slice(0, 3).map(count => ({
+              type: 'button', style: 'secondary', height: 'sm', flex: 1,
+              action: { type: 'message', label: `${count}張`, text: `數量:${count}` }
+            }))
+          },
+          {
+            type: 'box', layout: 'horizontal', margin: 'sm', spacing: 'sm',
+            contents: validCounts.slice(3).map(count => ({
+              type: 'button', style: 'secondary', height: 'sm', flex: 1,
+              action: { type: 'message', label: `${count}張`, text: `數量:${count}` }
+            }))
+          }
         ]
       }
     }
@@ -223,28 +228,11 @@ async function handleCountSelection(userId, count) {
 function generateConfirmationMessage(data) {
   const style = StickerStyles[data.style];
 
-  // 構建內容陣列
-  const bodyContents = [
-    { type: 'text', text: '✅ 確認貼圖設定', weight: 'bold', size: 'lg', color: '#FF6B6B' },
-    { type: 'separator', margin: 'lg' },
-    { type: 'text', text: `📛 名稱：${data.name}`, size: 'sm', margin: 'lg' },
-    { type: 'text', text: `🎨 風格：${style.emoji} ${style.name}`, size: 'sm', margin: 'sm' }
-  ];
-
-  // 根據模式添加不同內容
-  if (data.photoUrl) {
-    bodyContents.push({ type: 'text', text: '📷 照片：已上傳', size: 'sm', margin: 'sm' });
-  }
-  if (data.character) {
-    const charDisplay = data.character.length > 30 ? data.character.substring(0, 30) + '...' : data.character;
-    bodyContents.push({ type: 'text', text: `👤 角色：${charDisplay}`, size: 'sm', margin: 'sm', wrap: true });
-  }
-  if (data.expressions && data.expressions.length > 0) {
-    bodyContents.push({ type: 'text', text: `😀 表情：${data.expressions.slice(0, 3).join('、')}...`, size: 'sm', margin: 'sm', wrap: true });
-  }
-
-  bodyContents.push({ type: 'text', text: `📊 數量：${data.count} 張`, size: 'sm', margin: 'sm' });
-  bodyContents.push({ type: 'separator', margin: 'lg' });
+  // 根據是否有照片顯示不同的內容
+  const hasPhoto = data.photoUrl || data.photoBase64;
+  const sourceText = hasPhoto
+    ? '📷 來源：你的照片'
+    : `👤 角色：${(data.character || '').substring(0, 30)}${data.character && data.character.length > 30 ? '...' : ''}`;
 
   return {
     type: 'flex',
@@ -253,7 +241,15 @@ function generateConfirmationMessage(data) {
       type: 'bubble',
       body: {
         type: 'box', layout: 'vertical',
-        contents: bodyContents
+        contents: [
+          { type: 'text', text: '✅ 確認貼圖設定', weight: 'bold', size: 'lg', color: '#FF6B6B' },
+          { type: 'separator', margin: 'lg' },
+          { type: 'text', text: `📛 名稱：${data.name}`, size: 'sm', margin: 'lg' },
+          { type: 'text', text: `🎨 風格：${style.emoji} ${style.name}`, size: 'sm', margin: 'sm' },
+          { type: 'text', text: sourceText, size: 'sm', margin: 'sm', wrap: true },
+          { type: 'text', text: `📊 數量：${data.count} 張`, size: 'sm', margin: 'sm' },
+          { type: 'separator', margin: 'lg' }
+        ]
       },
       footer: {
         type: 'box', layout: 'horizontal', spacing: 'sm',
