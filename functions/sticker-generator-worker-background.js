@@ -298,9 +298,12 @@ exports.handler = async function(event, context) {
   console.log('🔔 Sticker Generator Background Worker 啟動');
   console.log('📦 Event body:', event.body);
 
+  let taskId, setId;
+
   try {
     const body = JSON.parse(event.body || '{}');
-    const { taskId, setId } = body;
+    taskId = body.taskId;
+    setId = body.setId;
 
     console.log(`📋 收到任務: taskId=${taskId}, setId=${setId}`);
 
@@ -321,7 +324,26 @@ exports.handler = async function(event, context) {
 
   } catch (error) {
     console.error('❌ Worker 執行失敗:', error);
-    return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
+    console.error('❌ 錯誤堆疊:', error.stack);
+
+    // 將錯誤寫入資料庫
+    if (taskId) {
+      try {
+        const supabase = getSupabase();
+        await supabase
+          .from('generation_tasks')
+          .update({
+            status: 'failed',
+            error_message: error.message,
+            result_json: { error: error.message, stack: error.stack }
+          })
+          .eq('task_id', taskId);
+      } catch (dbError) {
+        console.error('❌ 無法更新錯誤狀態:', dbError);
+      }
+    }
+
+    return { statusCode: 500, body: JSON.stringify({ error: error.message, stack: error.stack }) };
   }
 };
 
