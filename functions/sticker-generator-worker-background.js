@@ -273,11 +273,14 @@ async function notifyUser(userId, success, setId, errorMessage = null) {
  * 最多可執行 15 分鐘
  */
 exports.handler = async function(event, context) {
-  console.log('🔔 Sticker Generator Background Worker 開始執行');
+  console.log('🔔 ====== Sticker Generator Background Worker 開始執行 ======');
+  console.log('📋 Event body:', event.body ? event.body.substring(0, 200) + '...' : 'null');
 
   try {
     const body = JSON.parse(event.body || '{}');
     const { taskId, setId, userId } = body;
+
+    console.log('📦 解析參數:', { taskId, setId, userId });
 
     if (!taskId || !setId || !userId) {
       console.error('❌ 缺少必要參數:', { taskId, setId, userId });
@@ -296,7 +299,8 @@ exports.handler = async function(event, context) {
     return { statusCode: 200, body: JSON.stringify(result) };
 
   } catch (error) {
-    console.error('❌ Background Worker 執行失敗:', error);
+    console.error('❌ Background Worker 執行失敗:', error.message);
+    console.error('❌ 錯誤堆疊:', error.stack);
 
     // 嘗試通知用戶失敗
     try {
@@ -312,5 +316,10 @@ exports.handler = async function(event, context) {
   }
 };
 
-module.exports = { createGenerationTask, executeGeneration };
+// 導出 handler 和其他函數
+module.exports = {
+  handler: exports.handler,
+  createGenerationTask,
+  executeGeneration
+};
 
