@@ -3,7 +3,7 @@
  * 負責觸發異步生成任務
  */
 
-const { createGenerationTask } = require('../sticker-generator-worker');
+const { createGenerationTask } = require('../sticker-generator-worker-background');
 // 使用 Node 18+ 內建 fetch（無需 node-fetch）
 
 /**
