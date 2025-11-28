@@ -1,6 +1,6 @@
 /**
  * AI Generator Module
- * 使用 Gemini API 生成貼圖圖片
+ * 使用 Gemini API 生成貼圖圖片（Chat Completions 格式）
  */
 
 const axios = require('axios');
@@ -8,8 +8,8 @@ const { generateStickerPrompt } = require('./sticker-styles');
 
 // AI 圖片生成 API 設定
 const AI_API_KEY = process.env.AI_IMAGE_API_KEY;
-const AI_API_URL = process.env.AI_IMAGE_API_URL || 'https://tbnx.plus7.plus';
-const AI_MODEL = process.env.AI_MODEL || 'gemini-2.0-flash-exp-image-generation';
+const AI_API_URL = process.env.AI_IMAGE_API_URL || 'https://newapi.pockgo.com';
+const AI_MODEL = process.env.AI_MODEL || 'gemini-2.5-flash-image';
 
 // Retry 設定
 const MAX_RETRIES = 3;
@@ -23,66 +23,92 @@ function delay(ms) {
 }
 
 /**
- * 使用 Gemini API 生成圖片（OpenAI 相容格式）
+ * 從 Chat Completions 回應中提取圖片
  */
-async function generateWithGemini(prompt, negativePrompt) {
-  // 組合完整的提示詞
-  const fullPrompt = `Generate a LINE sticker image: ${prompt}.
-Style requirements: transparent background, PNG format, centered character, no text, no watermark.
-Avoid: ${negativePrompt}`;
+function extractImageFromResponse(response) {
+  const choices = response.data.choices;
+  if (!choices || !choices[0]) {
+    throw new Error('API 回應中沒有 choices');
+  }
 
-  console.log(`🤖 調用 Gemini API: ${AI_MODEL}`);
+  const message = choices[0].message;
+  if (!message || !message.content) {
+    throw new Error('API 回應中沒有 message content');
+  }
 
-  // 嘗試 OpenAI 相容格式
-  try {
-    const response = await axios.post(
-      `${AI_API_URL}/v1/images/generations`,
-      {
-        model: AI_MODEL,
-        prompt: fullPrompt,
-        n: 1,
-        size: '1024x1024',
-        response_format: 'b64_json'
-      },
-      {
-        headers: {
-          'Authorization': `Bearer ${AI_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        timeout: 120000
+  // content 可能是字串或陣列
+  const content = message.content;
+
+  // 如果是陣列格式，尋找圖片
+  if (Array.isArray(content)) {
+    for (const item of content) {
+      // 檢查 image_url 格式
+      if (item.type === 'image_url' && item.image_url) {
+        const url = item.image_url.url || item.image_url;
+        if (url.startsWith('data:image')) {
+          return url;
+        }
+        return url;
       }
-    );
-
-    // 處理回傳格式
-    if (response.data.data && response.data.data[0]) {
-      const imageData = response.data.data[0];
-      if (imageData.b64_json) {
-        return `data:image/png;base64,${imageData.b64_json}`;
-      } else if (imageData.url) {
-        return imageData.url;
+      // 檢查 image 格式
+      if (item.type === 'image' && item.image) {
+        if (item.image.url) {
+          return item.image.url;
+        }
+        if (item.image.data) {
+          const mimeType = item.image.mime_type || 'image/png';
+          return `data:${mimeType};base64,${item.image.data}`;
+        }
+      }
+      // 檢查 inline_data 格式 (Gemini 風格)
+      if (item.inline_data || item.inlineData) {
+        const inlineData = item.inline_data || item.inlineData;
+        const mimeType = inlineData.mime_type || inlineData.mimeType || 'image/png';
+        return `data:${mimeType};base64,${inlineData.data}`;
       }
     }
-
-    throw new Error('無法解析圖片回應');
-  } catch (error) {
-    console.log('OpenAI 格式失敗，嘗試原生 Gemini 格式...');
-    return await generateWithGeminiNative(fullPrompt);
   }
+
+  // 如果是字串，檢查是否包含 base64 圖片或 URL
+  if (typeof content === 'string') {
+    // 檢查是否為 base64 data URL
+    if (content.startsWith('data:image')) {
+      return content;
+    }
+    // 檢查是否為圖片 URL
+    if (content.match(/https?:\/\/.*\.(png|jpg|jpeg|webp)/i)) {
+      const match = content.match(/(https?:\/\/[^\s]+\.(png|jpg|jpeg|webp))/i);
+      if (match) return match[1];
+    }
+  }
+
+  throw new Error('無法從回應中提取圖片');
 }
 
 /**
- * 使用原生 Gemini API 格式
+ * 使用 Chat Completions API 生成圖片
  */
-async function generateWithGeminiNative(prompt) {
+async function generateWithChatCompletions(prompt, negativePrompt) {
+  // 組合完整的提示詞
+  const fullPrompt = `Generate a LINE sticker image: ${prompt}.
+Style requirements: transparent background, PNG format, centered character, no text, no watermark.
+Avoid: ${negativePrompt}
+
+Please generate the image directly.`;
+
+  console.log(`🤖 調用 Chat Completions API: ${AI_MODEL}`);
+
   const response = await axios.post(
-    `${AI_API_URL}/v1beta/models/${AI_MODEL}:generateContent`,
+    `${AI_API_URL}/v1/chat/completions`,
     {
-      contents: [{
-        parts: [{ text: prompt }]
-      }],
-      generationConfig: {
-        responseModalities: ['TEXT', 'IMAGE']
-      }
+      model: AI_MODEL,
+      messages: [
+        {
+          role: 'user',
+          content: fullPrompt
+        }
+      ],
+      max_tokens: 4096
     },
     {
       headers: {
@@ -93,28 +119,16 @@ async function generateWithGeminiNative(prompt) {
     }
   );
 
-  // 解析 Gemini 回應
-  const candidates = response.data.candidates;
-  if (candidates && candidates[0] && candidates[0].content) {
-    const parts = candidates[0].content.parts;
-    for (const part of parts) {
-      if (part.inlineData && part.inlineData.data) {
-        const mimeType = part.inlineData.mimeType || 'image/png';
-        return `data:${mimeType};base64,${part.inlineData.data}`;
-      }
-    }
-  }
-
-  throw new Error('Gemini 回應中沒有圖片資料');
+  return extractImageFromResponse(response);
 }
 
 /**
- * 使用照片生成貼圖（保留臉部特徵）
+ * 使用照片生成貼圖（保留臉部特徵）- Chat Completions 格式
  */
 async function generateStickerFromPhoto(photoBase64, style, expression) {
   const AI_API_KEY = process.env.AI_IMAGE_API_KEY;
-  const AI_API_URL = process.env.AI_IMAGE_API_URL || 'https://tbnx.plus7.plus';
-  const AI_MODEL = process.env.AI_MODEL || 'gemini-2.0-flash-exp-image-generation';
+  const AI_API_URL = process.env.AI_IMAGE_API_URL || 'https://newapi.pockgo.com';
+  const AI_MODEL = process.env.AI_MODEL || 'gemini-2.5-flash-image';
 
   if (!AI_API_KEY) {
     throw new Error('AI 圖片生成 API Key 未設定');
@@ -136,28 +150,34 @@ CRITICAL REQUIREMENTS:
 Style: ${styleConfig.promptBase}
 Expression to show: ${expression}
 
-Make sure the result looks like the person in the photo but in ${styleConfig.name} illustration style.`;
+Make sure the result looks like the person in the photo but in ${styleConfig.name} illustration style.
+Please generate the image directly.`;
 
   console.log(`🎨 生成照片貼圖：${expression} (${style}風格)`);
 
   try {
     const response = await axios.post(
-      `${AI_API_URL}/v1beta/models/${AI_MODEL}:generateContent`,
+      `${AI_API_URL}/v1/chat/completions`,
       {
-        contents: [{
-          parts: [
-            {
-              inlineData: {
-                mimeType: 'image/jpeg',
-                data: photoBase64
+        model: AI_MODEL,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'image_url',
+                image_url: {
+                  url: `data:image/jpeg;base64,${photoBase64}`
+                }
+              },
+              {
+                type: 'text',
+                text: prompt
               }
-            },
-            { text: prompt }
-          ]
-        }],
-        generationConfig: {
-          responseModalities: ['TEXT', 'IMAGE']
-        }
+            ]
+          }
+        ],
+        max_tokens: 4096
       },
       {
         headers: {
@@ -168,22 +188,15 @@ Make sure the result looks like the person in the photo but in ${styleConfig.nam
       }
     );
 
-    // 解析回應
-    const candidates = response.data.candidates;
-    if (candidates && candidates[0] && candidates[0].content) {
-      const parts = candidates[0].content.parts;
-      for (const part of parts) {
-        if (part.inlineData && part.inlineData.data) {
-          const mimeType = part.inlineData.mimeType || 'image/png';
-          console.log(`✅ 照片貼圖生成成功：${expression}`);
-          return `data:${mimeType};base64,${part.inlineData.data}`;
-        }
-      }
-    }
+    const imageUrl = extractImageFromResponse(response);
+    console.log(`✅ 照片貼圖生成成功：${expression}`);
+    return imageUrl;
 
-    throw new Error('回應中沒有圖片');
   } catch (error) {
     console.error(`❌ 生成照片貼圖失敗（${expression}）:`, error.message);
+    if (error.response?.data) {
+      console.error('API 錯誤詳情:', JSON.stringify(error.response.data));
+    }
     throw error;
   }
 }
@@ -207,12 +220,15 @@ async function generateStickerImage(style, characterDescription, expression) {
 
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       try {
-        // 使用 Gemini API
-        imageUrl = await generateWithGemini(prompt, negativePrompt);
+        // 使用 Chat Completions API
+        imageUrl = await generateWithChatCompletions(prompt, negativePrompt);
         break;  // 成功則跳出重試循環
       } catch (error) {
         lastError = error;
         console.warn(`⚠️ 生成失敗（第 ${attempt}/${MAX_RETRIES} 次）：${error.message}`);
+        if (error.response?.data) {
+          console.error('API 錯誤詳情:', JSON.stringify(error.response.data));
+        }
 
         if (attempt < MAX_RETRIES) {
           const delayMs = INITIAL_RETRY_DELAY * Math.pow(2, attempt - 1);
