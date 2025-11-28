@@ -205,17 +205,23 @@ async function deleteStickerSet(setId, userId) {
       return { success: false, error: '沒有權限刪除此貼圖組' };
     }
 
-    // 刪除相關的生成任務
-    await getSupabaseClient()
-      .from('generation_tasks')
-      .delete()
-      .eq('sticker_set_id', set.set_id || set.id);
+    // 取得實際的 set_id（UUID）和 id（整數）
+    const actualSetId = set.set_id;
+    const actualId = set.id;
 
-    // 刪除貼圖組
+    // 刪除相關的生成任務（使用 set_id）
+    if (actualSetId) {
+      await getSupabaseClient()
+        .from('generation_tasks')
+        .delete()
+        .eq('sticker_set_id', actualSetId);
+    }
+
+    // 刪除貼圖組（使用整數 id）
     const { error } = await getSupabaseClient()
       .from('sticker_sets')
       .delete()
-      .or(`set_id.eq.${setId},id.eq.${setId}`);
+      .eq('id', actualId);
 
     if (error) throw error;
     return { success: true };
