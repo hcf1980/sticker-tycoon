@@ -7,7 +7,8 @@ const { executeGeneration } = require('./sticker-generator-worker-background');
 
 exports.handler = async function(event, context) {
   console.log('🔔 Sticker Generator Worker 啟動');
-  console.log('📦 Event body:', event.body);
+  console.log('📦 Event:', JSON.stringify(event));
+  console.log('📦 Context:', JSON.stringify(context));
 
   let taskId, setId;
 
@@ -22,6 +23,17 @@ exports.handler = async function(event, context) {
       console.error('❌ 缺少必要參數');
       return { statusCode: 400, body: JSON.stringify({ error: 'Missing taskId or setId' }) };
     }
+
+    // 立即寫入資料庫確認 Worker 已啟動
+    const { getSupabase } = require('./sticker-generator-worker-background');
+    const supabase = getSupabase();
+    await supabase
+      .from('generation_tasks')
+      .update({
+        result_json: { worker_invoked: new Date().toISOString(), taskId, setId }
+      })
+      .eq('task_id', taskId);
+    console.log('✅ Worker 啟動確認已寫入資料庫');
 
     // 直接執行生成（會阻塞直到完成，最長 15 分鐘）
     console.log('✅ 開始執行生成任務...');
