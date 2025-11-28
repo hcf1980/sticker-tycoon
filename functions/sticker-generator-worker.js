@@ -84,9 +84,27 @@ async function updateTaskProgress(taskId, progress, status = 'processing') {
 }
 
 /**
+ * 發送 LINE 推送訊息
+ */
+async function sendLineNotification(userId, message) {
+  try {
+    const line = require('@line/bot-sdk');
+    const client = new line.Client({
+      channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN,
+    });
+    await client.pushMessage(userId, { type: 'text', text: message });
+    console.log(`📤 已發送通知給用戶 ${userId}`);
+  } catch (error) {
+    console.error('發送 LINE 通知失敗:', error.message);
+  }
+}
+
+/**
  * 執行貼圖生成
  */
 async function executeGeneration(taskId, setId) {
+  let userId = null;
+
   try {
     console.log(`🚀 開始執行生成任務：${taskId}`);
 
@@ -96,7 +114,11 @@ async function executeGeneration(taskId, setId) {
       throw new Error('找不到貼圖組資料');
     }
 
-    const { style, character_prompt, sticker_count } = stickerSet;
+    userId = stickerSet.user_id;
+    const { style, character_prompt, sticker_count, name } = stickerSet;
+
+    // 通知用戶開始生成
+    await sendLineNotification(userId, `🎨 開始生成「${name}」...\n\n📊 共 ${sticker_count} 張貼圖\n⏳ 請稍候...`);
 
     // 取得表情列表（預設使用基本日常）
     const expressions = DefaultExpressions.basic.expressions.slice(0, sticker_count);
@@ -140,10 +162,18 @@ async function executeGeneration(taskId, setId) {
     await updateTaskProgress(taskId, 100, 'completed');
     console.log(`✅ 貼圖組 ${setId} 生成完成！`);
 
+    // 通知用戶完成
+    const successCount = processedImages.filter(p => p.status === 'completed').length;
+    await sendLineNotification(userId,
+      `🎉 「${name}」貼圖組生成完成！\n\n` +
+      `✅ 成功：${successCount} 張\n\n` +
+      `💡 輸入「我的貼圖」查看作品`
+    );
+
     return {
       success: true,
       setId,
-      imageCount: processedImages.filter(p => p.status === 'completed').length
+      imageCount: successCount
     };
 
   } catch (error) {
@@ -161,6 +191,15 @@ async function executeGeneration(taskId, setId) {
       .eq('task_id', taskId);
 
     await updateStickerSetStatus(setId, 'failed');
+
+    // 通知用戶失敗
+    if (userId) {
+      await sendLineNotification(userId,
+        `❌ 貼圖生成失敗\n\n` +
+        `錯誤：${error.message}\n\n` +
+        `請輸入「創建貼圖」重新開始`
+      );
+    }
 
     throw error;
   }

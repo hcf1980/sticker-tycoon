@@ -115,7 +115,12 @@ async function handleTextMessage(replyToken, userId, text) {
     if (text === '確認生成') {
       return await handleConfirmGeneration(replyToken, userId, state);
     }
-    
+
+    // 查詢生成進度
+    if (text === '查詢進度' || text === '進度' || text === '生成進度') {
+      return await handleCheckProgress(replyToken, userId);
+    }
+
     // 5. 預設回覆 - 歡迎訊息
     return getLineClient().replyMessage(replyToken, generateWelcomeFlexMessage());
     
@@ -243,6 +248,64 @@ async function handleConfirmGeneration(replyToken, userId, state) {
   }
 
   return;
+}
+
+/**
+ * 查詢生成進度
+ */
+async function handleCheckProgress(replyToken, userId) {
+  try {
+    const { getLatestGenerationTask } = require('./supabase-client');
+    const task = await getLatestGenerationTask(userId);
+
+    if (!task) {
+      return getLineClient().replyMessage(replyToken, {
+        type: 'text',
+        text: '📊 目前沒有正在生成的任務\n\n輸入「創建貼圖」開始創建新貼圖！'
+      });
+    }
+
+    const statusEmoji = {
+      'pending': '⏳',
+      'processing': '🔄',
+      'completed': '✅',
+      'failed': '❌'
+    };
+
+    const statusText = {
+      'pending': '等待中',
+      'processing': '生成中',
+      'completed': '已完成',
+      'failed': '失敗'
+    };
+
+    const emoji = statusEmoji[task.status] || '❓';
+    const status = statusText[task.status] || task.status;
+
+    let message = `${emoji} 生成進度\n\n`;
+    message += `📊 狀態：${status}\n`;
+    message += `📈 進度：${task.progress || 0}%\n`;
+
+    if (task.status === 'completed') {
+      message += `\n✅ 生成完成！輸入「我的貼圖」查看作品`;
+    } else if (task.status === 'failed') {
+      message += `\n❌ 錯誤：${task.error_message || '未知錯誤'}\n請輸入「創建貼圖」重新開始`;
+    } else {
+      message += `\n⏳ 請稍候，完成後會通知你`;
+    }
+
+    return getLineClient().replyMessage(replyToken, {
+      type: 'text',
+      text: message
+    });
+
+  } catch (error) {
+    console.error('查詢進度失敗:', error);
+    return getLineClient().replyMessage(replyToken, {
+      type: 'text',
+      text: '⚠️ 查詢進度失敗，請稍後再試'
+    });
+  }
 }
 
 /**

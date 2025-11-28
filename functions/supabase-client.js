@@ -178,6 +178,26 @@ async function getStickerSet(setId) {
   }
 }
 
+/**
+ * 取得用戶最新的生成任務
+ */
+async function getLatestGenerationTask(userId) {
+  try {
+    const { data, error } = await getSupabaseClient()
+      .from('generation_tasks')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (error) throw error;
+    return data && data.length > 0 ? data[0] : null;
+  } catch (error) {
+    console.error('取得生成任務失敗:', error);
+    return null;
+  }
+}
+
 module.exports = {
   getSupabaseClient,
   isReplyTokenUsed,
@@ -186,6 +206,7 @@ module.exports = {
   getUserStickerSets,
   createStickerSet,
   updateStickerSetStatus,
-  getStickerSet
+  getStickerSet,
+  getLatestGenerationTask
 };
 
