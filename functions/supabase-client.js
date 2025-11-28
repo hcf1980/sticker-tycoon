@@ -192,6 +192,25 @@ async function getStickerSet(setId) {
 }
 
 /**
+ * 取得貼圖組的所有貼圖圖片
+ */
+async function getStickerImages(setId) {
+  try {
+    const { data, error } = await getSupabaseClient()
+      .from('stickers')
+      .select('sticker_id, index_number, expression, image_url, status')
+      .eq('set_id', setId)
+      .order('index_number', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('取得貼圖圖片失敗:', error);
+    return [];
+  }
+}
+
+/**
  * 刪除貼圖組
  */
 async function deleteStickerSet(setId, userId) {
@@ -318,6 +337,7 @@ module.exports = {
   createStickerSet,
   updateStickerSetStatus,
   getStickerSet,
+  getStickerImages,
   deleteStickerSet,
   getUserLatestTask,
   getUserPendingTasks

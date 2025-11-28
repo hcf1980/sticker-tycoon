@@ -5,7 +5,7 @@
 
 const line = require('@line/bot-sdk');
 const axios = require('axios');
-const { isReplyTokenUsed, recordReplyToken, getOrCreateUser, getUserStickerSets, getUserLatestTask, getUserPendingTasks, getStickerSet, deleteStickerSet } = require('./supabase-client');
+const { isReplyTokenUsed, recordReplyToken, getOrCreateUser, getUserStickerSets, getUserLatestTask, getUserPendingTasks, getStickerSet, getStickerImages, deleteStickerSet } = require('./supabase-client');
 const { ConversationStage, getConversationState, updateConversationState, resetConversationState, isInCreationFlow } = require('./conversation-state');
 const { generateWelcomeFlexMessage } = require('./sticker-flex-message');
 const { handleStartCreate, handleNaming, handleStyleSelection, handleCharacterDescription, handleExpressionTemplate, handleCountSelection, handlePhotoUpload } = require('./handlers/create-handler');
@@ -636,38 +636,24 @@ async function handleViewStickerSet(replyToken, userId, setId) {
       });
     }
 
+    // 從資料庫取得貼圖圖片
+    const stickers = await getStickerImages(set.set_id);
+    const completedStickers = stickers.filter(s => s.status === 'completed' && s.image_url);
+
+    console.log(`📷 貼圖組 ${set.set_id} 有 ${completedStickers.length} 張已完成貼圖`);
+
+    // 如果有貼圖，用輪播方式顯示
+    if (completedStickers.length > 0) {
+      return await sendStickerCarousel(replyToken, set, completedStickers);
+    }
+
+    // 沒有貼圖，顯示基本資訊
     const statusText = {
       'completed': '✅ 已完成',
       'processing': '⏳ 生成中',
       'pending': '🕐 等待中',
       'failed': '❌ 失敗'
     };
-
-    // 組裝貼圖預覽（最多顯示 4 張）
-    const stickers = set.stickers || [];
-    const previewStickers = stickers.slice(0, 4);
-
-    let stickerContents = [];
-    if (previewStickers.length > 0) {
-      stickerContents = [
-        { type: 'separator', margin: 'lg' },
-        { type: 'text', text: '📷 貼圖預覽', weight: 'bold', size: 'sm', margin: 'lg' },
-        {
-          type: 'box',
-          layout: 'horizontal',
-          margin: 'md',
-          spacing: 'sm',
-          contents: previewStickers.map(s => ({
-            type: 'image',
-            url: s.image_url || s.url,
-            size: 'sm',
-            aspectRatio: '1:1',
-            aspectMode: 'cover',
-            flex: 1
-          }))
-        }
-      ];
-    }
 
     const flexMessage = {
       type: 'flex',
@@ -680,35 +666,14 @@ async function handleViewStickerSet(replyToken, userId, setId) {
           contents: [
             { type: 'text', text: `📁 ${set.name || '未命名'}`, weight: 'bold', size: 'xl', wrap: true },
             { type: 'text', text: statusText[set.status] || set.status, size: 'sm', color: '#666666', margin: 'md' },
-            { type: 'text', text: `📊 貼圖數量：${set.sticker_count || stickers.length} 張`, size: 'sm', margin: 'sm' },
+            { type: 'text', text: `📊 貼圖數量：${set.sticker_count || 0} 張`, size: 'sm', margin: 'sm' },
             { type: 'text', text: `🎨 風格：${set.style || '未指定'}`, size: 'sm', margin: 'sm' },
             { type: 'text', text: `📅 建立時間：${new Date(set.created_at).toLocaleString('zh-TW')}`, size: 'xs', color: '#999999', margin: 'lg' },
-            ...stickerContents
+            { type: 'text', text: '（此貼圖組尚無已完成的貼圖）', size: 'xs', color: '#999999', margin: 'md' }
           ]
-        },
-        footer: set.status === 'completed' && set.download_url ? {
-          type: 'box',
-          layout: 'vertical',
-          contents: [
-            {
-              type: 'button',
-              style: 'primary',
-              color: '#06C755',
-              action: {
-                type: 'uri',
-                label: '📥 下載貼圖包',
-                uri: set.download_url
-              }
-            }
-          ]
-        } : undefined
+        }
       }
     };
-
-    // 移除 undefined 的 footer
-    if (!flexMessage.contents.footer) {
-      delete flexMessage.contents.footer;
-    }
 
     return getLineClient().replyMessage(replyToken, flexMessage);
 
@@ -719,6 +684,124 @@ async function handleViewStickerSet(replyToken, userId, setId) {
       text: '❌ 系統錯誤，請稍後再試'
     });
   }
+}
+
+/**
+ * 發送貼圖輪播訊息
+ */
+async function sendStickerCarousel(replyToken, set, stickers) {
+  const statusText = {
+    'completed': '✅ 已完成',
+    'processing': '⏳ 生成中',
+    'pending': '🕐 等待中',
+    'failed': '❌ 失敗'
+  };
+
+  // 第一張 bubble：貼圖組資訊
+  const infoBubble = {
+    type: 'bubble',
+    size: 'kilo',
+    header: {
+      type: 'box',
+      layout: 'vertical',
+      backgroundColor: '#FF6B6B',
+      paddingAll: 'lg',
+      contents: [
+        { type: 'text', text: `📁 ${set.name || '未命名'}`, weight: 'bold', size: 'lg', color: '#FFFFFF', wrap: true }
+      ]
+    },
+    body: {
+      type: 'box',
+      layout: 'vertical',
+      contents: [
+        { type: 'text', text: statusText[set.status] || set.status, size: 'md', color: '#06C755', weight: 'bold' },
+        { type: 'text', text: `📊 共 ${stickers.length} 張貼圖`, size: 'sm', margin: 'md' },
+        { type: 'text', text: `🎨 風格：${set.style || '未指定'}`, size: 'sm', margin: 'sm' },
+        { type: 'text', text: `📅 ${new Date(set.created_at).toLocaleDateString('zh-TW')}`, size: 'xs', color: '#999999', margin: 'lg' }
+      ]
+    }
+  };
+
+  // 每 2 張貼圖一個 bubble
+  const stickerBubbles = [];
+  for (let i = 0; i < stickers.length; i += 2) {
+    const pair = stickers.slice(i, i + 2);
+
+    const contents = pair.map(s => ({
+      type: 'box',
+      layout: 'vertical',
+      flex: 1,
+      contents: [
+        {
+          type: 'image',
+          url: s.image_url,
+          size: 'full',
+          aspectRatio: '1:1',
+          aspectMode: 'fit',
+          backgroundColor: '#F5F5F5'
+        },
+        {
+          type: 'text',
+          text: s.expression || `#${s.index_number}`,
+          size: 'xxs',
+          color: '#666666',
+          align: 'center',
+          margin: 'xs',
+          wrap: true,
+          maxLines: 1
+        }
+      ]
+    }));
+
+    // 如果只有一張，填充空白
+    if (contents.length === 1) {
+      contents.push({
+        type: 'box',
+        layout: 'vertical',
+        flex: 1,
+        contents: [{ type: 'filler' }]
+      });
+    }
+
+    stickerBubbles.push({
+      type: 'bubble',
+      size: 'kilo',
+      body: {
+        type: 'box',
+        layout: 'horizontal',
+        spacing: 'sm',
+        paddingAll: 'md',
+        contents: contents
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        contents: [
+          {
+            type: 'text',
+            text: `${Math.floor(i / 2) + 1} / ${Math.ceil(stickers.length / 2)}`,
+            size: 'xs',
+            color: '#999999',
+            align: 'center'
+          }
+        ]
+      }
+    });
+  }
+
+  // 組合輪播（最多 12 個 bubble）
+  const allBubbles = [infoBubble, ...stickerBubbles].slice(0, 12);
+
+  const carouselMessage = {
+    type: 'flex',
+    altText: `📁 ${set.name} - ${stickers.length} 張貼圖`,
+    contents: {
+      type: 'carousel',
+      contents: allBubbles
+    }
+  };
+
+  return getLineClient().replyMessage(replyToken, carouselMessage);
 }
 
 /**
