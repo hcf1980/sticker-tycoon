@@ -237,9 +237,8 @@ async function handleConfirmGeneration(replyToken, userId, state) {
           '💡 可以先去做其他事情，完成後會收到通知'
   });
 
-  // 觸發異步生成任務
+  // 建立生成任務（只存入資料庫，不觸發生成）
   try {
-    // 建立生成任務
     const { taskId, setId } = await createGenerationTask(userId, {
       name: tempData.name,
       style: tempData.style,
@@ -250,17 +249,6 @@ async function handleConfirmGeneration(replyToken, userId, state) {
     });
 
     console.log(`✅ 已建立生成任務: taskId=${taskId}, setId=${setId}`);
-
-    // 調用 Background Worker（不等待，立即返回）
-    const workerUrl = process.env.URL
-      ? `${process.env.URL}/.netlify/functions/sticker-generator-worker-background`
-      : 'http://localhost:8888/.netlify/functions/sticker-generator-worker-background';
-
-    // Fire-and-forget：發送請求後不等待回應
-    // Background Function 會在後台執行最多 15 分鐘
-    axios.post(workerUrl, { taskId, setId, userId })
-      .then(() => console.log('📤 已發送 Background Worker 請求'))
-      .catch(err => console.log('📤 Background Worker 請求已發送（可能超時但仍在執行）'));
 
     // 重置對話狀態
     await resetConversationState(userId);
