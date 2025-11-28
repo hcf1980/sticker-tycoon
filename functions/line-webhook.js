@@ -242,15 +242,15 @@ async function handleConfirmGeneration(replyToken, userId, state) {
   // 更新狀態為生成中
   await updateConversationState(userId, ConversationStage.GENERATING, tempData);
 
-  // 回覆生成中訊息
+  // 回覆生成中訊息（不再提到會通知）
   await getLineClient().replyMessage(replyToken, {
     type: 'text',
     text: '🎨 開始生成貼圖！\n\n' +
           `📛 名稱：${tempData.name}\n` +
           `📊 數量：${tempData.count} 張\n\n` +
-          '⏳ 預計需要 2-5 分鐘\n' +
-          '生成完成後會通知你！\n\n' +
-          '💡 可以先去做其他事情，完成後會收到通知'
+          '⏳ 預計需要 2-5 分鐘\n\n' +
+          '📋 輸入「查詢進度」查看生成進度\n' +
+          '📁 輸入「我的貼圖」查看完成的貼圖'
   });
 
   // 建立生成任務並觸發 Background Worker
@@ -343,10 +343,10 @@ async function handleCheckProgress(replyToken, userId) {
     pendingTasks.forEach((task, index) => {
       const setInfo = task.sticker_set;
       message += `${index + 1}. ${setInfo?.name || '未命名'}\n`;
-      message += `   進度：${task.progress || 0}%\n`;
+      message += `   📊 進度：${task.progress || 0}%\n`;
     });
 
-    message += '\n生成完成後會自動通知你！';
+    message += '\n💡 輸入「我的貼圖」查看完成的貼圖組';
 
     return getLineClient().replyMessage(replyToken, {
       type: 'text',

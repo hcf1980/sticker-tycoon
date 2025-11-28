@@ -90,6 +90,10 @@ async function executeGeneration(taskId, setId) {
   try {
     console.log(`🚀 開始執行生成任務：${taskId}`);
 
+    // 立即更新狀態為 processing（從 pending 變成 processing）
+    await updateTaskProgress(taskId, 5, 'processing');
+    console.log(`📊 任務狀態已更新為 processing`);
+
     // 取得貼圖組資料
     const stickerSet = await getStickerSet(setId);
     if (!stickerSet) {
@@ -101,8 +105,8 @@ async function executeGeneration(taskId, setId) {
     // 取得表情列表（預設使用基本日常）
     const expressions = DefaultExpressions.basic.expressions.slice(0, sticker_count);
 
-    // 更新進度：開始生成
-    await updateTaskProgress(taskId, 10);
+    // 更新進度：開始 AI 生成
+    await updateTaskProgress(taskId, 10, 'processing');
 
     // 1. AI 生成圖片（根據是否有照片選擇不同方式）
     console.log(`🎨 開始 AI 生成 ${sticker_count} 張貼圖...`);
@@ -117,7 +121,7 @@ async function executeGeneration(taskId, setId) {
       console.log('✏️ 使用角色描述模式生成');
       generatedImages = await generateStickerSet(style, character_prompt, expressions);
     }
-    await updateTaskProgress(taskId, 50);
+    await updateTaskProgress(taskId, 50, 'processing');
 
     // 2. 處理圖片（符合 LINE 規格）
     const successImages = generatedImages.filter(img => img.status === 'completed');
@@ -125,7 +129,7 @@ async function executeGeneration(taskId, setId) {
 
     console.log(`🖼️ 開始處理 ${imageUrls.length} 張圖片...`);
     const processedImages = await processStickerSet(imageUrls);
-    await updateTaskProgress(taskId, 80);
+    await updateTaskProgress(taskId, 80, 'processing');
 
     // 3. 生成主圖和標籤圖
     let mainImageBuffer = null;
@@ -135,7 +139,7 @@ async function executeGeneration(taskId, setId) {
       mainImageBuffer = await generateMainImage(imageUrls[0]);
       tabImageBuffer = await generateTabImage(imageUrls[0]);
     }
-    await updateTaskProgress(taskId, 90);
+    await updateTaskProgress(taskId, 90, 'processing');
 
     // 4. 上傳圖片到 Storage 並寫入資料庫
     const uploadResults = await uploadImagesToStorage(setId, processedImages, mainImageBuffer, tabImageBuffer, expressions);
@@ -256,40 +260,15 @@ async function uploadImagesToStorage(setId, processedImages, mainImageBuffer, ta
 }
 
 /**
- * 通知用戶生成結果
+ * 記錄生成結果（不再 Push 通知，由用戶自己查詢）
  */
-async function notifyUser(userId, success, setId, errorMessage = null) {
-  const line = require('@line/bot-sdk');
-  const client = new line.messagingApi.MessagingApiClient({
-    channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN
-  });
-
-  try {
-    if (success) {
-      await client.pushMessage({
-        to: userId,
-        messages: [{
-          type: 'text',
-          text: `🎉 貼圖生成完成！\n\n` +
-                `貼圖組 ID：${setId}\n\n` +
-                `輸入「我的貼圖」查看所有貼圖組`
-        }]
-      });
-    } else {
-      await client.pushMessage({
-        to: userId,
-        messages: [{
-          type: 'text',
-          text: `❌ 貼圖生成失敗\n\n` +
-                `錯誤：${errorMessage || '未知錯誤'}\n\n` +
-                `請輸入「創建貼圖」重試`
-        }]
-      });
-    }
-    console.log(`📨 已通知用戶 ${userId} 生成結果`);
-  } catch (error) {
-    console.error('❌ 通知用戶失敗:', error.message);
+async function logGenerationResult(userId, success, setId, errorMessage = null) {
+  if (success) {
+    console.log(`✅ 用戶 ${userId} 的貼圖組 ${setId} 生成完成，等待用戶查詢「我的貼圖」`);
+  } else {
+    console.log(`❌ 用戶 ${userId} 的貼圖組 ${setId} 生成失敗: ${errorMessage}`);
   }
+  // 不發送 Push 通知，由用戶自己輸入「我的貼圖」或「查詢進度」查看
 }
 
 /**
@@ -316,8 +295,8 @@ exports.handler = async function(event, context) {
     // 執行生成（這可能需要幾分鐘）
     const result = await executeGeneration(taskId, setId);
 
-    // 通知用戶完成
-    await notifyUser(userId, true, setId);
+    // 記錄完成（不 Push 通知）
+    logGenerationResult(userId, true, setId);
 
     console.log(`✅ Background Worker 完成：${JSON.stringify(result)}`);
     return { statusCode: 200, body: JSON.stringify(result) };
@@ -326,14 +305,14 @@ exports.handler = async function(event, context) {
     console.error('❌ Background Worker 執行失敗:', error.message);
     console.error('❌ 錯誤堆疊:', error.stack);
 
-    // 嘗試通知用戶失敗
+    // 記錄失敗（不 Push 通知）
     try {
       const body = JSON.parse(event.body || '{}');
       if (body.userId) {
-        await notifyUser(body.userId, false, body.setId, error.message);
+        logGenerationResult(body.userId, false, body.setId, error.message);
       }
     } catch (e) {
-      console.error('❌ 通知失敗:', e.message);
+      console.error('❌ 記錄失敗:', e.message);
     }
 
     return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
