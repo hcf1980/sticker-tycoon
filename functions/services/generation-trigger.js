@@ -45,19 +45,28 @@ async function triggerStickerGeneration(userId, tempData) {
 
     console.log(`📡 調用 Background Worker: ${fullUrl}`);
 
-    // Fire and forget - Background Function 會在背景執行
-    fetch(fullUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ taskId, setId })
-    }).then(response => {
-      console.log(`📡 Background Worker 已接受任務: ${response.status}`);
-    }).catch(error => {
-      console.error('📡 Background Worker 調用失敗:', error.message);
-    });
+    // 等待請求發送完成（Background Function 會在後台繼續運行）
+    try {
+      const response = await fetch(fullUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ taskId, setId })
+      });
+      console.log(`📡 Background Worker 回應: ${response.status}`);
 
+      // 202 = 已接受（Background Function）
+      // 200 = 同步完成
+      if (response.status !== 200 && response.status !== 202) {
+        const text = await response.text();
+        console.error(`❌ Background Worker 錯誤: ${text}`);
+      }
+    } catch (fetchError) {
+      console.error('📡 Background Worker 調用失敗:', fetchError.message);
+    }
+
+    console.log('✅ 已觸發貼圖生成任務');
     return { triggered: true, taskId, setId };
 
   } catch (error) {
