@@ -137,8 +137,8 @@ async function executeGeneration(taskId, setId) {
     }
     await updateTaskProgress(taskId, 90);
 
-    // 4. 上傳圖片到 Storage
-    const uploadResults = await uploadImagesToStorage(setId, processedImages, mainImageBuffer, tabImageBuffer);
+    // 4. 上傳圖片到 Storage 並寫入資料庫
+    const uploadResults = await uploadImagesToStorage(setId, processedImages, mainImageBuffer, tabImageBuffer, expressions);
 
     // 5. 更新貼圖組狀態
     await updateStickerSetStatus(setId, 'completed', {
@@ -176,12 +176,12 @@ async function executeGeneration(taskId, setId) {
 }
 
 /**
- * 上傳圖片到 Supabase Storage
+ * 上傳圖片到 Supabase Storage 並寫入 stickers 資料表
  */
-async function uploadImagesToStorage(setId, processedImages, mainImageBuffer, tabImageBuffer) {
+async function uploadImagesToStorage(setId, processedImages, mainImageBuffer, tabImageBuffer, expressions = []) {
   const supabase = getSupabaseClient();
   const bucket = 'sticker-images';
-  const uploadResults = { imageUrls: [], mainImageUrl: null, tabImageUrl: null };
+  const uploadResults = { imageUrls: [], mainImageUrl: null, tabImageUrl: null, stickerRecords: [] };
 
   try {
     // 上傳主圖
@@ -208,7 +208,7 @@ async function uploadImagesToStorage(setId, processedImages, mainImageBuffer, ta
       }
     }
 
-    // 上傳貼圖
+    // 上傳貼圖並寫入資料庫
     for (const img of processedImages) {
       if (img.status !== 'completed' || !img.buffer) continue;
 
@@ -216,13 +216,37 @@ async function uploadImagesToStorage(setId, processedImages, mainImageBuffer, ta
       const { error } = await supabase.storage.from(bucket).upload(stickerPath, img.buffer, {
         contentType: 'image/png', upsert: true
       });
+
       if (!error) {
         const { data } = supabase.storage.from(bucket).getPublicUrl(stickerPath);
-        uploadResults.imageUrls.push(data.publicUrl);
+        const imageUrl = data.publicUrl;
+        uploadResults.imageUrls.push(imageUrl);
+
+        // 寫入 stickers 資料表
+        const stickerId = uuidv4();
+        const expression = expressions[img.index - 1] || `表情 ${img.index}`;
+
+        const { error: dbError } = await supabase
+          .from('stickers')
+          .insert([{
+            sticker_id: stickerId,
+            set_id: setId,
+            index_number: img.index,
+            expression: expression,
+            image_url: imageUrl,
+            status: 'completed'
+          }]);
+
+        if (dbError) {
+          console.error(`❌ 寫入貼圖記錄失敗 (${img.index}):`, dbError);
+        } else {
+          uploadResults.stickerRecords.push({ stickerId, index: img.index, imageUrl });
+        }
       }
     }
 
     console.log(`📤 已上傳 ${uploadResults.imageUrls.length} 張貼圖到 Storage`);
+    console.log(`📝 已寫入 ${uploadResults.stickerRecords.length} 筆貼圖記錄到資料庫`);
     return uploadResults;
 
   } catch (error) {
