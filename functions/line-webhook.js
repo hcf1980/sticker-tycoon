@@ -186,6 +186,14 @@ async function handleCreationFlow(replyToken, userId, text, stage, state) {
     case ConversationStage.CHARACTER:
       message = await handleCharacterDescription(userId, text);
       break;
+    case ConversationStage.CONFIRMING:
+      // 處理確認生成
+      if (text === '確認生成') {
+        return await handleConfirmGeneration(replyToken, userId, state);
+      } else {
+        message = { type: 'text', text: '⚠️ 請點擊「開始生成」按鈕或輸入「取消」重新開始' };
+      }
+      break;
     default:
       message = { type: 'text', text: '⚠️ 請按照提示操作或輸入「取消」重新開始' };
   }
