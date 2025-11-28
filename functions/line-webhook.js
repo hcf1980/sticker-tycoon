@@ -237,7 +237,7 @@ async function handleConfirmGeneration(replyToken, userId, state) {
           '💡 可以先去做其他事情，完成後會收到通知'
   });
 
-  // 建立生成任務（只存入資料庫，不觸發生成）
+  // 建立生成任務並觸發 Background Worker
   try {
     const { taskId, setId } = await createGenerationTask(userId, {
       name: tempData.name,
@@ -249,6 +249,21 @@ async function handleConfirmGeneration(replyToken, userId, state) {
     });
 
     console.log(`✅ 已建立生成任務: taskId=${taskId}, setId=${setId}`);
+
+    // 觸發 Background Worker 執行生成
+    const workerUrl = `${process.env.URL || 'https://sticker-tycoon.netlify.app'}/.netlify/functions/sticker-generator-worker-background`;
+    console.log(`🚀 觸發 Background Worker: ${workerUrl}`);
+
+    // 使用 fetch 非同步調用 Background Function
+    fetch(workerUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ taskId, setId, userId })
+    }).then(res => {
+      console.log(`📡 Worker 回應狀態: ${res.status}`);
+    }).catch(err => {
+      console.error('❌ Worker 調用失敗:', err.message);
+    });
 
     // 重置對話狀態
     await resetConversationState(userId);
