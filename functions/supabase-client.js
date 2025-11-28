@@ -183,30 +183,34 @@ async function getStickerSet(setId) {
  */
 async function getUserLatestTask(userId) {
   try {
-    const { data, error } = await getSupabaseClient()
+    const supabase = getSupabaseClient();
+
+    // 先查詢任務
+    const { data: task, error: taskError } = await supabase
       .from('generation_tasks')
-      .select(`
-        task_id,
-        status,
-        progress,
-        created_at,
-        sticker_sets (
-          set_id,
-          name,
-          status,
-          sticker_count
-        )
-      `)
+      .select('task_id, set_id, status, progress, created_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(1)
       .single();
 
-    if (error) {
-      if (error.code === 'PGRST116') return null; // 沒有記錄
-      throw error;
+    if (taskError) {
+      if (taskError.code === 'PGRST116') return null; // 沒有記錄
+      throw taskError;
     }
-    return data;
+
+    // 再查詢對應的貼圖組
+    if (task && task.set_id) {
+      const { data: stickerSet } = await supabase
+        .from('sticker_sets')
+        .select('set_id, name, status, sticker_count')
+        .eq('set_id', task.set_id)
+        .single();
+
+      task.sticker_set = stickerSet;
+    }
+
+    return task;
   } catch (error) {
     console.error('取得最新任務失敗:', error);
     return null;
@@ -218,25 +222,34 @@ async function getUserLatestTask(userId) {
  */
 async function getUserPendingTasks(userId) {
   try {
-    const { data, error } = await getSupabaseClient()
+    const supabase = getSupabaseClient();
+
+    // 查詢進行中的任務
+    const { data: tasks, error } = await supabase
       .from('generation_tasks')
-      .select(`
-        task_id,
-        status,
-        progress,
-        created_at,
-        sticker_sets (
-          set_id,
-          name,
-          status
-        )
-      `)
+      .select('task_id, set_id, status, progress, created_at')
       .eq('user_id', userId)
       .in('status', ['pending', 'processing'])
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    if (!tasks || tasks.length === 0) return [];
+
+    // 查詢對應的貼圖組
+    const setIds = tasks.map(t => t.set_id).filter(Boolean);
+    if (setIds.length > 0) {
+      const { data: stickerSets } = await supabase
+        .from('sticker_sets')
+        .select('set_id, name, status')
+        .in('set_id', setIds);
+
+      // 合併資料
+      const setMap = {};
+      (stickerSets || []).forEach(s => setMap[s.set_id] = s);
+      tasks.forEach(t => t.sticker_set = setMap[t.set_id] || null);
+    }
+
+    return tasks;
   } catch (error) {
     console.error('取得進行中任務失敗:', error);
     return [];

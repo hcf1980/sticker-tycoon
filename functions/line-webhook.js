@@ -303,7 +303,7 @@ async function handleCheckProgress(replyToken, userId) {
         'processing': '🔄'
       };
 
-      const setInfo = latestTask.sticker_sets;
+      const setInfo = latestTask.sticker_set;
       return getLineClient().replyMessage(replyToken, {
         type: 'text',
         text: `📋 最新任務狀態\n\n` +
@@ -322,7 +322,7 @@ async function handleCheckProgress(replyToken, userId) {
     let message = `🔄 進行中的任務：${pendingTasks.length} 個\n\n`;
 
     pendingTasks.forEach((task, index) => {
-      const setInfo = task.sticker_sets;
+      const setInfo = task.sticker_set;
       message += `${index + 1}. ${setInfo?.name || '未命名'}\n`;
       message += `   進度：${task.progress || 0}%\n`;
     });
