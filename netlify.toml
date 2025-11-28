@@ -15,6 +15,10 @@
 [functions."sticker-generator-worker"]
   timeout = 60
 
+# 貼圖生成 Background Worker（異步執行，最長 15 分鐘）
+[functions."sticker-generator-worker-background"]
+  timeout = 900
+
 # 圖片處理（去背、縮放等）
 [functions."image-processor"]
   timeout = 30

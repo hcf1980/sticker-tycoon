@@ -291,11 +291,13 @@ async function uploadImagesToStorage(setId, processedImages, mainImageBuffer, ta
 }
 
 /**
- * Netlify Background Function Handler
- * 文件名包含 -background 所以會作為 Background Function 運行（最長 15 分鐘）
+ * Netlify Function Handler (Long-running)
+ * 配置 timeout = 900 (15分鐘) 在 netlify.toml
+ *
+ * 注意：這個函數會阻塞執行直到完成，Netlify 會等待最多 15 分鐘
  */
 exports.handler = async function(event, context) {
-  console.log('🔔 Sticker Generator Background Worker 啟動');
+  console.log('🔔 Sticker Generator Worker 啟動');
   console.log('📦 Event body:', event.body);
 
   let taskId, setId;
@@ -312,10 +314,10 @@ exports.handler = async function(event, context) {
       return { statusCode: 400, body: JSON.stringify({ error: 'Missing taskId or setId' }) };
     }
 
-    // Background Function 可以長時間運行，直接執行生成
-    console.log('✅ 開始背景生成任務...');
+    // 直接執行生成（會阻塞直到完成）
+    console.log('✅ 開始執行生成任務...');
     const result = await executeGeneration(taskId, setId);
-    console.log('✅ 背景生成完成:', result);
+    console.log('✅ 生成完成:', result);
 
     return {
       statusCode: 200,
@@ -338,6 +340,7 @@ exports.handler = async function(event, context) {
             result_json: { error: error.message, stack: error.stack }
           })
           .eq('task_id', taskId);
+        console.log('✅ 錯誤狀態已更新到資料庫');
       } catch (dbError) {
         console.error('❌ 無法更新錯誤狀態:', dbError);
       }
