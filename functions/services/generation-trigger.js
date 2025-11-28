@@ -38,32 +38,22 @@ async function triggerStickerGeneration(userId, tempData) {
     const { taskId, setId } = await createGenerationTask(userId, setData);
     console.log(`✅ 已建立任務：taskId=${taskId}, setId=${setId}`);
 
-    // 調用長時間運行的 Worker 函數
-    const workerUrl = '/.netlify/functions/sticker-generator-worker';
+    // 調用專門的生成端點（長時間運行）
+    const workerUrl = '/.netlify/functions/sticker-generator-execute';
     const fullUrl = `${process.env.URL || 'https://sticker-tycoon.netlify.app'}${workerUrl}`;
 
-    console.log(`📡 調用 Worker: ${fullUrl}`);
+    console.log(`📡 調用生成端點: ${fullUrl}`);
 
-    // Fire-and-forget：發送請求但不等待完成
-    // 使用 Promise 確保請求被發送，但立即返回
-    const workerPromise = fetch(fullUrl, {
+    // Fire-and-forget：不等待回應
+    fetch(fullUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ taskId, setId })
-    }).then(response => {
-      console.log(`📡 Worker 已接受任務: ${response.status}`);
-      return response;
     }).catch(error => {
-      console.error('📡 Worker 調用失敗:', error.message);
+      console.error('📡 調用失敗:', error.message);
     });
-
-    // 等待請求發送（但不等待 Worker 執行完成）
-    await Promise.race([
-      workerPromise,
-      new Promise(resolve => setTimeout(resolve, 1000)) // 最多等 1 秒
-    ]);
 
     console.log('✅ 已觸發貼圖生成任務');
     return { triggered: true, taskId, setId };

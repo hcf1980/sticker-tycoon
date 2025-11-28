@@ -11,6 +11,10 @@
 [functions."line-webhook"]
   timeout = 10
 
+# 貼圖生成執行端點（長時間運行，最長 15 分鐘）
+[functions."sticker-generator-execute"]
+  timeout = 900
+
 # 貼圖生成 Worker（長時間運行，最長 15 分鐘）
 [functions."sticker-generator-worker"]
   timeout = 900
