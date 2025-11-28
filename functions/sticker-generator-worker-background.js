@@ -137,6 +137,13 @@ async function executeGeneration(taskId, setId) {
     const imageUrls = successImages.map(img => img.imageUrl);
     console.log(`📊 成功的圖片: ${successImages.length} 張, URLs: ${imageUrls.length} 個`);
 
+    // 檢查是否有成功生成的圖片
+    if (imageUrls.length === 0) {
+      // 沒有任何圖片成功生成，標記為失敗
+      const failedReasons = generatedImages.filter(img => img.status === 'failed').map(img => img.error).join('; ');
+      throw new Error(`所有圖片生成失敗：${failedReasons || 'API 錯誤'}`);
+    }
+
     console.log(`🖼️ 開始處理 ${imageUrls.length} 張圖片...`);
     const processedImages = await processStickerSet(imageUrls);
     await updateTaskProgress(taskId, 80, 'processing');
@@ -154,6 +161,12 @@ async function executeGeneration(taskId, setId) {
     // 4. 上傳圖片到 Storage 並寫入資料庫
     const uploadResults = await uploadImagesToStorage(setId, processedImages, mainImageBuffer, tabImageBuffer, expressions);
 
+    // 檢查上傳結果
+    const uploadedCount = uploadResults.stickerRecords?.length || 0;
+    if (uploadedCount === 0) {
+      throw new Error('圖片上傳失敗，沒有任何貼圖被保存');
+    }
+
     // 5. 更新貼圖組狀態
     await updateStickerSetStatus(setId, 'completed', {
       main_image_url: uploadResults.mainImageUrl,
@@ -162,7 +175,7 @@ async function executeGeneration(taskId, setId) {
 
     // 6. 完成任務
     await updateTaskProgress(taskId, 100, 'completed');
-    console.log(`✅ 貼圖組 ${setId} 生成完成！`);
+    console.log(`✅ 貼圖組 ${setId} 生成完成！共 ${uploadedCount} 張貼圖`);
 
     return {
       success: true,
