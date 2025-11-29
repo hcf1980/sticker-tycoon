@@ -323,11 +323,11 @@ async function generateStickerSet(style, characterDescription, expressions) {
  * - Character ID 確保整組貼圖的角色外觀 100% 一致
  * - DeepSeek 動態優化表情描述，讓每組都有獨特變化
  */
-async function generateStickerSetFromPhoto(photoBase64, style, expressions) {
+async function generateStickerSetFromPhoto(photoBase64, style, expressions, sceneConfig = null) {
   const results = [];
   const total = expressions.length;
 
-  console.log(`📷 開始從照片批次生成 ${total} 張貼圖（V2.1 DeepSeek 動態優化）`);
+  console.log(`📷 開始從照片批次生成 ${total} 張貼圖（V2.2 場景支援版）`);
 
   // 🆔 生成角色一致性 ID（基於照片內容的 hash）
   const characterID = generateCharacterID(photoBase64.slice(0, 1000) + style);
@@ -335,18 +335,24 @@ async function generateStickerSetFromPhoto(photoBase64, style, expressions) {
   console.log(`🆔 角色一致性 ID：${characterID}`);
   console.log(`🎨 風格：${style}`);
   console.log(`📝 表情數量：${total}`);
+  if (sceneConfig) {
+    console.log(`🌍 場景：${sceneConfig.name} (${sceneConfig.id})`);
+  }
 
-  // 🧠 使用 DeepSeek 動態優化表情描述
-  // DeepSeek 動態優化（已降低 temperature 確保一致性）
+  // 🧠 使用 DeepSeek 動態優化表情描述（含場景）
   let enhancedData = null;
-  const USE_DEEPSEEK = true; // 重新啟用
+  const USE_DEEPSEEK = true;
 
   if (USE_DEEPSEEK && isDeepSeekAvailable()) {
     try {
-      enhancedData = await enhanceExpressions(style, expressions, characterID);
+      // 傳入場景配置給 DeepSeek
+      enhancedData = await enhanceExpressions(style, expressions, characterID, sceneConfig);
       if (enhancedData) {
         console.log(`✅ DeepSeek 表情優化成功！`);
         console.log(`📝 角色基礎：${enhancedData.characterBase}`);
+        if (sceneConfig) {
+          console.log(`🌍 場景應用：${enhancedData.sceneApplied || sceneConfig.name}`);
+        }
       }
     } catch (error) {
       console.log(`⚠️ DeepSeek 優化失敗，使用預設描述：${error.message}`);
@@ -366,13 +372,14 @@ async function generateStickerSetFromPhoto(photoBase64, style, expressions) {
     }
 
     try {
-      // 傳入 Character ID 和優化資料確保一致性
+      // 傳入 Character ID、優化資料和場景配置確保一致性
       const imageUrl = await generateStickerFromPhotoEnhanced(
         photoBase64,
         style,
         expression,
         characterID,
-        enhancedData
+        enhancedData,
+        sceneConfig
       );
       results.push({
         index: i + 1,
@@ -408,13 +415,13 @@ async function generateStickerSetFromPhoto(photoBase64, style, expressions) {
 }
 
 /**
- * 🎨 使用 DeepSeek 優化的照片貼圖生成
+ * 🎨 使用 DeepSeek 優化的照片貼圖生成（V2.2 含場景支援）
  */
-async function generateStickerFromPhotoEnhanced(photoBase64, style, expression, characterID, enhancedData) {
+async function generateStickerFromPhotoEnhanced(photoBase64, style, expression, characterID, enhancedData, sceneConfig = null) {
   console.log(`🎨 生成照片貼圖：${expression} (${style}風格)`);
 
-  // 取得基礎 prompt
-  const { prompt: basePrompt, negativePrompt } = generatePhotoStickerPromptV2(style, expression, characterID);
+  // 取得基礎 prompt（含場景配置）
+  const { prompt: basePrompt, negativePrompt } = generatePhotoStickerPromptV2(style, expression, characterID, sceneConfig);
 
   // 如果有 DeepSeek 優化資料，增強 prompt
   let finalPrompt = basePrompt;
@@ -432,7 +439,7 @@ Expression detail: ${enhancedExpression}`;
     }
   }
 
-  // 🔒 極簡最終要求（放在最後）
+  // 🔒 極簡最終要求（放在最後）- 加入禁止圓框
   const absoluteRequirements = `
 
 === 🔒 FINAL OUTPUT REQUIREMENTS ===
@@ -441,10 +448,15 @@ Expression detail: ${enhancedExpression}`;
 3. CHARACTER: Same as photo, ID: ${characterID}
 4. STYLE: Apply ${style} style distinctly
 5. OUTLINES: Thick black (2-3px)
-6. COMPOSITION: Upper body, centered, 70-80% fill
+6. COMPOSITION: Upper body, centered, 70-80% fill, FREE-FLOATING
 7. TEXT: NONE
+8. NO FRAMES: NO circular frame, NO border, NO avatar style, NO vignette
 
-CRITICAL: Background MUST be transparent (PNG cutout style).
+CRITICAL:
+- Background MUST be transparent (PNG cutout style)
+- Character must be FREE-FLOATING, NO circular frames
+- Skin tone MUST be warm peachy-beige, consistent across all stickers
+
 Generate the ${style} style sticker NOW.`;
 
   finalPrompt += absoluteRequirements;

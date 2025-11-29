@@ -18,7 +18,7 @@ async function createGenerationTask(userId, setData) {
   const setId = uuidv4();
 
   try {
-    // 建立貼圖組記錄（包含用戶選擇的表情）
+    // 建立貼圖組記錄（包含用戶選擇的表情和場景）
     const { error: setError } = await supabase
       .from('sticker_sets')
       .insert([{
@@ -32,6 +32,8 @@ async function createGenerationTask(userId, setData) {
         photo_base64: setData.photoBase64 || null,  // 照片 Base64（用於 AI 生成）
         sticker_count: setData.count,
         expressions: JSON.stringify(setData.expressions || []), // 用戶選擇的表情列表
+        scene: setData.scene || 'none',             // 場景 ID
+        scene_config: setData.sceneConfig ? JSON.stringify(setData.sceneConfig) : null, // 場景配置
         status: 'generating'
       }]);
 
@@ -101,13 +103,25 @@ async function executeGeneration(taskId, setId) {
       throw new Error('找不到貼圖組資料');
     }
 
-    const { style, character_prompt, sticker_count, photo_base64, expressions: expressionsJson } = stickerSet;
+    const { style, character_prompt, sticker_count, photo_base64, expressions: expressionsJson, scene, scene_config: sceneConfigJson } = stickerSet;
 
     // 詳細日誌
     console.log(`📋 貼圖組資料：style=${style}, count=${sticker_count}`);
     console.log(`📋 photo_base64 長度: ${photo_base64 ? photo_base64.length : 0}`);
     console.log(`📋 character_prompt: ${character_prompt || '(無)'}`);
     console.log(`📋 expressions JSON: ${expressionsJson || '(無)'}`);
+    console.log(`📋 scene: ${scene || 'none'}`);
+
+    // 解析場景配置
+    let sceneConfig = null;
+    if (sceneConfigJson) {
+      try {
+        sceneConfig = JSON.parse(sceneConfigJson);
+        console.log(`🌍 使用場景: ${sceneConfig.name} (${sceneConfig.id})`);
+      } catch (e) {
+        console.log(`⚠️ 解析場景JSON失敗: ${e.message}`);
+      }
+    }
 
     // 取得表情列表：優先使用用戶選擇的，否則使用基本日常
     let expressions;
@@ -136,9 +150,9 @@ async function executeGeneration(taskId, setId) {
     let generatedImages;
 
     if (photo_base64) {
-      // 照片流程：使用照片生成
+      // 照片流程：使用照片生成（含場景配置）
       console.log('📷 使用照片模式生成');
-      generatedImages = await generateStickerSetFromPhoto(photo_base64, style, expressions);
+      generatedImages = await generateStickerSetFromPhoto(photo_base64, style, expressions, sceneConfig);
     } else {
       // 傳統流程：使用角色描述生成
       console.log('✏️ 使用角色描述模式生成');

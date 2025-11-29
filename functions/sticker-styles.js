@@ -312,6 +312,94 @@ const DefaultExpressions = {
 };
 
 /**
+ * 🌍 場景/配件模板
+ * 用戶可選擇場景，DeepSeek 會根據場景生成對應的動作/配件描述
+ * 注意：背景仍然是透明的，只是動作和配件會參考場景
+ */
+const SceneTemplates = {
+  none: {
+    id: 'none',
+    name: '無場景',
+    emoji: '✨',
+    description: '純淨簡約，無特殊場景',
+    promptHint: 'simple clean pose, no props, no accessories',
+    suggestedProps: []
+  },
+  office: {
+    id: 'office',
+    name: '辦公室',
+    emoji: '💼',
+    description: '上班族日常、辦公室場景',
+    promptHint: 'office worker pose, business casual style',
+    suggestedProps: ['laptop', 'coffee cup', 'documents', 'pen', 'phone']
+  },
+  travel_asia: {
+    id: 'travel_asia',
+    name: '亞洲旅遊',
+    emoji: '🏯',
+    description: '亞洲景點打卡（中正紀念堂、魚尾獅等）',
+    promptHint: 'tourist pose, travel photo style, sightseeing gesture',
+    suggestedProps: ['camera', 'peace sign', 'map', 'backpack', 'souvenir']
+  },
+  travel_europe: {
+    id: 'travel_europe',
+    name: '歐洲旅遊',
+    emoji: '🗼',
+    description: '歐洲景點打卡（羅浮宮、艾菲爾鐵塔等）',
+    promptHint: 'elegant tourist pose, artistic photo style',
+    suggestedProps: ['camera', 'beret', 'croissant', 'wine glass', 'art book']
+  },
+  fitness: {
+    id: 'fitness',
+    name: '運動健身',
+    emoji: '💪',
+    description: '健身、瑜伽、運動場景',
+    promptHint: 'athletic pose, energetic sports gesture',
+    suggestedProps: ['dumbbell', 'yoga mat', 'water bottle', 'towel', 'headband']
+  },
+  food: {
+    id: 'food',
+    name: '美食饗宴',
+    emoji: '🍜',
+    description: '吃貨日常、美食場景',
+    promptHint: 'foodie pose, eating gesture, happy dining',
+    suggestedProps: ['chopsticks', 'fork', 'bowl', 'cup', 'chef hat']
+  },
+  music: {
+    id: 'music',
+    name: '音樂表演',
+    emoji: '🎤',
+    description: '唱歌、演奏、音樂場景',
+    promptHint: 'performer pose, singing or playing instrument gesture',
+    suggestedProps: ['microphone', 'guitar', 'headphones', 'music notes']
+  },
+  relaxing: {
+    id: 'relaxing',
+    name: '居家放鬆',
+    emoji: '🛋️',
+    description: '在家耍廢、追劇、放鬆',
+    promptHint: 'relaxed lazy pose, cozy at home gesture',
+    suggestedProps: ['pillow', 'blanket', 'snacks', 'remote control', 'slippers']
+  },
+  celebration: {
+    id: 'celebration',
+    name: '節慶派對',
+    emoji: '🎉',
+    description: '生日、節日、慶祝場景',
+    promptHint: 'celebration pose, party gesture, festive mood',
+    suggestedProps: ['party hat', 'balloon', 'confetti', 'gift box', 'cake']
+  },
+  custom: {
+    id: 'custom',
+    name: '自訂場景',
+    emoji: '✏️',
+    description: '自己描述想要的場景',
+    promptHint: '',
+    suggestedProps: []
+  }
+};
+
+/**
  * 生成完整的 AI 提示詞（舊版，保留向後兼容）
  */
 function generateStickerPrompt(style, characterDescription, expression) {
@@ -377,14 +465,22 @@ function generateStickerPromptV2(style, characterDescription, expression) {
 
 /**
  * 🎯 生成照片貼圖的增強 Prompt V3.0
- * - 純白背景
+ * - 透明背景
  * - 風格差異化（StyleEnhancer）
  * - 角色一致性
+ * - 場景/配件支援（V3.1）
  */
-function generatePhotoStickerPromptV2(style, expression, characterID = null) {
+function generatePhotoStickerPromptV2(style, expression, characterID = null, sceneConfig = null) {
   const styleConfig = StickerStyles[style] || StickerStyles.cute;
   const styleEnhance = StyleEnhancer[style] || StyleEnhancer.cute;
   const expressionEnhance = ExpressionEnhancer[expression] || expression;
+
+  // 場景配置（如果有）
+  const scene = sceneConfig || { promptHint: '', suggestedProps: [] };
+  const scenePrompt = scene.promptHint ? `\n- SCENE CONTEXT: ${scene.promptHint}` : '';
+  const propsPrompt = scene.suggestedProps?.length > 0
+    ? `\n- MAY INCLUDE PROPS: ${scene.suggestedProps.slice(0, 2).join(', ')} (optional, small and simple)`
+    : '';
 
   const prompt = `Transform this photo into a LINE sticker illustration.
 
@@ -400,41 +496,52 @@ STYLE DETAILS:
 === 😊 EXPRESSION: ${expression} ===
 ${expressionEnhance}
 - Show emotion through FACE and HAND GESTURE
-- Make expression clear and exaggerated for sticker use
+- Make expression clear and exaggerated for sticker use${scenePrompt}${propsPrompt}
 
-=== � CHARACTER (MUST BE CONSISTENT) ===
+=== 👤 CHARACTER (MUST BE CONSISTENT) ===
 Character ID: ${characterID || 'default'}
 - Copy EXACT face from photo: same face shape, eyes, nose, mouth
 - Copy EXACT hairstyle and hair color from photo
 - SAME outfit in ALL stickers: plain white t-shirt, NO patterns
 - Upper body only (head to chest)
 
-=== ⚠️ TECHNICAL REQUIREMENTS ===
-1. BACKGROUND: 100% TRANSPARENT (alpha channel = 0) - NO white, NO gray, NO color at all
-2. T-SHIRT: Solid pure white (#FFFFFF), NO patterns, NO stripes, NO prints
+=== ⚠️ TECHNICAL REQUIREMENTS (STRICT) ===
+1. BACKGROUND: 100% TRANSPARENT (alpha=0) - NO white, NO gray, NO color
+2. T-SHIRT: Solid pure white (#FFFFFF), NO patterns, NO stripes
 3. OUTLINES: Thick black lines (2-3px) for visibility
 4. COMPOSITION: Centered, fills 70-80% of canvas
 5. NO TEXT: Zero letters, numbers, symbols, watermarks
-6. IMAGE SIZE: 370px width × 320px height (LINE sticker standard)
+6. IMAGE SIZE: 370px width × 320px height
 
-=== 🎨 COLOR REQUIREMENTS ===
-- HIGH SATURATION: Use vivid, vibrant colors (not pale or washed out)
-- HIGH CONTRAST: Strong distinction between light and dark areas
-- BOLD SKIN TONES: Warm, healthy skin color (not grayish or pale)
-- RICH HAIR COLOR: Deep, saturated hair colors
-- BRIGHT EYES: Lively, expressive eye colors
+=== 🚫 ABSOLUTELY FORBIDDEN (一致性必須遵守) ===
+- NO circular frame, NO round border, NO circle crop, NO vignette
+- NO profile picture style, NO avatar circle
+- Character must be FREE-FLOATING on transparent background
+- NO decorative borders or frames of any kind
 
-CRITICAL: Background MUST be fully transparent (like PNG cutout), NOT white, NOT any color.
-Colors should be VIVID and POP, suitable for small sticker display.
+=== 🎨 COLOR CONSISTENCY (必須一致) ===
+- SKIN TONE: Warm peachy-beige (#FFCCAA to #FFE4C4), consistent across ALL stickers
+- HAIR COLOR: Same exact color in ALL stickers (copy from photo)
+- CHEEKS: Soft pink blush (#FFB6C1) for cute expressions
+- EYES: Same eye color in ALL stickers
+- HIGH SATURATION: Vivid colors, not pale or washed out
+- HIGH CONTRAST: Strong light/dark distinction
 
-OUTPUT: ${styleConfig.name} style LINE sticker at 370x320px with TRANSPARENT background, expressive ${expression} face, VIBRANT saturated colors.`;
+CRITICAL:
+- Background MUST be fully transparent (PNG cutout style)
+- NO circular frames or borders
+- Same skin tone, hair color, eye color in EVERY sticker
+
+OUTPUT: ${styleConfig.name} LINE sticker, 370x320px, TRANSPARENT background, NO frame, consistent ${expression} face.`;
 
   const negativePrompt = `
-    white background, gray background, colored background, solid background, gradient background,
+    white background, gray background, colored background, solid background,
+    circular frame, round border, circle crop, avatar style, profile picture frame, vignette,
+    decorative border, ornamental frame,
     patterned shirt, striped shirt, printed shirt, gray shirt,
     text, words, letters, numbers, watermark, logo,
     full body, legs, feet,
-    different face, inconsistent character,
+    different face, inconsistent character, different skin tone, pale skin, gray skin,
     realistic photo, 3D render
   `.replace(/\s+/g, ' ').trim();
 
@@ -456,6 +563,20 @@ function getAllStyles() {
  */
 function getAllExpressionTemplates() {
   return Object.values(DefaultExpressions);
+}
+
+/**
+ * 取得所有場景模板
+ */
+function getAllSceneTemplates() {
+  return Object.values(SceneTemplates);
+}
+
+/**
+ * 取得場景配置
+ */
+function getSceneConfig(sceneId) {
+  return SceneTemplates[sceneId] || SceneTemplates.none;
 }
 
 /**
@@ -530,12 +651,15 @@ module.exports = {
   StyleEnhancer,
   ExpressionEnhancer,
   DefaultExpressions,
+  SceneTemplates,
   generateCharacterID,
   generateStickerPrompt,
   generateStickerPromptV2,
   generatePhotoStickerPromptV2,
   getAllStyles,
   getAllExpressionTemplates,
+  getAllSceneTemplates,
+  getSceneConfig,
   getExpressionEnhancement,
   getStyleEnhancement,
   LineStickerSpecs

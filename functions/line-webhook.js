@@ -8,7 +8,7 @@ const axios = require('axios');
 const { isReplyTokenUsed, recordReplyToken, getOrCreateUser, getUserStickerSets, getUserLatestTask, getUserPendingTasks, getStickerSet, getStickerImages, deleteStickerSet, addToUploadQueue, removeFromUploadQueue, getUploadQueue, clearUploadQueue } = require('./supabase-client');
 const { ConversationStage, getConversationState, updateConversationState, resetConversationState, isInCreationFlow } = require('./conversation-state');
 const { generateWelcomeFlexMessage } = require('./sticker-flex-message');
-const { handleStartCreate, handleNaming, handleStyleSelection, handleCharacterDescription, handleExpressionTemplate, handleCountSelection, handlePhotoUpload } = require('./handlers/create-handler');
+const { handleStartCreate, handleNaming, handleStyleSelection, handleCharacterDescription, handleExpressionTemplate, handleSceneSelection, handleCustomScene, handleCountSelection, handlePhotoUpload } = require('./handlers/create-handler');
 const { handleUserPhoto } = require('./photo-handler');
 const { createGenerationTask } = require('./sticker-generator-worker-background');
 
@@ -184,6 +184,8 @@ function getStageDescription(stage) {
     [ConversationStage.STYLING]: '選擇風格',
     [ConversationStage.CHARACTER]: '描述角色',
     [ConversationStage.EXPRESSIONS]: '選擇表情',
+    [ConversationStage.SCENE_SELECT]: '選擇場景',
+    [ConversationStage.CUSTOM_SCENE]: '自訂場景',
     [ConversationStage.COUNT_SELECT]: '選擇數量',
     [ConversationStage.CONFIRMING]: '確認生成'
   };
@@ -217,6 +219,19 @@ async function handleCreationFlow(replyToken, userId, text, stage, state) {
       } else {
         message = { type: 'text', text: '⚠️ 請點擊上方按鈕選擇表情模板！' };
       }
+      break;
+    case ConversationStage.SCENE_SELECT:
+      // 處理場景選擇
+      if (text.startsWith('場景:')) {
+        const sceneId = text.replace('場景:', '');
+        message = await handleSceneSelection(userId, sceneId);
+      } else {
+        message = { type: 'text', text: '⚠️ 請點擊上方按鈕選擇場景！' };
+      }
+      break;
+    case ConversationStage.CUSTOM_SCENE:
+      // 處理自訂場景描述
+      message = await handleCustomScene(userId, text);
       break;
     case ConversationStage.COUNT_SELECT:
       // 處理數量選擇
@@ -285,7 +300,10 @@ async function handleConfirmGeneration(replyToken, userId, state) {
       count: tempData.count || 8,
       photoUrl: tempData.photoUrl,
       photoBase64: tempData.photoBase64,
-      expressions: tempData.expressions || [] // 傳遞用戶選擇的表情
+      expressions: tempData.expressions || [],
+      scene: tempData.scene || 'none',
+      sceneConfig: tempData.sceneConfig || null,
+      customSceneDescription: tempData.customSceneDescription || null
     });
 
     console.log(`✅ 已建立生成任務: taskId=${taskId}, setId=${setId}`);

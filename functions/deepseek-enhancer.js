@@ -20,13 +20,14 @@ function isDeepSeekAvailable() {
 
 /**
  * 🎨 使用 DeepSeek 動態優化表情描述
- * 
+ *
  * @param {string} style - 貼圖風格 (cute/cool/funny 等)
  * @param {string[]} expressions - 原始表情列表
  * @param {string} characterID - 角色一致性 ID
+ * @param {Object} sceneConfig - 場景配置（可選）
  * @returns {Object} 優化後的表情描述 Map
  */
-async function enhanceExpressions(style, expressions, characterID) {
+async function enhanceExpressions(style, expressions, characterID, sceneConfig = null) {
   if (!isDeepSeekAvailable()) {
     console.log('⚠️ DeepSeek API 未設定，使用預設表情描述');
     return null;
@@ -36,6 +37,29 @@ async function enhanceExpressions(style, expressions, characterID) {
   console.log(`🎨 風格：${style}`);
   console.log(`🆔 角色 ID：${characterID}`);
   console.log(`📝 表情數量：${expressions.length}`);
+  if (sceneConfig) {
+    console.log(`🌍 場景：${sceneConfig.name}`);
+  }
+
+  // 場景相關提示
+  const scenePrompt = sceneConfig && sceneConfig.id !== 'none' ? `
+
+## 🌍 場景主題：${sceneConfig.name}
+場景靈感：${sceneConfig.promptHint}
+可用配件：${sceneConfig.suggestedProps?.join(', ') || '無'}
+
+請根據場景主題，為每個表情加入**符合場景的動作或配件**。
+例如：
+- 旅遊場景：可以拿相機、比 V、拿地圖
+- 辦公室場景：可以拿咖啡杯、筆電、文件
+- 運動場景：可以拿啞鈴、毛巾、水瓶
+
+⚠️ 配件必須簡單小巧，不能遮擋臉部表情！
+⚠️ 背景仍然是透明的，配件只是手上拿的道具！` : '';
+
+  const propsRule = sceneConfig && sceneConfig.id !== 'none'
+    ? `3. **配件/道具**：符合場景的小道具（可選，不強制）`
+    : `3. 禁止加入道具或裝飾品`;
 
   const prompt = `你是一位專業的 LINE 貼圖設計師，請幫我優化以下表情描述。
 
@@ -50,16 +74,18 @@ ${getStyleDescription(style)}
 - anime（動漫）: 日系動漫風、cel-shading、動態線條、誇張表情
 - cool（酷炫）: 帥氣、自信、銳利線條、強烈對比
 - funny（搞笑）: 誇張變形、喜劇效果、瘋狂表情
+${scenePrompt}
 
 ## ⚠️ 絕對禁止
-1. 禁止描述背景（背景固定是純白色）
+1. 禁止描述背景（背景固定是透明的）
 2. 禁止改變服裝（固定是純白 T-shirt）
-3. 禁止加入道具或裝飾品
+${sceneConfig && sceneConfig.id !== 'none' ? '' : '3. 禁止加入道具或裝飾品'}
 
 ## ✅ 只能描述
 1. **臉部表情細節**：眼睛形狀、眉毛角度、嘴巴狀態、臉頰效果
 2. **手部動作**：簡單手勢
-3. **風格化效果**：符合 ${style} 風格的誇張/可愛/酷炫效果
+${propsRule}
+4. **風格化效果**：符合 ${style} 風格的誇張/可愛/酷炫效果
 
 ## 需要優化的表情
 ${expressions.map((exp, i) => `${i + 1}. ${exp}`).join('\n')}
@@ -67,8 +93,9 @@ ${expressions.map((exp, i) => `${i + 1}. ${exp}`).join('\n')}
 ## 輸出格式（JSON）
 {
   "styleApplied": "${style}",
+  "sceneApplied": "${sceneConfig?.name || '無'}",
   "expressions": {
-    "表情1": "（${style}風格的表情+手勢描述，10-20字英文）",
+    "表情1": "（${style}風格的表情+手勢${sceneConfig && sceneConfig.id !== 'none' ? '+配件' : ''}描述，15-25字英文）",
     "表情2": "..."
   }
 }`;
