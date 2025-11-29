@@ -15,7 +15,9 @@ const {
   generateStickerPromptV2,
   generatePhotoStickerPromptV2,
   generateCharacterID,
-  StickerStyles
+  StickerStyles,
+  FramingTemplates,
+  getFramingConfig
 } = require('./sticker-styles');
 const {
   isDeepSeekAvailable,
@@ -317,23 +319,28 @@ async function generateStickerSet(style, characterDescription, expressions) {
 }
 
 /**
- * 🎯 批次從照片生成貼圖組 V2.1（角色一致性 + DeepSeek 動態優化）
+ * 🎯 批次從照片生成貼圖組 V2.2（角色一致性 + DeepSeek 動態優化 + 構圖選擇）
  *
  * 功能：
  * - Character ID 確保整組貼圖的角色外觀 100% 一致
  * - DeepSeek 動態優化表情描述，讓每組都有獨特變化
+ * - 支援構圖選擇（全身/半身/大頭/特寫）
  */
-async function generateStickerSetFromPhoto(photoBase64, style, expressions, sceneConfig = null) {
+async function generateStickerSetFromPhoto(photoBase64, style, expressions, sceneConfig = null, framingId = 'halfbody') {
   const results = [];
   const total = expressions.length;
 
-  console.log(`📷 開始從照片批次生成 ${total} 張貼圖（V2.2 場景支援版）`);
+  // 取得構圖配置
+  const framingConfig = getFramingConfig(framingId);
+
+  console.log(`📷 開始從照片批次生成 ${total} 張貼圖（V2.3 構圖支援版）`);
 
   // 🆔 生成角色一致性 ID（基於照片內容的 hash）
   const characterID = generateCharacterID(photoBase64.slice(0, 1000) + style);
 
   console.log(`🆔 角色一致性 ID：${characterID}`);
   console.log(`🎨 風格：${style}`);
+  console.log(`🖼️ 構圖：${framingConfig.name} (${framingConfig.id})`);
   console.log(`📝 表情數量：${total}`);
   if (sceneConfig) {
     console.log(`🌍 場景：${sceneConfig.name} (${sceneConfig.id})`);
@@ -372,14 +379,15 @@ async function generateStickerSetFromPhoto(photoBase64, style, expressions, scen
     }
 
     try {
-      // 傳入 Character ID、優化資料和場景配置確保一致性
+      // 傳入 Character ID、優化資料、場景配置和構圖設定確保一致性
       const imageUrl = await generateStickerFromPhotoEnhanced(
         photoBase64,
         style,
         expression,
         characterID,
         enhancedData,
-        sceneConfig
+        sceneConfig,
+        framingConfig
       );
       results.push({
         index: i + 1,
@@ -415,13 +423,13 @@ async function generateStickerSetFromPhoto(photoBase64, style, expressions, scen
 }
 
 /**
- * 🎨 使用 DeepSeek 優化的照片貼圖生成（V2.2 含場景支援）
+ * 🎨 使用 DeepSeek 優化的照片貼圖生成（V2.3 含場景+構圖支援）
  */
-async function generateStickerFromPhotoEnhanced(photoBase64, style, expression, characterID, enhancedData, sceneConfig = null) {
-  console.log(`🎨 生成照片貼圖：${expression} (${style}風格)`);
+async function generateStickerFromPhotoEnhanced(photoBase64, style, expression, characterID, enhancedData, sceneConfig = null, framingConfig = null) {
+  console.log(`🎨 生成照片貼圖：${expression} (${style}風格, ${framingConfig?.name || '半身'}構圖)`);
 
-  // 取得基礎 prompt（含場景配置）
-  const { prompt: basePrompt, negativePrompt } = generatePhotoStickerPromptV2(style, expression, characterID, sceneConfig);
+  // 取得基礎 prompt（含場景配置和構圖設定）
+  const { prompt: basePrompt, negativePrompt } = generatePhotoStickerPromptV2(style, expression, characterID, sceneConfig, framingConfig);
 
   // 如果有 DeepSeek 優化資料，增強 prompt
   let finalPrompt = basePrompt;
@@ -439,7 +447,11 @@ Expression detail: ${enhancedExpression}`;
     }
   }
 
-  // 🔒 極簡最終要求（放在最後）- 加入禁止圓框
+  // 取得構圖相關的最終指示
+  const framingName = framingConfig?.name || '半身';
+  const framingFocus = framingConfig?.characterFocus || 'upper body, waist up';
+
+  // 🔒 極簡最終要求（放在最後）- 加入禁止圓框和構圖指示
   const absoluteRequirements = `
 
 === 🔒 FINAL OUTPUT REQUIREMENTS ===
@@ -448,16 +460,17 @@ Expression detail: ${enhancedExpression}`;
 3. CHARACTER: Same as photo, ID: ${characterID}
 4. STYLE: Apply ${style} style distinctly
 5. OUTLINES: Thick black (2-3px)
-6. COMPOSITION: Upper body, centered, 70-80% fill, FREE-FLOATING
+6. FRAMING: ${framingName}構圖 - ${framingFocus}
 7. TEXT: NONE
 8. NO FRAMES: NO circular frame, NO border, NO avatar style, NO vignette
 
 CRITICAL:
 - Background MUST be transparent (PNG cutout style)
 - Character must be FREE-FLOATING, NO circular frames
+- STRICTLY follow ${framingName} framing: ${framingFocus}
 - Skin tone MUST be warm peachy-beige, consistent across all stickers
 
-Generate the ${style} style sticker NOW.`;
+Generate the ${style} style ${framingName} sticker NOW.`;
 
   finalPrompt += absoluteRequirements;
 

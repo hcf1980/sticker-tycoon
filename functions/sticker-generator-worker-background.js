@@ -60,6 +60,7 @@ async function createGenerationTask(userId, setData) {
         expressions: JSON.stringify(setData.expressions || []), // 用戶選擇的表情列表
         scene: setData.scene || 'none',             // 場景 ID
         scene_config: setData.sceneConfig ? JSON.stringify(setData.sceneConfig) : null, // 場景配置
+        framing: setData.framing || 'halfbody',     // 構圖選擇（全身/半身/大頭/特寫）
         status: 'generating',
         tokens_used: stickerCount  // 記錄使用的代幣數
       }]);
@@ -130,7 +131,7 @@ async function executeGeneration(taskId, setId) {
       throw new Error('找不到貼圖組資料');
     }
 
-    const { style, character_prompt, sticker_count, photo_base64, expressions: expressionsJson, scene, scene_config: sceneConfigJson } = stickerSet;
+    const { style, character_prompt, sticker_count, photo_base64, expressions: expressionsJson, scene, scene_config: sceneConfigJson, framing } = stickerSet;
 
     // 詳細日誌
     console.log(`📋 貼圖組資料：style=${style}, count=${sticker_count}`);
@@ -138,6 +139,7 @@ async function executeGeneration(taskId, setId) {
     console.log(`📋 character_prompt: ${character_prompt || '(無)'}`);
     console.log(`📋 expressions JSON: ${expressionsJson || '(無)'}`);
     console.log(`📋 scene: ${scene || 'none'}`);
+    console.log(`📋 framing: ${framing || 'halfbody'}`);
 
     // 解析場景配置
     let sceneConfig = null;
@@ -177,9 +179,9 @@ async function executeGeneration(taskId, setId) {
     let generatedImages;
 
     if (photo_base64) {
-      // 照片流程：使用照片生成（含場景配置）
+      // 照片流程：使用照片生成（含場景配置和構圖設定）
       console.log('📷 使用照片模式生成');
-      generatedImages = await generateStickerSetFromPhoto(photo_base64, style, expressions, sceneConfig);
+      generatedImages = await generateStickerSetFromPhoto(photo_base64, style, expressions, sceneConfig, framing);
     } else {
       // 傳統流程：使用角色描述生成
       console.log('✏️ 使用角色描述模式生成');

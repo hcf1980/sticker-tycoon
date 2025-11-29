@@ -12,9 +12,10 @@ const ConversationStage = {
   UPLOAD_PHOTO: 'upload_photo',    // 上傳照片
   STYLING: 'styling',              // 選擇風格
   CHARACTER: 'character',          // 描述角色（舊流程保留）
+  FRAMING: 'framing',              // 選擇構圖（全身/半身/大頭/特寫）
   EXPRESSIONS: 'expressions',      // 選擇/輸入表情
-  SCENE_SELECT: 'scene_select',    // 選擇場景/配件（新增）
-  CUSTOM_SCENE: 'custom_scene',    // 自訂場景描述（新增）
+  SCENE_SELECT: 'scene_select',    // 選擇場景/配件
+  CUSTOM_SCENE: 'custom_scene',    // 自訂場景描述
   COUNT_SELECT: 'count_select',    // 選擇貼圖數量
   CONFIRMING: 'confirming',        // 確認生成
   GENERATING: 'generating',        // 生成中

@@ -382,6 +382,71 @@ const StickerStyles = {
 };
 
 /**
+ * 🖼️ 人物構圖模板
+ * 控制貼圖中人物的取景範圍
+ */
+const FramingTemplates = {
+  fullbody: {
+    id: 'fullbody',
+    name: '全身',
+    emoji: '🧍',
+    description: '完整全身，適合動作表情',
+    promptAddition: `
+      FULL BODY shot from head to feet,
+      entire body visible including legs and feet,
+      character standing or in full body action pose,
+      plenty of space around character for movement,
+      full figure composition showing complete outfit
+    `,
+    characterFocus: 'full body visible, head to toe, complete figure'
+  },
+  halfbody: {
+    id: 'halfbody',
+    name: '半身',
+    emoji: '👤',
+    description: '上半身，表情手勢兼顧',
+    promptAddition: `
+      UPPER BODY shot from waist up,
+      torso, arms and head clearly visible,
+      hands and arm gestures prominent,
+      medium shot composition,
+      waist-up framing with room for hand movements
+    `,
+    characterFocus: 'upper body, waist up, torso and arms visible'
+  },
+  portrait: {
+    id: 'portrait',
+    name: '大頭',
+    emoji: '😊',
+    description: '頭部特寫，表情清晰',
+    promptAddition: `
+      HEAD AND SHOULDERS portrait shot,
+      face is the main focus,
+      shoulders visible for context,
+      classic portrait framing,
+      facial expression clearly readable,
+      head takes up most of the frame
+    `,
+    characterFocus: 'head and shoulders, face prominent, portrait style'
+  },
+  closeup: {
+    id: 'closeup',
+    name: '特寫',
+    emoji: '👁️',
+    description: '臉部特寫，表情超大',
+    promptAddition: `
+      EXTREME CLOSE-UP on face,
+      face fills most of the frame,
+      eyes and facial expression are the main focus,
+      dramatic close-up composition,
+      every facial detail visible,
+      intimate emotional connection
+    `,
+    characterFocus: 'face close-up, eyes and expression dominant, filling frame'
+  }
+};
+
+/**
  * 預設表情組合 - 每組 24 個表情，選擇時隨機取用
  */
 const DefaultExpressions = {
@@ -592,15 +657,17 @@ function generateStickerPromptV2(style, characterDescription, expression) {
 }
 
 /**
- * 🎯 生成照片貼圖的增強 Prompt V4.0
+ * 🎯 生成照片貼圖的增強 Prompt V5.0
  * - 透明背景
  * - 風格差異化（StyleEnhancer）
  * - 角色一致性
  * - POP文字 + 裝飾元素支援
+ * - 人物構圖選擇（全身/半身/大頭/特寫）
  */
-function generatePhotoStickerPromptV2(style, expression, characterID = null, sceneConfig = null) {
+function generatePhotoStickerPromptV2(style, expression, characterID = null, sceneConfig = null, framingConfig = null) {
   const styleConfig = StickerStyles[style] || StickerStyles.cute;
   const styleEnhance = StyleEnhancer[style] || StyleEnhancer.cute;
+  const framing = framingConfig || FramingTemplates.halfbody;
 
   // 取得表情增強（新格式包含 action, popText, decorations）
   const expressionData = ExpressionEnhancer[expression];
@@ -679,13 +746,17 @@ Character ID: ${characterID || 'default'}
 - Copy EXACT face from photo: same face shape, eyes, nose, mouth
 - Copy EXACT hairstyle and hair color from photo
 - CLOTHING: Colorful casual outfit (can vary per sticker)
-- Upper body to waist visible (show hand gestures clearly)
 - GAZE DIRECTION: Natural eye direction matching expression
+
+=== 🖼️ FRAMING / COMPOSITION: ${framing.name} (${framing.id.toUpperCase()}) ===
+${framing.promptAddition}
+- CHARACTER FOCUS: ${framing.characterFocus}
+- This framing style is CRITICAL - follow it strictly!
 
 === ⚠️ TECHNICAL REQUIREMENTS (STRICT) ===
 1. BACKGROUND: 100% TRANSPARENT (alpha=0) - NO white, NO gray
 2. OUTLINES: Thick clean lines for visibility
-3. COMPOSITION: Dynamic asymmetric layout, NOT always centered
+3. COMPOSITION: Dynamic asymmetric layout based on ${framing.name} framing
 4. IMAGE SIZE: 370px width × 320px height
 
 === 🚫 ABSOLUTELY FORBIDDEN ===
@@ -810,12 +881,27 @@ const LineStickerSpecs = {
   }
 };
 
+/**
+ * 取得所有構圖選項
+ */
+function getAllFramingTemplates() {
+  return Object.values(FramingTemplates);
+}
+
+/**
+ * 取得指定構圖配置
+ */
+function getFramingConfig(framingId) {
+  return FramingTemplates[framingId] || FramingTemplates.halfbody;
+}
+
 module.exports = {
   StickerStyles,
   StyleEnhancer,
   ExpressionEnhancer,
   DefaultExpressions,
   SceneTemplates,
+  FramingTemplates,
   generateCharacterID,
   generateStickerPrompt,
   generateStickerPromptV2,
@@ -823,7 +909,9 @@ module.exports = {
   getAllStyles,
   getAllExpressionTemplates,
   getAllSceneTemplates,
+  getAllFramingTemplates,
   getSceneConfig,
+  getFramingConfig,
   getExpressionEnhancement,
   getStyleEnhancement,
   LineStickerSpecs

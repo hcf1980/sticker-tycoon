@@ -8,10 +8,10 @@ const axios = require('axios');
 const { isReplyTokenUsed, recordReplyToken, getOrCreateUser, getUserStickerSets, getUserLatestTask, getUserPendingTasks, getStickerSet, getStickerImages, deleteStickerSet, addToUploadQueue, removeFromUploadQueue, getUploadQueue, clearUploadQueue, getUserTokenBalance, getTokenTransactions, getUserReferralInfo, applyReferralCode, deductTokens, addTokens } = require('./supabase-client');
 const { ConversationStage, getConversationState, updateConversationState, resetConversationState, isInCreationFlow } = require('./conversation-state');
 const { generateWelcomeFlexMessage } = require('./sticker-flex-message');
-const { handleStartCreate, handleNaming, handleStyleSelection, handleCharacterDescription, handleExpressionTemplate, handleSceneSelection, handleCustomScene, handleCountSelection, handlePhotoUpload } = require('./handlers/create-handler');
+const { handleStartCreate, handleNaming, handleStyleSelection, handleFramingSelection, handleCharacterDescription, handleExpressionTemplate, handleSceneSelection, handleCustomScene, handleCountSelection, handlePhotoUpload } = require('./handlers/create-handler');
 const { handleUserPhoto } = require('./photo-handler');
 const { createGenerationTask } = require('./sticker-generator-worker-background');
-const { StickerStyles, SceneTemplates } = require('./sticker-styles');
+const { StickerStyles, SceneTemplates, FramingTemplates } = require('./sticker-styles');
 
 // LINE Bot 設定 - 延遲初始化
 let client = null;
@@ -178,13 +178,19 @@ async function handleTextMessage(replyToken, userId, text) {
       const message = await handleStyleSelection(userId, styleId);
       return getLineClient().replyMessage(replyToken, message);
     }
-    
+
+    if (text.startsWith('構圖:')) {
+      const framingId = text.replace('構圖:', '');
+      const message = await handleFramingSelection(userId, framingId);
+      return getLineClient().replyMessage(replyToken, message);
+    }
+
     if (text.startsWith('表情模板:')) {
       const templateId = text.replace('表情模板:', '');
       const message = await handleExpressionTemplate(userId, templateId);
       return getLineClient().replyMessage(replyToken, message);
     }
-    
+
     if (text.startsWith('數量:')) {
       const count = parseInt(text.replace('數量:', ''));
       const message = await handleCountSelection(userId, count);
@@ -220,6 +226,7 @@ function getStageDescription(stage) {
     [ConversationStage.NAMING]: '輸入貼圖組名稱',
     [ConversationStage.UPLOAD_PHOTO]: '上傳照片',
     [ConversationStage.STYLING]: '選擇風格',
+    [ConversationStage.FRAMING]: '選擇構圖',
     [ConversationStage.CHARACTER]: '描述角色',
     [ConversationStage.EXPRESSIONS]: '選擇表情',
     [ConversationStage.SCENE_SELECT]: '選擇場景',
@@ -247,6 +254,15 @@ async function handleCreationFlow(replyToken, userId, text, stage, state) {
         message = await handleStyleSelection(userId, styleId);
       } else {
         message = { type: 'text', text: '⚠️ 請點擊上方按鈕選擇風格！' };
+      }
+      break;
+    case ConversationStage.FRAMING:
+      // 處理構圖選擇
+      if (text.startsWith('構圖:')) {
+        const framingId = text.replace('構圖:', '');
+        message = await handleFramingSelection(userId, framingId);
+      } else {
+        message = { type: 'text', text: '⚠️ 請點擊上方按鈕選擇人物構圖！' };
       }
       break;
     case ConversationStage.EXPRESSIONS:
@@ -1669,79 +1685,145 @@ async function handlePurchaseInfo(replyToken) {
 }
 
 /**
- * 處理推薦好友資訊
+ * 處理推薦好友資訊 - 可直接分享給好友
  */
 async function handleReferralInfo(replyToken, userId) {
   const info = await getUserReferralInfo(userId);
   const remainingInvites = 3 - (info.referralCount || 0);
+  const referralCode = info.referralCode || 'XXXXXX';
 
+  // LINE 官方帳號連結
+  const lineOALink = 'https://line.me/R/ti/p/@276vcfne';
+
+  // 分享文字訊息
+  const shareText = `🎨 推薦你一個超讚的貼圖製作工具！
+
+【貼圖大亨】用 AI 幫你製作專屬 LINE 貼圖 ✨
+
+🎁 新用戶免費送 40 代幣
+📸 上傳照片就能生成貼圖
+🎉 使用我的推薦碼「${referralCode}」再送 10 代幣！
+
+👉 點擊加入：${lineOALink}
+
+加入後輸入「輸入推薦碼 ${referralCode}」即可領取獎勵！`;
+
+  // 主訊息卡片
   const message = {
     type: 'flex',
     altText: '🎁 推薦好友賺代幣',
     contents: {
       type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#FF6B6B',
+        paddingAll: 'lg',
+        contents: [
+          { type: 'text', text: '🎁 推薦好友賺代幣', size: 'xl', weight: 'bold', color: '#FFFFFF', align: 'center' },
+          { type: 'text', text: '邀請好友，雙方各得 10 代幣！', size: 'sm', color: '#FFDDDD', align: 'center', margin: 'sm' }
+        ]
+      },
       body: {
         type: 'box',
         layout: 'vertical',
+        paddingAll: 'lg',
         contents: [
-          { type: 'text', text: '🎁 推薦好友賺代幣', weight: 'bold', size: 'xl', color: '#FF6B6B' },
-          { type: 'separator', margin: 'lg' },
+          // 推薦碼區塊
           {
             type: 'box',
             layout: 'vertical',
-            margin: 'lg',
-            contents: [
-              { type: 'text', text: '邀請好友一起玩，雙方各得 10 代幣！', size: 'sm', color: '#666666', wrap: true },
-              { type: 'text', text: `最多可邀請 3 位好友（還可邀請 ${remainingInvites} 位）`, size: 'sm', color: '#666666', margin: 'md' }
-            ]
-          },
-          { type: 'separator', margin: 'lg' },
-          {
-            type: 'box',
-            layout: 'vertical',
-            margin: 'lg',
             backgroundColor: '#FFF5F5',
-            cornerRadius: 'lg',
-            paddingAll: 'lg',
+            cornerRadius: 'xl',
+            paddingAll: 'xl',
             contents: [
               { type: 'text', text: '你的專屬推薦碼', size: 'sm', color: '#888888', align: 'center' },
-              { type: 'text', text: info.referralCode || '載入中...', size: 'xxl', weight: 'bold', align: 'center', color: '#FF6B6B', margin: 'sm' },
-              { type: 'text', text: '請好友輸入此碼即可', size: 'xs', color: '#999999', align: 'center', margin: 'sm' }
+              { type: 'text', text: referralCode, size: '3xl', weight: 'bold', align: 'center', color: '#FF6B6B', margin: 'md' },
+              { type: 'text', text: `還可邀請 ${remainingInvites} 位好友`, size: 'xs', color: '#999999', align: 'center', margin: 'md' }
             ]
           },
-          {
-            type: 'box',
-            layout: 'vertical',
-            margin: 'lg',
-            contents: [
-              { type: 'text', text: '📋 如何使用？', weight: 'bold', size: 'sm' },
-              { type: 'text', text: '1. 邀請好友加入貼圖大亨', size: 'xs', color: '#666666', margin: 'sm' },
-              { type: 'text', text: '2. 請好友輸入「輸入推薦碼 ' + (info.referralCode || 'XXXXXX') + '」', size: 'xs', color: '#666666', margin: 'sm' },
-              { type: 'text', text: '3. 雙方各獲得 10 代幣！🎉', size: 'xs', color: '#666666', margin: 'sm' }
-            ]
-          },
+          // 進度條
           info.referralCount > 0 ? {
             type: 'box',
             layout: 'vertical',
             margin: 'lg',
             contents: [
-              { type: 'text', text: `✅ 已成功邀請 ${info.referralCount} 位好友`, size: 'sm', color: '#28A745', align: 'center' }
+              {
+                type: 'box',
+                layout: 'horizontal',
+                contents: [
+                  { type: 'text', text: '邀請進度', size: 'xs', color: '#888888' },
+                  { type: 'text', text: `${info.referralCount}/3`, size: 'xs', color: '#FF6B6B', align: 'end', weight: 'bold' }
+                ]
+              },
+              {
+                type: 'box',
+                layout: 'vertical',
+                backgroundColor: '#EEEEEE',
+                height: '6px',
+                cornerRadius: 'md',
+                margin: 'sm',
+                contents: [{
+                  type: 'box',
+                  layout: 'vertical',
+                  backgroundColor: '#FF6B6B',
+                  height: '6px',
+                  cornerRadius: 'md',
+                  width: `${Math.round(info.referralCount / 3 * 100)}%`,
+                  contents: []
+                }]
+              }
             ]
-          } : { type: 'filler' }
+          } : { type: 'filler' },
+          { type: 'separator', margin: 'xl' },
+          // 說明
+          {
+            type: 'box',
+            layout: 'vertical',
+            margin: 'lg',
+            contents: [
+              { type: 'text', text: '好友加入後只要輸入：', size: 'sm', color: '#666666' },
+              {
+                type: 'box',
+                layout: 'vertical',
+                backgroundColor: '#F5F5F5',
+                cornerRadius: 'md',
+                paddingAll: 'md',
+                margin: 'sm',
+                contents: [
+                  { type: 'text', text: `輸入推薦碼 ${referralCode}`, size: 'md', weight: 'bold', color: '#333333', align: 'center' }
+                ]
+              }
+            ]
+          }
         ]
       },
       footer: {
         type: 'box',
         layout: 'vertical',
+        spacing: 'sm',
+        paddingAll: 'md',
         contents: [
           {
             type: 'button',
             style: 'primary',
-            color: '#FF6B6B',
+            color: '#00B900',
+            height: 'md',
             action: {
-              type: 'message',
-              label: '📋 複製分享訊息',
-              text: `分享推薦碼`
+              type: 'uri',
+              label: '📤 分享給好友',
+              uri: `https://line.me/R/msg/text/?${encodeURIComponent(shareText)}`
+            }
+          },
+          {
+            type: 'button',
+            style: 'secondary',
+            height: 'sm',
+            action: {
+              type: 'uri',
+              label: '📋 複製官方帳號連結',
+              uri: lineOALink
             }
           }
         ]

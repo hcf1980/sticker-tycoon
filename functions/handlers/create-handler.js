@@ -6,7 +6,7 @@
 const { v4: uuidv4 } = require('uuid');
 const { ConversationStage, getConversationState, updateConversationState, getExpressionTemplates } = require('../conversation-state');
 const { createStickerSet, getOrCreateUser } = require('../supabase-client');
-const { StickerStyles, DefaultExpressions, LineStickerSpecs, SceneTemplates, getSceneConfig } = require('../sticker-styles');
+const { StickerStyles, DefaultExpressions, LineStickerSpecs, SceneTemplates, FramingTemplates, getSceneConfig, getFramingConfig } = require('../sticker-styles');
 const { generateStyleSelectionFlexMessage, generateExpressionSelectionFlexMessage } = require('../sticker-flex-message');
 
 /**
@@ -113,10 +113,10 @@ async function handleStyleSelection(userId, styleId) {
   const state = await getConversationState(userId);
   const tempData = { ...state.temp_data, style: styleId };
 
-  // 如果有照片，直接進入表情選擇；否則進入角色描述
+  // 如果有照片，進入構圖選擇；否則進入角色描述
   if (tempData.photoUrl) {
-    await updateConversationState(userId, ConversationStage.EXPRESSIONS, tempData);
-    return generateExpressionSelectionFlexMessage();
+    await updateConversationState(userId, ConversationStage.FRAMING, tempData);
+    return generateFramingSelectionMessage(style);
   } else {
     // 舊流程：沒有照片時要求描述角色
     await updateConversationState(userId, ConversationStage.CHARACTER, tempData);
@@ -138,6 +138,118 @@ async function handleStyleSelection(userId, styleId) {
       }
     };
   }
+}
+
+/**
+ * 生成構圖選擇訊息
+ */
+function generateFramingSelectionMessage(style) {
+  const framingOptions = Object.values(FramingTemplates);
+
+  return {
+    type: 'flex',
+    altText: '🖼️ 請選擇人物構圖',
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#FF6B6B',
+        paddingAll: 'lg',
+        contents: [
+          { type: 'text', text: `✅ 已選擇「${style.emoji} ${style.name}」`, size: 'md', color: '#FFFFFF', align: 'center' },
+          { type: 'text', text: '🖼️ 選擇人物構圖', size: 'xl', weight: 'bold', color: '#FFFFFF', align: 'center', margin: 'sm' }
+        ]
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'lg',
+        spacing: 'md',
+        contents: [
+          { type: 'text', text: '不同構圖會大幅改變貼圖的感覺！', size: 'sm', color: '#666666', align: 'center', margin: 'sm' },
+          { type: 'separator', margin: 'lg' },
+          ...framingOptions.map(framing => ({
+            type: 'box',
+            layout: 'horizontal',
+            paddingAll: 'md',
+            backgroundColor: '#F8F8F8',
+            cornerRadius: 'lg',
+            margin: 'md',
+            action: { type: 'message', label: framing.name, text: `構圖:${framing.id}` },
+            contents: [
+              { type: 'text', text: framing.emoji, size: 'xxl', flex: 0 },
+              {
+                type: 'box',
+                layout: 'vertical',
+                paddingStart: 'lg',
+                contents: [
+                  { type: 'text', text: framing.name, weight: 'bold', size: 'md', color: '#333333' },
+                  { type: 'text', text: framing.description, size: 'xs', color: '#888888', wrap: true }
+                ]
+              }
+            ]
+          }))
+        ]
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        contents: [
+          {
+            type: 'button',
+            style: 'secondary',
+            action: { type: 'message', label: '❌ 取消', text: '取消' }
+          }
+        ]
+      }
+    },
+    quickReply: {
+      items: [
+        ...framingOptions.map(framing => ({
+          type: 'action',
+          action: { type: 'message', label: `${framing.emoji} ${framing.name}`, text: `構圖:${framing.id}` }
+        })),
+        { type: 'action', action: { type: 'message', label: '❌ 取消', text: '取消' } }
+      ]
+    }
+  };
+}
+
+/**
+ * 處理構圖選擇
+ */
+async function handleFramingSelection(userId, framingId) {
+  console.log(`🖼️ 用戶 ${userId} 選擇構圖：${framingId}`);
+
+  const framing = FramingTemplates[framingId];
+  if (!framing) {
+    return {
+      type: 'text',
+      text: '⚠️ 請選擇有效的構圖選項！',
+      quickReply: {
+        items: Object.values(FramingTemplates).map(f => ({
+          type: 'action',
+          action: { type: 'message', label: `${f.emoji} ${f.name}`, text: `構圖:${f.id}` }
+        }))
+      }
+    };
+  }
+
+  // 取得當前暫存資料
+  const state = await getConversationState(userId);
+  const tempData = { ...state.temp_data, framing: framingId };
+
+  // 進入表情選擇階段
+  await updateConversationState(userId, ConversationStage.EXPRESSIONS, tempData);
+
+  return {
+    type: 'flex',
+    altText: '選擇表情模板',
+    contents: generateExpressionSelectionFlexMessage().contents,
+    quickReply: generateExpressionSelectionFlexMessage().quickReply
+  };
 }
 
 /**
@@ -486,6 +598,7 @@ module.exports = {
   handleNaming,
   handlePhotoUpload,
   handleStyleSelection,
+  handleFramingSelection,
   handleCharacterDescription,
   handleExpressionTemplate,
   handleSceneSelection,
