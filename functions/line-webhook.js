@@ -1608,17 +1608,64 @@ async function handleClearUploadQueue(replyToken, userId) {
 }
 
 /**
- * 生成示範圖集 Flex Message
+ * 生成示範圖集 Flex Message（隨機展示不同風格）
  */
 function generateDemoGalleryFlexMessage() {
-  // 示範貼圖（可以替換成真實的範例圖片 URL）
-  const demoStickers = [
-    { url: 'https://sticker-tycoon.netlify.app/demo/cute-1.png', style: '可愛風', expression: 'Hi' },
-    { url: 'https://sticker-tycoon.netlify.app/demo/cool-1.png', style: '酷炫風', expression: 'OK' },
-    { url: 'https://sticker-tycoon.netlify.app/demo/anime-1.png', style: '動漫風', expression: '讚讚' },
-    { url: 'https://sticker-tycoon.netlify.app/demo/realistic-1.png', style: '美顏真實', expression: '開心' }
+  // LINE 官方帳號連結
+  const lineOALink = 'https://line.me/R/ti/p/@276vcfne';
+
+  // 分享文字
+  const shareText = `🎨 推薦你一個超讚的貼圖製作工具！
+
+【貼圖大亨】用 AI 幫你製作專屬 LINE 貼圖 ✨
+
+🎁 新用戶免費送 40 代幣
+📸 上傳照片就能生成貼圖
+🚀 3-7 天免費代上架 LINE 貼圖小舖
+
+👉 點擊加入：${lineOALink}`;
+
+  // 所有可用風格的示範貼圖（每種風格多張供隨機選擇）
+  const allDemoStickers = [
+    // 美顏真實
+    { url: 'https://sticker-tycoon.netlify.app/demo/realistic-1.png', style: 'realistic', styleName: '📸 美顏真實', expression: '開心' },
+    { url: 'https://sticker-tycoon.netlify.app/demo/realistic-2.png', style: 'realistic', styleName: '📸 美顏真實', expression: '讚讚' },
+    // 可愛風
+    { url: 'https://sticker-tycoon.netlify.app/demo/cute-1.png', style: 'cute', styleName: '🥰 可愛風', expression: 'Hi' },
+    { url: 'https://sticker-tycoon.netlify.app/demo/cute-2.png', style: 'cute', styleName: '🥰 可愛風', expression: '愛心' },
+    // 酷炫風
+    { url: 'https://sticker-tycoon.netlify.app/demo/cool-1.png', style: 'cool', styleName: '😎 酷炫風', expression: 'OK' },
+    { url: 'https://sticker-tycoon.netlify.app/demo/cool-2.png', style: 'cool', styleName: '😎 酷炫風', expression: '耍帥' },
+    // 搞笑風
+    { url: 'https://sticker-tycoon.netlify.app/demo/funny-1.png', style: 'funny', styleName: '🤣 搞笑風', expression: '驚訝' },
+    { url: 'https://sticker-tycoon.netlify.app/demo/funny-2.png', style: 'funny', styleName: '🤣 搞笑風', expression: '大哭' },
+    // 簡約風
+    { url: 'https://sticker-tycoon.netlify.app/demo/simple-1.png', style: 'simple', styleName: '✨ 簡約風', expression: '微笑' },
+    { url: 'https://sticker-tycoon.netlify.app/demo/simple-2.png', style: 'simple', styleName: '✨ 簡約風', expression: '睡覺' },
+    // 動漫風
+    { url: 'https://sticker-tycoon.netlify.app/demo/anime-1.png', style: 'anime', styleName: '🎌 動漫風', expression: '讚讚' },
+    { url: 'https://sticker-tycoon.netlify.app/demo/anime-2.png', style: 'anime', styleName: '🎌 動漫風', expression: '比心' },
+    // 像素風
+    { url: 'https://sticker-tycoon.netlify.app/demo/pixel-1.png', style: 'pixel', styleName: '👾 像素風', expression: 'Good' },
+    { url: 'https://sticker-tycoon.netlify.app/demo/pixel-2.png', style: 'pixel', styleName: '👾 像素風', expression: '開心' },
+    // 素描風
+    { url: 'https://sticker-tycoon.netlify.app/demo/sketch-1.png', style: 'sketch', styleName: '✏️ 素描風', expression: '思考' },
+    { url: 'https://sticker-tycoon.netlify.app/demo/sketch-2.png', style: 'sketch', styleName: '✏️ 素描風', expression: '微笑' }
   ];
 
+  // 隨機打亂並選取 6 張不同風格的貼圖
+  const shuffled = [...allDemoStickers].sort(() => Math.random() - 0.5);
+  const selectedStyles = new Set();
+  const selectedStickers = [];
+
+  for (const sticker of shuffled) {
+    if (!selectedStyles.has(sticker.style) && selectedStickers.length < 6) {
+      selectedStyles.add(sticker.style);
+      selectedStickers.push(sticker);
+    }
+  }
+
+  // 介紹卡片
   const infoBubble = {
     type: 'bubble',
     size: 'kilo',
@@ -1628,37 +1675,49 @@ function generateDemoGalleryFlexMessage() {
       backgroundColor: '#FF6B6B',
       paddingAll: 'lg',
       contents: [
-        { type: 'text', text: '✨ 示範圖集', weight: 'bold', size: 'lg', color: '#FFFFFF' }
+        { type: 'text', text: '✨ 示範圖集', weight: 'bold', size: 'lg', color: '#FFFFFF', align: 'center' },
+        { type: 'text', text: '各種風格貼圖範例', size: 'xs', color: '#FFDDDD', align: 'center', margin: 'sm' }
       ]
     },
     body: {
       type: 'box',
       layout: 'vertical',
       contents: [
-        { type: 'text', text: '以下是各種風格的貼圖範例', size: 'sm', wrap: true },
-        { type: 'text', text: '👈 左滑查看更多', size: 'xs', color: '#06C755', margin: 'lg' },
+        { type: 'text', text: '👈 左滑查看更多風格', size: 'sm', color: '#06C755', align: 'center' },
         { type: 'separator', margin: 'lg' },
-        { type: 'text', text: '🎨 可選風格：', size: 'sm', weight: 'bold', margin: 'lg' },
-        { type: 'text', text: '美顏真實 / 可愛風 / 酷炫風', size: 'xs', color: '#666666', margin: 'sm' },
-        { type: 'text', text: '搞笑風 / 簡約風 / 動漫風', size: 'xs', color: '#666666', margin: 'sm' },
-        { type: 'text', text: '像素風 / 塗鴉風', size: 'xs', color: '#666666', margin: 'sm' }
+        { type: 'text', text: '🎨 8 種風格任選：', size: 'sm', weight: 'bold', margin: 'lg' },
+        { type: 'text', text: '📸美顏 🥰可愛 😎酷炫 🤣搞笑', size: 'xs', color: '#666666', margin: 'sm' },
+        { type: 'text', text: '✨簡約 🎌動漫 👾像素 ✏️素描', size: 'xs', color: '#666666', margin: 'sm' },
+        { type: 'separator', margin: 'lg' },
+        { type: 'text', text: '🎁 新用戶免費送 40 代幣！', size: 'xs', color: '#FF6B6B', margin: 'lg', weight: 'bold' }
       ]
     },
     footer: {
       type: 'box',
       layout: 'vertical',
+      spacing: 'sm',
       contents: [
         {
           type: 'button',
           style: 'primary',
           color: '#FF6B6B',
-          action: { type: 'message', label: '🚀 開始創建', text: '創建貼圖' }
+          action: { type: 'message', label: '🚀 開始創建貼圖', text: '創建貼圖' }
+        },
+        {
+          type: 'button',
+          style: 'secondary',
+          action: {
+            type: 'uri',
+            label: '📤 分享給好友',
+            uri: `https://line.me/R/share?text=${encodeURIComponent(shareText)}`
+          }
         }
       ]
     }
   };
 
-  const demoBubbles = demoStickers.map(demo => ({
+  // 示範貼圖卡片（每張都有創建和分享按鈕）
+  const demoBubbles = selectedStickers.map(demo => ({
     type: 'bubble',
     size: 'kilo',
     body: {
@@ -1673,16 +1732,42 @@ function generateDemoGalleryFlexMessage() {
           aspectRatio: '1:1',
           aspectMode: 'fit',
           backgroundColor: '#FFFFFF'
+        },
+        {
+          type: 'box',
+          layout: 'vertical',
+          paddingTop: 'sm',
+          contents: [
+            { type: 'text', text: demo.expression, size: 'md', weight: 'bold', align: 'center', color: '#333333' },
+            { type: 'text', text: demo.styleName, size: 'xs', color: '#FF6B6B', align: 'center', margin: 'xs' }
+          ]
         }
       ]
     },
     footer: {
       type: 'box',
-      layout: 'vertical',
-      paddingAll: 'sm',
+      layout: 'horizontal',
+      spacing: 'sm',
       contents: [
-        { type: 'text', text: demo.expression, size: 'sm', weight: 'bold', align: 'center' },
-        { type: 'text', text: demo.style, size: 'xs', color: '#999999', align: 'center', margin: 'sm' }
+        {
+          type: 'button',
+          style: 'primary',
+          color: '#FF6B6B',
+          height: 'sm',
+          flex: 1,
+          action: { type: 'message', label: '🚀 創建', text: '創建貼圖' }
+        },
+        {
+          type: 'button',
+          style: 'secondary',
+          height: 'sm',
+          flex: 1,
+          action: {
+            type: 'uri',
+            label: '📤 分享',
+            uri: `https://line.me/R/share?text=${encodeURIComponent(shareText)}`
+          }
+        }
       ]
     }
   }));
