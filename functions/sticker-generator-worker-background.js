@@ -18,7 +18,7 @@ async function createGenerationTask(userId, setData) {
   const setId = uuidv4();
 
   try {
-    // 建立貼圖組記錄
+    // 建立貼圖組記錄（包含用戶選擇的表情）
     const { error: setError } = await supabase
       .from('sticker_sets')
       .insert([{
@@ -31,6 +31,7 @@ async function createGenerationTask(userId, setData) {
         photo_url: setData.photoUrl || null,        // 照片 URL
         photo_base64: setData.photoBase64 || null,  // 照片 Base64（用於 AI 生成）
         sticker_count: setData.count,
+        expressions: JSON.stringify(setData.expressions || []), // 用戶選擇的表情列表
         status: 'generating'
       }]);
 
@@ -100,16 +101,32 @@ async function executeGeneration(taskId, setId) {
       throw new Error('找不到貼圖組資料');
     }
 
-    const { style, character_prompt, sticker_count, photo_base64 } = stickerSet;
+    const { style, character_prompt, sticker_count, photo_base64, expressions: expressionsJson } = stickerSet;
 
     // 詳細日誌
     console.log(`📋 貼圖組資料：style=${style}, count=${sticker_count}`);
     console.log(`📋 photo_base64 長度: ${photo_base64 ? photo_base64.length : 0}`);
     console.log(`📋 character_prompt: ${character_prompt || '(無)'}`);
+    console.log(`📋 expressions JSON: ${expressionsJson || '(無)'}`);
 
-    // 取得表情列表（預設使用基本日常）
-    const expressions = DefaultExpressions.basic.expressions.slice(0, sticker_count);
-    console.log(`📋 表情列表: ${expressions.join(', ')}`);
+    // 取得表情列表：優先使用用戶選擇的，否則使用基本日常
+    let expressions;
+    if (expressionsJson) {
+      try {
+        expressions = JSON.parse(expressionsJson);
+        console.log(`✅ 使用用戶選擇的表情: ${expressions.join(', ')}`);
+      } catch (e) {
+        console.log(`⚠️ 解析表情JSON失敗，使用預設: ${e.message}`);
+        expressions = DefaultExpressions.basic.expressions;
+      }
+    } else {
+      expressions = DefaultExpressions.basic.expressions;
+      console.log(`⚠️ 無用戶表情，使用預設基本日常`);
+    }
+
+    // 根據數量截取
+    expressions = expressions.slice(0, sticker_count);
+    console.log(`📋 最終表情列表 (${expressions.length} 個): ${expressions.join(', ')}`);
 
     // 更新進度：開始 AI 生成
     await updateTaskProgress(taskId, 10, 'processing');

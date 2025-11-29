@@ -284,7 +284,8 @@ async function handleConfirmGeneration(replyToken, userId, state) {
       character: tempData.character || '',
       count: tempData.count || 8,
       photoUrl: tempData.photoUrl,
-      photoBase64: tempData.photoBase64
+      photoBase64: tempData.photoBase64,
+      expressions: tempData.expressions || [] // 傳遞用戶選擇的表情
     });
 
     console.log(`✅ 已建立生成任務: taskId=${taskId}, setId=${setId}`);
