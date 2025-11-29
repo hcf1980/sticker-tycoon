@@ -1484,23 +1484,23 @@ async function handleTokenQuery(replyToken, userId) {
 }
 
 /**
- * 處理購買代幣資訊
+ * 處理購買代幣資訊 - 美化版 Carousel
  */
 async function handlePurchaseInfo(replyToken) {
-  const message = {
-    type: 'flex',
-    altText: '🛒 購買代幣方案',
-    contents: {
+  // 方案卡片生成函數
+  const createPlanBubble = (price, tokens, bonus, isPopular = false) => {
+    const perToken = (price / tokens).toFixed(1);
+    return {
       type: 'bubble',
-      size: 'mega',
+      size: 'kilo',
       header: {
         type: 'box',
         layout: 'vertical',
-        backgroundColor: '#FF6B00',
+        backgroundColor: isPopular ? '#FF6B6B' : '#4A90D9',
         paddingAll: 'lg',
         contents: [
-          { type: 'text', text: '🛒 購買代幣', size: 'xl', weight: 'bold', color: '#FFFFFF', align: 'center' },
-          { type: 'text', text: '用代幣創作專屬貼圖', size: 'sm', color: '#FFDDBB', align: 'center', margin: 'sm' }
+          ...(isPopular ? [{ type: 'text', text: '🔥 最熱門', size: 'xs', color: '#FFEEEE', align: 'center' }] : []),
+          { type: 'text', text: `NT$ ${price}`, size: 'xxl', weight: 'bold', color: '#FFFFFF', align: 'center' }
         ]
       },
       body: {
@@ -1509,52 +1509,142 @@ async function handlePurchaseInfo(replyToken) {
         paddingAll: 'lg',
         spacing: 'md',
         contents: [
-          // 方案1
           {
             type: 'box',
-            layout: 'horizontal',
-            backgroundColor: '#FFF8F0',
-            cornerRadius: 'md',
-            paddingAll: 'md',
+            layout: 'vertical',
+            alignItems: 'center',
             contents: [
-              { type: 'text', text: '💰 NT$300', size: 'md', weight: 'bold', color: '#333333', flex: 1 },
-              { type: 'text', text: '70 代幣', size: 'md', weight: 'bold', color: '#FF6B00', align: 'end' }
-            ]
-          },
-          // 方案2
-          {
-            type: 'box',
-            layout: 'horizontal',
-            backgroundColor: '#FFF0E0',
-            cornerRadius: 'md',
-            paddingAll: 'md',
-            contents: [
-              { type: 'text', text: '💰 NT$500', size: 'md', weight: 'bold', color: '#333333', flex: 1 },
-              { type: 'text', text: '130 代幣', size: 'md', weight: 'bold', color: '#FF6B00', align: 'end' },
-              { type: 'text', text: '熱門', size: 'xxs', color: '#FFFFFF', backgroundColor: '#FF3366', position: 'absolute', offsetTop: '0px', offsetEnd: '0px', paddingAll: 'xs' }
-            ]
-          },
-          // 方案3
-          {
-            type: 'box',
-            layout: 'horizontal',
-            backgroundColor: '#FFE8D0',
-            cornerRadius: 'md',
-            paddingAll: 'md',
-            contents: [
-              { type: 'text', text: '💰 NT$1000', size: 'md', weight: 'bold', color: '#333333', flex: 1 },
-              { type: 'text', text: '300 代幣', size: 'md', weight: 'bold', color: '#FF6B00', align: 'end' }
+              { type: 'text', text: '🎫', size: '3xl' },
+              { type: 'text', text: `${tokens} 代幣`, size: 'xl', weight: 'bold', color: '#333333', margin: 'sm' },
+              ...(bonus > 0 ? [{ type: 'text', text: `含贈送 ${bonus} 代幣`, size: 'xs', color: '#FF6B6B', margin: 'xs' }] : [])
             ]
           },
           { type: 'separator', margin: 'lg' },
-          // 付款資訊
-          { type: 'text', text: '📱 轉帳資訊', size: 'md', weight: 'bold', margin: 'lg' },
-          { type: 'text', text: '連線商業銀行（824）', size: 'sm', color: '#666666', margin: 'sm' },
-          { type: 'text', text: '帳號：111000196474', size: 'sm', color: '#333333', weight: 'bold', margin: 'sm' },
-          { type: 'text', text: '戶名：梁勝喜', size: 'sm', color: '#666666', margin: 'sm' },
-          { type: 'separator', margin: 'lg' },
-          { type: 'text', text: '⚠️ 轉帳後請截圖並傳送給我們', size: 'xs', color: '#FF6600', margin: 'md', wrap: true },
-          { type: 'text', text: '客服會在確認後幫您加值代幣', size: 'xs', color: '#888888', wrap: true }
+          {
+            type: 'box',
+            layout: 'horizontal',
+            margin: 'lg',
+            contents: [
+              { type: 'text', text: '每代幣約', size: 'sm', color: '#888888', flex: 1 },
+              { type: 'text', text: `$${perToken}`, size: 'sm', weight: 'bold', color: '#333333', align: 'end' }
+            ]
+          },
+          {
+            type: 'box',
+            layout: 'horizontal',
+            contents: [
+              { type: 'text', text: '可製作約', size: 'sm', color: '#888888', flex: 1 },
+              { type: 'text', text: `${tokens} 張貼圖`, size: 'sm', weight: 'bold', color: '#333333', align: 'end' }
+            ]
+          }
+        ]
+      }
+    };
+  };
+
+  // 方案輪播
+  const planCarousel = {
+    type: 'flex',
+    altText: '🛒 購買代幣方案',
+    contents: {
+      type: 'carousel',
+      contents: [
+        createPlanBubble(300, 70, 10, false),
+        createPlanBubble(500, 130, 30, true),
+        createPlanBubble(1000, 300, 100, false)
+      ]
+    }
+  };
+
+  // 付款資訊卡片
+  const paymentInfo = {
+    type: 'flex',
+    altText: '💳 付款方式',
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#2D9CDB',
+        paddingAll: 'lg',
+        contents: [
+          { type: 'text', text: '💳 付款方式', size: 'lg', weight: 'bold', color: '#FFFFFF', align: 'center' }
+        ]
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'lg',
+        spacing: 'md',
+        contents: [
+          // 銀行轉帳
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#F7F9FC',
+            cornerRadius: 'lg',
+            paddingAll: 'lg',
+            contents: [
+              { type: 'text', text: '🏦 銀行轉帳', size: 'md', weight: 'bold', color: '#333333' },
+              { type: 'separator', margin: 'md' },
+              {
+                type: 'box',
+                layout: 'horizontal',
+                margin: 'md',
+                contents: [
+                  { type: 'text', text: '銀行', size: 'sm', color: '#888888', flex: 2 },
+                  { type: 'text', text: '連線商業銀行（824）', size: 'sm', weight: 'bold', color: '#333333', flex: 4, align: 'end' }
+                ]
+              },
+              {
+                type: 'box',
+                layout: 'horizontal',
+                contents: [
+                  { type: 'text', text: '帳號', size: 'sm', color: '#888888', flex: 2 },
+                  { type: 'text', text: '111000196474', size: 'md', weight: 'bold', color: '#2D9CDB', flex: 4, align: 'end' }
+                ]
+              },
+              {
+                type: 'box',
+                layout: 'horizontal',
+                contents: [
+                  { type: 'text', text: '戶名', size: 'sm', color: '#888888', flex: 2 },
+                  { type: 'text', text: '梁勝喜', size: 'sm', weight: 'bold', color: '#333333', flex: 4, align: 'end' }
+                ]
+              }
+            ]
+          },
+          // 付款步驟
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#FFF8E7',
+            cornerRadius: 'lg',
+            paddingAll: 'lg',
+            margin: 'md',
+            contents: [
+              { type: 'text', text: '📝 付款步驟', size: 'md', weight: 'bold', color: '#333333' },
+              { type: 'separator', margin: 'md' },
+              { type: 'text', text: '1️⃣ 選擇方案並轉帳', size: 'sm', color: '#666666', margin: 'md' },
+              { type: 'text', text: '2️⃣ 截圖轉帳明細', size: 'sm', color: '#666666', margin: 'sm' },
+              { type: 'text', text: '3️⃣ 傳送截圖給我們', size: 'sm', color: '#666666', margin: 'sm' },
+              { type: 'text', text: '4️⃣ 客服確認後立即入帳', size: 'sm', color: '#666666', margin: 'sm' }
+            ]
+          },
+          // 提示
+          {
+            type: 'box',
+            layout: 'horizontal',
+            backgroundColor: '#FFE8E8',
+            cornerRadius: 'md',
+            paddingAll: 'sm',
+            margin: 'md',
+            contents: [
+              { type: 'text', text: '⚡', size: 'sm', flex: 0 },
+              { type: 'text', text: '請在轉帳備註填寫 LINE 名稱，加速對帳！', size: 'xs', color: '#CC0000', flex: 1, wrap: true, margin: 'sm' }
+            ]
+          }
         ]
       },
       footer: {
@@ -1562,29 +1652,20 @@ async function handlePurchaseInfo(replyToken) {
         layout: 'vertical',
         paddingAll: 'md',
         contents: [
-          {
-            type: 'box',
-            layout: 'vertical',
-            backgroundColor: '#F0F0F0',
-            cornerRadius: 'md',
-            paddingAll: 'md',
-            contents: [
-              { type: 'text', text: '👇 掃碼轉帳更方便', size: 'sm', align: 'center', color: '#666666' }
-            ]
-          }
+          { type: 'text', text: '👇 掃碼轉帳更方便', size: 'sm', align: 'center', color: '#888888' }
         ]
       }
     }
   };
 
-  // 傳送 QR Code 圖片
+  // QR Code 圖片
   const qrMessage = {
     type: 'image',
     originalContentUrl: 'https://sticker-tycoon.netlify.app/payment-qr.png',
     previewImageUrl: 'https://sticker-tycoon.netlify.app/payment-qr.png'
   };
 
-  return getLineClient().replyMessage(replyToken, [message, qrMessage]);
+  return getLineClient().replyMessage(replyToken, [planCarousel, paymentInfo, qrMessage]);
 }
 
 /**
