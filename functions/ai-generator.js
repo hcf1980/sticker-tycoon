@@ -417,18 +417,32 @@ async function generateStickerFromPhotoEnhanced(photoBase64, style, expression, 
   let finalPrompt = basePrompt;
   if (enhancedData) {
     const characterBase = enhancedData.characterBase || '';
+    const outfit = enhancedData.outfit || 'plain white t-shirt, no patterns';
     const enhancedExpression = enhancedData.expressions?.[expression] || '';
 
     if (characterBase || enhancedExpression) {
       finalPrompt = `${basePrompt}
 
 === DEEPSEEK DYNAMIC ENHANCEMENT ===
-Character consistency: ${characterBase}
-Expression variation: ${enhancedExpression}
-
-IMPORTANT: Apply these dynamic variations while maintaining the character identity code: ${characterID}`;
+Character features: ${characterBase}
+Expression detail: ${enhancedExpression}`;
     }
   }
+
+  // 🔒 強制加入絕對要求（放在最後，AI 會更注重最後的指令）
+  const absoluteRequirements = `
+
+=== ⚠️ ABSOLUTE REQUIREMENTS (CANNOT BE CHANGED) ===
+1. TRANSPARENT BACKGROUND ONLY - pure alpha channel, NO white, NO gray, NO color
+2. SAME OUTFIT FOR ALL - plain white t-shirt, NO patterns, NO designs, NO stripes
+3. CHARACTER IDENTITY CODE: ${characterID} - must be exactly the same person
+4. NO TEXT, NO WATERMARK, NO LOGO
+5. Upper body only, centered, fills 70-80% of canvas
+
+CRITICAL: If background is not transparent, the sticker will be REJECTED.
+CRITICAL: If outfit has any pattern or decoration, the sticker will be REJECTED.`;
+
+  finalPrompt += absoluteRequirements;
 
   // 建立帶有圖片的請求內容
   const content = [

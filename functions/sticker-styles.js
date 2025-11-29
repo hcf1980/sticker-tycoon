@@ -313,77 +313,56 @@ function generateStickerPromptV2(style, characterDescription, expression) {
 }
 
 /**
- * 🎯 生成照片貼圖的增強 Prompt V2
+ * 🎯 生成照片貼圖的增強 Prompt V2.1
  * 專門用於從照片生成貼圖，保留臉部特徵
  *
- * LINE Creators Market 規格：
- * - 貼圖圖片：最大 370 × 320 px
- * - 透明背景 PNG
- * - 留白 10 px
+ * 強化：服裝一致性、透明背景
  */
 function generatePhotoStickerPromptV2(style, expression, characterID = null) {
   const styleConfig = StickerStyles[style] || StickerStyles.cute;
   const styleEnhance = StyleEnhancer[style] || StyleEnhancer.cute;
   const expressionEnhance = ExpressionEnhancer[expression] || expression;
 
-  const prompt = `Create a LINE Creators Market sticker illustration from this photo.
+  const prompt = `Create a LINE sticker from this photo.
 
-=== LINE STICKER OFFICIAL REQUIREMENTS ===
-- Output size: 370 × 320 pixels (maximum)
-- Format: PNG with TRANSPARENT background
-- Margin: 10px padding around character
-- Character fills 70-80% of canvas, properly centered
-- Easy to recognize at small sizes (LINE chat)
+⚠️ CRITICAL RULES (VIOLATION = REJECTION):
+1. TRANSPARENT BACKGROUND ONLY - pure alpha, no white, no gray, no color
+2. SAME PLAIN WHITE T-SHIRT - no patterns, no stripes, no designs, no decorations
+3. SAME CHARACTER - identity code: ${characterID || 'default'}
 
-=== CHARACTER IDENTITY ===
-${characterID ? `CHARACTER IDENTITY CODE: ${characterID}` : ''}
-1. PRESERVE EXACT FACIAL FEATURES from photo: face shape, eyes, nose, mouth, skin tone
-2. MAINTAIN 100% CONSISTENCY: same person identity across all stickers in set
-3. SAME OUTFIT: consistent clothing style and color
-4. SAME HAIR: exact hairstyle and hair color
+=== CHARACTER CONSISTENCY ===
+- EXACT same face from photo: face shape, eyes, nose, mouth, skin tone
+- EXACT same hairstyle and hair color
+- EXACT same plain white t-shirt (NO patterns, NO prints, NO designs)
+- EXACT same body proportions
 
 === STYLE: ${styleConfig.name} ===
-Art style: ${styleConfig.promptBase}
+${styleConfig.promptBase}
 Lighting: ${styleEnhance.lighting}
-Composition: ${styleEnhance.composition}
-Brushwork: ${styleEnhance.brushwork}
 Mood: ${styleEnhance.mood}
 
 === EXPRESSION: ${expression} ===
-Expression detail: ${expressionEnhance}
-- Show this emotion CLEARLY through facial expression
-- Add appropriate hand gestures if suitable
-- Keep pose expressive but SIMPLE and readable
+${expressionEnhance}
+- Show emotion through FACE and HANDS only
+- Simple pose, upper body only
 
-=== TECHNICAL REQUIREMENTS FOR LINE ===
-- TRANSPARENT BACKGROUND (alpha channel) - NOT white background
-- NO TEXT, NO WORDS, NO LABELS, NO CAPTIONS
-- Thick clean BLACK OUTLINES for visibility
-- Upper body only (head to chest)
-- Facing forward or 3/4 view
-- High contrast colors for small display
-- Vector-like clean illustration style
-- Solid colors, avoid complex gradients
+=== TECHNICAL SPECS ===
+- PNG with TRANSPARENT background (alpha channel)
+- Character centered, fills 70-80%
+- Thick black outlines
+- High contrast colors
+- NO text, NO watermark
 
-=== AVOID ===
-- White or colored backgrounds (must be transparent)
-- Any text, watermarks, signatures
-- Full body shots (hard to see in chat)
-- Complex poses or backgrounds
-- Realistic/photorealistic style
-- Multiple characters
-
-Generate the LINE sticker illustration now.`;
+OUTPUT: Single sticker illustration with TRANSPARENT background and PLAIN WHITE T-SHIRT.`;
 
   const negativePrompt = `
-    white background, colored background, solid background,
+    white background, gray background, colored background, solid background, gradient background,
+    patterned clothing, striped shirt, printed shirt, decorated clothing, colorful clothes,
     text, words, letters, caption, watermark, signature, logo,
-    multiple characters, complex background, scenery, landscape,
-    realistic photo, ultra-realism, photorealistic, 3D render,
-    inconsistent features, different face, wrong identity,
-    blurry, low quality, pixelated, jpeg artifacts,
-    border, frame, decorations, ornaments,
-    full body, legs, feet, distant view
+    multiple characters, complex background, scenery,
+    realistic photo, photorealistic, 3D render,
+    different face, inconsistent features,
+    full body, legs, feet
   `.replace(/\s+/g, ' ').trim();
 
   return {
