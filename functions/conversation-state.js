@@ -100,10 +100,11 @@ function isInCreationFlow(stage) {
     ConversationStage.NAMING,
     ConversationStage.UPLOAD_PHOTO,
     ConversationStage.STYLING,
+    ConversationStage.FRAMING,         // 構圖選擇
     ConversationStage.CHARACTER,
     ConversationStage.EXPRESSIONS,
-    ConversationStage.SCENE_SELECT,    // 新增：場景選擇
-    ConversationStage.CUSTOM_SCENE,    // 新增：自訂場景
+    ConversationStage.SCENE_SELECT,    // 場景選擇
+    ConversationStage.CUSTOM_SCENE,    // 自訂場景
     ConversationStage.COUNT_SELECT,
     ConversationStage.CONFIRMING
   ].includes(stage);

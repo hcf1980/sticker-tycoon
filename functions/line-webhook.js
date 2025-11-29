@@ -60,9 +60,14 @@ async function handleTextMessage(replyToken, userId, text) {
       });
     }
     
-    // 2. 優先處理創建流程中的輸入（避免被其他指令中斷）
-    console.log(`🔍 isInCreationFlow: ${isInCreationFlow(currentStage)} (stage: ${currentStage})`);
-    if (isInCreationFlow(currentStage)) {
+    // 2. 優先處理全局命令（即使在創建流程中也可以使用）
+    const globalCommands = ['推薦好友', '我的推薦碼', '推薦碼', '邀請好友', '查詢進度', '我的貼圖', '貼圖列表', '代幣', '餘額', '我的代幣', '查詢代幣'];
+    if (globalCommands.includes(text)) {
+      // 這些命令不受創建流程限制，直接跳過創建流程處理
+      console.log(`🌐 執行全局命令：${text}`);
+    } else if (isInCreationFlow(currentStage)) {
+      // 3. 處理創建流程中的輸入
+      console.log(`🔍 isInCreationFlow: ${isInCreationFlow(currentStage)} (stage: ${currentStage})`);
       // 如果在流程中又輸入「創建貼圖」，詢問是否要重新開始
       if (text === '創建貼圖' || text === '開始' || text === '新增貼圖') {
         return getLineClient().replyMessage(replyToken, {
@@ -425,6 +430,7 @@ async function handleConfirmGeneration(replyToken, userId, state) {
       scene: tempData.scene || 'none',
       sceneConfig: tempData.sceneConfig || null,
       customSceneDescription: tempData.customSceneDescription || null,
+      framing: tempData.framing || 'halfbody',  // 構圖選擇（全身/半身/大頭/特寫）
       tokensDeducted: true  // 標記已經扣過代幣
     });
 
@@ -607,6 +613,39 @@ async function safeReply(replyToken, message) {
 }
 
 /**
+ * 處理 Postback 事件
+ */
+async function handlePostback(replyToken, userId, data) {
+  console.log(`📮 處理 Postback：${data} (User: ${userId})`);
+
+  // 解析 postback data
+  const params = new URLSearchParams(data);
+  const action = params.get('action');
+  const setId = params.get('setId');
+
+  if (!action || !setId) {
+    return getLineClient().replyMessage(replyToken, {
+      type: 'text',
+      text: '⚠️ 操作無效，請重試'
+    });
+  }
+
+  switch (action) {
+    case 'view':
+      return await handleViewStickerSet(replyToken, userId, setId);
+    case 'delete':
+      return await handleDeleteStickerSet(replyToken, userId, setId);
+    case 'confirmDelete':
+      return await handleConfirmDeleteStickerSet(replyToken, userId, setId);
+    default:
+      return getLineClient().replyMessage(replyToken, {
+        type: 'text',
+        text: '⚠️ 不支援的操作'
+      });
+  }
+}
+
+/**
  * Netlify Function Handler
  */
 exports.handler = async function(event, context) {
@@ -636,8 +675,6 @@ exports.handler = async function(event, context) {
     const events = body.events || [];
 
     for (const ev of events) {
-      if (ev.type !== 'message') continue;
-
       const replyToken = ev.replyToken;
       const userId = ev.source.userId;
 
@@ -657,21 +694,27 @@ exports.handler = async function(event, context) {
         await getOrCreateUser(userId, profile.displayName, profile.pictureUrl);
       } catch (profileError) {
         console.log('⚠️ 無法取得用戶 Profile:', profileError.message);
-        // 即使無法取得 Profile，仍然建立用戶（不影響後續流程）
         await getOrCreateUser(userId);
       }
 
-      // 根據訊息類型處理
       try {
-        if (ev.message.type === 'text') {
-          const text = ev.message.text.trim();
-          await handleTextMessage(replyToken, userId, text);
-        } else if (ev.message.type === 'image') {
-          await handleImageMessage(replyToken, userId, ev.message.id);
+        // 處理 postback 事件
+        if (ev.type === 'postback') {
+          await handlePostback(replyToken, userId, ev.postback.data);
+          continue;
+        }
+
+        // 處理訊息事件
+        if (ev.type === 'message') {
+          if (ev.message.type === 'text') {
+            const text = ev.message.text.trim();
+            await handleTextMessage(replyToken, userId, text);
+          } else if (ev.message.type === 'image') {
+            await handleImageMessage(replyToken, userId, ev.message.id);
+          }
         }
       } catch (innerError) {
-        console.error('❌ 處理訊息失敗:', innerError.message);
-        // 嘗試回覆錯誤訊息，但失敗也沒關係
+        console.error('❌ 處理事件失敗:', innerError.message);
         await safeReply(replyToken, {
           type: 'text',
           text: '❌ 系統發生錯誤，請稍後再試'
@@ -720,7 +763,7 @@ function generateStickerListFlexMessage(sets) {
     // 根據狀態決定按鈕
     const footerContents = [];
 
-    // 已完成的顯示查看詳情
+    // 已完成的顯示查看詳情（使用 postback 避免顯示 ID）
     if (set.status === 'completed') {
       footerContents.push({
         type: 'button',
@@ -728,23 +771,25 @@ function generateStickerListFlexMessage(sets) {
         color: '#FF6B6B',
         height: 'sm',
         action: {
-          type: 'message',
+          type: 'postback',
           label: '查看詳情',
-          text: `查看貼圖:${setId}`
+          data: `action=view&setId=${setId}`,
+          displayText: `查看「${set.name || '未命名'}」`
         }
       });
     }
 
-    // 所有貼圖組都可以刪除
+    // 所有貼圖組都可以刪除（使用 postback 避免顯示 ID）
     footerContents.push({
       type: 'button',
       style: set.status === 'completed' ? 'secondary' : 'primary',
       color: set.status === 'completed' ? undefined : '#999999',
       height: 'sm',
       action: {
-        type: 'message',
+        type: 'postback',
         label: '🗑️ 刪除',
-        text: `刪除貼圖:${setId}`
+        data: `action=delete&setId=${setId}`,
+        displayText: `刪除「${set.name || '未命名'}」`
       }
     });
 
@@ -1031,9 +1076,10 @@ async function handleDeleteStickerSet(replyToken, userId, setId) {
               style: 'primary',
               color: '#FF6B6B',
               action: {
-                type: 'message',
+                type: 'postback',
                 label: '✅ 確認刪除',
-                text: `確認刪除:${setId}`
+                data: `action=confirmDelete&setId=${setId}`,
+                displayText: `確認刪除「${set.name || '未命名'}」`
               }
             },
             {
