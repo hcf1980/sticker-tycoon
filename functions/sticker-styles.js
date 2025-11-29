@@ -1,9 +1,150 @@
 /**
- * Sticker Styles Module
+ * Sticker Styles Module v2.0
  * 定義各種貼圖風格和對應的 AI 提示詞
+ *
+ * 新增功能：
+ * - Character Identity Generator（角色一致性系統）
+ * - Style Enhancement Presets（風格強化層）
+ * - Expression Enhancer（表情增強系統）
  */
 
-// 貼圖風格定義
+const crypto = require('crypto');
+
+// ============================================
+// 1️⃣ Character Identity Generator（角色一致性系統）
+// ============================================
+
+/**
+ * 依角色文字描述生成一個固定的身份代碼
+ * 讓同一描述永遠產生相同的 identity code
+ */
+function generateCharacterID(characterDescription) {
+  return crypto.createHash('md5')
+    .update(characterDescription)
+    .digest('hex')
+    .slice(0, 12); // 12碼 identity code
+}
+
+// ============================================
+// 2️⃣ Style Enhancement Presets（風格強化層）
+// ============================================
+
+const StyleEnhancer = {
+  cute: {
+    lighting: "soft ambient lighting, gentle bounce light, warm glow",
+    composition: "round composition, centered, thick outline, balanced proportions",
+    brushwork: "smooth soft shading, glossy highlights, clean edges",
+    mood: "warm cozy atmosphere, heartwarming feeling"
+  },
+  cool: {
+    lighting: "strong rim light, neon glowing edges, dramatic shadows, high contrast",
+    composition: "dynamic diagonal composition, energetic silhouette, bold framing",
+    brushwork: "bold sharp strokes, high contrast shading, defined edges",
+    mood: "powerful confident atmosphere, street style energy"
+  },
+  funny: {
+    lighting: "flat comedy lighting, simple shadows, bright overall",
+    composition: "exaggerated distorted perspective, off-center for comedy effect",
+    brushwork: "cartoon bold strokes, over-expressive lines, wobbly outlines",
+    mood: "chaotic, humorous, playful vibes, meme energy"
+  },
+  simple: {
+    lighting: "minimal soft lighting, flat illumination",
+    composition: "clean centered flat layout, geometric balance",
+    brushwork: "thin vector-like lines, minimal shading, crisp edges",
+    mood: "clean modern neutral tone, sophisticated simplicity"
+  },
+  anime: {
+    lighting: "vivid anime highlight, cel shading, dramatic rim light",
+    composition: "strong silhouette, clean framing, dynamic angles",
+    brushwork: "cel-shaded edges, gradient hair highlights, smooth color blocks",
+    mood: "energetic dramatic anime style, Japanese illustration feel"
+  },
+  pixel: {
+    lighting: "pixel shading blocks, dithering effects",
+    composition: "8-bit center framing, grid-aligned positioning",
+    brushwork: "pixel clusters, clean grid alignment, limited color dithering",
+    mood: "retro gaming charm, nostalgic 8-bit aesthetic"
+  },
+  watercolor: {
+    lighting: "soft natural lighting, diffused glow",
+    composition: "organic flowing shapes, asymmetric beauty",
+    brushwork: "bleeding pigments, textured watercolor paper, wet-on-wet effects",
+    mood: "calm dreamy softness, artistic tranquility"
+  },
+  doodle: {
+    lighting: "hand-drawn naive shading, casual light source",
+    composition: "loose sketchy framing, organic placement",
+    brushwork: "imperfect uneven pen strokes, charming wobbles",
+    mood: "casual fun notebook style, spontaneous creativity"
+  }
+};
+
+// ============================================
+// 3️⃣ Expression Enhancer（表情增強系統）
+// ============================================
+
+const ExpressionEnhancer = {
+  // 基本日常
+  "開心": "wide genuine smile, bright sparkling eyes, cheerful pose, radiating joy",
+  "開心打招呼": "waving hand, warm smile, friendly welcoming pose, bright eyes",
+  "大笑": "open-mouth laughing, squinting happy eyes, high energy, body shaking with laughter",
+  "哭泣": "teary eyes, trembling lips, emotional expression, tears streaming down",
+  "生氣": "angry furrowed eyebrows, strong frowning mouth, tense pose, steam effect",
+  "驚訝": "wide-open shocked eyes, dropped jaw, hands up in surprise, dramatic reaction",
+  "愛心眼": "heart-shaped sparkling eyes, blushing cheeks, overwhelmed with love",
+  "睡覺": "closed peaceful eyes, zzz bubbles, relaxed sleeping pose, drooling slightly",
+  "加油": "fist pump pose, determined expression, motivational energy, confident stance",
+
+  // 可愛表情
+  "賣萌": "puppy dog eyes, pouty lips, head tilt, irresistibly cute pose",
+  "害羞": "blushing red cheeks, shy downward gaze, fidgeting hands, timid smile",
+  "撒嬌": "clingy adorable pose, pleading eyes, cute pouting, wanting attention",
+  "委屈": "teary puppy eyes, quivering lip, pitiful expression, seeking comfort",
+  "興奮": "sparkling excited eyes, jumping pose, overwhelming enthusiasm, vibrating energy",
+  "期待": "hopeful shining eyes, leaning forward eagerly, anticipating expression",
+  "無奈": "sighing expression, drooping shoulders, exasperated look, sweat drop",
+  "謝謝": "grateful bow, warm appreciative smile, hands together, heartfelt thanks",
+
+  // 辦公室
+  "OK": "confident OK hand sign, assured smile, thumbs up energy",
+  "讚": "enthusiastic thumbs up, approving smile, encouraging expression",
+  "加班中": "tired but determined eyes, coffee cup, late night working pose",
+  "累了": "exhausted droopy eyes, slumped posture, desperately tired expression",
+  "開會": "serious focused expression, professional pose, attentive listening",
+  "截止日": "panicked stressed expression, sweating, racing against time",
+  "薪水": "money eyes, excited greedy expression, payday happiness",
+  "下班": "relieved happy expression, freedom pose, escaping work joy",
+
+  // 社交常用
+  "抱歉": "apologetic bow, sorry expression, regretful eyes, humble pose",
+  "沒問題": "confident reassuring smile, no worries gesture, easygoing pose",
+  "好的": "agreeable nodding, affirmative expression, understanding smile",
+  "等等": "hand up stop gesture, patient expression, asking to wait",
+  "再見": "waving goodbye, bittersweet smile, farewell gesture",
+  "晚安": "sleepy peaceful expression, yawning, ready for bed pose",
+  "早安": "fresh morning energy, stretching awake, bright greeting smile",
+
+  // 戀愛日常
+  "愛你": "heart hands gesture, loving gaze, deeply affectionate expression",
+  "想你": "longing distant gaze, hand on heart, missing you expression",
+  "抱抱": "arms open wide for hug, warm inviting expression, seeking embrace",
+  "親親": "puckered kiss lips, blowing kiss, loving smooch expression",
+  "吃醋": "jealous pouting, side-eye glare, envious sulking expression",
+  "約會": "excited dressed up, anticipating love, romantic readiness",
+
+  // 心情寫照
+  "難過": "downcast sad eyes, frowning, melancholy expression, heavy heart",
+  "焦慮": "worried nervous expression, biting nails, anxious fidgeting",
+  "放鬆": "peaceful calm expression, zen pose, stress-free contentment",
+  "無聊": "bored blank stare, yawning, listless expression, killing time",
+  "困惑": "confused tilted head, question marks, puzzled expression"
+};
+
+// ============================================
+// 貼圖風格定義（基礎版）
+// ============================================
+
 const StickerStyles = {
   cute: {
     id: 'cute',
@@ -108,14 +249,123 @@ const DefaultExpressions = {
 };
 
 /**
- * 生成完整的 AI 提示詞
+ * 生成完整的 AI 提示詞（舊版，保留向後兼容）
  */
 function generateStickerPrompt(style, characterDescription, expression) {
   const styleConfig = StickerStyles[style] || StickerStyles.cute;
-  
+
   return {
     prompt: `${styleConfig.promptBase}, ${characterDescription}, showing expression: ${expression}, sticker design, transparent background, PNG format, centered composition, high quality illustration`,
     negativePrompt: `${styleConfig.negativePrompt}, text, watermark, signature, border, frame, background scenery, multiple characters`
+  };
+}
+
+/**
+ * 🎯 生成完整的 AI 提示詞 V2（增強版）
+ * 包含：角色一致性、風格強化、表情增強
+ */
+function generateStickerPromptV2(style, characterDescription, expression) {
+  const styleConfig = StickerStyles[style] || StickerStyles.cute;
+  const styleEnhance = StyleEnhancer[style] || StyleEnhancer.cute;
+  const expressionEnhance = ExpressionEnhancer[expression] || expression;
+
+  // 產生固定角色識別碼（確保一致性）
+  const characterID = generateCharacterID(characterDescription);
+
+  const prompt = `
+    ${styleConfig.promptBase},
+
+    LIGHTING: ${styleEnhance.lighting},
+    COMPOSITION: ${styleEnhance.composition},
+    BRUSHWORK: ${styleEnhance.brushwork},
+    MOOD: ${styleEnhance.mood},
+
+    CONSISTENT CHARACTER IDENTITY CODE: ${characterID},
+    CHARACTER: ${characterDescription},
+
+    EXPRESSION: ${expressionEnhance},
+    EMOTION: ${expression},
+
+    high-charm factor, expressive pose,
+    LINE-sticker optimized clarity,
+    transparent background,
+    sticker illustration, high readability,
+    thick clean outline, vector-friendly quality,
+    visually iconic mascot design,
+    single character only, centered composition
+  `.replace(/\s+/g, ' ').trim();
+
+  const negativePrompt = `
+    ${styleConfig.negativePrompt},
+    clutter, dull colors, text, watermark, signature,
+    realistic anatomy, ultra-realism, photorealistic,
+    multiple characters, messy background, complex background,
+    inconsistent character features, deformed, bad anatomy,
+    low-resolution, blurry, pixelated, jpeg artifacts,
+    border, frame, logo, words, letters, caption
+  `.replace(/\s+/g, ' ').trim();
+
+  return {
+    prompt,
+    negativePrompt,
+    characterID
+  };
+}
+
+/**
+ * 🎯 生成照片貼圖的增強 Prompt V2
+ * 專門用於從照片生成貼圖，保留臉部特徵
+ */
+function generatePhotoStickerPromptV2(style, expression, characterID = null) {
+  const styleConfig = StickerStyles[style] || StickerStyles.cute;
+  const styleEnhance = StyleEnhancer[style] || StyleEnhancer.cute;
+  const expressionEnhance = ExpressionEnhancer[expression] || expression;
+
+  const prompt = `Create a LINE sticker illustration from this photo.
+
+=== ABSOLUTE IDENTITY REQUIREMENTS ===
+${characterID ? `CHARACTER IDENTITY CODE: ${characterID} (MUST maintain exact same character across all stickers)` : ''}
+1. PRESERVE EXACT FACIAL FEATURES: face shape, eye shape, nose shape, mouth shape, skin tone
+2. MAINTAIN CHARACTER CONSISTENCY: same person identity throughout the sticker set
+
+=== STYLE: ${styleConfig.name} ===
+Art style: ${styleConfig.promptBase}
+Lighting: ${styleEnhance.lighting}
+Composition: ${styleEnhance.composition}
+Brushwork: ${styleEnhance.brushwork}
+Mood: ${styleEnhance.mood}
+
+=== EXPRESSION: ${expression} ===
+Expression detail: ${expressionEnhance}
+- Show this emotion clearly through facial expression
+- Add appropriate hand gestures if suitable
+- Keep pose expressive but simple
+
+=== TECHNICAL REQUIREMENTS ===
+- PURE WHITE BACKGROUND (#FFFFFF) - no gradients, no shadows, no decorations
+- NO TEXT whatsoever - no labels, no words, no captions, no watermarks
+- Character fills 70-80% of image, centered
+- Consistent thick black outlines
+- Upper body only (head to chest), facing forward or 3/4 view
+- Square format (1:1 ratio)
+- Clean vector-like illustration
+- Solid colors, minimal gradients
+- High contrast for LINE sticker visibility
+
+Generate the sticker image now.`;
+
+  const negativePrompt = `
+    text, words, letters, caption, watermark, signature,
+    multiple characters, complex background, scenery,
+    realistic photo, ultra-realism, photorealistic,
+    inconsistent features, different face, wrong identity,
+    blurry, low quality, pixelated,
+    border, frame, decorations
+  `.replace(/\s+/g, ' ').trim();
+
+  return {
+    prompt,
+    negativePrompt
   };
 }
 
@@ -134,6 +384,20 @@ function getAllExpressionTemplates() {
 }
 
 /**
+ * 取得表情增強描述
+ */
+function getExpressionEnhancement(expression) {
+  return ExpressionEnhancer[expression] || expression;
+}
+
+/**
+ * 取得風格增強設定
+ */
+function getStyleEnhancement(style) {
+  return StyleEnhancer[style] || StyleEnhancer.cute;
+}
+
+/**
  * LINE 貼圖規格
  */
 const LineStickerSpecs = {
@@ -149,10 +413,17 @@ const LineStickerSpecs = {
 
 module.exports = {
   StickerStyles,
+  StyleEnhancer,
+  ExpressionEnhancer,
   DefaultExpressions,
+  generateCharacterID,
   generateStickerPrompt,
+  generateStickerPromptV2,
+  generatePhotoStickerPromptV2,
   getAllStyles,
   getAllExpressionTemplates,
+  getExpressionEnhancement,
+  getStyleEnhancement,
   LineStickerSpecs
 };
 

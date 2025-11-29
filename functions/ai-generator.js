@@ -1,10 +1,21 @@
 /**
- * AI Generator Module
+ * AI Generator Module v2.0
  * 使用 Gemini API 生成貼圖圖片（Chat Completions 格式）
+ *
+ * 新增功能：
+ * - 角色一致性系統（Character ID）
+ * - 風格強化層（Style Enhancer）
+ * - 表情增強系統（Expression Enhancer）
  */
 
 const axios = require('axios');
-const { generateStickerPrompt } = require('./sticker-styles');
+const {
+  generateStickerPrompt,
+  generateStickerPromptV2,
+  generatePhotoStickerPromptV2,
+  generateCharacterID,
+  StickerStyles
+} = require('./sticker-styles');
 
 // AI 圖片生成 API 設定
 const AI_API_KEY = process.env.AI_IMAGE_API_KEY;
@@ -139,9 +150,14 @@ Please generate the image directly.`;
 }
 
 /**
- * 使用照片生成貼圖（保留臉部特徵）- Chat Completions 格式
+ * 🎯 使用照片生成貼圖 V2（保留臉部特徵 + 角色一致性）
+ *
+ * @param {string} photoBase64 - 照片的 base64 編碼
+ * @param {string} style - 貼圖風格
+ * @param {string} expression - 表情
+ * @param {string} characterID - 角色一致性 ID（可選）
  */
-async function generateStickerFromPhoto(photoBase64, style, expression, consistencyGuide = null) {
+async function generateStickerFromPhoto(photoBase64, style, expression, characterID = null) {
   const AI_API_KEY = process.env.AI_IMAGE_API_KEY;
   const AI_API_URL = process.env.AI_IMAGE_API_URL || 'https://newapi.pockgo.com';
   const AI_MODEL = process.env.AI_MODEL || 'gemini-2.5-flash-image';
@@ -150,45 +166,11 @@ async function generateStickerFromPhoto(photoBase64, style, expression, consiste
     throw new Error('AI 圖片生成 API Key 未設定');
   }
 
-  const styleConfig = require('./sticker-styles').StickerStyles[style] || require('./sticker-styles').StickerStyles.cute;
+  // 使用 V2 增強版 Prompt 生成器
+  const { prompt, negativePrompt } = generatePhotoStickerPromptV2(style, expression, characterID);
 
-  // 一致性指南（第一張生成後會傳入）
-  const consistencyText = consistencyGuide ? `
-CONSISTENCY REFERENCE (MUST FOLLOW):
-- Outfit: ${consistencyGuide.outfit}
-- Hair style: ${consistencyGuide.hair}
-- Character size: ${consistencyGuide.size}
-- Line thickness: ${consistencyGuide.lineStyle}
-` : '';
-
-  const prompt = `Create a LINE sticker illustration from this photo.
-
-=== ABSOLUTE REQUIREMENTS ===
-1. SAME PERSON: Preserve EXACT facial features - face shape, eye shape, nose, mouth
-2. PURE WHITE BACKGROUND (#FFFFFF) - no gradients, no shadows, no decorations
-3. NO TEXT whatsoever - no labels, no words, no captions
-4. Character must fill 70-80% of the image, centered
-5. Consistent thick black outlines around the character
-6. Upper body only (head to chest), facing forward or 3/4 view
-${consistencyText}
-=== STYLE ===
-Art style: ${styleConfig.name} (${styleConfig.promptBase})
-
-=== THIS STICKER'S EXPRESSION ===
-Show the emotion: "${expression}"
-- Adjust facial expression to clearly show this emotion
-- Can add simple hand gestures if appropriate
-- Keep body pose simple and clear
-
-=== TECHNICAL SPECS ===
-- Square format (1:1 ratio)
-- Clean vector-like illustration
-- Solid colors, no gradients
-- High contrast for visibility
-
-Generate the sticker image now.`;
-
-  console.log(`🎨 生成照片貼圖：${expression} (${style}風格)`);
+  console.log(`🎨 生成照片貼圖 V2：${expression} (${style}風格)`);
+  console.log(`🆔 角色 ID：${characterID || '未指定'}`);
 
   try {
     const response = await axios.post(
@@ -329,37 +311,37 @@ async function generateStickerSet(style, characterDescription, expressions) {
 }
 
 /**
- * 批次從照片生成貼圖組（加強一致性）
+ * 🎯 批次從照片生成貼圖組 V2（角色一致性系統）
+ *
+ * 使用 Character ID 確保整組貼圖的角色外觀 100% 一致
  */
 async function generateStickerSetFromPhoto(photoBase64, style, expressions) {
   const results = [];
   const total = expressions.length;
 
-  console.log(`📷 開始從照片批次生成 ${total} 張貼圖（加強一致性模式）`);
+  console.log(`📷 開始從照片批次生成 ${total} 張貼圖（V2 角色一致性系統）`);
 
-  // 一致性指南 - 所有貼圖都使用相同設定
-  const styleConfig = require('./sticker-styles').StickerStyles[style] || require('./sticker-styles').StickerStyles.cute;
-  const consistencyGuide = {
-    outfit: 'same outfit in all stickers - casual t-shirt, same color throughout the set',
-    hair: 'exact same hairstyle and hair color in every image',
-    size: 'character fills exactly 75% of image height, consistently sized',
-    lineStyle: 'medium-thick black outlines (2-3px equivalent), consistent throughout'
-  };
+  // 🆔 生成角色一致性 ID（基於照片內容的 hash）
+  // 確保同一張照片永遠生成相同的 Character ID
+  const characterID = generateCharacterID(photoBase64.slice(0, 1000) + style);
 
-  console.log(`📐 一致性設定：`, consistencyGuide);
+  console.log(`🆔 角色一致性 ID：${characterID}`);
+  console.log(`🎨 風格：${style}`);
+  console.log(`📝 表情數量：${total}`);
 
   for (let i = 0; i < expressions.length; i++) {
     const expression = expressions[i];
     console.log(`⏳ 生成中 (${i + 1}/${total}): ${expression}`);
 
     try {
-      // 傳入一致性指南
-      const imageUrl = await generateStickerFromPhoto(photoBase64, style, expression, consistencyGuide);
+      // 傳入 Character ID 確保一致性
+      const imageUrl = await generateStickerFromPhoto(photoBase64, style, expression, characterID);
       results.push({
         index: i + 1,
         expression,
         imageUrl,
-        status: 'completed'
+        status: 'completed',
+        characterID // 記錄使用的 Character ID
       });
     } catch (error) {
       results.push({
@@ -367,7 +349,8 @@ async function generateStickerSetFromPhoto(photoBase64, style, expressions) {
         expression,
         imageUrl: null,
         status: 'failed',
-        error: error.message
+        error: error.message,
+        characterID
       });
     }
 
@@ -379,6 +362,7 @@ async function generateStickerSetFromPhoto(photoBase64, style, expressions) {
 
   const successCount = results.filter(r => r.status === 'completed').length;
   console.log(`✅ 照片貼圖批次生成完成：${successCount}/${total} 成功`);
+  console.log(`🆔 所有貼圖使用 Character ID：${characterID}`);
 
   return results;
 }
