@@ -72,11 +72,11 @@ const StyleEnhancer = {
     brushwork: "pixel clusters, clean grid alignment, limited color dithering",
     mood: "retro gaming charm, nostalgic 8-bit aesthetic"
   },
-  doodle: {
-    lighting: "hand-drawn naive shading, casual light source",
-    composition: "loose sketchy framing, organic placement",
-    brushwork: "imperfect uneven pen strokes, charming wobbles",
-    mood: "casual fun notebook style, spontaneous creativity"
+  sketch: {
+    lighting: "single directional light source, strong tonal contrast, dramatic shadow mapping",
+    composition: "portrait-focused framing, classical fine art composition, balanced negative space",
+    brushwork: "precise graphite pencil strokes, cross-hatching for shadows, smooth gradient tones",
+    mood: "fine art aesthetic, museum-quality portrait, timeless elegance"
   }
 };
 
@@ -125,7 +125,113 @@ const ExpressionEnhancer = {
   "恭喜": { action: "clapping hands, excited congratulating smile, celebration pose", popText: "WOW!", decorations: "confetti, stars, fireworks" },
   "加班中": { action: "exhausted at desk, coffee cup, late night working expression", popText: "Work...", decorations: "coffee cup, zzz, moon" },
   "放假": { action: "arms stretched wide, relieved happy expression, freedom pose", popText: "Free!", decorations: "sun, palm trees, sparkles" },
-  "累累": { action: "drooping shoulders, tired eyes, exhausted slumped pose", popText: "Tired~", decorations: "sweat drops, tired marks" }
+  "累累": { action: "drooping shoulders, tired eyes, exhausted slumped pose", popText: "Tired~", decorations: "sweat drops, tired marks" },
+
+  // ===== 新增基本日常 =====
+  "你好": { action: "friendly wave, warm smile, welcoming gesture", popText: "Hello!", decorations: "sparkles, stars" },
+  "掰掰": { action: "waving goodbye, sweet smile, farewell pose", popText: "Bye!", decorations: "waving hand, hearts" },
+  "了解": { action: "nodding head, understanding expression, thumbs up", popText: "Got it!", decorations: "check marks, sparkles" },
+  "收到": { action: "saluting gesture, confident nod, acknowledgment pose", popText: "Roger!", decorations: "check marks, stars" },
+  "沒問題": { action: "confident thumbs up, reassuring smile, reliable pose", popText: "No prob!", decorations: "thumbs up, sparkles" },
+  "辛苦了": { action: "gentle bow, appreciative smile, respectful gesture", popText: "Good job!", decorations: "flowers, hearts" },
+  "午安": { action: "cheerful wave, bright smile, midday greeting", popText: "Hi~", decorations: "sun, sparkles" },
+  "好的": { action: "nodding with smile, agreeable expression, positive gesture", popText: "OK!", decorations: "check marks, stars" },
+  "好棒": { action: "clapping hands, impressed expression, praising pose", popText: "Great!", decorations: "stars, confetti" },
+  "太好了": { action: "jumping with joy, excited fist pump, celebration pose", popText: "Yay!", decorations: "confetti, stars, hearts" },
+  "明天見": { action: "waving with smile, hopeful expression, farewell pose", popText: "See ya!", decorations: "moon, stars" },
+  "晚點說": { action: "finger pointing, thoughtful expression, postponing gesture", popText: "Later~", decorations: "clock, dots" },
+  "我來了": { action: "running pose, excited expression, arriving gesture", popText: "Coming!", decorations: "speed lines, sparkles" },
+  "等我": { action: "running with hand up, urgent expression, rushing pose", popText: "Wait!", decorations: "speed lines, sweat drops" },
+  "出發": { action: "pointing forward, determined expression, adventure pose", popText: "Go!", decorations: "arrows, sparkles" },
+  "到了": { action: "arms spread wide, relieved smile, arrival pose", popText: "Here!", decorations: "location pin, sparkles" },
+
+  // ===== 新增可愛撒嬌 =====
+  "求求你": { action: "hands clasped begging, puppy eyes, pleading pose", popText: "Pls~", decorations: "tears, hearts" },
+  "人家": { action: "shy pout, finger twirling hair, cute sulking pose", popText: "Hmph~", decorations: "hearts, blush marks" },
+  "討厭啦": { action: "playful hitting gesture, blushing, fake angry cute pose", popText: "Meanie!", decorations: "hearts, angry marks" },
+  "好可愛": { action: "hands on cheeks, sparkling eyes, adoring expression", popText: "Cute!", decorations: "hearts, sparkles, stars" },
+  "委屈": { action: "teary eyes, pouting lips, sad puppy expression", popText: "Sad~", decorations: "tear drops, sad cloud" },
+  "賣萌": { action: "peace sign near face, winking, cute pose", popText: "Kawaii!", decorations: "hearts, sparkles" },
+  "心心": { action: "making heart shape with hands, loving expression", popText: "Love!", decorations: "floating hearts" },
+  "愛你": { action: "blowing kiss, heart hands, loving expression", popText: "Love U!", decorations: "hearts, kiss marks" },
+  "羞羞": { action: "covering face, peeking through fingers, blushing", popText: "Shy~", decorations: "blush marks, hearts" },
+  "嘟嘴": { action: "pouting lips, cute sulking, demanding attention pose", popText: "Hmph!", decorations: "hearts, angry marks" },
+  "眨眼": { action: "playful wink, finger gun, flirty pose", popText: "Wink!", decorations: "sparkles, stars" },
+  "偷笑": { action: "covering mouth giggling, mischievous eyes, sneaky smile", popText: "Hehe~", decorations: "sparkles, sweat drop" },
+  "飛吻": { action: "blowing kiss with hand, puckered lips, sending love", popText: "Muah!", decorations: "flying hearts, kiss marks" },
+  "撒花": { action: "throwing confetti, joyful expression, celebration pose", popText: "Yay!", decorations: "flowers, confetti, sparkles" },
+  "轉圈": { action: "spinning with arms out, happy dizzy expression, dancing pose", popText: "Wheee!", decorations: "sparkles, stars, motion lines" },
+  "比心": { action: "finger heart gesture, sweet smile, loving pose", popText: "Heart!", decorations: "hearts, sparkles" },
+
+  // ===== 新增辦公室 =====
+  "開會中": { action: "serious expression, holding documents, professional pose", popText: "Meeting", decorations: "documents, clock" },
+  "忙碌": { action: "multitasking pose, stressed expression, busy hands", popText: "Busy!", decorations: "papers flying, sweat drops" },
+  "下班": { action: "stretching arms, relieved smile, freedom pose", popText: "Done!", decorations: "clock, sparkles" },
+  "處理中": { action: "focused typing, concentrated expression, working pose", popText: "On it!", decorations: "gears, loading" },
+  "已完成": { action: "satisfied smile, dusting hands off, accomplished pose", popText: "Done!", decorations: "check marks, stars" },
+  "請假": { action: "waving goodbye, relaxed smile, vacation pose", popText: "Off!", decorations: "palm tree, sun" },
+  "補班": { action: "tired expression, dragging feet, reluctant pose", popText: "Work...", decorations: "sad cloud, sweat drops" },
+  "喝咖啡": { action: "holding coffee cup, satisfied sip, relaxed pose", popText: "Coffee!", decorations: "coffee cup, steam, hearts" },
+  "趕報告": { action: "frantic typing, stressed expression, deadline panic", popText: "Rush!", decorations: "papers, clock, sweat drops" },
+  "老闆叫": { action: "nervous expression, standing at attention, worried pose", popText: "Boss!", decorations: "exclamation marks, sweat drops" },
+  "午休": { action: "stretching, yawning, relaxed lunch break pose", popText: "Break~", decorations: "food, zzz" },
+  "打卡": { action: "checking watch, rushing pose, time-conscious expression", popText: "Clock in!", decorations: "clock, check mark" },
+  "週五了": { action: "excited celebration, arms up, weekend joy pose", popText: "TGIF!", decorations: "confetti, stars, party" },
+  "禮拜一": { action: "tired dragging, Monday blues expression, reluctant pose", popText: "Monday...", decorations: "sad cloud, coffee" },
+  "衝業績": { action: "determined fist pump, fierce expression, motivated pose", popText: "Go!", decorations: "flames, arrows, stars" },
+
+  // ===== 新增社交常用 =====
+  "好久不見": { action: "excited wave, surprised happy expression, reunion pose", popText: "Miss U!", decorations: "hearts, sparkles" },
+  "沒關係": { action: "gentle wave off, understanding smile, forgiving pose", popText: "It's OK!", decorations: "hearts, sparkles" },
+  "不客氣": { action: "humble bow, warm smile, gracious pose", popText: "Welcome!", decorations: "flowers, sparkles" },
+  "隨時": { action: "thumbs up, ready expression, available pose", popText: "Anytime!", decorations: "check marks, sparkles" },
+  "改天": { action: "pointing to calendar, apologetic smile, postponing gesture", popText: "Later~", decorations: "calendar, clock" },
+  "下次": { action: "waving with smile, promising expression, farewell pose", popText: "Next time!", decorations: "sparkles, stars" },
+  "約嗎": { action: "excited pointing, hopeful expression, inviting pose", popText: "Hang out?", decorations: "question marks, sparkles" },
+  "在哪": { action: "looking around, curious expression, searching pose", popText: "Where?", decorations: "question marks, location pin" },
+  "出來玩": { action: "beckoning gesture, excited expression, inviting pose", popText: "Let's go!", decorations: "sparkles, stars" },
+  "聚一下": { action: "gathering gesture, friendly smile, social pose", popText: "Meet up!", decorations: "people icons, hearts" },
+  "回覆晚": { action: "apologetic bow, sorry expression, late reply pose", popText: "Sorry!", decorations: "clock, sweat drops" },
+  "剛看到": { action: "surprised expression, phone in hand, just noticed pose", popText: "Just saw!", decorations: "phone, exclamation" },
+  "好喔": { action: "casual thumbs up, relaxed smile, agreeable pose", popText: "Sure~", decorations: "check marks, sparkles" },
+  "看你": { action: "shrugging shoulders, open palms, flexible pose", popText: "Up to U!", decorations: "question marks, sparkles" },
+  "都可以": { action: "open arms, easy-going smile, flexible pose", popText: "Either!", decorations: "check marks, sparkles" },
+
+  // ===== 新增情緒表達 =====
+  "超爽": { action: "victory pose, ecstatic expression, triumphant jump", popText: "Awesome!", decorations: "stars, confetti, flames" },
+  "崩潰": { action: "hands on head, screaming expression, breakdown pose", popText: "OMG!", decorations: "cracks, lightning, sweat drops" },
+  "無奈": { action: "shrugging shoulders, helpless expression, resigned pose", popText: "Sigh~", decorations: "sweat drops, dots" },
+  "感動": { action: "hands on heart, teary eyes, touched expression", popText: "Touched!", decorations: "tears, hearts, sparkles" },
+  "緊張": { action: "fidgeting hands, nervous expression, anxious pose", popText: "Nervous!", decorations: "sweat drops, exclamation" },
+  "期待": { action: "sparkling eyes, excited expression, anticipation pose", popText: "Can't wait!", decorations: "sparkles, stars, hearts" },
+  "難過": { action: "head down, sad expression, dejected pose", popText: "Sad...", decorations: "rain cloud, tear drops" },
+  "煩躁": { action: "scratching head, frustrated expression, irritated pose", popText: "Ugh!", decorations: "anger marks, sweat drops" },
+  "興奮": { action: "jumping with joy, thrilled expression, excited pose", popText: "Excited!", decorations: "sparkles, stars, confetti" },
+  "困惑": { action: "scratching head, puzzled expression, confused pose", popText: "Huh?", decorations: "question marks, dots" },
+  "心碎": { action: "clutching chest, heartbroken expression, devastated pose", popText: "Broken...", decorations: "broken heart, tears" },
+  "陶醉": { action: "dreamy expression, floating pose, blissful state", popText: "Bliss~", decorations: "hearts, sparkles, clouds" },
+  "不爽": { action: "crossed arms, annoyed expression, displeased pose", popText: "Hmph!", decorations: "anger marks, dark cloud" },
+  "爆炸": { action: "steam from ears, furious expression, explosive anger", popText: "BOOM!", decorations: "explosion, flames, lightning" },
+  "放空": { action: "blank stare, zoned out expression, empty mind pose", popText: "...", decorations: "dots, empty bubble" },
+  "翻白眼": { action: "rolling eyes, exasperated expression, done with it pose", popText: "Whatever", decorations: "sweat drop, dots" },
+
+  // ===== 新增特殊場合 =====
+  "新年快樂": { action: "festive celebration, red envelope, new year pose", popText: "Happy NY!", decorations: "fireworks, red envelopes, lanterns" },
+  "聖誕快樂": { action: "santa hat, gift giving, christmas joy pose", popText: "Merry X'mas!", decorations: "christmas tree, gifts, snowflakes" },
+  "情人節": { action: "holding heart, romantic expression, love pose", popText: "Be Mine!", decorations: "hearts, roses, cupid" },
+  "中秋快樂": { action: "holding mooncake, moon gazing, festival pose", popText: "Happy!", decorations: "moon, lanterns, mooncakes" },
+  "母親節": { action: "giving flowers, grateful expression, loving pose", popText: "Mom!", decorations: "carnations, hearts" },
+  "父親節": { action: "giving gift, respectful expression, appreciative pose", popText: "Dad!", decorations: "tie, hearts, stars" },
+  "畢業": { action: "throwing graduation cap, proud expression, achievement pose", popText: "Grad!", decorations: "graduation cap, diploma, confetti" },
+  "升遷": { action: "victory pose, proud expression, success celebration", popText: "Promoted!", decorations: "trophy, stars, confetti" },
+  "結婚快樂": { action: "wedding bells, joyful expression, celebration pose", popText: "Congrats!", decorations: "rings, hearts, flowers" },
+  "喬遷": { action: "holding house key, excited expression, new home pose", popText: "New Home!", decorations: "house, keys, sparkles" },
+  "考試加油": { action: "fist pump, determined expression, fighting pose", popText: "Good luck!", decorations: "books, stars, flames" },
+  "面試成功": { action: "confident thumbs up, professional smile, success pose", popText: "Nailed it!", decorations: "briefcase, stars, check marks" },
+  "發大財": { action: "money gesture, excited expression, prosperity pose", popText: "Rich!", decorations: "gold coins, money, sparkles" },
+  "身體健康": { action: "flexing muscles, healthy expression, strong pose", popText: "Healthy!", decorations: "hearts, sparkles, sun" },
+  "萬事如意": { action: "blessing gesture, peaceful expression, wishing pose", popText: "Best wishes!", decorations: "lucky symbols, sparkles" },
+  "心想事成": { action: "making wish, hopeful expression, dreaming pose", popText: "Wish!", decorations: "stars, sparkles, rainbow" }
 };
 
 // ============================================
@@ -247,62 +353,97 @@ const StickerStyles = {
     `
   },
 
-  doodle: {
-    id: 'doodle',
-    name: '塗鴉風',
+  sketch: {
+    id: 'sketch',
+    name: '素描風',
     emoji: '✏️',
-    description: '手繪塗鴉、隨性可愛',
+    description: '逼真鉛筆素描、藝術質感',
     promptBase: `
-      hand-drawn doodle sketch style, imperfect charming strokes,
-      notebook doodle vibe, naive line expression,
-      playful loose composition, rough cute shapes
+      hyperrealistic graphite pencil portrait drawing,
+      fine art museum quality pencil sketch,
+      detailed cross-hatching and smooth gradient shading,
+      visible pencil strokes and texture on paper grain,
+      masterful tonal values from deep black to subtle gray,
+      professional artist hand-drawn portrait,
+      precise anatomical features with artistic interpretation,
+      single directional dramatic lighting creating depth,
+      elegant monochromatic grayscale palette,
+      high contrast shadow mapping,
+      soft edges blending into paper texture,
+      classical portrait composition
     `,
     negativePrompt: `
-      polished, perfect shapes, digital clean shading,
-      complex background, realistic proportions
+      colored, vibrant colors, digital art, cartoon, anime,
+      watercolor, oil painting, 3D render, photograph,
+      blurry, smudged, messy, childish doodle,
+      flat shading, cel shading, vector art
     `
   }
 };
 
 /**
- * 預設表情組合 - 每組 8 個不重複、動作明確的表情
+ * 預設表情組合 - 每組 24 個表情，選擇時隨機取用
  */
 const DefaultExpressions = {
   basic: {
     id: 'basic',
     name: '基本日常',
     emoji: '😊',
-    expressions: ['早安', 'Hi', 'OK', '讚讚', '加油', '謝謝', '晚安', 'Yes']
+    expressions: [
+      '早安', 'Hi', 'OK', '讚讚', '加油', '謝謝', '晚安', 'Yes',
+      '你好', '掰掰', '了解', '收到', '沒問題', '辛苦了', '午安', '好的',
+      '好棒', '太好了', '明天見', '晚點說', '我來了', '等我', '出發', '到了'
+    ]
   },
   cute: {
     id: 'cute',
     name: '可愛撒嬌',
     emoji: '🥺',
-    expressions: ['撒嬌', '害羞', '噓', '啾啾', '嘿嘿嘿', '抱抱', '好想吃', '哭哭']
+    expressions: [
+      '撒嬌', '害羞', '噓', '啾啾', '嘿嘿嘿', '抱抱', '好想吃', '哭哭',
+      '求求你', '人家', '討厭啦', '好可愛', '委屈', '賣萌', '心心', '愛你',
+      '羞羞', '嘟嘴', '眨眼', '偷笑', '飛吻', '撒花', '轉圈', '比心'
+    ]
   },
   office: {
     id: 'office',
     name: '辦公室',
     emoji: '💼',
-    expressions: ['OK', '讚讚', '加班中', '累累', '我想想', 'Sorry', '等等', '放假']
+    expressions: [
+      'OK', '讚讚', '加班中', '累累', '我想想', 'Sorry', '等等', '放假',
+      '開會中', '忙碌', '下班', '收到', '處理中', '已完成', '請假', '補班',
+      '喝咖啡', '趕報告', '老闆叫', '午休', '打卡', '週五了', '禮拜一', '衝業績'
+    ]
   },
   social: {
     id: 'social',
     name: '社交常用',
     emoji: '💬',
-    expressions: ['Hi', '謝謝', 'Sorry', 'OK', 'Yes', 'No', '再見', '等等']
+    expressions: [
+      'Hi', '謝謝', 'Sorry', 'OK', 'Yes', 'No', '再見', '等等',
+      '好久不見', '恭喜', '沒關係', '不客氣', '隨時', '改天', '下次', '約嗎',
+      '在哪', '出來玩', '聚一下', '回覆晚', '剛看到', '好喔', '看你', '都可以'
+    ]
   },
   emotion: {
     id: 'emotion',
     name: '情緒表達',
     emoji: '🎭',
-    expressions: ['開心', '大笑', '哭哭', '生氣', '驚訝', '傻眼', '害羞', '累累']
+    expressions: [
+      '開心', '大笑', '哭哭', '生氣', '驚訝', '傻眼', '害羞', '累累',
+      '超爽', '崩潰', '無奈', '感動', '緊張', '期待', '難過', '煩躁',
+      '興奮', '困惑', '心碎', '陶醉', '不爽', '爆炸', '放空', '翻白眼'
+    ]
   },
   special: {
     id: 'special',
     name: '特殊場合',
     emoji: '🎉',
-    expressions: ['生日快樂', '恭喜', '感謝', '加油', 'Yes', '開心', '啾啾', '抱抱']
+    expressions: [
+      '生日快樂', '恭喜', '感謝', '加油', 'Yes', '開心', '啾啾', '抱抱',
+      '新年快樂', '聖誕快樂', '情人節', '中秋快樂', '母親節', '父親節', '畢業', '升遷',
+      '結婚快樂', '喬遷', '考試加油', '面試成功', '發大財', '身體健康', '萬事如意', '心想事成'
+    ]
   }
 };
 
@@ -516,12 +657,22 @@ ACTION: ${actionDesc}
 - Expression must be dramatic and readable at small size
 - Hands and arms should be visible and expressive${decorationPrompt}${elementsPrompt}${textStylePrompt}${popTextPrompt}
 
-=== 🎀 DECORATIONS ===
-Add floating decorative elements around character:
+=== 🎀 DECORATIONS (DYNAMIC LAYOUT) ===
+Add floating decorative elements with VARIED placement and sizes:
 - ${decorations || 'sparkles, hearts, stars'}
 - ${decoration.decorationElements?.slice(0, 3).join(', ') || 'colorful accents'}
-- Keep decorations OUTSIDE of character, floating around
-- Decorations should enhance mood without overwhelming
+- DECORATION SIZES: Mix of large, medium, and small decorations for visual interest
+- PLACEMENT RULES (vary based on character's gaze direction):
+  * If character looks LEFT: place more decorations on the RIGHT side
+  * If character looks RIGHT: place more decorations on the LEFT side
+  * If character looks UP: decorations float ABOVE
+  * If character looks DOWN or CENTER: decorations scattered asymmetrically around
+- CHARACTER POSITION: Does NOT need to be centered!
+  * Can be slightly LEFT, RIGHT, or use rule-of-thirds composition
+  * Leave breathing room in the direction character is looking
+- Create visual FLOW and BALANCE, not rigid symmetry
+- Some decorations can OVERLAP edges of frame for dynamic feel
+- Layer decorations: some in front, some behind character
 
 === 👤 CHARACTER (MUST BE CONSISTENT) ===
 Character ID: ${characterID || 'default'}
@@ -529,11 +680,12 @@ Character ID: ${characterID || 'default'}
 - Copy EXACT hairstyle and hair color from photo
 - CLOTHING: Colorful casual outfit (can vary per sticker)
 - Upper body to waist visible (show hand gestures clearly)
+- GAZE DIRECTION: Natural eye direction matching expression
 
 === ⚠️ TECHNICAL REQUIREMENTS (STRICT) ===
 1. BACKGROUND: 100% TRANSPARENT (alpha=0) - NO white, NO gray
 2. OUTLINES: Thick clean lines for visibility
-3. COMPOSITION: Character centered, decorations floating around
+3. COMPOSITION: Dynamic asymmetric layout, NOT always centered
 4. IMAGE SIZE: 370px width × 320px height
 
 === 🚫 ABSOLUTELY FORBIDDEN ===
@@ -639,8 +791,8 @@ const LineStickerSpecs = {
   maxFileSize: 1024 * 1024, // 單張最大 1MB
   maxZipSize: 60 * 1024 * 1024, // ZIP 最大 60MB
 
-  // 可選數量
-  validCounts: [8, 16, 24, 32, 40],
+  // 可選數量（4, 8, 12, 24 張）
+  validCounts: [4, 8, 12, 24],
 
   // 文字限制
   textLimits: {

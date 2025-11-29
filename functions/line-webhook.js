@@ -351,16 +351,49 @@ async function handleConfirmGeneration(replyToken, userId, state) {
   // 更新狀態為生成中
   await updateConversationState(userId, ConversationStage.GENERATING, tempData);
 
-  // 回覆生成中訊息（包含代幣扣除通知）
+  // 取得用戶推薦資訊，判斷是否需要顯示推薦碼提醒
+  const referralInfo = await getUserReferralInfo(userId);
+  const showReferralReminder = referralInfo.referralCount < 3;
+
+  // 組合訊息文字
+  let messageText = '🎨 開始生成貼圖！\n\n' +
+        `📛 名稱：${tempData.name}\n` +
+        `📊 數量：${tempData.count} 張\n\n` +
+        `💰 已扣除 ${stickerCount} 代幣，剩餘 ${deductResult.balance} 代幣\n\n` +
+        '⏳ 預計需要 2-5 分鐘';
+
+  // 如果未達推薦上限，加入推薦碼提醒
+  if (showReferralReminder && referralInfo.referralCode) {
+    messageText += `\n\n🎁 分享推薦碼「${referralInfo.referralCode}」給好友，雙方各得 10 代幣！(${referralInfo.referralCount}/3)`;
+  }
+
+  // 建立 QuickReply 按鈕
+  const quickReplyItems = [
+    {
+      type: 'action',
+      action: { type: 'message', label: '📋 查詢進度', text: '查詢進度' }
+    },
+    {
+      type: 'action',
+      action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' }
+    }
+  ];
+
+  // 如果未達推薦上限，加入推薦好友按鈕
+  if (showReferralReminder) {
+    quickReplyItems.push({
+      type: 'action',
+      action: { type: 'message', label: '🎁 推薦好友', text: '推薦好友' }
+    });
+  }
+
+  // 回覆生成中訊息（包含代幣扣除通知和 QuickReply）
   await getLineClient().replyMessage(replyToken, {
     type: 'text',
-    text: '🎨 開始生成貼圖！\n\n' +
-          `📛 名稱：${tempData.name}\n` +
-          `📊 數量：${tempData.count} 張\n\n` +
-          `💰 已扣除 ${stickerCount} 代幣，剩餘 ${deductResult.balance} 代幣\n\n` +
-          '⏳ 預計需要 2-5 分鐘\n\n' +
-          '📋 輸入「查詢進度」查看生成進度\n' +
-          '📁 輸入「我的貼圖」查看完成的貼圖'
+    text: messageText,
+    quickReply: {
+      items: quickReplyItems
+    }
   });
 
   // 建立生成任務並觸發 Background Worker

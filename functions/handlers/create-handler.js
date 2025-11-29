@@ -172,7 +172,20 @@ async function handleCharacterDescription(userId, description) {
 }
 
 /**
+ * 隨機洗牌陣列（Fisher-Yates 演算法）
+ */
+function shuffleArray(array) {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
+/**
  * 處理表情模板選擇
+ * 從模板的 24 個表情中隨機選取指定數量
  */
 async function handleExpressionTemplate(userId, templateId) {
   console.log(`😀 用戶 ${userId} 選擇表情模板：${templateId}`);
@@ -185,9 +198,17 @@ async function handleExpressionTemplate(userId, templateId) {
     };
   }
 
+  // 從模板的表情池中隨機洗牌，稍後會根據選擇的數量取用
+  // 先保存完整的洗牌後表情列表，在選擇數量後再取對應數量
+  const shuffledExpressions = shuffleArray(template.expressions);
+
   // 取得當前暫存資料
   const state = await getConversationState(userId);
-  const tempData = { ...state.temp_data, expressions: template.expressions };
+  const tempData = {
+    ...state.temp_data,
+    expressions: shuffledExpressions,  // 保存洗牌後的完整列表
+    expressionTemplateId: templateId   // 保存模板 ID 以供參考
+  };
 
   // 更新到場景選擇階段
   await updateConversationState(userId, ConversationStage.SCENE_SELECT, tempData);
@@ -346,7 +367,7 @@ async function handleCustomScene(userId, description) {
  * 生成數量選擇訊息
  */
 function generateCountSelectionMessage(expressions) {
-  const validCounts = LineStickerSpecs.validCounts;
+  const validCounts = LineStickerSpecs.validCounts; // [4, 8, 12, 24]
 
   // Quick Reply 項目
   const quickReplyItems = validCounts.map(count => ({
@@ -372,20 +393,17 @@ function generateCountSelectionMessage(expressions) {
         layout: 'vertical',
         contents: [
           { type: 'text', text: '📊 選擇貼圖數量', weight: 'bold', size: 'lg', color: '#FF6B6B' },
-          { type: 'text', text: `已選擇 ${expressions.length} 個表情`, size: 'sm', color: '#666666', margin: 'md' },
+          { type: 'text', text: '每張貼圖消耗 1 代幣', size: 'sm', color: '#666666', margin: 'md' },
           { type: 'separator', margin: 'lg' },
           {
             type: 'box', layout: 'horizontal', margin: 'lg', spacing: 'sm',
-            contents: validCounts.slice(0, 3).map(count => ({
-              type: 'button', style: 'secondary', height: 'sm', flex: 1,
-              action: { type: 'message', label: `${count}張`, text: `數量:${count}` }
-            }))
-          },
-          {
-            type: 'box', layout: 'horizontal', margin: 'sm', spacing: 'sm',
-            contents: validCounts.slice(3).map(count => ({
-              type: 'button', style: 'secondary', height: 'sm', flex: 1,
-              action: { type: 'message', label: `${count}張`, text: `數量:${count}` }
+            contents: validCounts.map(count => ({
+              type: 'button',
+              style: count === 8 ? 'primary' : 'secondary',
+              height: 'sm',
+              flex: 1,
+              action: { type: 'message', label: `${count}張`, text: `數量:${count}` },
+              color: count === 8 ? '#FF6B6B' : undefined
             }))
           }
         ]
