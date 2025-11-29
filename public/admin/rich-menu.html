@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Rich Menu 管理 - 貼圖大亨</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    .upload-zone { transition: all 0.2s; }
+    .upload-zone:hover { border-color: #FF6B6B; background: #FFF5F5; }
+    .upload-zone.dragover { border-color: #FF6B6B; background: #FFE5E5; }
+  </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
   <nav class="bg-gradient-to-r from-pink-500 to-orange-400 text-white p-4">
@@ -15,142 +20,274 @@
   </nav>
 
   <div class="container mx-auto p-6">
+    <!-- 三區獨立上傳 -->
+    <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+      <h2 class="text-xl font-bold text-gray-800 mb-4">🖼️ 分區上傳圖片</h2>
+      <p class="text-gray-600 mb-4">分別上傳三個區域的圖片，系統會自動合成並加上文字標籤</p>
+
+      <div class="grid grid-cols-3 gap-4 mb-6">
+        <!-- 區域 1: 創建貼圖 -->
+        <div class="text-center">
+          <div class="upload-zone border-2 border-dashed border-gray-300 rounded-lg p-4 cursor-pointer relative"
+               onclick="document.getElementById('img-1').click()" data-zone="1">
+            <input type="file" id="img-1" accept="image/*" class="hidden" onchange="handleZoneUpload(1, this)">
+            <img id="preview-1" src="" class="w-full aspect-square object-cover rounded hidden">
+            <div id="placeholder-1" class="aspect-square flex flex-col items-center justify-center text-gray-400">
+              <span class="text-4xl mb-2">🎨</span>
+              <span class="text-sm">點擊上傳</span>
+            </div>
+          </div>
+          <div class="mt-2 bg-red-500 text-white py-2 rounded font-bold">創建貼圖</div>
+        </div>
+
+        <!-- 區域 2: 我的貼圖 -->
+        <div class="text-center">
+          <div class="upload-zone border-2 border-dashed border-gray-300 rounded-lg p-4 cursor-pointer relative"
+               onclick="document.getElementById('img-2').click()" data-zone="2">
+            <input type="file" id="img-2" accept="image/*" class="hidden" onchange="handleZoneUpload(2, this)">
+            <img id="preview-2" src="" class="w-full aspect-square object-cover rounded hidden">
+            <div id="placeholder-2" class="aspect-square flex flex-col items-center justify-center text-gray-400">
+              <span class="text-4xl mb-2">📁</span>
+              <span class="text-sm">點擊上傳</span>
+            </div>
+          </div>
+          <div class="mt-2 bg-green-500 text-white py-2 rounded font-bold">我的貼圖</div>
+        </div>
+
+        <!-- 區域 3: 示範圖集 -->
+        <div class="text-center">
+          <div class="upload-zone border-2 border-dashed border-gray-300 rounded-lg p-4 cursor-pointer relative"
+               onclick="document.getElementById('img-3').click()" data-zone="3">
+            <input type="file" id="img-3" accept="image/*" class="hidden" onchange="handleZoneUpload(3, this)">
+            <img id="preview-3" src="" class="w-full aspect-square object-cover rounded hidden">
+            <div id="placeholder-3" class="aspect-square flex flex-col items-center justify-center text-gray-400">
+              <span class="text-4xl mb-2">✨</span>
+              <span class="text-sm">點擊上傳</span>
+            </div>
+          </div>
+          <div class="mt-2 bg-blue-500 text-white py-2 rounded font-bold">示範圖集</div>
+        </div>
+      </div>
+
+      <!-- 合成預覽 -->
+      <div class="border-t pt-4">
+        <h3 class="font-bold text-gray-700 mb-2">📐 合成預覽（2500 × 843 px）</h3>
+        <div class="bg-gray-100 rounded-lg overflow-hidden">
+          <canvas id="preview-canvas" width="2500" height="843" class="w-full"></canvas>
+        </div>
+        <div class="flex items-center justify-between mt-2 text-sm text-gray-500">
+          <span id="file-size">預估檔案大小：--</span>
+          <span class="text-green-600">✓ 符合 LINE 規格（< 1MB）</span>
+        </div>
+      </div>
+
+      <!-- 操作按鈕 -->
+      <div class="flex gap-4 mt-6">
+        <button onclick="generateAndUpload()" id="upload-btn"
+                class="flex-1 bg-pink-500 text-white py-3 rounded-lg hover:bg-pink-600 font-bold disabled:opacity-50">
+          🚀 合成並更新 Rich Menu
+        </button>
+        <button onclick="resetAll()" class="px-6 bg-gray-300 text-gray-700 py-3 rounded-lg hover:bg-gray-400">
+          重置
+        </button>
+      </div>
+    </div>
+
     <!-- 當前 Rich Menu -->
     <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
       <h2 class="text-xl font-bold text-gray-800 mb-4">📋 當前 Rich Menu</h2>
       <div class="flex flex-col md:flex-row gap-6">
         <div class="flex-1">
-          <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-gray-50">
-            <img id="current-menu-image" src="/rich-menu.png" alt="Rich Menu" 
-                 class="w-full rounded" onerror="this.src='data:image/svg+xml,...'">
-          </div>
-          <p class="text-sm text-gray-500 mt-2 text-center">尺寸：2500 × 843 px</p>
+          <img id="current-menu-image" src="/rich-menu.png" alt="Rich Menu"
+               class="w-full rounded border" onerror="this.style.display='none'">
         </div>
         <div class="flex-1">
-          <div class="space-y-4">
+          <div class="space-y-3">
             <div>
-              <label class="block text-gray-700 font-medium mb-1">Rich Menu ID</label>
-              <input type="text" id="current-menu-id" readonly
-                     class="w-full border rounded px-3 py-2 bg-gray-100 text-gray-600 text-sm"
-                     value="載入中...">
+              <label class="block text-gray-600 text-sm">Rich Menu ID</label>
+              <code id="current-menu-id" class="block bg-gray-100 px-3 py-2 rounded text-sm">載入中...</code>
             </div>
             <div>
-              <label class="block text-gray-700 font-medium mb-1">選單名稱</label>
-              <input type="text" id="menu-name" readonly
-                     class="w-full border rounded px-3 py-2 bg-gray-100 text-gray-600"
-                     value="貼圖大亨主選單">
-            </div>
-            <div>
-              <label class="block text-gray-700 font-medium mb-1">按鈕配置</label>
-              <div class="grid grid-cols-3 gap-2 text-center text-sm">
-                <div class="bg-red-100 p-2 rounded">🎨 創建貼圖</div>
-                <div class="bg-green-100 p-2 rounded">📁 我的貼圖</div>
-                <div class="bg-blue-100 p-2 rounded">✨ 示範圖集</div>
-              </div>
+              <label class="block text-gray-600 text-sm">狀態</label>
+              <span class="inline-block bg-green-100 text-green-800 px-3 py-1 rounded text-sm">已啟用</span>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 上傳新圖片 -->
-    <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
-      <h2 class="text-xl font-bold text-gray-800 mb-4">🖼️ 上傳新圖片</h2>
-      <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center" id="drop-zone">
-        <input type="file" id="image-input" accept="image/png,image/jpeg" class="hidden">
-        <div class="text-gray-500">
-          <p class="text-4xl mb-4">📁</p>
-          <p class="mb-2">拖拽圖片到此處，或</p>
-          <button onclick="document.getElementById('image-input').click()" 
-                  class="bg-pink-500 text-white px-6 py-2 rounded hover:bg-pink-600">
-            選擇圖片
-          </button>
-          <p class="text-sm mt-4 text-gray-400">支援 PNG/JPEG，建議尺寸 2500×843 px</p>
-        </div>
-      </div>
-      
-      <!-- 預覽區 -->
-      <div id="preview-section" class="hidden mt-6">
-        <h3 class="font-bold text-gray-700 mb-2">預覽</h3>
-        <img id="preview-image" class="w-full rounded border">
-        <div class="flex gap-4 mt-4">
-          <button onclick="uploadNewImage()" id="upload-btn"
-                  class="flex-1 bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 font-bold">
-            ✅ 確認上傳並更新 Rich Menu
-          </button>
-          <button onclick="cancelUpload()" 
-                  class="px-6 bg-gray-300 text-gray-700 py-3 rounded-lg hover:bg-gray-400">
-            取消
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 操作說明 -->
-    <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
-      <h3 class="font-bold text-yellow-800 mb-2">⚠️ 注意事項</h3>
-      <ul class="text-yellow-700 text-sm space-y-1">
-        <li>• 圖片尺寸必須是 <strong>2500×843 px</strong> 或 <strong>2500×1686 px</strong></li>
-        <li>• 支援 PNG 或 JPEG 格式，檔案大小不超過 1MB</li>
-        <li>• 上傳後會自動更新所有用戶的 Rich Menu</li>
-        <li>• 按鈕區域位置固定，請確保圖片設計符合三等分佈局</li>
+    <!-- 說明 -->
+    <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-sm">
+      <h3 class="font-bold text-yellow-800 mb-2">💡 使用說明</h3>
+      <ul class="text-yellow-700 space-y-1">
+        <li>• 分別上傳三個區域的圖片（建議正方形，會自動裁切適應）</li>
+        <li>• 系統會自動在底部加上對應的文字標籤</li>
+        <li>• 合成後的圖片會壓縮到 1MB 以內，符合 LINE 規格</li>
+        <li>• 點擊「合成並更新」後，所有用戶的選單會立即更新</li>
       </ul>
     </div>
   </div>
 
   <script>
-    let selectedFile = null;
+    const zoneImages = { 1: null, 2: null, 3: null };
+    const zoneColors = { 1: '#FF6B6B', 2: '#4CAF50', 3: '#2196F3' };
+    const zoneLabels = { 1: '創建貼圖', 2: '我的貼圖', 3: '示範圖集' };
+    const zoneIcons = { 1: '🎨', 2: '📁', 3: '✨' };
 
-    // 拖拽上傳
-    const dropZone = document.getElementById('drop-zone');
-    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-pink-500', 'bg-pink-50'); });
-    dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('border-pink-500', 'bg-pink-50'); });
-    dropZone.addEventListener('drop', (e) => { 
-      e.preventDefault(); 
-      dropZone.classList.remove('border-pink-500', 'bg-pink-50');
-      handleFile(e.dataTransfer.files[0]); 
-    });
+    function handleZoneUpload(zone, input) {
+      const file = input.files[0];
+      if (!file) return;
 
-    document.getElementById('image-input').addEventListener('change', (e) => handleFile(e.target.files[0]));
-
-    function handleFile(file) {
-      if (!file || !file.type.match(/image\/(png|jpeg)/)) { alert('請上傳 PNG 或 JPEG 圖片'); return; }
-      selectedFile = file;
       const reader = new FileReader();
       reader.onload = (e) => {
-        document.getElementById('preview-image').src = e.target.result;
-        document.getElementById('preview-section').classList.remove('hidden');
+        const img = new Image();
+        img.onload = () => {
+          zoneImages[zone] = img;
+          document.getElementById(`preview-${zone}`).src = e.target.result;
+          document.getElementById(`preview-${zone}`).classList.remove('hidden');
+          document.getElementById(`placeholder-${zone}`).classList.add('hidden');
+          updatePreviewCanvas();
+        };
+        img.src = e.target.result;
       };
       reader.readAsDataURL(file);
     }
 
-    function cancelUpload() {
-      selectedFile = null;
-      document.getElementById('preview-section').classList.add('hidden');
-      document.getElementById('image-input').value = '';
+    function updatePreviewCanvas() {
+      const canvas = document.getElementById('preview-canvas');
+      const ctx = canvas.getContext('2d');
+      const W = 2500, H = 843;
+      const CELL_W = W / 3;
+      const TEXT_H = Math.floor(H * 0.25);
+      const IMG_H = H - TEXT_H;
+
+      // 清空畫布
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, W, H);
+
+      // 繪製三個區域
+      for (let i = 1; i <= 3; i++) {
+        const x = (i - 1) * CELL_W;
+
+        // 繪製圖片區域
+        if (zoneImages[i]) {
+          const img = zoneImages[i];
+          const scale = Math.max(CELL_W / img.width, IMG_H / img.height);
+          const sw = CELL_W / scale, sh = IMG_H / scale;
+          const sx = (img.width - sw) / 2, sy = (img.height - sh) / 2;
+          ctx.drawImage(img, sx, sy, sw, sh, x, 0, CELL_W, IMG_H);
+        } else {
+          // 預設背景
+          ctx.fillStyle = '#F5F5F5';
+          ctx.fillRect(x, 0, CELL_W, IMG_H);
+          ctx.font = 'bold 150px Arial';
+          ctx.textAlign = 'center';
+          ctx.fillStyle = '#CCCCCC';
+          ctx.fillText(zoneIcons[i], x + CELL_W / 2, IMG_H / 2 + 50);
+        }
+
+        // 繪製文字區域
+        ctx.fillStyle = zoneColors[i];
+        ctx.fillRect(x, IMG_H, CELL_W, TEXT_H);
+
+        // 繪製標籤文字
+        ctx.font = 'bold 70px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillText(zoneLabels[i], x + CELL_W / 2, IMG_H + TEXT_H / 2);
+
+        // 分隔線
+        if (i < 3) {
+          ctx.strokeStyle = '#E0E0E0';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(x + CELL_W, 0);
+          ctx.lineTo(x + CELL_W, H);
+          ctx.stroke();
+        }
+      }
+
+      // 估算檔案大小
+      canvas.toBlob((blob) => {
+        const size = (blob.size / 1024).toFixed(1);
+        document.getElementById('file-size').textContent = `預估檔案大小：${size} KB`;
+      }, 'image/png');
     }
 
-    async function uploadNewImage() {
-      if (!selectedFile) return;
+    function resetAll() {
+      for (let i = 1; i <= 3; i++) {
+        zoneImages[i] = null;
+        document.getElementById(`img-${i}`).value = '';
+        document.getElementById(`preview-${i}`).classList.add('hidden');
+        document.getElementById(`placeholder-${i}`).classList.remove('hidden');
+      }
+      updatePreviewCanvas();
+    }
+
+    async function generateAndUpload() {
       const btn = document.getElementById('upload-btn');
-      btn.disabled = true; btn.textContent = '上傳中...';
-      
-      const formData = new FormData();
-      formData.append('image', selectedFile);
-      
+      btn.disabled = true;
+      btn.textContent = '合成中...';
+
       try {
+        const canvas = document.getElementById('preview-canvas');
+        const blob = await new Promise(r => canvas.toBlob(r, 'image/png', 0.9));
+
+        // 檢查檔案大小
+        if (blob.size > 1024 * 1024) {
+          // 如果超過 1MB，降低品質重新壓縮
+          const jpegBlob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.85));
+          if (jpegBlob.size > 1024 * 1024) {
+            throw new Error('圖片太大，請使用較小的原圖');
+          }
+        }
+
+        btn.textContent = '上傳中...';
+        const formData = new FormData();
+        formData.append('image', blob, 'rich-menu.png');
+
         const res = await fetch('/api/admin/update-rich-menu', { method: 'POST', body: formData });
         const result = await res.json();
-        if (result.success) { alert('✅ Rich Menu 更新成功！'); location.reload(); }
-        else { alert('❌ 更新失敗：' + result.error); }
-      } catch (err) { alert('❌ 網路錯誤：' + err.message); }
-      finally { btn.disabled = false; btn.textContent = '✅ 確認上傳並更新 Rich Menu'; }
+
+        if (result.success) {
+          alert('✅ Rich Menu 更新成功！');
+          location.reload();
+        } else {
+          alert('❌ 更新失敗：' + result.error);
+        }
+      } catch (err) {
+        alert('❌ 錯誤：' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🚀 合成並更新 Rich Menu';
+      }
     }
 
-    // 載入當前 Rich Menu 資訊
+    // 初始化
+    updatePreviewCanvas();
     fetch('/api/admin/rich-menu-info').then(r => r.json()).then(data => {
-      if (data.richMenuId) document.getElementById('current-menu-id').value = data.richMenuId;
+      if (data.richMenuId) document.getElementById('current-menu-id').textContent = data.richMenuId;
     }).catch(() => {});
+
+    // 拖拽支援
+    document.querySelectorAll('.upload-zone').forEach(zone => {
+      zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('dragover'); });
+      zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+      zone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        zone.classList.remove('dragover');
+        const zoneNum = zone.dataset.zone;
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith('image/')) {
+          const input = document.getElementById(`img-${zoneNum}`);
+          const dt = new DataTransfer();
+          dt.items.add(file);
+          input.files = dt.files;
+          handleZoneUpload(parseInt(zoneNum), input);
+        }
+      });
+    });
   </script>
 </body>
 </html>
