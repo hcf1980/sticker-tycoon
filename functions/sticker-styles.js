@@ -151,64 +151,127 @@ const StickerStyles = {
     name: '可愛風',
     emoji: '🥰',
     description: '圓潤可愛、大眼睛、療癒系',
-    promptBase: 'cute kawaii style, chibi character, rounded shapes, big sparkling eyes, soft pastel colors, adorable expression, simple clean lines',
-    negativePrompt: 'realistic, scary, dark, violent, complex background'
+    promptBase: `
+      cute kawaii chibi style, rounded shapes, oversized sparkling eyes,
+      soft pastel palette, glossy highlights, warm ambient lighting,
+      thick clean outline, high charm factor, simplified sticker-friendly composition
+    `,
+    negativePrompt: `
+      realistic, scary, dark, horror, violent,
+      cluttered background, detailed scenery, text, watermark
+    `
   },
+
   cool: {
     id: 'cool',
     name: '酷炫風',
     emoji: '😎',
     description: '帥氣、動感、潮流感',
-    promptBase: 'cool stylish character, dynamic pose, trendy street style, bold colors, confident expression, modern design',
-    negativePrompt: 'cute, childish, boring, static'
+    promptBase: `
+      cool stylish character, bold neon colors, dramatic rim light,
+      dynamic action pose, street-fashion vibes,
+      sharp outline, high contrast shading, energetic composition
+    `,
+    negativePrompt: `
+      cute, childish, boring, static pose,
+      realism, dull colors, low contrast
+    `
   },
+
   funny: {
     id: 'funny',
     name: '搞笑風',
     emoji: '🤣',
     description: '誇張表情、幽默感、搞怪',
-    promptBase: 'funny cartoon style, exaggerated expressions, humorous pose, comedic character, playful and silly, meme-worthy',
-    negativePrompt: 'serious, realistic, elegant'
+    promptBase: `
+      funny cartoon style, extreme exaggerated facial expressions,
+      comedic timing pose, distorted proportions, meme-style humor,
+      bold lines, bright punchy colors, high emotional clarity
+    `,
+    negativePrompt: `
+      serious, realistic anatomy, elegant style,
+      low energy, subtle expression
+    `
   },
+
   simple: {
     id: 'simple',
     name: '簡約風',
     emoji: '✨',
     description: '線條簡潔、極簡設計、清新',
-    promptBase: 'minimalist line art style, simple clean design, minimal colors, elegant simplicity, modern flat design',
-    negativePrompt: 'complex, detailed, cluttered, realistic'
+    promptBase: `
+      minimalist flat line art style, soft clean lines,
+      super simple shapes, limited calm color palette,
+      modern graphic-design look, high readability sticker design
+    `,
+    negativePrompt: `
+      detailed, textured, realistic shading,
+      busy composition, gradients
+    `
   },
+
   anime: {
     id: 'anime',
     name: '動漫風',
     emoji: '🎌',
     description: '日系動漫、漫畫風格',
-    promptBase: 'anime manga style, Japanese illustration, expressive anime eyes, vibrant colors, dynamic character design',
-    negativePrompt: 'realistic, western cartoon, 3D render'
+    promptBase: `
+      anime manga style, vivid cel shading, expressive anime eyes,
+      clean dynamic outlines, saturated colors, high energy pose,
+      iconic anime highlight, polished character silhouette
+    `,
+    negativePrompt: `
+      3D render, western cartoon, realism,
+      grainy shading, muddy colors
+    `
   },
+
   pixel: {
     id: 'pixel',
     name: '像素風',
     emoji: '👾',
     description: '復古像素、8-bit 風格',
-    promptBase: 'pixel art style, retro 8-bit game character, pixelated, nostalgic gaming aesthetic, limited color palette',
-    negativePrompt: 'smooth, realistic, high resolution, gradient'
+    promptBase: `
+      pixel art 8-bit retro style, clean pixel clusters,
+      nostalgic game palette, center simple shape,
+      clear silhouette, limited color blocks, crisp pixel edges
+    `,
+    negativePrompt: `
+      smooth gradient, high resolution shading,
+      anti-aliased edges, realistic textures
+    `
   },
+
   watercolor: {
     id: 'watercolor',
     name: '水彩風',
     emoji: '🎨',
     description: '柔和水彩、藝術感',
-    promptBase: 'watercolor illustration style, soft brush strokes, gentle color bleeding, artistic hand-painted look, dreamy atmosphere',
-    negativePrompt: 'digital, sharp edges, flat colors'
+    promptBase: `
+      watercolor illustration style, soft bleeding pigments,
+      natural brush texture, dreamy pastel wash,
+      hand-painted feel, airy composition, gentle outlines
+    `,
+    negativePrompt: `
+      sharp edges, flat digital colors,
+      vector lines, solid hard shadows
+    `
   },
+
   doodle: {
     id: 'doodle',
     name: '塗鴉風',
     emoji: '✏️',
     description: '手繪塗鴉、隨性可愛',
-    promptBase: 'hand-drawn doodle style, sketchy lines, casual and playful, notebook doodle aesthetic, imperfect charming lines',
-    negativePrompt: 'polished, perfect, digital, complex'
+    promptBase: `
+      hand-drawn doodle sketch style, imperfect charming strokes,
+      notebook doodle vibe, naive line expression,
+      playful loose composition, rough cute shapes
+    `,
+    negativePrompt: `
+      polished, perfect shapes, digital clean shading,
+      complex background, realistic proportions
+    `
   }
 };
 
