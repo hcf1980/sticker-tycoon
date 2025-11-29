@@ -11,6 +11,7 @@ const { generateWelcomeFlexMessage } = require('./sticker-flex-message');
 const { handleStartCreate, handleNaming, handleStyleSelection, handleCharacterDescription, handleExpressionTemplate, handleSceneSelection, handleCustomScene, handleCountSelection, handlePhotoUpload } = require('./handlers/create-handler');
 const { handleUserPhoto } = require('./photo-handler');
 const { createGenerationTask } = require('./sticker-generator-worker-background');
+const { StickerStyles, SceneTemplates } = require('./sticker-styles');
 
 // LINE Bot 設定 - 延遲初始化
 let client = null;
@@ -697,6 +698,14 @@ async function handleViewStickerSet(replyToken, userId, setId) {
       'failed': '❌ 失敗'
     };
 
+    // 取得風格詳情
+    const styleInfo = StickerStyles[set.style] || null;
+    const styleName = styleInfo ? `${styleInfo.emoji} ${styleInfo.name}` : (set.style || '未指定');
+
+    // 取得場景/裝飾風格詳情
+    const sceneInfo = SceneTemplates[set.scene] || null;
+    const sceneName = sceneInfo ? `${sceneInfo.emoji} ${sceneInfo.name}` : (set.scene === 'none' || !set.scene ? '✨ 簡約風' : set.scene);
+
     const flexMessage = {
       type: 'flex',
       altText: `📁 ${set.name}`,
@@ -709,7 +718,8 @@ async function handleViewStickerSet(replyToken, userId, setId) {
             { type: 'text', text: `📁 ${set.name || '未命名'}`, weight: 'bold', size: 'xl', wrap: true },
             { type: 'text', text: statusText[set.status] || set.status, size: 'sm', color: '#666666', margin: 'md' },
             { type: 'text', text: `📊 貼圖數量：${set.sticker_count || 0} 張`, size: 'sm', margin: 'sm' },
-            { type: 'text', text: `🎨 風格：${set.style || '未指定'}`, size: 'sm', margin: 'sm' },
+            { type: 'text', text: `🎨 風格：${styleName}`, size: 'sm', margin: 'sm' },
+            { type: 'text', text: `🎭 裝飾：${sceneName}`, size: 'sm', margin: 'sm' },
             { type: 'text', text: `📅 建立時間：${new Date(set.created_at).toLocaleString('zh-TW')}`, size: 'xs', color: '#999999', margin: 'lg' },
             { type: 'text', text: '（此貼圖組尚無已完成的貼圖）', size: 'xs', color: '#999999', margin: 'md' }
           ]
@@ -739,6 +749,14 @@ async function sendStickerCarousel(replyToken, set, stickers) {
     'failed': '❌ 失敗'
   };
 
+  // 取得風格詳情
+  const styleInfo = StickerStyles[set.style] || null;
+  const styleName = styleInfo ? `${styleInfo.emoji} ${styleInfo.name}` : (set.style || '未指定');
+
+  // 取得場景/裝飾風格詳情
+  const sceneInfo = SceneTemplates[set.scene] || null;
+  const sceneName = sceneInfo ? `${sceneInfo.emoji} ${sceneInfo.name}` : (set.scene === 'none' || !set.scene ? '✨ 簡約風' : set.scene);
+
   // 第一張 bubble：貼圖組資訊
   const infoBubble = {
     type: 'bubble',
@@ -758,7 +776,8 @@ async function sendStickerCarousel(replyToken, set, stickers) {
       contents: [
         { type: 'text', text: statusText[set.status] || set.status, size: 'md', color: '#06C755', weight: 'bold' },
         { type: 'text', text: `📊 共 ${stickers.length} 張貼圖`, size: 'sm', margin: 'md' },
-        { type: 'text', text: `🎨 風格：${set.style || '未指定'}`, size: 'sm', margin: 'sm' },
+        { type: 'text', text: `🎨 風格：${styleName}`, size: 'sm', margin: 'sm' },
+        { type: 'text', text: `🎭 裝飾：${sceneName}`, size: 'sm', margin: 'sm' },
         { type: 'text', text: `📅 ${new Date(set.created_at).toLocaleDateString('zh-TW')}`, size: 'xs', color: '#999999', margin: 'lg' },
         { type: 'text', text: '👈 左滑查看所有貼圖', size: 'xs', color: '#06C755', margin: 'md' }
       ]
