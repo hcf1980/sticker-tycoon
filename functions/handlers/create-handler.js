@@ -166,18 +166,18 @@ async function handleExpressionTemplate(userId, templateId) {
 }
 
 /**
- * 生成場景選擇 Flex Message
+ * 生成裝飾風格選擇 Flex Message
  */
 function generateSceneSelectionFlexMessage() {
   const scenes = Object.values(SceneTemplates);
 
   // 分成兩行顯示
-  const row1 = scenes.slice(0, 5);
-  const row2 = scenes.slice(5);
+  const row1 = scenes.slice(0, 4);
+  const row2 = scenes.slice(4);
 
   return {
     type: 'flex',
-    altText: '選擇場景/配件',
+    altText: '選擇裝飾風格',
     contents: {
       type: 'bubble',
       size: 'mega',
@@ -185,9 +185,9 @@ function generateSceneSelectionFlexMessage() {
         type: 'box',
         layout: 'vertical',
         contents: [
-          { type: 'text', text: '🌍 選擇場景/配件', weight: 'bold', size: 'lg', color: '#FF6B6B' },
-          { type: 'text', text: '為貼圖加入場景特色動作與配件', size: 'xs', color: '#888888', margin: 'sm' },
-          { type: 'text', text: '（背景仍然是透明的）', size: 'xxs', color: '#AAAAAA', margin: 'xs' },
+          { type: 'text', text: '🎨 選擇裝飾風格', weight: 'bold', size: 'lg', color: '#FF6B6B' },
+          { type: 'text', text: '為貼圖加入 POP 文字與裝飾元素', size: 'xs', color: '#888888', margin: 'sm' },
+          { type: 'text', text: '（愛心、星星、對話框等）', size: 'xxs', color: '#AAAAAA', margin: 'xs' },
           { type: 'separator', margin: 'lg' },
           {
             type: 'box',
@@ -196,14 +196,14 @@ function generateSceneSelectionFlexMessage() {
             spacing: 'sm',
             contents: row1.map(scene => ({
               type: 'button',
-              style: scene.id === 'none' ? 'primary' : 'secondary',
+              style: scene.id === 'pop' ? 'primary' : 'secondary',
               height: 'sm',
               action: {
                 type: 'message',
                 label: `${scene.emoji} ${scene.name}`,
                 text: `場景:${scene.id}`
               },
-              color: scene.id === 'none' ? '#4CAF50' : undefined
+              color: scene.id === 'pop' ? '#FF6B6B' : undefined
             }))
           },
           {
@@ -229,33 +229,33 @@ function generateSceneSelectionFlexMessage() {
 }
 
 /**
- * 處理場景選擇
+ * 處理裝飾風格選擇
  */
 async function handleSceneSelection(userId, sceneId) {
-  console.log(`🌍 用戶 ${userId} 選擇場景：${sceneId}`);
+  console.log(`🎨 用戶 ${userId} 選擇裝飾風格：${sceneId}`);
 
   const scene = SceneTemplates[sceneId];
   if (!scene) {
-    return { type: 'text', text: '⚠️ 請選擇有效的場景！' };
+    return { type: 'text', text: '⚠️ 請選擇有效的裝飾風格！' };
   }
 
   const state = await getConversationState(userId);
 
-  // 如果是自訂場景，進入自訂描述階段
+  // 如果是自訂風格，進入自訂描述階段
   if (sceneId === 'custom') {
     await updateConversationState(userId, ConversationStage.CUSTOM_SCENE, state.temp_data);
     return {
       type: 'text',
-      text: '✏️ 請描述你想要的場景\n\n' +
+      text: '✏️ 請描述你想要的裝飾風格\n\n' +
             '例如：\n' +
-            '• 「在中正紀念堂練太極拳」\n' +
-            '• 「在法國羅浮宮前拍美照」\n' +
-            '• 「在新加坡魚尾獅公園唱歌」\n\n' +
-            '💡 AI 會根據你的描述生成對應的動作和配件！'
+            '• 「粉紅色愛心和蝴蝶結」\n' +
+            '• 「霓虹燈效果」\n' +
+            '• 「日系漫畫音效文字」\n\n' +
+            '💡 AI 會根據你的描述加入裝飾元素！'
     };
   }
 
-  // 直接保存場景並進入數量選擇
+  // 直接保存裝飾風格並進入數量選擇
   const tempData = { ...state.temp_data, scene: sceneId, sceneConfig: scene };
   await updateConversationState(userId, ConversationStage.COUNT_SELECT, tempData);
 
@@ -263,21 +263,22 @@ async function handleSceneSelection(userId, sceneId) {
 }
 
 /**
- * 處理自訂場景描述
+ * 處理自訂裝飾風格描述
  */
 async function handleCustomScene(userId, description) {
-  console.log(`✏️ 用戶 ${userId} 自訂場景：${description}`);
+  console.log(`✏️ 用戶 ${userId} 自訂裝飾風格：${description}`);
 
   const state = await getConversationState(userId);
 
-  // 建立自訂場景配置
+  // 建立自訂裝飾風格配置
   const customScene = {
     id: 'custom',
-    name: '自訂場景',
+    name: '自訂風格',
     emoji: '✏️',
     description: description,
-    promptHint: description,
-    suggestedProps: []  // DeepSeek 會自動推斷
+    decorationStyle: description,
+    decorationElements: [],
+    popTextStyle: description
   };
 
   const tempData = { ...state.temp_data, scene: 'custom', sceneConfig: customScene, customSceneDescription: description };

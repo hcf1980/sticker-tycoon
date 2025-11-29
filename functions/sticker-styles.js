@@ -85,60 +85,47 @@ const StyleEnhancer = {
 // ============================================
 
 const ExpressionEnhancer = {
-  // 基本日常
-  "開心": "wide genuine smile, bright sparkling eyes, cheerful pose, radiating joy",
-  "開心打招呼": "waving hand, warm smile, friendly welcoming pose, bright eyes",
-  "大笑": "open-mouth laughing, squinting happy eyes, high energy, body shaking with laughter",
-  "哭泣": "teary eyes, trembling lips, emotional expression, tears streaming down",
-  "生氣": "angry furrowed eyebrows, strong frowning mouth, tense pose, steam effect",
-  "驚訝": "wide-open shocked eyes, dropped jaw, hands up in surprise, dramatic reaction",
-  "愛心眼": "heart-shaped sparkling eyes, blushing cheeks, overwhelmed with love",
-  "睡覺": "closed peaceful eyes, zzz bubbles, relaxed sleeping pose, drooling slightly",
-  "加油": "fist pump pose, determined expression, motivational energy, confident stance",
+  // ===== 基本日常（含 POP 文字建議）=====
+  "早安": { action: "stretching arms up, bright morning smile, energetic wake-up pose", popText: "早安!!!", decorations: "sun rays, sparkles, musical notes" },
+  "晚安": { action: "sleepy yawning, hands together by cheek, peaceful drowsy expression", popText: "晚安~", decorations: "moon, stars, zzz bubbles" },
+  "Hi": { action: "cheerful waving hand high, bright smile, friendly greeting pose", popText: "Hi~", decorations: "colorful stars, sparkles" },
+  "OK": { action: "confident OK hand gesture near face, winking, assured smile", popText: "OK!!!", decorations: "thumbs up emoji, check marks" },
+  "Yes": { action: "enthusiastic fist pump, nodding head, victory pose", popText: "Yes!", decorations: "stars, confetti, exclamation marks" },
+  "No": { action: "crossing arms in X shape, shaking head, firm refusal expression", popText: "No!!!", decorations: "X marks, stop signs" },
+  "讚讚": { action: "double thumbs up high, big approving smile, encouraging pose", popText: "讚讚", decorations: "stars, sparkles, hearts" },
+  "加油": { action: "fist pump with both hands, determined fierce expression, fighting pose", popText: "加油!!!", decorations: "flames, lightning bolts, stars" },
 
-  // 可愛表情
-  "賣萌": "puppy dog eyes, pouty lips, head tilt, irresistibly cute pose",
-  "害羞": "blushing red cheeks, shy downward gaze, fidgeting hands, timid smile",
-  "撒嬌": "clingy adorable pose, pleading eyes, cute pouting, wanting attention",
-  "委屈": "teary puppy eyes, quivering lip, pitiful expression, seeking comfort",
-  "興奮": "sparkling excited eyes, jumping pose, overwhelming enthusiasm, vibrating energy",
-  "期待": "hopeful shining eyes, leaning forward eagerly, anticipating expression",
-  "無奈": "sighing expression, drooping shoulders, exasperated look, sweat drop",
-  "謝謝": "grateful bow, warm appreciative smile, hands together, heartfelt thanks",
+  // ===== 情緒表達 =====
+  "開心": { action: "arms raised in celebration, jumping pose, radiating joy expression", popText: null, decorations: "confetti, stars, hearts" },
+  "大笑": { action: "holding stomach laughing, tears of joy, body shaking with laughter", popText: "哈哈哈", decorations: "laughing emojis, tears" },
+  "哭哭": { action: "covering face with hands, tears streaming down, sobbing pose", popText: "哭哭", decorations: "tear drops, sad cloud" },
+  "生氣": { action: "stomping foot, clenched fists, angry red face, steam from ears", popText: "氣噗噗", decorations: "anger symbols, lightning" },
+  "驚訝": { action: "hands on cheeks, wide open mouth, shocked jump back pose", popText: "天啊!", decorations: "exclamation marks, sweat drops" },
+  "傻眼": { action: "blank stare, jaw dropped, frozen in disbelief pose", popText: "傻眼...", decorations: "dots, question marks" },
 
-  // 辦公室
-  "OK": "confident OK hand sign, assured smile, thumbs up energy",
-  "讚": "enthusiastic thumbs up, approving smile, encouraging expression",
-  "加班中": "tired but determined eyes, coffee cup, late night working pose",
-  "累了": "exhausted droopy eyes, slumped posture, desperately tired expression",
-  "開會": "serious focused expression, professional pose, attentive listening",
-  "截止日": "panicked stressed expression, sweating, racing against time",
-  "薪水": "money eyes, excited greedy expression, payday happiness",
-  "下班": "relieved happy expression, freedom pose, escaping work joy",
+  // ===== 可愛撒嬌 =====
+  "撒嬌": { action: "hands clasped pleading, puppy dog eyes, cute head tilt", popText: "拜託嘛~", decorations: "hearts, sparkles, cute flowers" },
+  "害羞": { action: "covering blushing cheeks, shy side glance, fidgeting pose", popText: "害~", decorations: "pink hearts, blush marks" },
+  "嘿嘿嘿": { action: "mischievous grin, fingers touching together, playful scheming pose", popText: "嘿嘿嘿", decorations: "sweat drop, sparkles" },
+  "噓": { action: "finger on lips, winking, secretive quiet gesture", popText: "噓~", decorations: "speech bubble, dots" },
+  "啾啾": { action: "blowing kiss with hand, puckered lips, sending love pose", popText: "啾啾", decorations: "flying hearts, kiss marks" },
+  "抱抱": { action: "arms wide open, warm inviting smile, ready for hug pose", popText: "抱抱~", decorations: "hearts, warm glow" },
 
-  // 社交常用
-  "抱歉": "apologetic bow, sorry expression, regretful eyes, humble pose",
-  "沒問題": "confident reassuring smile, no worries gesture, easygoing pose",
-  "好的": "agreeable nodding, affirmative expression, understanding smile",
-  "等等": "hand up stop gesture, patient expression, asking to wait",
-  "再見": "waving goodbye, bittersweet smile, farewell gesture",
-  "晚安": "sleepy peaceful expression, yawning, ready for bed pose",
-  "早安": "fresh morning energy, stretching awake, bright greeting smile",
+  // ===== 社交應答 =====
+  "謝謝": { action: "hands together bow, grateful warm smile, appreciative pose", popText: "謝謝", decorations: "flowers, hearts, sparkles" },
+  "Sorry": { action: "apologetic deep bow, regretful puppy eyes, hands pressed together", popText: "Sorry", decorations: "sweat drops, apologetic marks" },
+  "等等": { action: "hand up stop gesture, urgent expression, asking to pause", popText: "等等!", decorations: "clock, exclamation" },
+  "再見": { action: "waving goodbye, bittersweet smile, farewell hand gesture", popText: "Bye~", decorations: "waving hand emoji, hearts" },
+  "好想吃": { action: "drooling expression, hands on cheeks, craving food pose", popText: "好想吃!!!", decorations: "food emojis, drool drops" },
+  "我想想": { action: "finger on chin, looking up thinking, contemplating pose", popText: "我想想...", decorations: "thought bubbles, question marks" },
 
-  // 戀愛日常
-  "愛你": "heart hands gesture, loving gaze, deeply affectionate expression",
-  "想你": "longing distant gaze, hand on heart, missing you expression",
-  "抱抱": "arms open wide for hug, warm inviting expression, seeking embrace",
-  "親親": "puckered kiss lips, blowing kiss, loving smooch expression",
-  "吃醋": "jealous pouting, side-eye glare, envious sulking expression",
-  "約會": "excited dressed up, anticipating love, romantic readiness",
-
-  // 心情寫照
-  "難過": "downcast sad eyes, frowning, melancholy expression, heavy heart",
-  "焦慮": "worried nervous expression, biting nails, anxious fidgeting",
-  "放鬆": "peaceful calm expression, zen pose, stress-free contentment",
-  "無聊": "bored blank stare, yawning, listless expression, killing time",
-  "困惑": "confused tilted head, question marks, puzzled expression"
+  // ===== 特殊場合 =====
+  "生日快樂": { action: "holding birthday cake, party hat, celebration pose", popText: "生日快樂", decorations: "balloons, confetti, cake" },
+  "感謝": { action: "deep grateful bow, hands together, heartfelt appreciation", popText: "感謝", decorations: "flowers, hearts, sparkles" },
+  "恭喜": { action: "clapping hands, excited congratulating smile, celebration pose", popText: "恭喜!", decorations: "confetti, stars, fireworks" },
+  "加班中": { action: "exhausted at desk, coffee cup, late night working expression", popText: "加班中...", decorations: "coffee cup, zzz, moon" },
+  "放假": { action: "arms stretched wide, relieved happy expression, freedom pose", popText: "放假!", decorations: "sun, palm trees, sparkles" },
+  "累累": { action: "drooping shoulders, tired eyes, exhausted slumped pose", popText: "累...", decorations: "sweat drops, tired marks" }
 };
 
 // ============================================
@@ -278,126 +265,114 @@ const StickerStyles = {
 };
 
 /**
- * 預設表情組合
+ * 預設表情組合 - 每組 8 個不重複、動作明確的表情
  */
 const DefaultExpressions = {
   basic: {
     id: 'basic',
     name: '基本日常',
-    expressions: ['開心打招呼', '大笑', '哭泣', '生氣', '驚訝', '愛心眼', '睡覺', '加油']
+    emoji: '😊',
+    expressions: ['早安', 'Hi', 'OK', '讚讚', '加油', '謝謝', '晚安', 'Yes']
   },
   cute: {
     id: 'cute',
-    name: '可愛表情',
-    expressions: ['賣萌', '害羞', '撒嬌', '委屈', '興奮', '期待', '無奈', '謝謝']
-  },
-  office: {
-    id: 'office',
-    name: '辦公室',
-    expressions: ['OK', '讚', '加班中', '累了', '開會', '截止日', '薪水', '下班']
-  },
-  social: {
-    id: 'social',
-    name: '社交常用',
-    expressions: ['謝謝', '抱歉', '沒問題', '好的', '等等', '再見', '晚安', '早安']
-  },
-  love: {
-    id: 'love',
-    name: '戀愛日常',
-    expressions: ['愛你', '想你', '抱抱', '親親', '吃醋', '撒嬌', '害羞', '約會']
-  },
-  mood: {
-    id: 'mood',
-    name: '心情寫照',
-    expressions: ['開心', '難過', '焦慮', '放鬆', '無聊', '興奮', '困惑', '滿足']
-  }
-};
-
-/**
- * 🌍 場景/配件模板
- * 用戶可選擇場景，DeepSeek 會根據場景生成對應的動作/配件描述
- * 注意：背景仍然是透明的，只是動作和配件會參考場景
- */
-const SceneTemplates = {
-  none: {
-    id: 'none',
-    name: '無場景',
-    emoji: '✨',
-    description: '純淨簡約，無特殊場景',
-    promptHint: 'simple clean pose, no props, no accessories',
-    suggestedProps: []
+    name: '可愛撒嬌',
+    emoji: '🥺',
+    expressions: ['撒嬌', '害羞', '噓', '啾啾', '嘿嘿嘿', '抱抱', '好想吃', '哭哭']
   },
   office: {
     id: 'office',
     name: '辦公室',
     emoji: '💼',
-    description: '上班族日常、辦公室場景',
-    promptHint: 'office worker pose, business casual style',
-    suggestedProps: ['laptop', 'coffee cup', 'documents', 'pen', 'phone']
+    expressions: ['OK', '讚讚', '加班中', '累累', '我想想', 'Sorry', '等等', '放假']
   },
-  travel_asia: {
-    id: 'travel_asia',
-    name: '亞洲旅遊',
-    emoji: '🏯',
-    description: '亞洲景點打卡（中正紀念堂、魚尾獅等）',
-    promptHint: 'tourist pose, travel photo style, sightseeing gesture',
-    suggestedProps: ['camera', 'peace sign', 'map', 'backpack', 'souvenir']
+  social: {
+    id: 'social',
+    name: '社交常用',
+    emoji: '💬',
+    expressions: ['Hi', '謝謝', 'Sorry', 'OK', 'Yes', 'No', '再見', '等等']
   },
-  travel_europe: {
-    id: 'travel_europe',
-    name: '歐洲旅遊',
-    emoji: '🗼',
-    description: '歐洲景點打卡（羅浮宮、艾菲爾鐵塔等）',
-    promptHint: 'elegant tourist pose, artistic photo style',
-    suggestedProps: ['camera', 'beret', 'croissant', 'wine glass', 'art book']
+  emotion: {
+    id: 'emotion',
+    name: '情緒表達',
+    emoji: '🎭',
+    expressions: ['開心', '大笑', '哭哭', '生氣', '驚訝', '傻眼', '害羞', '累累']
   },
-  fitness: {
-    id: 'fitness',
-    name: '運動健身',
-    emoji: '💪',
-    description: '健身、瑜伽、運動場景',
-    promptHint: 'athletic pose, energetic sports gesture',
-    suggestedProps: ['dumbbell', 'yoga mat', 'water bottle', 'towel', 'headband']
-  },
-  food: {
-    id: 'food',
-    name: '美食饗宴',
-    emoji: '🍜',
-    description: '吃貨日常、美食場景',
-    promptHint: 'foodie pose, eating gesture, happy dining',
-    suggestedProps: ['chopsticks', 'fork', 'bowl', 'cup', 'chef hat']
-  },
-  music: {
-    id: 'music',
-    name: '音樂表演',
-    emoji: '🎤',
-    description: '唱歌、演奏、音樂場景',
-    promptHint: 'performer pose, singing or playing instrument gesture',
-    suggestedProps: ['microphone', 'guitar', 'headphones', 'music notes']
-  },
-  relaxing: {
-    id: 'relaxing',
-    name: '居家放鬆',
-    emoji: '🛋️',
-    description: '在家耍廢、追劇、放鬆',
-    promptHint: 'relaxed lazy pose, cozy at home gesture',
-    suggestedProps: ['pillow', 'blanket', 'snacks', 'remote control', 'slippers']
-  },
-  celebration: {
-    id: 'celebration',
-    name: '節慶派對',
+  special: {
+    id: 'special',
+    name: '特殊場合',
     emoji: '🎉',
-    description: '生日、節日、慶祝場景',
-    promptHint: 'celebration pose, party gesture, festive mood',
-    suggestedProps: ['party hat', 'balloon', 'confetti', 'gift box', 'cake']
+    expressions: ['生日快樂', '恭喜', '感謝', '加油', 'Yes', '開心', '啾啾', '抱抱']
+  }
+};
+
+/**
+ * � 裝飾風格模板
+ * 控制貼圖的裝飾元素風格（POP文字、愛心、星星等）
+ */
+const SceneTemplates = {
+  none: {
+    id: 'none',
+    name: '簡約風',
+    emoji: '✨',
+    description: '乾淨簡約，少量裝飾',
+    decorationStyle: 'minimal decorations, clean design',
+    decorationElements: ['small sparkles', 'subtle glow'],
+    popTextStyle: 'simple clean text, small font'
+  },
+  pop: {
+    id: 'pop',
+    name: 'POP風格',
+    emoji: '�',
+    description: '活潑POP文字、大膽配色',
+    decorationStyle: 'bold POP art style, vibrant colors, dynamic layout',
+    decorationElements: ['bold text bubbles', 'comic style effects', 'exclamation marks', 'star bursts'],
+    popTextStyle: 'large bold POP text, colorful outline, comic book style, impactful typography'
+  },
+  kawaii: {
+    id: 'kawaii',
+    name: '夢幻可愛',
+    emoji: '💖',
+    description: '粉嫩夢幻、愛心星星',
+    decorationStyle: 'kawaii pastel style, dreamy soft colors',
+    decorationElements: ['floating hearts', 'sparkling stars', 'cute flowers', 'rainbow sparkles', 'blush marks'],
+    popTextStyle: 'cute rounded text, pastel colors, soft bubble font'
+  },
+  energetic: {
+    id: 'energetic',
+    name: '活力四射',
+    emoji: '⚡',
+    description: '動感線條、速度感',
+    decorationStyle: 'dynamic energetic style, motion lines, high impact',
+    decorationElements: ['speed lines', 'lightning bolts', 'explosion effects', 'action swooshes', 'dynamic splashes'],
+    popTextStyle: 'bold italic text, action font, dynamic angle'
+  },
+  colorful: {
+    id: 'colorful',
+    name: '繽紛彩色',
+    emoji: '�',
+    description: '彩色潑墨、七彩裝飾',
+    decorationStyle: 'colorful splash style, rainbow palette, artistic paint effects',
+    decorationElements: ['color splashes', 'paint splatters', 'rainbow confetti', 'watercolor spots', 'geometric shapes'],
+    popTextStyle: 'colorful gradient text, artistic typography'
+  },
+  elegant: {
+    id: 'elegant',
+    name: '優雅質感',
+    emoji: '✨',
+    description: '精緻金邊、高級感',
+    decorationStyle: 'elegant sophisticated style, premium feel',
+    decorationElements: ['golden sparkles', 'elegant flourishes', 'soft bokeh', 'delicate frames'],
+    popTextStyle: 'elegant serif text, gold accents, refined typography'
   },
   custom: {
     id: 'custom',
-    name: '自訂場景',
+    name: '自訂風格',
     emoji: '✏️',
-    description: '自己描述想要的場景',
-    promptHint: '',
-    suggestedProps: []
+    description: '自己描述想要的裝飾風格',
+    decorationStyle: '',
+    decorationElements: [],
+    popTextStyle: ''
   }
 };
 
@@ -466,25 +441,55 @@ function generateStickerPromptV2(style, characterDescription, expression) {
 }
 
 /**
- * 🎯 生成照片貼圖的增強 Prompt V3.0
+ * 🎯 生成照片貼圖的增強 Prompt V4.0
  * - 透明背景
  * - 風格差異化（StyleEnhancer）
  * - 角色一致性
- * - 場景/配件支援（V3.1）
+ * - POP文字 + 裝飾元素支援
  */
 function generatePhotoStickerPromptV2(style, expression, characterID = null, sceneConfig = null) {
   const styleConfig = StickerStyles[style] || StickerStyles.cute;
   const styleEnhance = StyleEnhancer[style] || StyleEnhancer.cute;
-  const expressionEnhance = ExpressionEnhancer[expression] || expression;
 
-  // 場景配置（如果有）
-  const scene = sceneConfig || { promptHint: '', suggestedProps: [] };
-  const scenePrompt = scene.promptHint ? `\n- SCENE CONTEXT: ${scene.promptHint}` : '';
-  const propsPrompt = scene.suggestedProps?.length > 0
-    ? `\n- MAY INCLUDE PROPS: ${scene.suggestedProps.slice(0, 2).join(', ')} (optional, small and simple)`
+  // 取得表情增強（新格式包含 action, popText, decorations）
+  const expressionData = ExpressionEnhancer[expression];
+  let actionDesc, popText, decorations;
+
+  if (typeof expressionData === 'object' && expressionData !== null) {
+    // 新格式
+    actionDesc = expressionData.action;
+    popText = expressionData.popText;
+    decorations = expressionData.decorations;
+  } else {
+    // 舊格式或不存在
+    actionDesc = expressionData || expression;
+    popText = null;
+    decorations = 'sparkles, small hearts';
+  }
+
+  // 裝飾風格配置（如果有）
+  const decoration = sceneConfig || SceneTemplates.none;
+  const decorationPrompt = decoration.decorationStyle
+    ? `\n- DECORATION STYLE: ${decoration.decorationStyle}`
+    : '';
+  const elementsPrompt = decoration.decorationElements?.length > 0
+    ? `\n- DECORATION ELEMENTS: ${decoration.decorationElements.join(', ')}`
+    : '';
+  const textStylePrompt = decoration.popTextStyle
+    ? `\n- TEXT STYLE: ${decoration.popTextStyle}`
     : '';
 
-  const prompt = `Transform this photo into a LINE sticker illustration.
+  // POP 文字指示
+  const popTextPrompt = popText
+    ? `\n\n=== 📝 POP TEXT (IMPORTANT) ===
+Add "${popText}" as decorative text element:
+- Large, bold, eye-catching typography
+- Placed near character (top, side, or as speech bubble)
+- ${decoration.popTextStyle || 'colorful and fun style'}
+- Text should complement the expression`
+    : '';
+
+  const prompt = `Transform this photo into a LINE sticker illustration with decorative elements.
 
 === 🎨 ART STYLE: ${styleConfig.name} (${style.toUpperCase()}) ===
 ${styleConfig.promptBase}
@@ -495,56 +500,51 @@ STYLE DETAILS:
 - Brushwork: ${styleEnhance.brushwork}
 - Mood: ${styleEnhance.mood}
 
-=== 😊 EXPRESSION: ${expression} ===
-${expressionEnhance}
-- Show emotion through FACE and HAND GESTURE
-- Make expression clear and exaggerated for sticker use${scenePrompt}${propsPrompt}
+=== 😊 EXPRESSION & ACTION: ${expression} ===
+ACTION: ${actionDesc}
+- Show emotion through CLEAR BODY POSE and HAND GESTURE
+- Expression must be dramatic and readable at small size
+- Hands and arms should be visible and expressive${decorationPrompt}${elementsPrompt}${textStylePrompt}${popTextPrompt}
+
+=== 🎀 DECORATIONS ===
+Add floating decorative elements around character:
+- ${decorations || 'sparkles, hearts, stars'}
+- ${decoration.decorationElements?.slice(0, 3).join(', ') || 'colorful accents'}
+- Keep decorations OUTSIDE of character, floating around
+- Decorations should enhance mood without overwhelming
 
 === 👤 CHARACTER (MUST BE CONSISTENT) ===
 Character ID: ${characterID || 'default'}
 - Copy EXACT face from photo: same face shape, eyes, nose, mouth
 - Copy EXACT hairstyle and hair color from photo
-- SAME outfit in ALL stickers: plain white t-shirt, NO patterns
-- Upper body only (head to chest)
+- CLOTHING: Colorful casual outfit (can vary per sticker)
+- Upper body to waist visible (show hand gestures clearly)
 
 === ⚠️ TECHNICAL REQUIREMENTS (STRICT) ===
-1. BACKGROUND: 100% TRANSPARENT (alpha=0) - NO white, NO gray, NO color
-2. T-SHIRT: Solid pure white (#FFFFFF), NO patterns, NO stripes
-3. OUTLINES: Thick black lines (2-3px) for visibility
-4. COMPOSITION: Centered, fills 70-80% of canvas
-5. NO TEXT: Zero letters, numbers, symbols, watermarks
-6. IMAGE SIZE: 370px width × 320px height
+1. BACKGROUND: 100% TRANSPARENT (alpha=0) - NO white, NO gray
+2. OUTLINES: Thick clean lines for visibility
+3. COMPOSITION: Character centered, decorations floating around
+4. IMAGE SIZE: 370px width × 320px height
 
-=== 🚫 ABSOLUTELY FORBIDDEN (一致性必須遵守) ===
-- NO circular frame, NO round border, NO circle crop, NO vignette
-- NO profile picture style, NO avatar circle
+=== 🚫 ABSOLUTELY FORBIDDEN ===
+- NO circular frame, NO round border, NO circle crop
+- NO avatar style, NO profile picture frame
 - Character must be FREE-FLOATING on transparent background
-- NO decorative borders or frames of any kind
 
-=== 🎨 COLOR CONSISTENCY (必須一致) ===
-- SKIN TONE: Warm peachy-beige (#FFCCAA to #FFE4C4), consistent across ALL stickers
-- HAIR COLOR: Same exact color in ALL stickers (copy from photo)
-- CHEEKS: Soft pink blush (#FFB6C1) for cute expressions
-- EYES: Same eye color in ALL stickers
-- HIGH SATURATION: Vivid colors, not pale or washed out
-- HIGH CONTRAST: Strong light/dark distinction
+=== 🎨 COLOR & CONSISTENCY ===
+- SKIN TONE: Warm healthy tone, consistent across ALL stickers
+- HAIR COLOR: Same exact color in ALL stickers
+- HIGH SATURATION: Vivid, vibrant colors
+- HIGH CONTRAST: Strong visual impact
 
-CRITICAL:
-- Background MUST be fully transparent (PNG cutout style)
-- NO circular frames or borders
-- Same skin tone, hair color, eye color in EVERY sticker
-
-OUTPUT: ${styleConfig.name} LINE sticker, 370x320px, TRANSPARENT background, NO frame, consistent ${expression} face.`;
+OUTPUT: ${styleConfig.name} LINE sticker with ${popText ? `"${popText}" text and ` : ''}decorations, 370x320px, TRANSPARENT background.`;
 
   const negativePrompt = `
     white background, gray background, colored background, solid background,
-    circular frame, round border, circle crop, avatar style, profile picture frame, vignette,
-    decorative border, ornamental frame,
-    patterned shirt, striped shirt, printed shirt, gray shirt,
-    text, words, letters, numbers, watermark, logo,
-    full body, legs, feet,
-    different face, inconsistent character, different skin tone, pale skin, gray skin,
-    realistic photo, 3D render
+    circular frame, round border, circle crop, avatar style, profile picture frame,
+    full body with legs, feet showing,
+    different face, inconsistent character, pale skin, gray skin,
+    realistic photo, 3D render, blurry, low quality
   `.replace(/\s+/g, ' ').trim();
 
   return {
