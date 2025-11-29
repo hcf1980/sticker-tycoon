@@ -921,7 +921,11 @@ async function applyReferralCode(refereeUserId, referralCode) {
   }
 }
 
+// 導出 supabase client 實例
+const supabase = getSupabaseClient();
+
 module.exports = {
+  supabase,  // 導出 supabase 實例
   getSupabaseClient,
   isReplyTokenUsed,
   recordReplyToken,
