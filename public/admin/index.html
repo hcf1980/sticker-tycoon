@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>管理後台 - 貼圖大亨</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <nav class="bg-gradient-to-r from-pink-500 to-orange-400 text-white p-4">
+    <div class="container mx-auto flex justify-between items-center">
+      <h1 class="text-2xl font-bold">🎨 貼圖大亨 - 管理後台</h1>
+      <a href="/" class="text-white hover:underline">← 返回首頁</a>
+    </div>
+  </nav>
+
+  <div class="container mx-auto p-6">
+    <h2 class="text-2xl font-bold text-gray-800 mb-6">📋 管理功能</h2>
+    
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <!-- 貼圖管理 -->
+      <a href="/admin/sticker-manager.html" class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition block">
+        <div class="text-5xl mb-4 text-center">🎨</div>
+        <h3 class="text-xl font-bold text-gray-800 text-center mb-2">貼圖管理</h3>
+        <p class="text-gray-600 text-center text-sm">查看所有貼圖組、下載打包、管理狀態</p>
+      </a>
+
+      <!-- Rich Menu 管理 -->
+      <a href="/admin/rich-menu.html" class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition block">
+        <div class="text-5xl mb-4 text-center">📱</div>
+        <h3 class="text-xl font-bold text-gray-800 text-center mb-2">Rich Menu 管理</h3>
+        <p class="text-gray-600 text-center text-sm">上傳更新 LINE 選單圖片、設定選單</p>
+      </a>
+
+      <!-- 示範圖集管理 -->
+      <a href="/admin/demo-gallery.html" class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition block">
+        <div class="text-5xl mb-4 text-center">✨</div>
+        <h3 class="text-xl font-bold text-gray-800 text-center mb-2">示範圖集</h3>
+        <p class="text-gray-600 text-center text-sm">管理展示用的精選貼圖範例</p>
+      </a>
+
+      <!-- 用戶統計 -->
+      <a href="/admin/stats.html" class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition block opacity-50 cursor-not-allowed">
+        <div class="text-5xl mb-4 text-center">📊</div>
+        <h3 class="text-xl font-bold text-gray-800 text-center mb-2">用戶統計</h3>
+        <p class="text-gray-600 text-center text-sm">（開發中）</p>
+      </a>
+
+      <!-- 風格設定 -->
+      <a href="/admin/styles.html" class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition block opacity-50 cursor-not-allowed">
+        <div class="text-5xl mb-4 text-center">🎭</div>
+        <h3 class="text-xl font-bold text-gray-800 text-center mb-2">風格設定</h3>
+        <p class="text-gray-600 text-center text-sm">（開發中）</p>
+      </a>
+
+      <!-- 系統設定 -->
+      <a href="/admin/settings.html" class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition block opacity-50 cursor-not-allowed">
+        <div class="text-5xl mb-4 text-center">⚙️</div>
+        <h3 class="text-xl font-bold text-gray-800 text-center mb-2">系統設定</h3>
+        <p class="text-gray-600 text-center text-sm">（開發中）</p>
+      </a>
+    </div>
+
+    <!-- 快速統計 -->
+    <div class="mt-10">
+      <h3 class="text-xl font-bold text-gray-800 mb-4">📈 快速統計</h3>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-white rounded-lg shadow p-4 text-center">
+          <div class="text-3xl font-bold text-pink-500" id="stat-total">-</div>
+          <div class="text-gray-500 text-sm">總貼圖組</div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4 text-center">
+          <div class="text-3xl font-bold text-green-500" id="stat-completed">-</div>
+          <div class="text-gray-500 text-sm">已完成</div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4 text-center">
+          <div class="text-3xl font-bold text-blue-500" id="stat-users">-</div>
+          <div class="text-gray-500 text-sm">活躍用戶</div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4 text-center">
+          <div class="text-3xl font-bold text-orange-500" id="stat-today">-</div>
+          <div class="text-gray-500 text-sm">今日創建</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="mt-10 py-4 text-center text-gray-500 text-sm">
+    貼圖大亨 Admin © 2024
+  </footer>
+</body>
+</html>
+

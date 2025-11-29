@@ -22,6 +22,21 @@
 [functions."download-pack"]
   timeout = 30
 
+# Admin Rich Menu API
+[functions."admin-rich-menu"]
+  timeout = 30
+
+# API 路由重定向
+[[redirects]]
+  from = "/api/admin/rich-menu-info"
+  to = "/.netlify/functions/admin-rich-menu"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/update-rich-menu"
+  to = "/.netlify/functions/admin-rich-menu"
+  status = 200
+
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
