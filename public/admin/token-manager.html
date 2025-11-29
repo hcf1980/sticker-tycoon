@@ -63,14 +63,15 @@
           <thead class="bg-gray-50">
             <tr>
               <th class="px-4 py-3 text-left text-sm font-medium text-gray-600">用戶</th>
+              <th class="px-4 py-3 text-center text-sm font-medium text-gray-600">備註/轉帳碼</th>
               <th class="px-4 py-3 text-center text-sm font-medium text-gray-600">代幣餘額</th>
-              <th class="px-4 py-3 text-center text-sm font-medium text-gray-600">創建貼圖</th>
+              <th class="px-4 py-3 text-center text-sm font-medium text-gray-600">貼圖</th>
               <th class="px-4 py-3 text-center text-sm font-medium text-gray-600">加入日期</th>
               <th class="px-4 py-3 text-center text-sm font-medium text-gray-600">操作</th>
             </tr>
           </thead>
           <tbody id="user-list" class="divide-y divide-gray-200">
-            <tr><td colspan="5" class="text-center py-8 text-gray-500">載入中...</td></tr>
+            <tr><td colspan="6" class="text-center py-8 text-gray-500">載入中...</td></tr>
           </tbody>
         </table>
       </div>
@@ -119,6 +120,30 @@
     </div>
   </div>
 
+  <!-- 編輯用戶資料 Modal -->
+  <div id="edit-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+      <h3 class="text-lg font-bold mb-4">✏️ 編輯用戶資料</h3>
+      <input type="hidden" id="edit-user-id">
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1">LINE 名稱</label>
+        <div id="edit-line-name" class="text-gray-900 font-medium"></div>
+      </div>
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1">管理員備註名稱</label>
+        <input type="text" id="edit-admin-nickname" class="w-full border rounded px-3 py-2" placeholder="方便辨識的名稱">
+      </div>
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1">轉帳後五碼</label>
+        <input type="text" id="edit-transfer-code" class="w-full border rounded px-3 py-2" maxlength="5" placeholder="例：12345">
+      </div>
+      <div class="flex gap-2">
+        <button onclick="closeEditModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded">取消</button>
+        <button onclick="submitEdit()" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">儲存</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // 驗證登入
     (function() {
@@ -161,35 +186,56 @@
       const search = document.getElementById('search-input').value.toLowerCase();
       const filtered = allUsers.filter(u =>
         (u.line_user_id && u.line_user_id.toLowerCase().includes(search)) ||
-        (u.display_name && u.display_name.toLowerCase().includes(search))
+        (u.display_name && u.display_name.toLowerCase().includes(search)) ||
+        (u.admin_nickname && u.admin_nickname.toLowerCase().includes(search)) ||
+        (u.transfer_code && u.transfer_code.includes(search))
       );
       renderUserList(filtered);
     }
 
     function renderUserList(users) {
       if (!users || users.length === 0) {
-        document.getElementById('user-list').innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500">沒有找到用戶</td></tr>';
+        document.getElementById('user-list').innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-500">沒有找到用戶</td></tr>';
         return;
       }
-      document.getElementById('user-list').innerHTML = users.map(u => `
+      document.getElementById('user-list').innerHTML = users.map(u => {
+        const escapedName = (u.display_name || '未知').replace(/'/g, "\\'");
+        const escapedNickname = (u.admin_nickname || '').replace(/'/g, "\\'");
+        const escapedCode = (u.transfer_code || '').replace(/'/g, "\\'");
+        return `
         <tr class="hover:bg-gray-50">
           <td class="px-4 py-3">
-            <div class="font-medium">${u.display_name || '未知用戶'}</div>
-            <div class="text-xs text-gray-500">${u.line_user_id ? u.line_user_id.substring(0, 20) + '...' : '-'}</div>
+            <div class="flex items-center gap-2">
+              ${u.picture_url ? `<img src="${u.picture_url}" class="w-8 h-8 rounded-full">` : '<div class="w-8 h-8 rounded-full bg-gray-200"></div>'}
+              <div>
+                <div class="font-medium">${u.display_name || '未知用戶'}</div>
+                <div class="text-xs text-gray-500">${u.line_user_id ? u.line_user_id.substring(0, 16) + '...' : '-'}</div>
+              </div>
+            </div>
+          </td>
+          <td class="px-4 py-3 text-center">
+            <div class="text-sm font-medium text-blue-600">${u.admin_nickname || '-'}</div>
+            <div class="text-xs text-gray-500">${u.transfer_code ? '後五碼: ' + u.transfer_code : '-'}</div>
           </td>
           <td class="px-4 py-3 text-center">
             <span class="text-xl font-bold ${u.sticker_credits > 10 ? 'text-green-600' : u.sticker_credits > 0 ? 'text-yellow-600' : 'text-red-600'}">${u.sticker_credits || 0}</span>
           </td>
-          <td class="px-4 py-3 text-center text-gray-600">${u.sticker_count || 0} 組</td>
+          <td class="px-4 py-3 text-center text-gray-600">${u.sticker_count || 0}</td>
           <td class="px-4 py-3 text-center text-sm text-gray-500">${u.created_at ? new Date(u.created_at).toLocaleDateString('zh-TW') : '-'}</td>
           <td class="px-4 py-3 text-center">
-            <button onclick="openAdjustModal('${u.line_user_id}', '${u.display_name || '未知'}', ${u.sticker_credits || 0})"
-                    class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-sm">
-              調整代幣
-            </button>
+            <div class="flex gap-1 justify-center">
+              <button onclick="openEditModal('${u.line_user_id}', '${escapedName}', '${escapedNickname}', '${escapedCode}')"
+                      class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs">
+                ✏️
+              </button>
+              <button onclick="openAdjustModal('${u.line_user_id}', '${escapedName}', ${u.sticker_credits || 0})"
+                      class="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded text-xs">
+                💰
+              </button>
+            </div>
           </td>
         </tr>
-      `).join('');
+      `}).join('');
     }
 
     function openAdjustModal(lineUserId, name, balance) {
@@ -224,6 +270,43 @@
           loadUsers();
         } else {
           alert('❌ 調整失敗：' + (result.error || '未知錯誤'));
+        }
+      } catch (err) {
+        alert('❌ 發生錯誤：' + err.message);
+      }
+    }
+
+    // 編輯用戶資料相關
+    function openEditModal(lineUserId, lineName, nickname, code) {
+      document.getElementById('edit-user-id').value = lineUserId;
+      document.getElementById('edit-line-name').textContent = lineName;
+      document.getElementById('edit-admin-nickname').value = nickname;
+      document.getElementById('edit-transfer-code').value = code;
+      document.getElementById('edit-modal').classList.remove('hidden');
+    }
+
+    function closeEditModal() {
+      document.getElementById('edit-modal').classList.add('hidden');
+    }
+
+    async function submitEdit() {
+      const lineUserId = document.getElementById('edit-user-id').value;
+      const adminNickname = document.getElementById('edit-admin-nickname').value;
+      const transferCode = document.getElementById('edit-transfer-code').value;
+
+      try {
+        const response = await fetch('/.netlify/functions/admin-token?action=update-user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ lineUserId, adminNickname, transferCode })
+        });
+        const result = await response.json();
+        if (result.success) {
+          alert('✅ 儲存成功！');
+          closeEditModal();
+          loadUsers();
+        } else {
+          alert('❌ 儲存失敗：' + (result.error || '未知錯誤'));
         }
       } catch (err) {
         alert('❌ 發生錯誤：' + err.message);

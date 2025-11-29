@@ -41,6 +41,11 @@ exports.handler = async function(event, context) {
           return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
         }
         return await adjustTokens(db, JSON.parse(event.body));
+      case 'update-user':
+        if (event.httpMethod !== 'POST') {
+          return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
+        }
+        return await updateUserInfo(db, JSON.parse(event.body));
       default:
         return { statusCode: 400, headers, body: JSON.stringify({ error: 'Invalid action' }) };
     }
@@ -54,7 +59,7 @@ async function getUsers(db) {
   // 取得所有用戶及其貼圖組數量
   const { data: users, error: userError } = await db
     .from('users')
-    .select('line_user_id, display_name, sticker_credits, created_at')
+    .select('line_user_id, display_name, picture_url, sticker_credits, admin_nickname, transfer_code, created_at')
     .order('created_at', { ascending: false });
 
   if (userError) throw userError;
@@ -175,3 +180,27 @@ async function adjustTokens(db, body) {
   };
 }
 
+async function updateUserInfo(db, body) {
+  const { lineUserId, adminNickname, transferCode } = body;
+
+  if (!lineUserId) {
+    return { statusCode: 400, headers, body: JSON.stringify({ error: 'Missing lineUserId' }) };
+  }
+
+  const updateData = { updated_at: new Date().toISOString() };
+  if (adminNickname !== undefined) updateData.admin_nickname = adminNickname || null;
+  if (transferCode !== undefined) updateData.transfer_code = transferCode || null;
+
+  const { error: updateError } = await db
+    .from('users')
+    .update(updateData)
+    .eq('line_user_id', lineUserId);
+
+  if (updateError) throw updateError;
+
+  return {
+    statusCode: 200,
+    headers,
+    body: JSON.stringify({ success: true })
+  };
+}

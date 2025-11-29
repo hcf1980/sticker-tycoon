@@ -20,6 +20,8 @@ CREATE TABLE IF NOT EXISTS users (
   picture_url TEXT,
   sticker_credits INTEGER DEFAULT 40,  -- 免費生成額度（每張貼圖消耗1代幣）
   is_premium BOOLEAN DEFAULT FALSE,
+  admin_nickname TEXT,  -- 管理員備註名稱
+  transfer_code TEXT,  -- 轉帳後五碼
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

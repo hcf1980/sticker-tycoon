@@ -80,7 +80,23 @@ async function getOrCreateUser(lineUserId, displayName = null, pictureUrl = null
     if (selectError) throw selectError;
 
     if (existing && existing.length > 0) {
-      return existing[0];
+      const user = existing[0];
+      // 如果有新的 displayName 或 pictureUrl，更新現有用戶
+      if ((displayName && displayName !== user.display_name) ||
+          (pictureUrl && pictureUrl !== user.picture_url)) {
+        const updateData = {};
+        if (displayName) updateData.display_name = displayName;
+        if (pictureUrl) updateData.picture_url = pictureUrl;
+        updateData.updated_at = new Date().toISOString();
+
+        await getSupabaseClient()
+          .from('users')
+          .update(updateData)
+          .eq('line_user_id', lineUserId);
+
+        return { ...user, ...updateData };
+      }
+      return user;
     }
 
     // 建立新用戶

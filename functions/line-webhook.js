@@ -546,6 +546,16 @@ exports.handler = async function(event, context) {
       // 先記錄 token（確保不會重複處理）
       await recordReplyToken(replyToken);
 
+      // 取得用戶資料並儲存到資料庫
+      try {
+        const profile = await getLineClient().getProfile(userId);
+        await getOrCreateUser(userId, profile.displayName, profile.pictureUrl);
+      } catch (profileError) {
+        console.log('⚠️ 無法取得用戶 Profile:', profileError.message);
+        // 即使無法取得 Profile，仍然建立用戶（不影響後續流程）
+        await getOrCreateUser(userId);
+      }
+
       // 根據訊息類型處理
       try {
         if (ev.message.type === 'text') {
