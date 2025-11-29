@@ -315,18 +315,32 @@ function generateStickerPromptV2(style, characterDescription, expression) {
 /**
  * 🎯 生成照片貼圖的增強 Prompt V2
  * 專門用於從照片生成貼圖，保留臉部特徵
+ *
+ * LINE Creators Market 規格：
+ * - 貼圖圖片：最大 370 × 320 px
+ * - 透明背景 PNG
+ * - 留白 10 px
  */
 function generatePhotoStickerPromptV2(style, expression, characterID = null) {
   const styleConfig = StickerStyles[style] || StickerStyles.cute;
   const styleEnhance = StyleEnhancer[style] || StyleEnhancer.cute;
   const expressionEnhance = ExpressionEnhancer[expression] || expression;
 
-  const prompt = `Create a LINE sticker illustration from this photo.
+  const prompt = `Create a LINE Creators Market sticker illustration from this photo.
 
-=== ABSOLUTE IDENTITY REQUIREMENTS ===
-${characterID ? `CHARACTER IDENTITY CODE: ${characterID} (MUST maintain exact same character across all stickers)` : ''}
-1. PRESERVE EXACT FACIAL FEATURES: face shape, eye shape, nose shape, mouth shape, skin tone
-2. MAINTAIN CHARACTER CONSISTENCY: same person identity throughout the sticker set
+=== LINE STICKER OFFICIAL REQUIREMENTS ===
+- Output size: 370 × 320 pixels (maximum)
+- Format: PNG with TRANSPARENT background
+- Margin: 10px padding around character
+- Character fills 70-80% of canvas, properly centered
+- Easy to recognize at small sizes (LINE chat)
+
+=== CHARACTER IDENTITY ===
+${characterID ? `CHARACTER IDENTITY CODE: ${characterID}` : ''}
+1. PRESERVE EXACT FACIAL FEATURES from photo: face shape, eyes, nose, mouth, skin tone
+2. MAINTAIN 100% CONSISTENCY: same person identity across all stickers in set
+3. SAME OUTFIT: consistent clothing style and color
+4. SAME HAIR: exact hairstyle and hair color
 
 === STYLE: ${styleConfig.name} ===
 Art style: ${styleConfig.promptBase}
@@ -337,30 +351,39 @@ Mood: ${styleEnhance.mood}
 
 === EXPRESSION: ${expression} ===
 Expression detail: ${expressionEnhance}
-- Show this emotion clearly through facial expression
+- Show this emotion CLEARLY through facial expression
 - Add appropriate hand gestures if suitable
-- Keep pose expressive but simple
+- Keep pose expressive but SIMPLE and readable
 
-=== TECHNICAL REQUIREMENTS ===
-- PURE WHITE BACKGROUND (#FFFFFF) - no gradients, no shadows, no decorations
-- NO TEXT whatsoever - no labels, no words, no captions, no watermarks
-- Character fills 70-80% of image, centered
-- Consistent thick black outlines
-- Upper body only (head to chest), facing forward or 3/4 view
-- Square format (1:1 ratio)
-- Clean vector-like illustration
-- Solid colors, minimal gradients
-- High contrast for LINE sticker visibility
+=== TECHNICAL REQUIREMENTS FOR LINE ===
+- TRANSPARENT BACKGROUND (alpha channel) - NOT white background
+- NO TEXT, NO WORDS, NO LABELS, NO CAPTIONS
+- Thick clean BLACK OUTLINES for visibility
+- Upper body only (head to chest)
+- Facing forward or 3/4 view
+- High contrast colors for small display
+- Vector-like clean illustration style
+- Solid colors, avoid complex gradients
 
-Generate the sticker image now.`;
+=== AVOID ===
+- White or colored backgrounds (must be transparent)
+- Any text, watermarks, signatures
+- Full body shots (hard to see in chat)
+- Complex poses or backgrounds
+- Realistic/photorealistic style
+- Multiple characters
+
+Generate the LINE sticker illustration now.`;
 
   const negativePrompt = `
-    text, words, letters, caption, watermark, signature,
-    multiple characters, complex background, scenery,
-    realistic photo, ultra-realism, photorealistic,
+    white background, colored background, solid background,
+    text, words, letters, caption, watermark, signature, logo,
+    multiple characters, complex background, scenery, landscape,
+    realistic photo, ultra-realism, photorealistic, 3D render,
     inconsistent features, different face, wrong identity,
-    blurry, low quality, pixelated,
-    border, frame, decorations
+    blurry, low quality, pixelated, jpeg artifacts,
+    border, frame, decorations, ornaments,
+    full body, legs, feet, distant view
   `.replace(/\s+/g, ' ').trim();
 
   return {
@@ -398,17 +421,56 @@ function getStyleEnhancement(style) {
 }
 
 /**
- * LINE 貼圖規格
+ * LINE 貼圖官方規格
+ * 來源：https://creator.line.me/zh-hant/guideline/sticker/
  */
 const LineStickerSpecs = {
-  mainImage: { width: 240, height: 240 },
-  stickerImage: { maxWidth: 370, maxHeight: 320 },
-  tabImage: { width: 96, height: 74 },
-  padding: 10,
-  format: 'PNG',
-  maxFileSize: 1024 * 1024,  // 1MB
-  maxZipSize: 60 * 1024 * 1024,  // 60MB
-  validCounts: [8, 16, 24, 32, 40]
+  // 主要圖片（必須）
+  mainImage: {
+    width: 240,
+    height: 240,
+    description: '貼圖組封面圖'
+  },
+
+  // 貼圖圖片（必須）
+  stickerImage: {
+    maxWidth: 370,
+    maxHeight: 320,
+    description: '單張貼圖最大尺寸'
+  },
+
+  // 聊天室標籤圖片（必須）
+  tabImage: {
+    width: 96,
+    height: 74,
+    description: '聊天室貼圖選單標籤'
+  },
+
+  // 通用規格
+  padding: 10,              // 留白邊距（px）
+  format: 'PNG',            // 圖檔格式
+  colorMode: 'RGB',         // 色彩模式
+  minDpi: 72,               // 最低解析度
+  maxFileSize: 1024 * 1024, // 單張最大 1MB
+  maxZipSize: 60 * 1024 * 1024, // ZIP 最大 60MB
+
+  // 可選數量
+  validCounts: [8, 16, 24, 32, 40],
+
+  // 文字限制
+  textLimits: {
+    creatorName: 50,        // 創意人名稱
+    stickerName: 40,        // 貼圖名稱
+    description: 160,       // 貼圖說明
+    copyright: 50           // 版權標記（英文或數字）
+  },
+
+  // ZIP 檔案命名規則
+  fileNaming: {
+    main: 'main.png',       // 主要圖片
+    tab: 'tab.png',         // 標籤圖片
+    sticker: (index) => `${String(index).padStart(2, '0')}.png` // 01.png, 02.png, ...
+  }
 };
 
 module.exports = {

@@ -1,10 +1,21 @@
 /**
- * Image Processor Module
- * 處理貼圖圖片：去背、縮放、裁剪、符合 LINE 規格
+ * Image Processor Module v2.0
+ * 處理貼圖圖片：去背、縮放、裁剪、符合 LINE Creators Market 規格
+ *
+ * LINE 官方規格：https://creator.line.me/zh-hant/guideline/sticker/
+ * - 主要圖片：240 × 240 px
+ * - 貼圖圖片：最大 370 × 320 px
+ * - 標籤圖片：96 × 74 px
+ * - 格式：PNG（透明背景）
+ * - 解析度：72 dpi 以上
+ * - 色彩模式：RGB
+ * - 留白：10 px
  */
 
 const sharp = require('sharp');
 const axios = require('axios');
+const archiver = require('archiver');
+const { Readable } = require('stream');
 const { LineStickerSpecs } = require('./sticker-styles');
 
 /**
@@ -156,6 +167,7 @@ async function processStickerSet(stickerUrls) {
 
 /**
  * 生成主要圖片（從第一張貼圖）
+ * LINE 規格：240 × 240 px
  */
 async function generateMainImage(stickerUrl) {
   console.log('🎯 生成主要圖片 (240x240)');
@@ -164,10 +176,119 @@ async function generateMainImage(stickerUrl) {
 
 /**
  * 生成聊天室標籤圖片
+ * LINE 規格：96 × 74 px
  */
 async function generateTabImage(stickerUrl) {
   console.log('📑 生成標籤圖片 (96x74)');
   return await processImage(stickerUrl, 'tab');
+}
+
+/**
+ * 🎯 生成完整的 LINE 貼圖 ZIP 包
+ *
+ * ZIP 結構：
+ * ├── main.png      (240 × 240)
+ * ├── tab.png       (96 × 74)
+ * ├── 01.png        (最大 370 × 320)
+ * ├── 02.png
+ * ├── ...
+ * └── 40.png
+ */
+async function generateStickerZip(stickerUrls, setName = 'sticker_set') {
+  console.log(`📦 開始生成 LINE 貼圖 ZIP 包：${setName}`);
+  console.log(`📊 貼圖數量：${stickerUrls.length}`);
+
+  // 驗證數量
+  if (!LineStickerSpecs.validCounts.includes(stickerUrls.length)) {
+    throw new Error(`貼圖數量必須是 ${LineStickerSpecs.validCounts.join('/')} 張之一，目前：${stickerUrls.length} 張`);
+  }
+
+  const chunks = [];
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const archive = archiver('zip', {
+        zlib: { level: 9 } // 最高壓縮
+      });
+
+      archive.on('data', (chunk) => chunks.push(chunk));
+      archive.on('end', () => {
+        const zipBuffer = Buffer.concat(chunks);
+        console.log(`✅ ZIP 生成完成，大小：${(zipBuffer.length / 1024 / 1024).toFixed(2)} MB`);
+
+        // 檢查大小限制
+        if (zipBuffer.length > LineStickerSpecs.maxZipSize) {
+          reject(new Error(`ZIP 檔案過大：${(zipBuffer.length / 1024 / 1024).toFixed(2)} MB，上限 60 MB`));
+        } else {
+          resolve(zipBuffer);
+        }
+      });
+      archive.on('error', reject);
+
+      // 1. 主要圖片 (main.png)
+      console.log('📸 處理主要圖片...');
+      const mainBuffer = await generateMainImage(stickerUrls[0]);
+      archive.append(mainBuffer, { name: LineStickerSpecs.fileNaming.main });
+
+      // 2. 標籤圖片 (tab.png)
+      console.log('📑 處理標籤圖片...');
+      const tabBuffer = await generateTabImage(stickerUrls[0]);
+      archive.append(tabBuffer, { name: LineStickerSpecs.fileNaming.tab });
+
+      // 3. 貼圖圖片 (01.png ~ 40.png)
+      console.log('🖼️ 處理貼圖圖片...');
+      for (let i = 0; i < stickerUrls.length; i++) {
+        const url = stickerUrls[i];
+        console.log(`⏳ 處理貼圖 (${i + 1}/${stickerUrls.length})`);
+
+        try {
+          const stickerBuffer = await processImage(url, 'sticker');
+          const filename = LineStickerSpecs.fileNaming.sticker(i + 1);
+          archive.append(stickerBuffer, { name: filename });
+        } catch (error) {
+          console.error(`❌ 處理貼圖 ${i + 1} 失敗:`, error.message);
+          throw error;
+        }
+      }
+
+      // 完成打包
+      archive.finalize();
+
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+/**
+ * 驗證貼圖數量是否符合 LINE 規格
+ */
+function validateStickerCount(count) {
+  const valid = LineStickerSpecs.validCounts.includes(count);
+  return {
+    valid,
+    count,
+    validCounts: LineStickerSpecs.validCounts,
+    message: valid
+      ? `✅ 數量 ${count} 符合 LINE 規格`
+      : `❌ 數量 ${count} 不符合，必須是 ${LineStickerSpecs.validCounts.join('/')} 張之一`
+  };
+}
+
+/**
+ * 取得貼圖規格資訊
+ */
+function getStickerSpecs() {
+  return {
+    mainImage: `${LineStickerSpecs.mainImage.width} × ${LineStickerSpecs.mainImage.height} px`,
+    stickerImage: `最大 ${LineStickerSpecs.stickerImage.maxWidth} × ${LineStickerSpecs.stickerImage.maxHeight} px`,
+    tabImage: `${LineStickerSpecs.tabImage.width} × ${LineStickerSpecs.tabImage.height} px`,
+    padding: `${LineStickerSpecs.padding} px`,
+    format: LineStickerSpecs.format,
+    maxFileSize: '1 MB',
+    maxZipSize: '60 MB',
+    validCounts: LineStickerSpecs.validCounts
+  };
 }
 
 module.exports = {
@@ -175,6 +296,9 @@ module.exports = {
   processImage,
   processStickerSet,
   generateMainImage,
-  generateTabImage
+  generateTabImage,
+  generateStickerZip,
+  validateStickerCount,
+  getStickerSpecs
 };
 
