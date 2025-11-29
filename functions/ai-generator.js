@@ -1,11 +1,12 @@
 /**
- * AI Generator Module v2.0
+ * AI Generator Module v2.1
  * 使用 Gemini API 生成貼圖圖片（Chat Completions 格式）
  *
  * 新增功能：
  * - 角色一致性系統（Character ID）
  * - 風格強化層（Style Enhancer）
  * - 表情增強系統（Expression Enhancer）
+ * - DeepSeek 動態表情優化（隨機變化但保持一致性）
  */
 
 const axios = require('axios');
@@ -16,6 +17,11 @@ const {
   generateCharacterID,
   StickerStyles
 } = require('./sticker-styles');
+const {
+  isDeepSeekAvailable,
+  enhanceExpressions,
+  buildEnhancedPrompt
+} = require('./deepseek-enhancer');
 
 // AI 圖片生成 API 設定
 const AI_API_KEY = process.env.AI_IMAGE_API_KEY;
@@ -311,37 +317,67 @@ async function generateStickerSet(style, characterDescription, expressions) {
 }
 
 /**
- * 🎯 批次從照片生成貼圖組 V2（角色一致性系統）
+ * 🎯 批次從照片生成貼圖組 V2.1（角色一致性 + DeepSeek 動態優化）
  *
- * 使用 Character ID 確保整組貼圖的角色外觀 100% 一致
+ * 功能：
+ * - Character ID 確保整組貼圖的角色外觀 100% 一致
+ * - DeepSeek 動態優化表情描述，讓每組都有獨特變化
  */
 async function generateStickerSetFromPhoto(photoBase64, style, expressions) {
   const results = [];
   const total = expressions.length;
 
-  console.log(`📷 開始從照片批次生成 ${total} 張貼圖（V2 角色一致性系統）`);
+  console.log(`📷 開始從照片批次生成 ${total} 張貼圖（V2.1 DeepSeek 動態優化）`);
 
   // 🆔 生成角色一致性 ID（基於照片內容的 hash）
-  // 確保同一張照片永遠生成相同的 Character ID
   const characterID = generateCharacterID(photoBase64.slice(0, 1000) + style);
 
   console.log(`🆔 角色一致性 ID：${characterID}`);
   console.log(`🎨 風格：${style}`);
   console.log(`📝 表情數量：${total}`);
 
+  // 🧠 使用 DeepSeek 動態優化表情描述
+  let enhancedData = null;
+  if (isDeepSeekAvailable()) {
+    try {
+      enhancedData = await enhanceExpressions(style, expressions, characterID);
+      if (enhancedData) {
+        console.log(`✅ DeepSeek 表情優化成功！`);
+        console.log(`📝 角色基礎：${enhancedData.characterBase}`);
+      }
+    } catch (error) {
+      console.log(`⚠️ DeepSeek 優化失敗，使用預設描述：${error.message}`);
+    }
+  } else {
+    console.log(`ℹ️ DeepSeek 未設定，使用預設表情描述`);
+  }
+
   for (let i = 0; i < expressions.length; i++) {
     const expression = expressions[i];
     console.log(`⏳ 生成中 (${i + 1}/${total}): ${expression}`);
 
+    // 取得優化後的表情描述
+    const enhancedExpression = enhancedData?.expressions?.[expression] || null;
+    if (enhancedExpression) {
+      console.log(`   🎨 優化描述：${enhancedExpression.substring(0, 50)}...`);
+    }
+
     try {
-      // 傳入 Character ID 確保一致性
-      const imageUrl = await generateStickerFromPhoto(photoBase64, style, expression, characterID);
+      // 傳入 Character ID 和優化資料確保一致性
+      const imageUrl = await generateStickerFromPhotoEnhanced(
+        photoBase64,
+        style,
+        expression,
+        characterID,
+        enhancedData
+      );
       results.push({
         index: i + 1,
         expression,
+        enhancedExpression,
         imageUrl,
         status: 'completed',
-        characterID // 記錄使用的 Character ID
+        characterID
       });
     } catch (error) {
       results.push({
@@ -363,14 +399,101 @@ async function generateStickerSetFromPhoto(photoBase64, style, expressions) {
   const successCount = results.filter(r => r.status === 'completed').length;
   console.log(`✅ 照片貼圖批次生成完成：${successCount}/${total} 成功`);
   console.log(`🆔 所有貼圖使用 Character ID：${characterID}`);
+  console.log(`🧠 DeepSeek 優化：${enhancedData ? '已啟用' : '未啟用'}`);
 
   return results;
+}
+
+/**
+ * 🎨 使用 DeepSeek 優化的照片貼圖生成
+ */
+async function generateStickerFromPhotoEnhanced(photoBase64, style, expression, characterID, enhancedData) {
+  console.log(`🎨 生成照片貼圖：${expression} (${style}風格)`);
+
+  // 取得基礎 prompt
+  const { prompt: basePrompt, negativePrompt } = generatePhotoStickerPromptV2(style, expression, characterID);
+
+  // 如果有 DeepSeek 優化資料，增強 prompt
+  let finalPrompt = basePrompt;
+  if (enhancedData) {
+    const characterBase = enhancedData.characterBase || '';
+    const enhancedExpression = enhancedData.expressions?.[expression] || '';
+
+    if (characterBase || enhancedExpression) {
+      finalPrompt = `${basePrompt}
+
+=== DEEPSEEK DYNAMIC ENHANCEMENT ===
+Character consistency: ${characterBase}
+Expression variation: ${enhancedExpression}
+
+IMPORTANT: Apply these dynamic variations while maintaining the character identity code: ${characterID}`;
+    }
+  }
+
+  // 建立帶有圖片的請求內容
+  const content = [
+    {
+      type: 'text',
+      text: finalPrompt
+    },
+    {
+      type: 'image_url',
+      image_url: {
+        url: photoBase64.startsWith('data:') ? photoBase64 : `data:image/jpeg;base64,${photoBase64}`
+      }
+    }
+  ];
+
+  let lastError;
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      console.log(`   📤 API 請求 (嘗試 ${attempt}/${MAX_RETRIES})...`);
+
+      const response = await axios.post(`${AI_API_URL}/v1/chat/completions`, {
+        model: AI_MODEL,
+        messages: [
+          {
+            role: 'user',
+            content: content
+          }
+        ],
+        max_tokens: 4096
+      }, {
+        headers: {
+          'Authorization': `Bearer ${AI_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        timeout: 120000
+      });
+
+      const imageUrl = extractImageFromResponse(response);
+      console.log(`   ✅ 生成成功！`);
+      return imageUrl;
+
+    } catch (error) {
+      lastError = error;
+      console.error(`   ❌ 嘗試 ${attempt} 失敗: ${error.message}`);
+
+      if (error.response) {
+        console.error(`   API 錯誤詳情: ${JSON.stringify(error.response.data).substring(0, 200)}`);
+      }
+
+      if (attempt < MAX_RETRIES) {
+        const waitTime = INITIAL_RETRY_DELAY * Math.pow(2, attempt - 1);
+        console.log(`   ⏳ 等待 ${waitTime}ms 後重試...`);
+        await delay(waitTime);
+      }
+    }
+  }
+
+  throw new Error(`生成失敗（已重試 ${MAX_RETRIES} 次）: ${lastError.message}`);
 }
 
 module.exports = {
   generateStickerImage,
   generateStickerSet,
   generateStickerFromPhoto,
-  generateStickerSetFromPhoto
+  generateStickerSetFromPhoto,
+  generateStickerFromPhotoEnhanced
 };
 
