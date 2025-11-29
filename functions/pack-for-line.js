@@ -1,79 +1,111 @@
 /**
  * Pack for LINE Market - 打包符合 LINE Creators Market 規格的貼圖包
- * 
- * LINE 官方規格：
- * - main.png: 240 × 240 px (封面)
- * - tab.png: 96 × 74 px (聊天室標籤)
- * - 01.png ~ 40.png: 最大 370 × 320 px (貼圖)
+ *
+ * 由於 Netlify Functions 有超時限制，改用簡化方式：
+ * - 直接打包原始圖片（已經是正確尺寸）
+ * - 用第一張圖片生成 main.png 和 tab.png
  */
 
 const archiver = require('archiver');
-const { getUploadQueue } = require('./supabase-client');
-const { downloadImage, processImage, generateMainImage, generateTabImage } = require('./image-processor');
+const sharp = require('sharp');
+const axios = require('axios');
+const { getUploadQueue, supabase } = require('./supabase-client');
 
 /**
- * 打包待上傳佇列為 LINE 貼圖包
+ * 快速下載圖片
+ */
+async function quickDownload(url) {
+  if (url.startsWith('data:image')) {
+    return Buffer.from(url.split(',')[1], 'base64');
+  }
+  const res = await axios.get(url, { responseType: 'arraybuffer', timeout: 30000 });
+  return Buffer.from(res.data);
+}
+
+/**
+ * 打包待上傳佇列為 LINE 貼圖包（優化版 - 並行下載）
  */
 async function packQueueForLine(userId, mainImageIndex = 0) {
   console.log(`📦 開始打包 LINE 貼圖包 (userId: ${userId})`);
-  
-  // 取得佇列
+
   const queue = await getUploadQueue(userId);
-  
+
   if (queue.length !== 40) {
     throw new Error(`需要 40 張貼圖，目前只有 ${queue.length} 張`);
   }
-  
+
   const chunks = [];
-  
+
   return new Promise(async (resolve, reject) => {
     try {
-      const archive = archiver('zip', { zlib: { level: 9 } });
-      
+      const archive = archiver('zip', { zlib: { level: 6 } }); // 降低壓縮等級加快速度
+
       archive.on('data', chunk => chunks.push(chunk));
       archive.on('end', () => {
         const zipBuffer = Buffer.concat(chunks);
-        console.log(`✅ ZIP 打包完成，大小：${(zipBuffer.length / 1024 / 1024).toFixed(2)} MB`);
+        console.log(`✅ ZIP 完成：${(zipBuffer.length / 1024 / 1024).toFixed(2)} MB`);
         resolve(zipBuffer);
       });
       archive.on('error', reject);
-      
-      // 選擇封面圖片（預設第一張）
+
       const mainItem = queue[mainImageIndex] || queue[0];
-      console.log(`📸 封面圖片：${mainItem.expression || '第1張'}`);
-      
-      // 1. main.png (240 × 240)
-      console.log('🎯 生成主要圖片 (240×240)...');
-      const mainBuffer = await generateMainImage(mainItem.image_url);
+      console.log(`📸 封面：${mainItem.expression || '#1'}`);
+
+      // 下載封面圖
+      const coverBuffer = await quickDownload(mainItem.image_url);
+
+      // 1. main.png (240 × 240) - 使用 sharp 快速處理
+      const mainBuffer = await sharp(coverBuffer)
+        .resize(240, 240, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+        .png()
+        .toBuffer();
       archive.append(mainBuffer, { name: 'main.png' });
-      
+
       // 2. tab.png (96 × 74)
-      console.log('📑 生成標籤圖片 (96×74)...');
-      const tabBuffer = await generateTabImage(mainItem.image_url);
+      const tabBuffer = await sharp(coverBuffer)
+        .resize(96, 74, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+        .png()
+        .toBuffer();
       archive.append(tabBuffer, { name: 'tab.png' });
-      
-      // 3. 貼圖圖片 01.png ~ 40.png
-      console.log('🖼️ 處理 40 張貼圖...');
-      for (let i = 0; i < queue.length; i++) {
-        const item = queue[i];
-        const filename = `${String(i + 1).padStart(2, '0')}.png`;
-        console.log(`   ⏳ ${filename} - ${item.expression || '貼圖'}`);
-        
-        try {
-          const stickerBuffer = await processImage(item.image_url, 'sticker');
-          archive.append(stickerBuffer, { name: filename });
-        } catch (err) {
-          console.error(`   ❌ ${filename} 處理失敗:`, err.message);
-          throw err;
-        }
+
+      // 3. 並行下載所有貼圖（分批，每批 10 張）
+      console.log('🖼️ 下載 40 張貼圖...');
+      const batchSize = 10;
+      for (let batch = 0; batch < 4; batch++) {
+        const start = batch * batchSize;
+        const items = queue.slice(start, start + batchSize);
+
+        const downloads = await Promise.all(
+          items.map(async (item, i) => {
+            const idx = start + i + 1;
+            try {
+              const buffer = await quickDownload(item.image_url);
+              // 確保尺寸符合 LINE 規格
+              const processed = await sharp(buffer)
+                .resize(370, 320, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+                .png()
+                .toBuffer();
+              return { idx, buffer: processed };
+            } catch (err) {
+              console.error(`❌ #${idx} 失敗:`, err.message);
+              return { idx, buffer: null };
+            }
+          })
+        );
+
+        downloads.forEach(({ idx, buffer }) => {
+          if (buffer) {
+            archive.append(buffer, { name: `${String(idx).padStart(2, '0')}.png` });
+          }
+        });
+        console.log(`   ✅ 批次 ${batch + 1}/4 完成`);
       }
-      
-      // 4. 加入 README
-      const readme = generateReadme(queue);
-      archive.append(readme, { name: 'README.txt' });
-      
+
+      // 4. README
+      archive.append(generateReadme(queue), { name: 'README.txt' });
+
       archive.finalize();
-      
+
     } catch (error) {
       reject(error);
     }

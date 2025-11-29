@@ -30,6 +30,10 @@
 [functions."admin-cleanup"]
   timeout = 60
 
+# LINE 貼圖包打包（需要較長時間）
+[functions."pack-for-line"]
+  timeout = 26
+
 # API 路由重定向
 [[redirects]]
   from = "/api/admin/rich-menu-info"
