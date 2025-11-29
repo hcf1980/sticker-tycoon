@@ -98,14 +98,51 @@ function generateWelcomeFlexMessage() {
             color: '#FF6B6B'
           },
           {
-            type: 'button',
-            style: 'secondary',
-            height: 'sm',
-            action: {
-              type: 'message',
-              label: '📁 我的貼圖組',
-              text: '我的貼圖'
-            }
+            type: 'box',
+            layout: 'horizontal',
+            spacing: 'sm',
+            contents: [
+              {
+                type: 'button',
+                style: 'secondary',
+                height: 'sm',
+                flex: 1,
+                action: {
+                  type: 'message',
+                  label: '📁 我的貼圖',
+                  text: '我的貼圖'
+                }
+              },
+              {
+                type: 'button',
+                style: 'secondary',
+                height: 'sm',
+                flex: 1,
+                action: {
+                  type: 'message',
+                  label: '🎁 推薦好友',
+                  text: '推薦好友'
+                }
+              }
+            ]
+          },
+          {
+            type: 'box',
+            layout: 'vertical',
+            margin: 'md',
+            paddingAll: 'sm',
+            backgroundColor: '#FFF3E0',
+            cornerRadius: 'md',
+            contents: [
+              {
+                type: 'text',
+                text: '🎁 推薦好友，雙方各得 10 代幣！',
+                size: 'xs',
+                color: '#E65100',
+                align: 'center',
+                weight: 'bold'
+              }
+            ]
           }
         ],
         flex: 0
