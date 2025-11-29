@@ -99,6 +99,9 @@ async function getOrCreateUser(lineUserId, displayName = null, pictureUrl = null
       return user;
     }
 
+    // 生成推薦碼
+    const referralCode = generateReferralCode();
+
     // 建立新用戶
     const { data: newUser, error: insertError } = await getSupabaseClient()
       .from('users')
@@ -106,7 +109,8 @@ async function getOrCreateUser(lineUserId, displayName = null, pictureUrl = null
         line_user_id: lineUserId,
         display_name: displayName,
         picture_url: pictureUrl,
-        sticker_credits: 40  // 初始 40 代幣
+        sticker_credits: 40,  // 初始 40 代幣
+        referral_code: referralCode
       }])
       .select()
       .single();
@@ -747,6 +751,176 @@ async function getTokenTransactions(lineUserId, limit = 20) {
   }
 }
 
+// ============================================
+// 推薦系統
+// ============================================
+
+/**
+ * 生成 6 位推薦碼
+ */
+function generateReferralCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';  // 排除容易混淆的字符
+  let code = '';
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
+/**
+ * 根據推薦碼取得用戶
+ */
+async function getUserByReferralCode(referralCode) {
+  try {
+    const { data, error } = await getSupabaseClient()
+      .from('users')
+      .select('*')
+      .eq('referral_code', referralCode.toUpperCase())
+      .limit(1);
+
+    if (error) throw error;
+    return data && data.length > 0 ? data[0] : null;
+  } catch (error) {
+    console.error('查詢推薦碼失敗:', error);
+    return null;
+  }
+}
+
+/**
+ * 取得用戶的推薦資訊
+ */
+async function getUserReferralInfo(lineUserId) {
+  try {
+    const { data: user, error } = await getSupabaseClient()
+      .from('users')
+      .select('referral_code, referral_count, referred_by')
+      .eq('line_user_id', lineUserId)
+      .single();
+
+    if (error) throw error;
+
+    // 查詢推薦成功記錄
+    const { data: referrals } = await getSupabaseClient()
+      .from('referrals')
+      .select('referee_id, created_at')
+      .eq('referrer_id', lineUserId)
+      .order('created_at', { ascending: false });
+
+    return {
+      referralCode: user?.referral_code,
+      referralCount: user?.referral_count || 0,
+      referredBy: user?.referred_by,
+      referrals: referrals || []
+    };
+  } catch (error) {
+    console.error('取得推薦資訊失敗:', error);
+    return { referralCode: null, referralCount: 0, referredBy: null, referrals: [] };
+  }
+}
+
+/**
+ * 使用推薦碼（綁定推薦關係並發放獎勵）
+ */
+async function applyReferralCode(refereeUserId, referralCode) {
+  try {
+    // 1. 查詢被推薦者資料
+    const { data: referee, error: refereeError } = await getSupabaseClient()
+      .from('users')
+      .select('*')
+      .eq('line_user_id', refereeUserId)
+      .single();
+
+    if (refereeError || !referee) {
+      return { success: false, error: '找不到用戶資料' };
+    }
+
+    // 2. 檢查是否已經被推薦過
+    if (referee.referred_by) {
+      return { success: false, error: '你已經使用過推薦碼了' };
+    }
+
+    // 3. 查詢推薦人
+    const referrer = await getUserByReferralCode(referralCode);
+    if (!referrer) {
+      return { success: false, error: '推薦碼無效，請確認後重試' };
+    }
+
+    // 4. 檢查是否推薦自己
+    if (referrer.line_user_id === refereeUserId) {
+      return { success: false, error: '不能使用自己的推薦碼' };
+    }
+
+    // 5. 檢查推薦人是否已達上限（3次）
+    if (referrer.referral_count >= 3) {
+      return { success: false, error: '此推薦碼已達使用上限' };
+    }
+
+    // 6. 開始發放獎勵
+    const REFERRAL_TOKENS = 10;
+
+    // 6.1 更新被推薦者
+    const newRefereeBalance = (referee.sticker_credits || 0) + REFERRAL_TOKENS;
+    await getSupabaseClient()
+      .from('users')
+      .update({
+        sticker_credits: newRefereeBalance,
+        referred_by: referrer.line_user_id,
+        updated_at: new Date().toISOString()
+      })
+      .eq('line_user_id', refereeUserId);
+
+    // 6.2 更新推薦人
+    const newReferrerBalance = (referrer.sticker_credits || 0) + REFERRAL_TOKENS;
+    const newReferralCount = (referrer.referral_count || 0) + 1;
+    await getSupabaseClient()
+      .from('users')
+      .update({
+        sticker_credits: newReferrerBalance,
+        referral_count: newReferralCount,
+        updated_at: new Date().toISOString()
+      })
+      .eq('line_user_id', referrer.line_user_id);
+
+    // 6.3 記錄推薦關係
+    await getSupabaseClient()
+      .from('referrals')
+      .insert([{
+        referrer_id: referrer.line_user_id,
+        referee_id: refereeUserId,
+        referrer_tokens: REFERRAL_TOKENS,
+        referee_tokens: REFERRAL_TOKENS
+      }]);
+
+    // 6.4 記錄代幣交易
+    await recordTokenTransaction(
+      refereeUserId,
+      REFERRAL_TOKENS,
+      newRefereeBalance,
+      'referral_bonus',
+      `使用推薦碼 ${referralCode} 獲得獎勵`
+    );
+
+    await recordTokenTransaction(
+      referrer.line_user_id,
+      REFERRAL_TOKENS,
+      newReferrerBalance,
+      'referral_bonus',
+      `好友使用推薦碼加入獲得獎勵`
+    );
+
+    return {
+      success: true,
+      referrerName: referrer.display_name || '好友',
+      tokensAwarded: REFERRAL_TOKENS,
+      newBalance: newRefereeBalance,
+      referrerNewCount: newReferralCount
+    };
+  } catch (error) {
+    console.error('使用推薦碼失敗:', error);
+    return { success: false, error: '系統錯誤，請稍後再試' };
+  }
+}
+
 module.exports = {
   getSupabaseClient,
   isReplyTokenUsed,
@@ -771,6 +945,11 @@ module.exports = {
   getUserTokenBalance,
   deductTokens,
   addTokens,
-  getTokenTransactions
+  getTokenTransactions,
+  // 推薦系統
+  generateReferralCode,
+  getUserByReferralCode,
+  applyReferralCode,
+  getUserReferralInfo
 };
 

@@ -5,7 +5,7 @@
 
 const line = require('@line/bot-sdk');
 const axios = require('axios');
-const { isReplyTokenUsed, recordReplyToken, getOrCreateUser, getUserStickerSets, getUserLatestTask, getUserPendingTasks, getStickerSet, getStickerImages, deleteStickerSet, addToUploadQueue, removeFromUploadQueue, getUploadQueue, clearUploadQueue, getUserTokenBalance, getTokenTransactions } = require('./supabase-client');
+const { isReplyTokenUsed, recordReplyToken, getOrCreateUser, getUserStickerSets, getUserLatestTask, getUserPendingTasks, getStickerSet, getStickerImages, deleteStickerSet, addToUploadQueue, removeFromUploadQueue, getUploadQueue, clearUploadQueue, getUserTokenBalance, getTokenTransactions, getUserReferralInfo, applyReferralCode } = require('./supabase-client');
 const { ConversationStage, getConversationState, updateConversationState, resetConversationState, isInCreationFlow } = require('./conversation-state');
 const { generateWelcomeFlexMessage } = require('./sticker-flex-message');
 const { handleStartCreate, handleNaming, handleStyleSelection, handleCharacterDescription, handleExpressionTemplate, handleSceneSelection, handleCustomScene, handleCountSelection, handlePhotoUpload } = require('./handlers/create-handler');
@@ -107,6 +107,28 @@ async function handleTextMessage(replyToken, userId, text) {
     // 購買代幣
     if (text === '購買代幣' || text === '儲值' || text === '買代幣') {
       return await handlePurchaseInfo(replyToken);
+    }
+
+    // 推薦好友
+    if (text === '推薦好友' || text === '我的推薦碼' || text === '推薦碼' || text === '邀請好友') {
+      return await handleReferralInfo(replyToken, userId);
+    }
+
+    // 使用推薦碼
+    if (text.startsWith('輸入推薦碼') || text.startsWith('使用推薦碼')) {
+      const code = text.replace(/^(輸入推薦碼|使用推薦碼)\s*/, '').trim();
+      if (code) {
+        return await handleApplyReferralCode(replyToken, userId, code);
+      }
+      return getLineClient().replyMessage(replyToken, {
+        type: 'text',
+        text: '📝 請輸入推薦碼\n\n格式：輸入推薦碼 XXXXXX\n例如：輸入推薦碼 ABC123'
+      });
+    }
+
+    // 分享推薦碼
+    if (text === '分享推薦碼') {
+      return await handleShareReferralCode(replyToken, userId);
     }
 
     // 查看特定貼圖組
@@ -1496,4 +1518,169 @@ async function handlePurchaseInfo(replyToken) {
   };
 
   return getLineClient().replyMessage(replyToken, [message, qrMessage]);
+}
+
+/**
+ * 處理推薦好友資訊
+ */
+async function handleReferralInfo(replyToken, userId) {
+  const info = await getUserReferralInfo(userId);
+  const remainingInvites = 3 - (info.referralCount || 0);
+
+  const message = {
+    type: 'flex',
+    altText: '🎁 推薦好友賺代幣',
+    contents: {
+      type: 'bubble',
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        contents: [
+          { type: 'text', text: '🎁 推薦好友賺代幣', weight: 'bold', size: 'xl', color: '#FF6B6B' },
+          { type: 'separator', margin: 'lg' },
+          {
+            type: 'box',
+            layout: 'vertical',
+            margin: 'lg',
+            contents: [
+              { type: 'text', text: '邀請好友一起玩，雙方各得 10 代幣！', size: 'sm', color: '#666666', wrap: true },
+              { type: 'text', text: `最多可邀請 3 位好友（還可邀請 ${remainingInvites} 位）`, size: 'sm', color: '#666666', margin: 'md' }
+            ]
+          },
+          { type: 'separator', margin: 'lg' },
+          {
+            type: 'box',
+            layout: 'vertical',
+            margin: 'lg',
+            backgroundColor: '#FFF5F5',
+            cornerRadius: 'lg',
+            paddingAll: 'lg',
+            contents: [
+              { type: 'text', text: '你的專屬推薦碼', size: 'sm', color: '#888888', align: 'center' },
+              { type: 'text', text: info.referralCode || '載入中...', size: 'xxl', weight: 'bold', align: 'center', color: '#FF6B6B', margin: 'sm' },
+              { type: 'text', text: '請好友輸入此碼即可', size: 'xs', color: '#999999', align: 'center', margin: 'sm' }
+            ]
+          },
+          {
+            type: 'box',
+            layout: 'vertical',
+            margin: 'lg',
+            contents: [
+              { type: 'text', text: '📋 如何使用？', weight: 'bold', size: 'sm' },
+              { type: 'text', text: '1. 邀請好友加入貼圖大亨', size: 'xs', color: '#666666', margin: 'sm' },
+              { type: 'text', text: '2. 請好友輸入「輸入推薦碼 ' + (info.referralCode || 'XXXXXX') + '」', size: 'xs', color: '#666666', margin: 'sm' },
+              { type: 'text', text: '3. 雙方各獲得 10 代幣！🎉', size: 'xs', color: '#666666', margin: 'sm' }
+            ]
+          },
+          info.referralCount > 0 ? {
+            type: 'box',
+            layout: 'vertical',
+            margin: 'lg',
+            contents: [
+              { type: 'text', text: `✅ 已成功邀請 ${info.referralCount} 位好友`, size: 'sm', color: '#28A745', align: 'center' }
+            ]
+          } : { type: 'filler' }
+        ]
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        contents: [
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#FF6B6B',
+            action: {
+              type: 'message',
+              label: '📋 複製分享訊息',
+              text: `分享推薦碼`
+            }
+          }
+        ]
+      }
+    }
+  };
+
+  return getLineClient().replyMessage(replyToken, message);
+}
+
+/**
+ * 處理使用推薦碼
+ */
+async function handleApplyReferralCode(replyToken, userId, code) {
+  const result = await applyReferralCode(userId, code.toUpperCase());
+
+  if (result.success) {
+    return getLineClient().replyMessage(replyToken, {
+      type: 'flex',
+      altText: '🎉 推薦碼使用成功！',
+      contents: {
+        type: 'bubble',
+        body: {
+          type: 'box',
+          layout: 'vertical',
+          contents: [
+            { type: 'text', text: '🎉 推薦碼使用成功！', weight: 'bold', size: 'xl', color: '#28A745', align: 'center' },
+            { type: 'separator', margin: 'lg' },
+            {
+              type: 'box',
+              layout: 'vertical',
+              margin: 'lg',
+              backgroundColor: '#F0FFF4',
+              cornerRadius: 'lg',
+              paddingAll: 'lg',
+              contents: [
+                { type: 'text', text: `+${result.tokensAwarded} 代幣`, size: 'xxl', weight: 'bold', align: 'center', color: '#28A745' },
+                { type: 'text', text: `目前餘額：${result.newBalance} 代幣`, size: 'md', align: 'center', color: '#666666', margin: 'md' }
+              ]
+            },
+            { type: 'text', text: `感謝 ${result.referrerName} 的推薦！`, size: 'sm', color: '#666666', align: 'center', margin: 'lg' },
+            { type: 'text', text: '對方也獲得了 10 代幣獎勵 🎁', size: 'xs', color: '#999999', align: 'center', margin: 'sm' }
+          ]
+        },
+        footer: {
+          type: 'box',
+          layout: 'vertical',
+          contents: [
+            {
+              type: 'button',
+              style: 'primary',
+              color: '#FF6B6B',
+              action: { type: 'message', label: '🎨 開始創建貼圖', text: '創建貼圖' }
+            }
+          ]
+        }
+      }
+    });
+  } else {
+    return getLineClient().replyMessage(replyToken, {
+      type: 'text',
+      text: `❌ ${result.error}\n\n💡 如果你有推薦碼，請輸入：\n輸入推薦碼 XXXXXX`
+    });
+  }
+}
+
+/**
+ * 處理分享推薦碼
+ */
+async function handleShareReferralCode(replyToken, userId) {
+  const info = await getUserReferralInfo(userId);
+  const code = info.referralCode || '載入中';
+
+  // 生成分享訊息
+  const shareText = `🎁 我在用「貼圖大亨」創建專屬 LINE 貼圖！
+
+輸入我的推薦碼，你我都能獲得 10 代幣 🎉
+
+📋 推薦碼：${code}
+
+👉 加入方式：
+1. 加入 LINE 官方帳號 @276vcfne
+2. 輸入「輸入推薦碼 ${code}」
+3. 一起來創建可愛貼圖吧！`;
+
+  return getLineClient().replyMessage(replyToken, {
+    type: 'text',
+    text: shareText
+  });
 }
