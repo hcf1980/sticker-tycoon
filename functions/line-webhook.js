@@ -1369,8 +1369,8 @@ async function sendUploadQueueCarousel(replyToken, queue, page = 1, userId) {
           color: '#06C755',
           action: {
             type: 'uri',
-            label: '📥 下載貼圖包',
-            uri: `https://sticker-tycoon.netlify.app/download?userId=${encodeURIComponent(userId || '')}`
+            label: '📥 上架 LINE Market',
+            uri: `https://sticker-tycoon.netlify.app/queue.html?userId=${encodeURIComponent(userId || '')}`
           }
         }] : []),
         // 網頁版完整查看
