@@ -31,10 +31,10 @@ function generateCharacterID(characterDescription) {
 
 const StyleEnhancer = {
   realistic: {
-    lighting: "cinematic three-point lighting, natural soft shadows, professional studio quality",
-    composition: "professional portrait framing, balanced proportions, movie poster aesthetic",
-    brushwork: "refined digital painting strokes, subtle skin texture, photorealistic details",
-    mood: "cinematic Hollywood quality, professional polished feel, lifelike presence"
+    lighting: "soft diffused beauty lighting, gentle fill light, flattering glow on face",
+    composition: "beauty portrait framing, flawless skin focus, elegant proportions",
+    brushwork: "smooth airbrushed skin, subtle pore texture, refined soft details",
+    mood: "beauty camera aesthetic, youthful radiant glow, naturally enhanced look"
   },
   cute: {
     lighting: "soft ambient lighting, gentle bounce light, warm glow",
@@ -148,20 +148,19 @@ const ExpressionEnhancer = {
 const StickerStyles = {
   realistic: {
     id: 'realistic',
-    name: '美式寫實',
-    emoji: '🎬',
-    description: '美式寫實風格、電影感、精緻細節',
+    name: '美顏真實',
+    emoji: '📸',
+    description: '美顏相機風、細緻柔膚、自然美感',
     promptBase: `
-      American realistic illustration style, cinematic quality,
-      detailed facial features, natural skin texture, lifelike proportions,
-      professional portrait lighting, subtle color grading,
-      high-quality digital painting, photorealistic shading,
-      movie poster aesthetic, sharp refined details
+      beauty camera style portrait, soft airbrushed skin texture,
+      natural beauty enhancement, flawless complexion, youthful glow,
+      soft diffused lighting, gentle skin smoothing, refined facial features,
+      warm healthy skin tone, subtle makeup look, naturally beautiful
     `,
     negativePrompt: `
       cartoon, anime, chibi, pixel art, doodle,
-      flat colors, simple shapes, exaggerated proportions,
-      blurry, low quality, distorted features
+      harsh shadows, rough skin texture, exaggerated features,
+      blurry, low quality, distorted proportions
     `
   },
 
