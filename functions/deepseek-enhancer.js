@@ -86,7 +86,7 @@ ${expressions.map((exp, i) => `${i + 1}. ${exp}`).join('\n')}
           content: prompt
         }
       ],
-      temperature: 0.8, // 增加隨機性
+      temperature: 0.3, // 降低隨機性，確保一致性
       max_tokens: 2000
     }, {
       headers: {

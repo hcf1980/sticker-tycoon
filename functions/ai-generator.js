@@ -337,10 +337,9 @@ async function generateStickerSetFromPhoto(photoBase64, style, expressions) {
   console.log(`📝 表情數量：${total}`);
 
   // 🧠 使用 DeepSeek 動態優化表情描述
-  // 🚨 暫時關閉 DeepSeek，測試純靜態 Prompt 的一致性
-  // 因為 DeepSeek 動態描述可能導致每張圖有不同的細節
+  // DeepSeek 動態優化（已降低 temperature 確保一致性）
   let enhancedData = null;
-  const USE_DEEPSEEK = false; // 設為 false 測試一致性
+  const USE_DEEPSEEK = true; // 重新啟用
 
   if (USE_DEEPSEEK && isDeepSeekAvailable()) {
     try {
