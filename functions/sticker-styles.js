@@ -384,6 +384,10 @@ const StickerStyles = {
 /**
  * 🖼️ 人物構圖模板
  * 控制貼圖中人物的取景範圍
+ *
+ * ⚠️ LINE 貼圖規格：370px × 320px，需留邊 10px
+ * 有效繪製區域：350px × 300px
+ * 目標：角色佔有效區域 85-90%
  */
 const FramingTemplates = {
   fullbody: {
@@ -395,10 +399,13 @@ const FramingTemplates = {
       FULL BODY shot from head to feet,
       entire body visible including legs and feet,
       character standing or in full body action pose,
-      plenty of space around character for movement,
-      full figure composition showing complete outfit
+      CHARACTER MUST FILL 85-90% of the frame height,
+      MINIMAL padding around character (only 10px margin needed),
+      character should be LARGE and dominant in composition,
+      full figure composition showing complete outfit,
+      AVOID excessive empty space around character
     `,
-    characterFocus: 'full body visible, head to toe, complete figure'
+    characterFocus: 'full body visible, head to toe, FILLING 85-90% of frame'
   },
   halfbody: {
     id: 'halfbody',
@@ -409,10 +416,13 @@ const FramingTemplates = {
       UPPER BODY shot from waist up,
       torso, arms and head clearly visible,
       hands and arm gestures prominent,
-      medium shot composition,
-      waist-up framing with room for hand movements
+      CHARACTER MUST FILL 85-90% of the frame,
+      LARGE prominent figure with minimal margins,
+      waist-up framing with room for hand movements,
+      character should dominate the composition,
+      AVOID excessive empty space - character is the focus
     `,
-    characterFocus: 'upper body, waist up, torso and arms visible'
+    characterFocus: 'upper body, waist up, LARGE and FILLING 85-90% of frame'
   },
   portrait: {
     id: 'portrait',
@@ -422,12 +432,14 @@ const FramingTemplates = {
     promptAddition: `
       HEAD AND SHOULDERS portrait shot,
       face is the main focus,
+      HEAD MUST FILL 85-90% of the frame,
+      LARGE head composition with minimal margins,
       shoulders visible for context,
-      classic portrait framing,
       facial expression clearly readable,
-      head takes up most of the frame
+      head takes up MOST of the frame with only 10px padding,
+      AVOID small head with too much empty space
     `,
-    characterFocus: 'head and shoulders, face prominent, portrait style'
+    characterFocus: 'head and shoulders, LARGE face FILLING 85-90% of frame'
   },
   closeup: {
     id: 'closeup',
@@ -436,13 +448,15 @@ const FramingTemplates = {
     description: '臉部特寫，表情超大',
     promptAddition: `
       EXTREME CLOSE-UP on face,
-      face fills most of the frame,
+      FACE FILLS 90% of the frame,
       eyes and facial expression are the main focus,
       dramatic close-up composition,
       every facial detail visible,
-      intimate emotional connection
+      intimate emotional connection,
+      MINIMAL margins - face should nearly touch edges,
+      NO excessive empty space around face
     `,
-    characterFocus: 'face close-up, eyes and expression dominant, filling frame'
+    characterFocus: 'face close-up, FILLING 90% of frame, nearly edge-to-edge'
   }
 };
 
@@ -594,19 +608,26 @@ const SceneTemplates = {
 
 /**
  * 生成完整的 AI 提示詞（舊版，保留向後兼容）
+ *
+ * ⚠️ LINE 貼圖規格：370px × 320px，需留邊 10px
+ * 目標：角色佔有效區域 85-90%
  */
 function generateStickerPrompt(style, characterDescription, expression) {
   const styleConfig = StickerStyles[style] || StickerStyles.cute;
 
   return {
-    prompt: `${styleConfig.promptBase}, ${characterDescription}, showing expression: ${expression}, sticker design, transparent background, PNG format, centered composition, high quality illustration`,
-    negativePrompt: `${styleConfig.negativePrompt}, text, watermark, signature, border, frame, background scenery, multiple characters`
+    prompt: `${styleConfig.promptBase}, ${characterDescription}, showing expression: ${expression}, sticker design, transparent background, PNG format, 370x320px LINE sticker, character MUST FILL 85-90% of frame, LARGE dominant figure with minimal margins, high quality illustration`,
+    negativePrompt: `${styleConfig.negativePrompt}, text, watermark, signature, border, frame, background scenery, multiple characters, tiny character, small figure, excessive whitespace, too much empty space`
   };
 }
 
 /**
  * 🎯 生成完整的 AI 提示詞 V2（增強版）
  * 包含：角色一致性、風格強化、表情增強
+ *
+ * ⚠️ LINE 貼圖規格：370px × 320px，需留邊 10px
+ * 有效繪製區域：350px × 300px
+ * 目標：角色佔有效區域 85-90%
  */
 function generateStickerPromptV2(style, characterDescription, expression) {
   const styleConfig = StickerStyles[style] || StickerStyles.cute;
@@ -630,13 +651,20 @@ function generateStickerPromptV2(style, characterDescription, expression) {
     EXPRESSION: ${expressionEnhance},
     EMOTION: ${expression},
 
+    === SIZE & FILL (CRITICAL) ===
+    LINE STICKER: 370px × 320px with 10px safe margin,
+    CHARACTER MUST FILL 85-90% of the frame,
+    LARGE dominant figure with minimal empty space,
+    Character should nearly touch the safe margins,
+    NO tiny character - must be IMPACTFUL at small display size,
+
     high-charm factor, expressive pose,
     LINE-sticker optimized clarity,
     transparent background,
     sticker illustration, high readability,
     thick clean outline, vector-friendly quality,
     visually iconic mascot design,
-    single character only, centered composition
+    single character only
   `.replace(/\s+/g, ' ').trim();
 
   const negativePrompt = `
@@ -646,7 +674,9 @@ function generateStickerPromptV2(style, characterDescription, expression) {
     multiple characters, messy background, complex background,
     inconsistent character features, deformed, bad anatomy,
     low-resolution, blurry, pixelated, jpeg artifacts,
-    border, frame, logo, words, letters, caption
+    border, frame, logo, words, letters, caption,
+    tiny character, small figure, excessive whitespace, too much empty space,
+    character too small, miniature figure, distant shot
   `.replace(/\s+/g, ' ').trim();
 
   return {
@@ -753,15 +783,31 @@ ${framing.promptAddition}
 - CHARACTER FOCUS: ${framing.characterFocus}
 - This framing style is CRITICAL - follow it strictly!
 
+=== 📐 SIZE & FILL REQUIREMENTS (CRITICAL) ===
+LINE STICKER SPECS: 370px width × 320px height
+SAFE MARGIN: 10px on all sides (required by LINE)
+EFFECTIVE DRAWING AREA: 350px × 300px
+
+⚠️ CHARACTER MUST FILL 85-90% OF THE EFFECTIVE AREA:
+- Character should be LARGE and DOMINANT
+- MINIMAL empty space around character
+- Only ~10px padding from edges needed
+- Character should nearly touch the safe margins
+- DO NOT make character too small with excessive whitespace
+- The sticker should look FULL and IMPACTFUL at small display size
+
 === ⚠️ TECHNICAL REQUIREMENTS (STRICT) ===
 1. BACKGROUND: 100% TRANSPARENT (alpha=0) - NO white, NO gray
-2. OUTLINES: Thick clean lines for visibility
-3. COMPOSITION: Dynamic asymmetric layout based on ${framing.name} framing
+2. OUTLINES: Thick clean lines for visibility at small size
+3. COMPOSITION: Character FILLS 85-90% of frame, dynamic layout
 4. IMAGE SIZE: 370px width × 320px height
+5. FILL RATIO: Character + decorations should occupy most of the canvas
 
 === 🚫 ABSOLUTELY FORBIDDEN ===
 - NO circular frame, NO round border, NO circle crop
 - NO avatar style, NO profile picture frame
+- NO tiny character with excessive empty space
+- NO character smaller than 80% of frame
 - Character must be FREE-FLOATING on transparent background
 
 === 🎨 COLOR & CONSISTENCY ===
@@ -770,14 +816,16 @@ ${framing.promptAddition}
 - HIGH SATURATION: Vivid, vibrant colors
 - HIGH CONTRAST: Strong visual impact
 
-OUTPUT: ${styleConfig.name} LINE sticker with ${popText ? `"${popText}" text and ` : ''}decorations, 370x320px, TRANSPARENT background.`;
+OUTPUT: ${styleConfig.name} LINE sticker with ${popText ? `"${popText}" text and ` : ''}decorations, 370x320px, character FILLING 85-90% of frame, TRANSPARENT background.`;
 
   const negativePrompt = `
     white background, gray background, colored background, solid background,
     circular frame, round border, circle crop, avatar style, profile picture frame,
     full body with legs, feet showing,
     different face, inconsistent character, pale skin, gray skin,
-    realistic photo, 3D render, blurry, low quality
+    realistic photo, 3D render, blurry, low quality,
+    tiny character, small figure, excessive whitespace, too much empty space,
+    character too small, miniature figure, distant shot, far away
   `.replace(/\s+/g, ' ').trim();
 
   return {
