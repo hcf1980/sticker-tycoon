@@ -337,8 +337,12 @@ async function generateStickerSetFromPhoto(photoBase64, style, expressions) {
   console.log(`📝 表情數量：${total}`);
 
   // 🧠 使用 DeepSeek 動態優化表情描述
+  // 🚨 暫時關閉 DeepSeek，測試純靜態 Prompt 的一致性
+  // 因為 DeepSeek 動態描述可能導致每張圖有不同的細節
   let enhancedData = null;
-  if (isDeepSeekAvailable()) {
+  const USE_DEEPSEEK = false; // 設為 false 測試一致性
+
+  if (USE_DEEPSEEK && isDeepSeekAvailable()) {
     try {
       enhancedData = await enhanceExpressions(style, expressions, characterID);
       if (enhancedData) {
@@ -349,7 +353,7 @@ async function generateStickerSetFromPhoto(photoBase64, style, expressions) {
       console.log(`⚠️ DeepSeek 優化失敗，使用預設描述：${error.message}`);
     }
   } else {
-    console.log(`ℹ️ DeepSeek 未設定，使用預設表情描述`);
+    console.log(`ℹ️ DeepSeek 已關閉，使用純靜態 Prompt 確保一致性`);
   }
 
   for (let i = 0; i < expressions.length; i++) {
@@ -429,30 +433,18 @@ Expression detail: ${enhancedExpression}`;
     }
   }
 
-  // 🔒 強制加入絕對要求（放在最後，AI 會更注重最後的指令）
-  // 符合 LINE Creators Market 審核準則
+  // 🔒 極簡最終要求（放在最後）
   const absoluteRequirements = `
 
-=== 🚨 FINAL CHECK - LINE REVIEW WILL REJECT IF: ===
-❌ Background is NOT transparent (must be pure alpha channel)
-❌ Clothing has ANY pattern, stripe, print, or design
-❌ Contains ANY text, letters, numbers, or symbols
-❌ Character is too small or hard to recognize
-❌ Colors are all pale/light with no contrast
-❌ Content is violent, inappropriate, or unsuitable for chat
+=== 🔒 FINAL OUTPUT REQUIREMENTS ===
+1. BACKGROUND: 100% TRANSPARENT (alpha=0) - NOT white, NOT gray
+2. T-SHIRT: Solid pure white (#FFFFFF) - ZERO patterns/stripes/prints
+3. CHARACTER: Same as photo, ID: ${characterID}
+4. OUTLINES: Thick black (2-3px)
+5. COMPOSITION: Upper body, centered, 70-80% fill
+6. TEXT: NONE
 
-=== ✅ MUST HAVE (MANDATORY): ===
-✓ TRANSPARENT BACKGROUND - pure alpha, zero color
-✓ PLAIN WHITE T-SHIRT - solid white, absolutely no patterns
-✓ CHARACTER ID: ${characterID} - identical person across all stickers
-✓ UPPER BODY ONLY - head to chest, fills 70-80%
-✓ HIGH CONTRAST - visible at small chat size
-✓ THICK BLACK OUTLINES - clear edges
-✓ FRIENDLY EXPRESSION - suitable for communication
-✓ NO TEXT WHATSOEVER - zero letters or symbols
-
-REJECTION WARNING: LINE will reject stickers that don't follow these rules.
-Generate a clean, friendly sticker NOW with transparent background and plain white t-shirt.`;
+Generate the sticker NOW.`;
 
   finalPrompt += absoluteRequirements;
 

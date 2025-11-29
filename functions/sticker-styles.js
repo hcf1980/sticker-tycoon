@@ -313,83 +313,66 @@ function generateStickerPromptV2(style, characterDescription, expression) {
 }
 
 /**
- * 🎯 生成照片貼圖的增強 Prompt V2.2
- * 專門用於從照片生成貼圖，保留臉部特徵
- *
- * 符合 LINE Creators Market 審核準則
+ * 🎯 生成照片貼圖的增強 Prompt V2.3
+ * 極度精確的一致性描述
  */
 function generatePhotoStickerPromptV2(style, expression, characterID = null) {
   const styleConfig = StickerStyles[style] || StickerStyles.cute;
-  const styleEnhance = StyleEnhancer[style] || StyleEnhancer.cute;
   const expressionEnhance = ExpressionEnhancer[expression] || expression;
 
-  const prompt = `Create a LINE sticker from this photo.
+  // 🔒 固定的角色描述（不變的部分）
+  const fixedCharacterDesc = `
+FIXED CHARACTER APPEARANCE (DO NOT CHANGE):
+- Hair: SHORT BLACK hair, slightly messy, natural style
+- Face: Young boy, round face, large expressive eyes
+- Skin: Light/fair skin tone, consistent across all
+- Outfit: PURE WHITE crew-neck t-shirt (#FFFFFF), NO patterns, NO designs, NO prints, NO stripes, NO logo, NO decorations - just solid plain white
+- Body: Child/young boy proportions, upper body only`;
 
-=== 🚨 LINE CREATORS MARKET REVIEW GUIDELINES ===
-REJECTION REASONS TO AVOID:
-1. Background NOT transparent → REJECTED (Rule 1.1)
-2. Hard to recognize/too small → REJECTED (Rule 1.3)
-3. Unbalanced colors (all light/pale) → REJECTED (Rule 1.4)
-4. Contains ANY text/letters → REJECTED (Rule 1.6, 1.7)
-5. Not suitable for chat/communication → REJECTED (Rule 1.2)
-6. Violent/inappropriate content → REJECTED (Rule 3.x)
+  const prompt = `Transform this photo into a LINE sticker illustration.
 
-=== ⚠️ ABSOLUTE REQUIREMENTS ===
-1. TRANSPARENT BACKGROUND - pure alpha channel, NOT white, NOT gray
-2. PLAIN WHITE T-SHIRT - absolutely NO patterns, NO stripes, NO prints
-3. CHARACTER ID: ${characterID || 'default'} - same person in all stickers
-4. UPPER BODY ONLY - head to chest, easy to see in small chat bubbles
-5. NO TEXT AT ALL - zero letters, numbers, words, symbols
-6. HIGH CONTRAST COLORS - visible at small sizes, not all pale/light
-7. SUITABLE FOR CHAT - friendly, expressive, communication-ready
+=== 🔒 CRITICAL: EXACT SAME CHARACTER IN EVERY STICKER ===
+Character ID: ${characterID || 'default'}
+${fixedCharacterDesc}
 
-=== CHARACTER CONSISTENCY ===
-- EXACT face from photo: shape, eyes, nose, mouth, skin tone
-- EXACT hairstyle and hair color (no changes)
-- EXACT same plain white t-shirt across ALL stickers
-- SAME body proportions
-
-=== STYLE: ${styleConfig.name} ===
+=== 🎨 STYLE: ${styleConfig.name} ===
 ${styleConfig.promptBase}
-Lighting: ${styleEnhance.lighting}
-Mood: ${styleEnhance.mood}
 
-=== EXPRESSION: ${expression} ===
+=== 😊 EXPRESSION: ${expression} ===
 ${expressionEnhance}
-- Clear emotion visible even at small size
-- Expressive face + simple hand gestures
-- Friendly and appropriate for all ages
+Show this emotion through facial expression and simple hand gesture.
 
-=== TECHNICAL SPECS (LINE Official) ===
-- Max size: 370 × 320 pixels
-- Format: PNG with TRANSPARENT background
-- Margin: 10px padding
-- Character fills 70-80% of canvas, centered
-- Thick BLACK outlines for visibility
-- Vibrant colors with good contrast
+=== ⚠️ MANDATORY TECHNICAL REQUIREMENTS ===
+1. BACKGROUND: 100% TRANSPARENT (alpha=0), NOT white (#FFFFFF), NOT gray (#808080), NOT any color
+2. T-SHIRT: Solid pure white (#FFFFFF), absolutely ZERO patterns/stripes/prints
+3. OUTLINES: Thick black lines (2-3px) around character
+4. COMPOSITION: Upper body only, centered, fills 70-80%
+5. SIZE: 370x320 pixels max
+6. TEXT: ZERO text, letters, numbers, symbols anywhere
 
-=== CONTENT GUIDELINES ===
-✓ Friendly, positive, suitable for chat
-✓ Clear expression readable at small size
-✓ Balanced colors (not all pale)
-✗ NO violence, weapons, blood
-✗ NO inappropriate/adult content
-✗ NO political/religious symbols
-✗ NO real brand logos or trademarks
+=== ❌ WILL BE REJECTED IF: ===
+- Background has ANY color (must be transparent/checkered)
+- T-shirt has ANY pattern, stripe, print, or is not pure white
+- Character looks different from the photo
+- Contains any text or watermark
+- Full body shown (must be upper body only)
 
-OUTPUT: Single LINE sticker with TRANSPARENT background, PLAIN WHITE T-SHIRT, clear expression, NO text.`;
+=== ✅ CORRECT OUTPUT: ===
+Single sticker illustration with:
+- TRANSPARENT background (checkerboard pattern in editors)
+- PURE WHITE t-shirt (solid #FFFFFF, no patterns)
+- Same face as reference photo
+- Expression: ${expression}
+- Thick black outlines
+- Upper body, centered`;
 
   const negativePrompt = `
-    white background, gray background, colored background, solid background, any background color,
-    patterned clothing, striped shirt, printed shirt, decorated clothing, logo on shirt,
-    text, words, letters, numbers, caption, watermark, signature, logo, brand,
-    multiple characters, complex background, scenery, landscape,
-    realistic photo, photorealistic, 3D render,
-    different face, inconsistent features, wrong identity,
-    full body, legs, feet, distant view, tiny character,
-    violence, weapons, blood, adult content, inappropriate,
-    pale colors only, low contrast, hard to see,
-    political symbols, religious symbols, trademarks
+    white background, gray background, #FFFFFF background, #808080 background, solid background, colored background, gradient background,
+    patterned shirt, striped shirt, printed shirt, gray shirt, colored shirt, shirt with design, shirt with logo, decorated clothing,
+    text, words, letters, numbers, watermark, signature, logo,
+    full body, legs, feet, distant shot,
+    different face, different hair, different character,
+    realistic photo, 3D render
   `.replace(/\s+/g, ' ').trim();
 
   return {
