@@ -26,7 +26,15 @@ async function handleStartCreate(userId) {
     text: '🎨 開始創建你的專屬貼圖！\n\n' +
           '📝 第一步：請輸入貼圖組名稱\n\n' +
           '例如：「我的日常」、「辦公室趣事」\n\n' +
-          '💡 名稱最長 40 字，請盡量簡潔有創意！'
+          '💡 名稱最長 40 字，請盡量簡潔有創意！',
+    quickReply: {
+      items: [
+        { type: 'action', action: { type: 'message', label: '我的日常', text: '我的日常' } },
+        { type: 'action', action: { type: 'message', label: '辦公室趣事', text: '辦公室趣事' } },
+        { type: 'action', action: { type: 'message', label: '可愛表情包', text: '可愛表情包' } },
+        { type: 'action', action: { type: 'message', label: '❌ 取消', text: '取消' } }
+      ]
+    }
   };
 }
 
@@ -76,7 +84,14 @@ async function handleNaming(userId, name) {
           '• 正面清晰的大頭照\n' +
           '• 光線充足、背景簡單\n' +
           '• 表情自然最佳\n\n' +
-          '🤖 AI 會保留你的臉部特徵，生成各種表情的貼圖！'
+          '🤖 AI 會保留你的臉部特徵，生成各種表情的貼圖！',
+    quickReply: {
+      items: [
+        { type: 'action', action: { type: 'cameraRoll', label: '📁 從相簿選擇' } },
+        { type: 'action', action: { type: 'camera', label: '📷 拍照' } },
+        { type: 'action', action: { type: 'message', label: '❌ 取消', text: '取消' } }
+      ]
+    }
   };
 }
 
@@ -112,7 +127,15 @@ async function handleStyleSelection(userId, styleId) {
             '請詳細描述你想要的角色特徵，例如：\n\n' +
             '• 「一隻圓滾滾的白色小熊，有粉紅色的臉頰和小小的黑眼睛」\n\n' +
             '• 「一個戴眼鏡的上班族貓咪，穿著西裝打領帶」\n\n' +
-            '💡 描述越詳細，生成的貼圖越符合你的想像！'
+            '💡 描述越詳細，生成的貼圖越符合你的想像！',
+      quickReply: {
+        items: [
+          { type: 'action', action: { type: 'message', label: '🐱 可愛貓咪', text: '一隻圓滾滾的橘色小貓咪，有大大的眼睛和粉紅色的鼻子' } },
+          { type: 'action', action: { type: 'message', label: '🐻 療癒小熊', text: '一隻胖嘟嘟的白色小熊，有粉紅色的臉頰和小小的黑眼睛' } },
+          { type: 'action', action: { type: 'message', label: '🐰 呆萌兔子', text: '一隻長耳朵的白色兔子，眼睛是紅色的，表情呆呆的很可愛' } },
+          { type: 'action', action: { type: 'message', label: '❌ 取消', text: '取消' } }
+        ]
+      }
     };
   }
 }
@@ -127,7 +150,14 @@ async function handleCharacterDescription(userId, description) {
   if (!description || description.length < 10) {
     return {
       type: 'text',
-      text: '⚠️ 請提供更詳細的角色描述（至少 10 字）！'
+      text: '⚠️ 請提供更詳細的角色描述（至少 10 字）！',
+      quickReply: {
+        items: [
+          { type: 'action', action: { type: 'message', label: '🐱 可愛貓咪', text: '一隻圓滾滾的橘色小貓咪，有大大的眼睛和粉紅色的鼻子' } },
+          { type: 'action', action: { type: 'message', label: '🐻 療癒小熊', text: '一隻胖嘟嘟的白色小熊，有粉紅色的臉頰和小小的黑眼睛' } },
+          { type: 'action', action: { type: 'message', label: '❌ 取消', text: '取消' } }
+        ]
+      }
     };
   }
   
@@ -174,6 +204,20 @@ function generateSceneSelectionFlexMessage() {
   // 分成兩行顯示
   const row1 = scenes.slice(0, 4);
   const row2 = scenes.slice(4);
+
+  // Quick Reply 項目
+  const quickReplyItems = scenes.map(scene => ({
+    type: 'action',
+    action: {
+      type: 'message',
+      label: `${scene.emoji} ${scene.name}`,
+      text: `場景:${scene.id}`
+    }
+  }));
+  quickReplyItems.push({
+    type: 'action',
+    action: { type: 'message', label: '❌ 取消', text: '取消' }
+  });
 
   return {
     type: 'flex',
@@ -224,6 +268,9 @@ function generateSceneSelectionFlexMessage() {
           }
         ]
       }
+    },
+    quickReply: {
+      items: quickReplyItems.slice(0, 13)
     }
   };
 }
@@ -251,7 +298,15 @@ async function handleSceneSelection(userId, sceneId) {
             '• 「粉紅色愛心和蝴蝶結」\n' +
             '• 「霓虹燈效果」\n' +
             '• 「日系漫畫音效文字」\n\n' +
-            '💡 AI 會根據你的描述加入裝飾元素！'
+            '💡 AI 會根據你的描述加入裝飾元素！',
+      quickReply: {
+        items: [
+          { type: 'action', action: { type: 'message', label: '💖 粉紅愛心', text: '粉紅色愛心和蝴蝶結裝飾' } },
+          { type: 'action', action: { type: 'message', label: '🌈 彩虹夢幻', text: '彩虹色漸層搭配閃亮星星' } },
+          { type: 'action', action: { type: 'message', label: '💫 霓虹燈', text: '霓虹燈發光效果' } },
+          { type: 'action', action: { type: 'message', label: '❌ 取消', text: '取消' } }
+        ]
+      }
     };
   }
 
@@ -292,7 +347,21 @@ async function handleCustomScene(userId, description) {
  */
 function generateCountSelectionMessage(expressions) {
   const validCounts = LineStickerSpecs.validCounts;
-  
+
+  // Quick Reply 項目
+  const quickReplyItems = validCounts.map(count => ({
+    type: 'action',
+    action: {
+      type: 'message',
+      label: `${count}張`,
+      text: `數量:${count}`
+    }
+  }));
+  quickReplyItems.push({
+    type: 'action',
+    action: { type: 'message', label: '❌ 取消', text: '取消' }
+  });
+
   return {
     type: 'flex',
     altText: '選擇貼圖數量',
@@ -321,6 +390,9 @@ function generateCountSelectionMessage(expressions) {
           }
         ]
       }
+    },
+    quickReply: {
+      items: quickReplyItems
     }
   };
 }

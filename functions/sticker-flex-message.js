@@ -119,7 +119,7 @@ function generateWelcomeFlexMessage() {
  */
 function generateStyleSelectionFlexMessage() {
   const styles = Object.values(StickerStyles);
-  
+
   const styleButtons = styles.map(style => ({
     type: 'button',
     style: 'secondary',
@@ -131,6 +131,20 @@ function generateStyleSelectionFlexMessage() {
     },
     margin: 'sm'
   }));
+
+  // Quick Reply 項目
+  const quickReplyItems = styles.map(style => ({
+    type: 'action',
+    action: {
+      type: 'message',
+      label: `${style.emoji} ${style.name}`,
+      text: `風格:${style.id}`
+    }
+  }));
+  quickReplyItems.push({
+    type: 'action',
+    action: { type: 'message', label: '❌ 取消', text: '取消' }
+  });
 
   return {
     type: 'flex',
@@ -173,6 +187,9 @@ function generateStyleSelectionFlexMessage() {
           }
         ]
       }
+    },
+    quickReply: {
+      items: quickReplyItems.slice(0, 13) // LINE 最多 13 個 Quick Reply
     }
   };
 }
@@ -182,7 +199,7 @@ function generateStyleSelectionFlexMessage() {
  */
 function generateExpressionSelectionFlexMessage() {
   const templates = Object.values(DefaultExpressions);
-  
+
   const templateButtons = templates.map(template => ({
     type: 'button',
     style: 'secondary',
@@ -194,6 +211,24 @@ function generateExpressionSelectionFlexMessage() {
     },
     margin: 'sm'
   }));
+
+  // Quick Reply 項目
+  const quickReplyItems = templates.map(template => ({
+    type: 'action',
+    action: {
+      type: 'message',
+      label: template.name,
+      text: `表情模板:${template.id}`
+    }
+  }));
+  quickReplyItems.push({
+    type: 'action',
+    action: { type: 'message', label: '✏️ 自訂表情', text: '自訂表情' }
+  });
+  quickReplyItems.push({
+    type: 'action',
+    action: { type: 'message', label: '❌ 取消', text: '取消' }
+  });
 
   return {
     type: 'flex',
@@ -218,6 +253,9 @@ function generateExpressionSelectionFlexMessage() {
           }
         ]
       }
+    },
+    quickReply: {
+      items: quickReplyItems.slice(0, 13)
     }
   };
 }
