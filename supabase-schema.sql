@@ -2,6 +2,23 @@
 -- 貼圖大亨 LINE Bot - Supabase 資料表結構
 -- ============================================
 
+-- 0. LINE 貼圖打包任務表
+CREATE TABLE IF NOT EXISTS line_pack_tasks (
+  id BIGSERIAL PRIMARY KEY,
+  task_id TEXT UNIQUE NOT NULL,
+  user_id TEXT NOT NULL,
+  main_index INTEGER DEFAULT 0,
+  status TEXT DEFAULT 'pending',  -- pending, processing, completed, failed
+  progress INTEGER DEFAULT 0,
+  download_url TEXT,
+  error_message TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_line_pack_tasks_user ON line_pack_tasks(user_id);
+CREATE INDEX IF NOT EXISTS idx_line_pack_tasks_status ON line_pack_tasks(status);
+
 -- 1. LINE 事件去重表（防止 webhook 重複觸發）
 CREATE TABLE IF NOT EXISTS line_events (
   id BIGSERIAL PRIMARY KEY,

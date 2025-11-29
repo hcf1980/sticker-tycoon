@@ -205,41 +205,80 @@
     }
 
     async function download() {
-      document.getElementById('downloadModal').classList.add('show');
+      const modal = document.getElementById('downloadModal');
+      const modalContent = modal.querySelector('.modal-content');
+      modal.classList.add('show');
 
       try {
-        const url = `${API_BASE}/pack-for-line?userId=${encodeURIComponent(userId)}&mainIndex=${selectedCoverIndex}`;
+        // 啟動打包任務
+        const startRes = await fetch(`${API_BASE}/pack-for-line`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, mainIndex: selectedCoverIndex })
+        });
+        const startData = await startRes.json();
 
-        // 使用 fetch 下載
-        const res = await fetch(url);
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.error || '下載失敗');
+        if (!startRes.ok) {
+          throw new Error(startData.error || '啟動失敗');
         }
 
-        // 取得 blob 並下載
-        const blob = await res.blob();
-        const downloadUrl = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = downloadUrl;
-        a.download = 'line_stickers.zip';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(downloadUrl);
+        showToast('📦 開始打包...');
 
-        document.getElementById('downloadModal').classList.remove('show');
-        showToast('✅ 下載完成！');
+        // 輪詢檢查狀態
+        let attempts = 0;
+        const maxAttempts = 120; // 最多等 2 分鐘
 
-        // 顯示上傳提示
-        setTimeout(() => {
-          if (confirm('下載完成！是否前往 LINE Creators Market 上傳貼圖？')) {
-            window.open('https://creator.line.me/my/', '_blank');
+        while (attempts < maxAttempts) {
+          await new Promise(r => setTimeout(r, 1000)); // 每秒檢查一次
+
+          const statusRes = await fetch(`${API_BASE}/pack-for-line?userId=${encodeURIComponent(userId)}&action=status`);
+          const status = await statusRes.json();
+
+          // 更新進度
+          if (status.progress) {
+            modalContent.innerHTML = `
+              <div class="spinner"></div>
+              <h3>📦 打包中... ${status.progress}%</h3>
+              <div style="width:100%;height:8px;background:#eee;border-radius:4px;margin:10px 0;">
+                <div style="width:${status.progress}%;height:100%;background:#06C755;border-radius:4px;transition:width 0.3s;"></div>
+              </div>
+              <p>正在處理 40 張貼圖並上傳...</p>
+            `;
           }
-        }, 500);
+
+          if (status.status === 'completed' && status.downloadUrl) {
+            // 完成！開始下載
+            modal.classList.remove('show');
+            showToast('✅ 打包完成！開始下載...');
+
+            // 直接開啟下載連結
+            const a = document.createElement('a');
+            a.href = status.downloadUrl;
+            a.download = 'line_stickers.zip';
+            a.target = '_blank';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            setTimeout(() => {
+              if (confirm('下載完成！是否前往 LINE Creators Market 上傳貼圖？')) {
+                window.open('https://creator.line.me/my/', '_blank');
+              }
+            }, 1000);
+            return;
+          }
+
+          if (status.status === 'failed') {
+            throw new Error(status.error || '打包失敗');
+          }
+
+          attempts++;
+        }
+
+        throw new Error('打包逾時，請稍後再試');
 
       } catch (e) {
-        document.getElementById('downloadModal').classList.remove('show');
+        modal.classList.remove('show');
         showToast('❌ ' + e.message);
       }
     }
