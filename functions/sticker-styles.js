@@ -352,10 +352,19 @@ Character ID: ${characterID || 'default'}
 3. OUTLINES: Thick black lines (2-3px) for visibility
 4. COMPOSITION: Centered, fills 70-80% of canvas
 5. NO TEXT: Zero letters, numbers, symbols, watermarks
+6. IMAGE SIZE: 370px width × 320px height (LINE sticker standard)
+
+=== 🎨 COLOR REQUIREMENTS ===
+- HIGH SATURATION: Use vivid, vibrant colors (not pale or washed out)
+- HIGH CONTRAST: Strong distinction between light and dark areas
+- BOLD SKIN TONES: Warm, healthy skin color (not grayish or pale)
+- RICH HAIR COLOR: Deep, saturated hair colors
+- BRIGHT EYES: Lively, expressive eye colors
 
 CRITICAL: Background MUST be fully transparent (like PNG cutout), NOT white, NOT any color.
+Colors should be VIVID and POP, suitable for small sticker display.
 
-OUTPUT: ${styleConfig.name} style LINE sticker with TRANSPARENT background, expressive ${expression} face.`;
+OUTPUT: ${styleConfig.name} style LINE sticker at 370x320px with TRANSPARENT background, expressive ${expression} face, VIBRANT saturated colors.`;
 
   const negativePrompt = `
     white background, gray background, colored background, solid background, gradient background,

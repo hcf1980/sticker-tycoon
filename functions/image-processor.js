@@ -99,6 +99,13 @@ async function processImage(input, type = 'sticker') {
         fit: 'inside',  // 保持比例，不裁切
         withoutEnlargement: false
       })
+      // 🎨 增加飽和度和對比度，讓貼圖更鮮明
+      .modulate({
+        saturation: 1.25,  // 飽和度 +25%
+        brightness: 1.02   // 亮度微調 +2%
+      })
+      // 增加對比度（使用線性調整）
+      .linear(1.15, -(128 * 0.15))  // 對比度 +15%
       // 確保透明背景
       .ensureAlpha()
       // 擴展到目標尺寸（加入透明邊距）
@@ -110,7 +117,7 @@ async function processImage(input, type = 'sticker') {
         background: { r: 0, g: 0, b: 0, alpha: 0 }
       });
 
-    // 最終調整到精確尺寸
+    // 最終調整到精確尺寸（強制 370x320）
     processedImage = processedImage
       .resize(targetWidth, targetHeight, {
         fit: 'contain',
