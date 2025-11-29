@@ -12,6 +12,16 @@
   </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
+  <script>
+    // 驗證登入狀態
+    (function() {
+      const auth = JSON.parse(localStorage.getItem('adminAuth') || '{}');
+      if (!auth.loggedIn || auth.expiry < Date.now()) {
+        localStorage.removeItem('adminAuth');
+        window.location.href = '/admin/login.html';
+      }
+    })();
+  </script>
   <nav class="bg-gradient-to-r from-pink-500 to-orange-400 text-white p-4">
     <div class="container mx-auto flex justify-between items-center">
       <h1 class="text-2xl font-bold">📱 Rich Menu 管理</h1>

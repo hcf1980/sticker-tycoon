@@ -86,8 +86,33 @@
   </div>
 
   <footer class="mt-10 py-4 text-center text-gray-500 text-sm">
-    貼圖大亨 Admin © 2024
+    貼圖大亨 Admin © 2024 | <a href="#" id="logoutBtn" class="hover:text-pink-500">登出</a>
   </footer>
+
+  <script>
+    // 驗證登入狀態
+    function checkAuth() {
+      const auth = JSON.parse(localStorage.getItem('adminAuth') || '{}');
+      if (!auth.loggedIn || auth.expiry < Date.now()) {
+        localStorage.removeItem('adminAuth');
+        window.location.href = '/admin/login.html';
+        return false;
+      }
+      return true;
+    }
+
+    // 頁面載入時檢查
+    if (!checkAuth()) {
+      document.body.innerHTML = '<div class="text-center p-10">正在跳轉到登入頁面...</div>';
+    }
+
+    // 登出功能
+    document.getElementById('logoutBtn')?.addEventListener('click', function(e) {
+      e.preventDefault();
+      localStorage.removeItem('adminAuth');
+      window.location.href = '/admin/login.html';
+    });
+  </script>
 </body>
 </html>
 
