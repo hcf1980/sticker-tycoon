@@ -347,16 +347,18 @@ Character ID: ${characterID || 'default'}
 - Upper body only (head to chest)
 
 === ⚠️ TECHNICAL REQUIREMENTS ===
-1. BACKGROUND: Pure solid WHITE (#FFFFFF) - clean white, no gray, no gradient
-2. T-SHIRT: Solid pure white, NO patterns, NO stripes, NO prints
+1. BACKGROUND: 100% TRANSPARENT (alpha channel = 0) - NO white, NO gray, NO color at all
+2. T-SHIRT: Solid pure white (#FFFFFF), NO patterns, NO stripes, NO prints
 3. OUTLINES: Thick black lines (2-3px) for visibility
 4. COMPOSITION: Centered, fills 70-80% of canvas
 5. NO TEXT: Zero letters, numbers, symbols, watermarks
 
-OUTPUT: ${styleConfig.name} style LINE sticker with WHITE background, expressive ${expression} face.`;
+CRITICAL: Background MUST be fully transparent (like PNG cutout), NOT white, NOT any color.
+
+OUTPUT: ${styleConfig.name} style LINE sticker with TRANSPARENT background, expressive ${expression} face.`;
 
   const negativePrompt = `
-    transparent background, gray background, colored background, gradient,
+    white background, gray background, colored background, solid background, gradient background,
     patterned shirt, striped shirt, printed shirt, gray shirt,
     text, words, letters, numbers, watermark, logo,
     full body, legs, feet,
