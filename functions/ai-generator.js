@@ -430,17 +430,29 @@ Expression detail: ${enhancedExpression}`;
   }
 
   // 🔒 強制加入絕對要求（放在最後，AI 會更注重最後的指令）
+  // 符合 LINE Creators Market 審核準則
   const absoluteRequirements = `
 
-=== ⚠️ ABSOLUTE REQUIREMENTS (CANNOT BE CHANGED) ===
-1. TRANSPARENT BACKGROUND ONLY - pure alpha channel, NO white, NO gray, NO color
-2. SAME OUTFIT FOR ALL - plain white t-shirt, NO patterns, NO designs, NO stripes
-3. CHARACTER IDENTITY CODE: ${characterID} - must be exactly the same person
-4. NO TEXT, NO WATERMARK, NO LOGO
-5. Upper body only, centered, fills 70-80% of canvas
+=== 🚨 FINAL CHECK - LINE REVIEW WILL REJECT IF: ===
+❌ Background is NOT transparent (must be pure alpha channel)
+❌ Clothing has ANY pattern, stripe, print, or design
+❌ Contains ANY text, letters, numbers, or symbols
+❌ Character is too small or hard to recognize
+❌ Colors are all pale/light with no contrast
+❌ Content is violent, inappropriate, or unsuitable for chat
 
-CRITICAL: If background is not transparent, the sticker will be REJECTED.
-CRITICAL: If outfit has any pattern or decoration, the sticker will be REJECTED.`;
+=== ✅ MUST HAVE (MANDATORY): ===
+✓ TRANSPARENT BACKGROUND - pure alpha, zero color
+✓ PLAIN WHITE T-SHIRT - solid white, absolutely no patterns
+✓ CHARACTER ID: ${characterID} - identical person across all stickers
+✓ UPPER BODY ONLY - head to chest, fills 70-80%
+✓ HIGH CONTRAST - visible at small chat size
+✓ THICK BLACK OUTLINES - clear edges
+✓ FRIENDLY EXPRESSION - suitable for communication
+✓ NO TEXT WHATSOEVER - zero letters or symbols
+
+REJECTION WARNING: LINE will reject stickers that don't follow these rules.
+Generate a clean, friendly sticker NOW with transparent background and plain white t-shirt.`;
 
   finalPrompt += absoluteRequirements;
 

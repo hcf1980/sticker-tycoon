@@ -313,10 +313,10 @@ function generateStickerPromptV2(style, characterDescription, expression) {
 }
 
 /**
- * 🎯 生成照片貼圖的增強 Prompt V2.1
+ * 🎯 生成照片貼圖的增強 Prompt V2.2
  * 專門用於從照片生成貼圖，保留臉部特徵
  *
- * 強化：服裝一致性、透明背景
+ * 符合 LINE Creators Market 審核準則
  */
 function generatePhotoStickerPromptV2(style, expression, characterID = null) {
   const styleConfig = StickerStyles[style] || StickerStyles.cute;
@@ -325,16 +325,29 @@ function generatePhotoStickerPromptV2(style, expression, characterID = null) {
 
   const prompt = `Create a LINE sticker from this photo.
 
-⚠️ CRITICAL RULES (VIOLATION = REJECTION):
-1. TRANSPARENT BACKGROUND ONLY - pure alpha, no white, no gray, no color
-2. SAME PLAIN WHITE T-SHIRT - no patterns, no stripes, no designs, no decorations
-3. SAME CHARACTER - identity code: ${characterID || 'default'}
+=== 🚨 LINE CREATORS MARKET REVIEW GUIDELINES ===
+REJECTION REASONS TO AVOID:
+1. Background NOT transparent → REJECTED (Rule 1.1)
+2. Hard to recognize/too small → REJECTED (Rule 1.3)
+3. Unbalanced colors (all light/pale) → REJECTED (Rule 1.4)
+4. Contains ANY text/letters → REJECTED (Rule 1.6, 1.7)
+5. Not suitable for chat/communication → REJECTED (Rule 1.2)
+6. Violent/inappropriate content → REJECTED (Rule 3.x)
+
+=== ⚠️ ABSOLUTE REQUIREMENTS ===
+1. TRANSPARENT BACKGROUND - pure alpha channel, NOT white, NOT gray
+2. PLAIN WHITE T-SHIRT - absolutely NO patterns, NO stripes, NO prints
+3. CHARACTER ID: ${characterID || 'default'} - same person in all stickers
+4. UPPER BODY ONLY - head to chest, easy to see in small chat bubbles
+5. NO TEXT AT ALL - zero letters, numbers, words, symbols
+6. HIGH CONTRAST COLORS - visible at small sizes, not all pale/light
+7. SUITABLE FOR CHAT - friendly, expressive, communication-ready
 
 === CHARACTER CONSISTENCY ===
-- EXACT same face from photo: face shape, eyes, nose, mouth, skin tone
-- EXACT same hairstyle and hair color
-- EXACT same plain white t-shirt (NO patterns, NO prints, NO designs)
-- EXACT same body proportions
+- EXACT face from photo: shape, eyes, nose, mouth, skin tone
+- EXACT hairstyle and hair color (no changes)
+- EXACT same plain white t-shirt across ALL stickers
+- SAME body proportions
 
 === STYLE: ${styleConfig.name} ===
 ${styleConfig.promptBase}
@@ -343,26 +356,40 @@ Mood: ${styleEnhance.mood}
 
 === EXPRESSION: ${expression} ===
 ${expressionEnhance}
-- Show emotion through FACE and HANDS only
-- Simple pose, upper body only
+- Clear emotion visible even at small size
+- Expressive face + simple hand gestures
+- Friendly and appropriate for all ages
 
-=== TECHNICAL SPECS ===
-- PNG with TRANSPARENT background (alpha channel)
-- Character centered, fills 70-80%
-- Thick black outlines
-- High contrast colors
-- NO text, NO watermark
+=== TECHNICAL SPECS (LINE Official) ===
+- Max size: 370 × 320 pixels
+- Format: PNG with TRANSPARENT background
+- Margin: 10px padding
+- Character fills 70-80% of canvas, centered
+- Thick BLACK outlines for visibility
+- Vibrant colors with good contrast
 
-OUTPUT: Single sticker illustration with TRANSPARENT background and PLAIN WHITE T-SHIRT.`;
+=== CONTENT GUIDELINES ===
+✓ Friendly, positive, suitable for chat
+✓ Clear expression readable at small size
+✓ Balanced colors (not all pale)
+✗ NO violence, weapons, blood
+✗ NO inappropriate/adult content
+✗ NO political/religious symbols
+✗ NO real brand logos or trademarks
+
+OUTPUT: Single LINE sticker with TRANSPARENT background, PLAIN WHITE T-SHIRT, clear expression, NO text.`;
 
   const negativePrompt = `
-    white background, gray background, colored background, solid background, gradient background,
-    patterned clothing, striped shirt, printed shirt, decorated clothing, colorful clothes,
-    text, words, letters, caption, watermark, signature, logo,
-    multiple characters, complex background, scenery,
+    white background, gray background, colored background, solid background, any background color,
+    patterned clothing, striped shirt, printed shirt, decorated clothing, logo on shirt,
+    text, words, letters, numbers, caption, watermark, signature, logo, brand,
+    multiple characters, complex background, scenery, landscape,
     realistic photo, photorealistic, 3D render,
-    different face, inconsistent features,
-    full body, legs, feet
+    different face, inconsistent features, wrong identity,
+    full body, legs, feet, distant view, tiny character,
+    violence, weapons, blood, adult content, inappropriate,
+    pale colors only, low contrast, hard to see,
+    political symbols, religious symbols, trademarks
   `.replace(/\s+/g, ' ').trim();
 
   return {
