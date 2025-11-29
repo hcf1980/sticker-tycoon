@@ -862,8 +862,8 @@ const LineStickerSpecs = {
   maxFileSize: 1024 * 1024, // 單張最大 1MB
   maxZipSize: 60 * 1024 * 1024, // ZIP 最大 60MB
 
-  // 可選數量（4, 8, 12, 24 張）
-  validCounts: [4, 8, 12, 24],
+  // 可選數量（4, 8, 12 張）
+  validCounts: [4, 8, 12],
 
   // 文字限制
   textLimits: {
