@@ -150,8 +150,8 @@
       document.getElementById('modal-content').innerHTML = `
         <div class="grid grid-cols-4 gap-4">
           ${(stickers || []).filter(f => f.name.startsWith('sticker_')).map(f => `
-            <div class="bg-gray-100 rounded p-2">
-              <img src="${SUPABASE_URL}/storage/v1/object/public/sticker-images/${setId}/${f.name}" class="w-full">
+            <div class="bg-white rounded p-2 border border-gray-200">
+              <img src="${SUPABASE_URL}/storage/v1/object/public/sticker-images/${setId}/${f.name}" class="w-full" style="background-color: white;">
             </div>
           `).join('')}
         </div>
