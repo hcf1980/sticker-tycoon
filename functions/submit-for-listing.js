@@ -4,7 +4,9 @@
  */
 
 const { v4: uuidv4 } = require('uuid');
-const { getSupabaseClient, getUploadQueue } = require('./supabase-client');
+const { getSupabaseClient, getUploadQueue, getUserTokenBalance, deductTokens } = require('./supabase-client');
+
+const LISTING_COST = 40;  // 代上架所需代幣
 
 exports.handler = async function(event) {
   // CORS
@@ -48,6 +50,32 @@ exports.handler = async function(event) {
         body: JSON.stringify({ success: false, error: '需要 40 張貼圖才能申請上架' })
       };
     }
+
+    // 檢查代幣餘額
+    const balance = await getUserTokenBalance(userId);
+    if (balance < LISTING_COST) {
+      return {
+        statusCode: 400,
+        headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          success: false,
+          error: `代幣不足！需要 ${LISTING_COST} 枚，您只有 ${balance} 枚`,
+          needTokens: LISTING_COST,
+          currentTokens: balance
+        })
+      };
+    }
+
+    // 扣除代幣（deductTokens 內部會記錄交易）
+    const deductResult = await deductTokens(userId, LISTING_COST, '提交 LINE 貼圖代上架申請', null);
+    if (!deductResult.success) {
+      return {
+        statusCode: 400,
+        headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ success: false, error: '代幣扣除失敗：' + deductResult.error })
+      };
+    }
+    console.log(`💰 用戶 ${userId} 扣除 ${LISTING_COST} 代幣用於代上架，剩餘 ${deductResult.balance}`);
 
     // 產生申請編號
     const applicationId = `ST${Date.now().toString(36).toUpperCase()}`;

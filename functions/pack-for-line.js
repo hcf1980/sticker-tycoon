@@ -9,7 +9,9 @@
  */
 
 const { v4: uuidv4 } = require('uuid');
-const { getUploadQueue, supabase } = require('./supabase-client');
+const { getUploadQueue, supabase, getUserTokenBalance, deductTokens } = require('./supabase-client');
+
+const DOWNLOAD_COST = 40;  // 下載/上架所需代幣
 
 /**
  * 檢查打包狀態
@@ -99,6 +101,31 @@ exports.handler = async function(event) {
         body: JSON.stringify({ error: `需要 40 張貼圖，目前只有 ${queue.length} 張` })
       };
     }
+
+    // 檢查代幣餘額
+    const balance = await getUserTokenBalance(userId);
+    if (balance < DOWNLOAD_COST) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({
+          error: `代幣不足！需要 ${DOWNLOAD_COST} 枚，您只有 ${balance} 枚`,
+          needTokens: DOWNLOAD_COST,
+          currentTokens: balance
+        })
+      };
+    }
+
+    // 扣除代幣（deductTokens 內部會記錄交易）
+    const deductResult = await deductTokens(userId, DOWNLOAD_COST, '下載 LINE 貼圖包', null);
+    if (!deductResult.success) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ error: '代幣扣除失敗：' + deductResult.error })
+      };
+    }
+    console.log(`💰 用戶 ${userId} 扣除 ${DOWNLOAD_COST} 代幣，剩餘 ${deductResult.balance}`);
 
     // 建立任務
     const { taskId, existing } = await createPackTask(userId, parseInt(mainIndex) || 0);
