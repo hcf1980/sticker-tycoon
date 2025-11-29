@@ -290,8 +290,19 @@
         const result = await res.json();
 
         if (result.success) {
-          alert('✅ Rich Menu 更新成功！');
-          location.reload();
+          // 更新成功，直接用 canvas 內容更新顯示（不 reload）
+          const canvas = document.getElementById('preview-canvas');
+          const currentImg = document.getElementById('current-menu-image');
+          currentImg.src = canvas.toDataURL('image/jpeg', 0.9);
+          currentImg.style.display = 'block';
+
+          // 更新 Rich Menu ID
+          if (result.newRichMenuId) {
+            document.getElementById('current-menu-id').textContent = result.newRichMenuId;
+          }
+
+          // 顯示成功訊息
+          alert('✅ Rich Menu 更新成功！新用戶將看到更新後的選單。');
         } else {
           alert('❌ 更新失敗：' + result.error);
         }
@@ -306,7 +317,16 @@
     // 初始化
     updatePreviewCanvas();
     fetch('/api/admin/rich-menu-info').then(r => r.json()).then(data => {
-      if (data.richMenuId) document.getElementById('current-menu-id').textContent = data.richMenuId;
+      if (data.richMenuId) {
+        document.getElementById('current-menu-id').textContent = data.richMenuId;
+      }
+      // 載入保存在 Supabase 的圖片
+      if (data.imageUrl) {
+        const img = document.getElementById('current-menu-image');
+        // 加上時間戳避免快取
+        img.src = data.imageUrl + '?t=' + Date.now();
+        img.style.display = 'block';
+      }
     }).catch(() => {});
 
     // 拖拽支援

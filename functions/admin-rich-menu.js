@@ -4,6 +4,13 @@
  */
 
 const { createRichMenu, uploadRichMenuImage, setDefaultRichMenu, deleteRichMenu, listRichMenus } = require('./rich-menu-manager');
+const { createClient } = require('@supabase/supabase-js');
+
+// Supabase 客戶端
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY
+);
 
 exports.handler = async (event, context) => {
   const headers = {
@@ -25,7 +32,12 @@ exports.handler = async (event, context) => {
     if (event.httpMethod === 'GET' && path.includes('rich-menu-info')) {
       const menus = await listRichMenus();
       const currentMenu = menus.find(m => m.name === '貼圖大亨主選單');
-      
+
+      // 取得儲存在 Supabase 的 Rich Menu 圖片 URL
+      const { data: publicUrl } = supabase.storage
+        .from('stickers')
+        .getPublicUrl('rich-menu/current.jpg');
+
       return {
         statusCode: 200,
         headers,
@@ -33,7 +45,8 @@ exports.handler = async (event, context) => {
           success: true,
           richMenuId: currentMenu?.richMenuId || null,
           menuName: currentMenu?.name || null,
-          totalMenus: menus.length
+          totalMenus: menus.length,
+          imageUrl: publicUrl?.publicUrl || null
         })
       };
     }
@@ -86,7 +99,7 @@ exports.handler = async (event, context) => {
       // 步驟 2: 創建新的 Rich Menu
       const newMenuId = await createRichMenu();
 
-      // 步驟 3: 上傳新圖片
+      // 步驟 3: 上傳新圖片到 LINE
       await uploadRichMenuImage(newMenuId, imageBuffer);
 
       // 步驟 4: 設為預設
@@ -95,6 +108,19 @@ exports.handler = async (event, context) => {
       // 步驟 5: 刪除舊的 Rich Menu
       if (oldMenu) {
         await deleteRichMenu(oldMenu.richMenuId);
+      }
+
+      // 步驟 6: 備份圖片到 Supabase Storage（供後台顯示）
+      try {
+        await supabase.storage
+          .from('stickers')
+          .upload('rich-menu/current.jpg', imageBuffer, {
+            contentType: 'image/jpeg',
+            upsert: true
+          });
+        console.log('✅ Rich Menu 圖片已備份到 Supabase');
+      } catch (uploadErr) {
+        console.warn('⚠️ 備份圖片失敗（不影響主要功能）:', uploadErr.message);
       }
 
       return {
