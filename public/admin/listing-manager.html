@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>上架申請管理 - 貼圖大亨</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    .status-pending { background: #fff3e0; color: #f57c00; }
+    .status-processing { background: #e3f2fd; color: #1976d2; }
+    .status-submitted { background: #e8f5e9; color: #388e3c; }
+    .status-approved { background: #c8e6c9; color: #2e7d32; }
+    .status-rejected { background: #ffebee; color: #c62828; }
+    .sticker-thumb { width: 60px; height: 60px; object-fit: contain; border-radius: 8px; background: #f5f5f5; }
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; }
+    .modal.show { display: flex; align-items: center; justify-content: center; }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <nav class="bg-gradient-to-r from-green-500 to-teal-400 text-white p-4">
+    <div class="container mx-auto flex justify-between items-center">
+      <h1 class="text-xl font-bold">🚀 上架申請管理</h1>
+      <a href="/admin/" class="text-white hover:underline">← 返回管理首頁</a>
+    </div>
+  </nav>
+
+  <div class="container mx-auto p-4">
+    <!-- 統計卡片 -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+      <div class="bg-white rounded-lg shadow p-3 text-center">
+        <div class="text-2xl font-bold text-orange-500" id="stat-pending">0</div>
+        <div class="text-gray-500 text-xs">待處理</div>
+      </div>
+      <div class="bg-white rounded-lg shadow p-3 text-center">
+        <div class="text-2xl font-bold text-blue-500" id="stat-processing">0</div>
+        <div class="text-gray-500 text-xs">處理中</div>
+      </div>
+      <div class="bg-white rounded-lg shadow p-3 text-center">
+        <div class="text-2xl font-bold text-green-500" id="stat-submitted">0</div>
+        <div class="text-gray-500 text-xs">已提交LINE</div>
+      </div>
+      <div class="bg-white rounded-lg shadow p-3 text-center">
+        <div class="text-2xl font-bold text-emerald-600" id="stat-approved">0</div>
+        <div class="text-gray-500 text-xs">已上架</div>
+      </div>
+      <div class="bg-white rounded-lg shadow p-3 text-center">
+        <div class="text-2xl font-bold text-gray-500" id="stat-total">0</div>
+        <div class="text-gray-500 text-xs">總申請</div>
+      </div>
+    </div>
+
+    <!-- 篩選 -->
+    <div class="bg-white rounded-lg shadow p-4 mb-4">
+      <div class="flex flex-wrap gap-2">
+        <button onclick="filterStatus('all')" class="filter-btn px-4 py-2 rounded-full text-sm bg-gray-200 hover:bg-gray-300" data-status="all">全部</button>
+        <button onclick="filterStatus('pending')" class="filter-btn px-4 py-2 rounded-full text-sm status-pending" data-status="pending">⏳ 待處理</button>
+        <button onclick="filterStatus('processing')" class="filter-btn px-4 py-2 rounded-full text-sm status-processing" data-status="processing">🔄 處理中</button>
+        <button onclick="filterStatus('submitted')" class="filter-btn px-4 py-2 rounded-full text-sm status-submitted" data-status="submitted">📤 已提交</button>
+        <button onclick="filterStatus('approved')" class="filter-btn px-4 py-2 rounded-full text-sm status-approved" data-status="approved">✅ 已上架</button>
+      </div>
+    </div>
+
+    <!-- 申請列表 -->
+    <div id="list" class="space-y-4">
+      <div class="text-center py-10 text-gray-500">載入中...</div>
+    </div>
+  </div>
+
+  <!-- 詳情彈窗 -->
+  <div class="modal" id="detailModal">
+    <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div class="p-6" id="detailContent"></div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = '/.netlify/functions';
+    let applications = [];
+    let currentFilter = 'all';
+
+    function checkAuth() {
+      const auth = JSON.parse(localStorage.getItem('adminAuth') || '{}');
+      if (!auth.loggedIn || auth.expiry < Date.now()) {
+        window.location.href = '/admin/login.html';
+        return false;
+      }
+      return true;
+    }
+
+    async function loadApplications() {
+      try {
+        const res = await fetch(`${API_BASE}/admin-listing?action=list`);
+        const data = await res.json();
+        if (data.success) {
+          applications = data.applications || [];
+          updateStats();
+          renderList();
+        }
+      } catch (e) {
+        document.getElementById('list').innerHTML = '<div class="text-center py-10 text-red-500">載入失敗</div>';
+      }
+    }
+
+    function updateStats() {
+      const counts = { pending: 0, processing: 0, submitted: 0, approved: 0, rejected: 0 };
+      applications.forEach(a => { if (counts[a.status] !== undefined) counts[a.status]++; });
+      document.getElementById('stat-pending').textContent = counts.pending;
+      document.getElementById('stat-processing').textContent = counts.processing;
+      document.getElementById('stat-submitted').textContent = counts.submitted;
+      document.getElementById('stat-approved').textContent = counts.approved;
+      document.getElementById('stat-total').textContent = applications.length;
+    }
+
+    function filterStatus(status) {
+      currentFilter = status;
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.toggle('ring-2', btn.dataset.status === status);
+        btn.classList.toggle('ring-offset-2', btn.dataset.status === status);
+      });
+      renderList();
+    }
+
+    function renderList() {
+      const filtered = currentFilter === 'all' ? applications : applications.filter(a => a.status === currentFilter);
+      if (filtered.length === 0) {
+        document.getElementById('list').innerHTML = '<div class="text-center py-10 text-gray-500">沒有符合的申請</div>';
+        return;
+      }
+      document.getElementById('list').innerHTML = filtered.map(a => `
+        <div class="bg-white rounded-lg shadow p-4 hover:shadow-lg transition cursor-pointer" onclick="showDetail('${a.application_id}')">
+          <div class="flex items-center gap-4">
+            <img src="${a.cover_url}" class="sticker-thumb" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2280%22>🖼️</text></svg>'">
+            <div class="flex-1 min-w-0">
+              <div class="font-bold text-gray-800 truncate">${a.name_en}</div>
+              <div class="text-sm text-gray-500">${a.name_zh || ''} | NT$${a.price}</div>
+              <div class="text-xs text-gray-400">${a.application_id} | ${new Date(a.created_at).toLocaleDateString()}</div>
+            </div>
+            <span class="status-${a.status} px-3 py-1 rounded-full text-xs font-medium">${getStatusText(a.status)}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function getStatusText(s) {
+      return { pending: '⏳ 待處理', processing: '🔄 處理中', submitted: '📤 已提交', approved: '✅ 已上架', rejected: '❌ 已拒絕' }[s] || s;
+    }
+
+    async function showDetail(appId) {
+      const a = applications.find(x => x.application_id === appId);
+      if (!a) return;
+      const stickers = JSON.parse(a.sticker_urls || '[]');
+      document.getElementById('detailContent').innerHTML = `
+        <div class="flex justify-between items-start mb-4">
+          <h2 class="text-xl font-bold">📋 申請詳情</h2>
+          <button onclick="hideDetail()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+        </div>
+        <div class="grid md:grid-cols-2 gap-4 mb-4">
+          <div><span class="text-gray-500">申請編號：</span><strong>${a.application_id}</strong></div>
+          <div><span class="text-gray-500">狀態：</span><span class="status-${a.status} px-2 py-1 rounded text-sm">${getStatusText(a.status)}</span></div>
+          <div><span class="text-gray-500">英文名稱：</span><strong>${a.name_en}</strong></div>
+          <div><span class="text-gray-500">中文名稱：</span>${a.name_zh || '-'}</div>
+          <div><span class="text-gray-500">售價：</span><strong>NT$${a.price}</strong></div>
+          <div><span class="text-gray-500">申請時間：</span>${new Date(a.created_at).toLocaleString()}</div>
+        </div>
+        <div class="mb-4"><span class="text-gray-500">用戶 ID：</span><code class="bg-gray-100 px-2 py-1 rounded text-xs">${a.user_id}</code></div>
+        <div class="mb-4">
+          <div class="text-gray-500 mb-2">封面圖片：</div>
+          <img src="${a.cover_url}" class="w-32 h-32 object-contain bg-gray-100 rounded-lg">
+        </div>
+        <div class="mb-4">
+          <div class="text-gray-500 mb-2">全部貼圖 (${stickers.length}張)：</div>
+          <div class="grid grid-cols-5 md:grid-cols-8 gap-2 max-h-60 overflow-y-auto p-2 bg-gray-50 rounded-lg">
+            ${stickers.map(s => `<img src="${s.url}" class="w-full aspect-square object-contain bg-white rounded" title="${s.expression}">`).join('')}
+          </div>
+        </div>
+        <div class="border-t pt-4">
+          <div class="text-gray-500 mb-2">更新狀態：</div>
+          <div class="flex flex-wrap gap-2">
+            <button onclick="updateStatus('${a.application_id}','processing')" class="px-4 py-2 rounded status-processing">🔄 處理中</button>
+            <button onclick="updateStatus('${a.application_id}','submitted')" class="px-4 py-2 rounded status-submitted">📤 已提交LINE</button>
+            <button onclick="updateStatus('${a.application_id}','approved')" class="px-4 py-2 rounded status-approved">✅ 已上架</button>
+            <button onclick="updateStatus('${a.application_id}','rejected')" class="px-4 py-2 rounded status-rejected">❌ 拒絕</button>
+          </div>
+        </div>
+      `;
+      document.getElementById('detailModal').classList.add('show');
+    }
+
+    function hideDetail() { document.getElementById('detailModal').classList.remove('show'); }
+
+    async function updateStatus(appId, status) {
+      if (!confirm(`確定要將狀態更新為「${getStatusText(status)}」？`)) return;
+      try {
+        const res = await fetch(`${API_BASE}/admin-listing`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'updateStatus', applicationId: appId, status })
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert('✅ 狀態已更新');
+          hideDetail();
+          loadApplications();
+        } else { alert('❌ ' + (data.error || '更新失敗')); }
+      } catch (e) { alert('❌ 操作失敗'); }
+    }
+
+    if (checkAuth()) loadApplications();
+  </script>
+</body>
+</html>
+
