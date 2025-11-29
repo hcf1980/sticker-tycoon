@@ -19,6 +19,31 @@ CREATE TABLE IF NOT EXISTS line_pack_tasks (
 CREATE INDEX IF NOT EXISTS idx_line_pack_tasks_user ON line_pack_tasks(user_id);
 CREATE INDEX IF NOT EXISTS idx_line_pack_tasks_status ON line_pack_tasks(status);
 
+-- 0.1 LINE 貼圖上架申請表
+CREATE TABLE IF NOT EXISTS listing_applications (
+  id BIGSERIAL PRIMARY KEY,
+  application_id TEXT UNIQUE NOT NULL,
+  user_id TEXT NOT NULL,
+  name_en TEXT NOT NULL,            -- 貼圖英文名稱
+  name_zh TEXT,                     -- 貼圖中文名稱
+  price INTEGER DEFAULT 30,         -- 售價：30/60/90/120/150
+  cover_index INTEGER DEFAULT 0,    -- 封面圖片索引
+  cover_url TEXT,                   -- 封面圖片 URL
+  sticker_count INTEGER DEFAULT 40, -- 貼圖數量
+  sticker_urls JSONB,               -- 所有貼圖 URL（JSON）
+  status TEXT DEFAULT 'pending',    -- pending, processing, submitted, approved, rejected
+  line_sticker_id TEXT,             -- LINE 貼圖 ID（上架後填入）
+  admin_notes TEXT,                 -- 管理員備註
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  submitted_at TIMESTAMP WITH TIME ZONE,  -- 提交到 LINE 的時間
+  approved_at TIMESTAMP WITH TIME ZONE    -- 審核通過時間
+);
+
+CREATE INDEX IF NOT EXISTS idx_listing_applications_user ON listing_applications(user_id);
+CREATE INDEX IF NOT EXISTS idx_listing_applications_status ON listing_applications(status);
+CREATE INDEX IF NOT EXISTS idx_listing_applications_created ON listing_applications(created_at DESC);
+
 -- 1. LINE 事件去重表（防止 webhook 重複觸發）
 CREATE TABLE IF NOT EXISTS line_events (
   id BIGSERIAL PRIMARY KEY,

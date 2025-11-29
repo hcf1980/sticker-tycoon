@@ -76,7 +76,8 @@
       <p class="hint" id="hintText">👆 點擊任一張貼圖設為封面圖片</p>
       <div class="btn-row">
         <button class="btn btn-danger" onclick="showClearModal()">🗑️ 清空</button>
-        <button class="btn btn-primary" id="downloadBtn" disabled onclick="download()">📥 下載 LINE 貼圖包</button>
+        <button class="btn btn-secondary" id="downloadBtn" disabled onclick="download()">📥 自行上架</button>
+        <button class="btn btn-primary" id="submitBtn" disabled onclick="showSubmitModal()">🚀 免費代上架</button>
       </div>
     </div>
   </div>
@@ -104,12 +105,60 @@
     </div>
   </div>
 
+  <!-- 免費代上架彈窗 -->
+  <div class="modal" id="submitModal">
+    <div class="modal-content" style="max-width:450px;text-align:left;">
+      <h3 style="text-align:center;margin-bottom:20px;">🚀 免費代上架服務</h3>
+      <p style="background:#e8f5e9;padding:12px;border-radius:8px;font-size:0.85rem;margin-bottom:15px;">
+        ✅ 完全免費！我們會協助您將貼圖上架至 LINE 貼圖小舖<br>
+        ⏱️ 審核時間約 3-7 個工作天
+      </p>
+      <div style="margin-bottom:15px;">
+        <label style="font-weight:600;font-size:0.9rem;display:block;margin-bottom:5px;">貼圖英文名稱 *</label>
+        <input type="text" id="stickerNameEn" placeholder="例如：My Daily Life" style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:1rem;">
+        <p style="font-size:0.75rem;color:#666;margin-top:5px;">LINE 貼圖小舖顯示的名稱（英文）</p>
+      </div>
+      <div style="margin-bottom:15px;">
+        <label style="font-weight:600;font-size:0.9rem;display:block;margin-bottom:5px;">貼圖中文名稱</label>
+        <input type="text" id="stickerNameZh" placeholder="例如：我的日常" style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:1rem;">
+      </div>
+      <div style="margin-bottom:15px;">
+        <label style="font-weight:600;font-size:0.9rem;display:block;margin-bottom:8px;">💰 選擇售價</label>
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;" id="priceOptions">
+          <button class="price-btn selected" data-price="30" onclick="selectPrice(30)">NT$30</button>
+          <button class="price-btn" data-price="60" onclick="selectPrice(60)">NT$60</button>
+          <button class="price-btn" data-price="90" onclick="selectPrice(90)">NT$90</button>
+          <button class="price-btn" data-price="120" onclick="selectPrice(120)">NT$120</button>
+          <button class="price-btn" data-price="150" onclick="selectPrice(150)">NT$150</button>
+        </div>
+        <p style="font-size:0.75rem;color:#666;margin-top:8px;">💡 售價越高，每次銷售您獲得的分潤越多</p>
+      </div>
+      <div style="background:#fff3e0;padding:12px;border-radius:8px;font-size:0.8rem;margin-bottom:20px;">
+        📌 <strong>注意事項：</strong><br>
+        • 貼圖將由 Sticker Tycoon 統一上架<br>
+        • 銷售分潤依 LINE 官方規定計算<br>
+        • 上架後會透過 LINE 通知您
+      </div>
+      <div class="modal-btns">
+        <button class="btn btn-secondary" onclick="hideSubmitModal()">取消</button>
+        <button class="btn btn-primary" onclick="submitForReview()">🚀 提交上架申請</button>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .price-btn { padding:10px 5px; border:2px solid #ddd; border-radius:8px; background:white; font-size:0.9rem; cursor:pointer; transition:all 0.2s; }
+    .price-btn:hover { border-color:#06C755; }
+    .price-btn.selected { border-color:#06C755; background:#e8f5e9; font-weight:600; }
+  </style>
+
   <script>
     const API_BASE = '/.netlify/functions';
     const urlParams = new URLSearchParams(window.location.search);
     const userId = urlParams.get('userId');
     let queue = [];
     let selectedCoverIndex = 0;
+    let selectedPrice = 30;
 
     async function loadQueue() {
       if (!userId) { showEmpty('請從 LINE 開啟此頁面'); return; }
@@ -128,6 +177,7 @@
       document.getElementById('countText').textContent = `${count} / 40`;
       document.getElementById('progressFill').style.width = `${(count/40)*100}%`;
       document.getElementById('downloadBtn').disabled = !isReady;
+      document.getElementById('submitBtn').disabled = !isReady;
       document.getElementById('hintText').textContent = isReady
         ? '✅ 已滿 40 張！點擊貼圖設為封面，然後下載'
         : `⏳ 還需要 ${40-count} 張貼圖`;
@@ -286,6 +336,69 @@
     function showToast(msg) {
       const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
       setTimeout(() => t.classList.remove('show'), 2000);
+    }
+
+    function showSubmitModal() {
+      document.getElementById('submitModal').classList.add('show');
+    }
+
+    function hideSubmitModal() {
+      document.getElementById('submitModal').classList.remove('show');
+    }
+
+    function selectPrice(price) {
+      selectedPrice = price;
+      document.querySelectorAll('.price-btn').forEach(btn => {
+        btn.classList.toggle('selected', parseInt(btn.dataset.price) === price);
+      });
+    }
+
+    async function submitForReview() {
+      const nameEn = document.getElementById('stickerNameEn').value.trim();
+      const nameZh = document.getElementById('stickerNameZh').value.trim();
+
+      if (!nameEn) {
+        showToast('❌ 請輸入貼圖英文名稱');
+        return;
+      }
+
+      hideSubmitModal();
+      const modal = document.getElementById('downloadModal');
+      const modalContent = modal.querySelector('.modal-content');
+      modalContent.innerHTML = `<div class="spinner"></div><h3>🚀 正在提交申請...</h3><p>請稍候...</p>`;
+      modal.classList.add('show');
+
+      try {
+        const res = await fetch(`${API_BASE}/submit-for-listing`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId,
+            nameEn,
+            nameZh,
+            price: selectedPrice,
+            coverIndex: selectedCoverIndex,
+            stickerCount: queue.length
+          })
+        });
+        const data = await res.json();
+
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || '提交失敗');
+        }
+
+        modal.classList.remove('show');
+        showToast('✅ 申請已提交！');
+
+        // 顯示成功訊息
+        setTimeout(() => {
+          alert(`🎉 上架申請已提交！\n\n📋 申請編號：${data.applicationId}\n📦 貼圖名稱：${nameEn}\n💰 售價：NT$${selectedPrice}\n\n⏱️ 預計 3-7 個工作天完成上架\n📱 上架後會透過 LINE 通知您`);
+        }, 500);
+
+      } catch (e) {
+        modal.classList.remove('show');
+        showToast('❌ ' + e.message);
+      }
     }
 
     loadQueue();
