@@ -61,7 +61,7 @@ async function handleTextMessage(replyToken, userId, text) {
     }
     
     // 2. 優先處理全局命令（即使在創建流程中也可以使用）
-    const globalCommands = ['推薦好友', '我的推薦碼', '推薦碼', '邀請好友', '查詢進度', '我的貼圖', '貼圖列表', '代幣', '餘額', '我的代幣', '查詢代幣'];
+    const globalCommands = ['分享給好友', '推薦好友', '我的推薦碼', '推薦碼', '邀請好友', '查詢進度', '我的貼圖', '貼圖列表', '代幣', '餘額', '我的代幣', '查詢代幣'];
     if (globalCommands.includes(text)) {
       // 這些命令不受創建流程限制，直接跳過創建流程處理
       console.log(`🌐 執行全局命令：${text}`);
@@ -115,8 +115,8 @@ async function handleTextMessage(replyToken, userId, text) {
       return await handlePurchaseInfo(replyToken);
     }
 
-    // 推薦好友
-    if (text === '推薦好友' || text === '我的推薦碼' || text === '推薦碼' || text === '邀請好友') {
+    // 分享給好友
+    if (text === '分享給好友' || text === '推薦好友' || text === '我的推薦碼' || text === '推薦碼' || text === '邀請好友') {
       return await handleReferralInfo(replyToken, userId);
     }
 
@@ -407,11 +407,11 @@ async function handleConfirmGeneration(replyToken, userId, state) {
     }
   ];
 
-  // 如果未達推薦上限，加入推薦好友按鈕
+  // 如果未達推薦上限，加入分享給好友按鈕
   if (showReferralReminder) {
     quickReplyItems.push({
       type: 'action',
-      action: { type: 'message', label: '🎁 推薦好友', text: '推薦好友' }
+      action: { type: 'message', label: '🎁 分享給好友', text: '分享給好友' }
     });
   }
 
@@ -849,7 +849,7 @@ function generateStickerListFlexMessage(sets, referralInfo = null) {
     if (!bubble.hero) delete bubble.hero;
   });
 
-  // 如果可以推薦好友，在最後加入推薦好友卡片
+  // 如果可以分享，在最後加入分享給好友卡片
   const canRefer = referralInfo && (referralInfo.referralCount || 0) < 3;
   if (canRefer && referralInfo.referralCode) {
     bubbles.push({
@@ -862,10 +862,10 @@ function generateStickerListFlexMessage(sets, referralInfo = null) {
         paddingAll: 'lg',
         contents: [
           { type: 'text', text: '🎁', size: '3xl', align: 'center' },
-          { type: 'text', text: '推薦好友得代幣', size: 'lg', weight: 'bold', align: 'center', color: '#E65100', margin: 'md' },
+          { type: 'text', text: '分享給好友得代幣', size: 'lg', weight: 'bold', align: 'center', color: '#E65100', margin: 'md' },
           { type: 'text', text: `推薦碼：${referralInfo.referralCode}`, size: 'md', align: 'center', color: '#FF8A00', margin: 'md', weight: 'bold' },
           { type: 'text', text: `雙方各得 10 代幣！`, size: 'sm', align: 'center', color: '#666666', margin: 'sm' },
-          { type: 'text', text: `還可邀請 ${3 - referralInfo.referralCount} 位好友`, size: 'xs', align: 'center', color: '#999999', margin: 'xs' }
+          { type: 'text', text: `還可分享 ${3 - referralInfo.referralCount} 位好友`, size: 'xs', align: 'center', color: '#999999', margin: 'xs' }
         ]
       },
       footer: {
@@ -879,7 +879,7 @@ function generateStickerListFlexMessage(sets, referralInfo = null) {
             action: {
               type: 'message',
               label: '📤 分享給好友',
-              text: '推薦好友'
+              text: '分享給好友'
             }
           }
         ]
@@ -1544,10 +1544,10 @@ async function sendUploadQueueCarousel(replyToken, queue, page = 1, userId) {
     action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' }
   });
 
-  // 推薦好友
+  // 分享給好友
   quickReplyItems.push({
     type: 'action',
-    action: { type: 'message', label: '🎁 推薦好友', text: '推薦好友' }
+    action: { type: 'message', label: '🎁 分享給好友', text: '分享給好友' }
   });
 
   // 加入 Quick Reply
@@ -1826,7 +1826,7 @@ async function handleTokenQuery(replyToken, userId) {
           { type: 'text', text: '代幣', size: 'sm', align: 'center', color: '#666666', margin: 'sm' },
           { type: 'separator', margin: 'lg' },
           { type: 'text', text: '💡 每生成1張貼圖消耗1代幣', size: 'xs', color: '#888888', margin: 'lg', wrap: true },
-          // 推薦好友提示
+          // 分享給好友提示
           ...(canRefer ? [{
             type: 'box',
             layout: 'vertical',
@@ -1835,8 +1835,8 @@ async function handleTokenQuery(replyToken, userId) {
             backgroundColor: '#FFF3E0',
             cornerRadius: 'md',
             contents: [
-              { type: 'text', text: '🎁 推薦好友，雙方各得 10 代幣！', size: 'xs', color: '#E65100', align: 'center', weight: 'bold' },
-              { type: 'text', text: `還可邀請 ${3 - referralInfo.referralCount} 位好友`, size: 'xxs', color: '#FF8A00', align: 'center', margin: 'xs' }
+              { type: 'text', text: '🎁 分享給好友，雙方各得 10 代幣！', size: 'xs', color: '#E65100', align: 'center', weight: 'bold' },
+              { type: 'text', text: `還可分享 ${3 - referralInfo.referralCount} 位好友`, size: 'xxs', color: '#FF8A00', align: 'center', margin: 'xs' }
             ]
           }] : [])
         ]
@@ -1855,7 +1855,7 @@ async function handleTokenQuery(replyToken, userId) {
           },
           ...(canRefer ? [{
             type: 'button',
-            action: { type: 'message', label: '🎁 推薦好友得代幣', text: '推薦好友' },
+            action: { type: 'message', label: '🎁 分享給好友得代幣', text: '分享給好友' },
             style: 'secondary',
             height: 'sm'
           }] : [])
@@ -2053,7 +2053,7 @@ async function handlePurchaseInfo(replyToken) {
 }
 
 /**
- * 處理推薦好友資訊 - 可直接分享給好友
+ * 處理分享給好友資訊 - 可直接分享給好友
  */
 async function handleReferralInfo(replyToken, userId) {
   const info = await getUserReferralInfo(userId);
@@ -2079,7 +2079,7 @@ async function handleReferralInfo(replyToken, userId) {
   // 主訊息卡片
   const message = {
     type: 'flex',
-    altText: '🎁 推薦好友賺代幣',
+    altText: '🎁 分享給好友賺代幣',
     contents: {
       type: 'bubble',
       size: 'mega',
@@ -2089,8 +2089,8 @@ async function handleReferralInfo(replyToken, userId) {
         backgroundColor: '#FF6B6B',
         paddingAll: 'lg',
         contents: [
-          { type: 'text', text: '🎁 推薦好友賺代幣', size: 'xl', weight: 'bold', color: '#FFFFFF', align: 'center' },
-          { type: 'text', text: '邀請好友，雙方各得 10 代幣！', size: 'sm', color: '#FFDDDD', align: 'center', margin: 'sm' }
+          { type: 'text', text: '🎁 分享給好友賺代幣', size: 'xl', weight: 'bold', color: '#FFFFFF', align: 'center' },
+          { type: 'text', text: '分享好友，雙方各得 10 代幣！', size: 'sm', color: '#FFDDDD', align: 'center', margin: 'sm' }
         ]
       },
       body: {

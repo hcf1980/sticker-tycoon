@@ -120,8 +120,8 @@ function generateWelcomeFlexMessage() {
                 flex: 1,
                 action: {
                   type: 'message',
-                  label: '🎁 推薦好友',
-                  text: '推薦好友'
+                  label: '🎁 分享給好友',
+                  text: '分享給好友'
                 }
               }
             ]
@@ -136,7 +136,7 @@ function generateWelcomeFlexMessage() {
             contents: [
               {
                 type: 'text',
-                text: '🎁 推薦好友，雙方各得 10 代幣！',
+                text: '🎁 分享給好友，雙方各得 10 代幣！',
                 size: 'xs',
                 color: '#E65100',
                 align: 'center',
