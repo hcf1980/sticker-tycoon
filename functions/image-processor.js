@@ -19,26 +19,39 @@ const { Readable } = require('stream');
 const { LineStickerSpecs } = require('./sticker-styles');
 
 /**
- * 從 URL 下載圖片
+ * 從 URL 下載圖片（含重試機制）
  */
-async function downloadImage(url) {
-  try {
-    // 處理 base64 格式
-    if (url.startsWith('data:image')) {
-      const base64Data = url.split(',')[1];
-      return Buffer.from(base64Data, 'base64');
-    }
-
-    // 從 URL 下載
-    const response = await axios.get(url, {
-      responseType: 'arraybuffer',
-      timeout: 30000
-    });
-    return Buffer.from(response.data);
-  } catch (error) {
-    console.error('下載圖片失敗:', error.message);
-    throw error;
+async function downloadImage(url, retries = 3) {
+  // 處理 base64 格式
+  if (url.startsWith('data:image')) {
+    const base64Data = url.split(',')[1];
+    return Buffer.from(base64Data, 'base64');
   }
+
+  let lastError;
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      console.log(`   📥 下載圖片 (嘗試 ${attempt}/${retries})...`);
+      const response = await axios.get(url, {
+        responseType: 'arraybuffer',
+        timeout: 60000, // 增加到 60 秒
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; StickerBot/1.0)'
+        }
+      });
+      console.log(`   ✅ 下載成功: ${(response.data.byteLength / 1024).toFixed(1)}KB`);
+      return Buffer.from(response.data);
+    } catch (error) {
+      lastError = error;
+      console.error(`   ❌ 下載失敗 (嘗試 ${attempt}): ${error.message}`);
+      if (attempt < retries) {
+        const delay = attempt * 2000; // 2秒, 4秒, 6秒
+        console.log(`   ⏳ 等待 ${delay}ms 後重試...`);
+        await new Promise(r => setTimeout(r, delay));
+      }
+    }
+  }
+  throw lastError;
 }
 
 /**
