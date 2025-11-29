@@ -94,6 +94,11 @@ async function handleTextMessage(replyToken, userId, text) {
       return getLineClient().replyMessage(replyToken, stickerListMessage);
     }
 
+    // 示範圖集
+    if (text === '示範圖集' || text === '範例' || text === '作品集') {
+      return getLineClient().replyMessage(replyToken, generateDemoGalleryFlexMessage());
+    }
+
     // 查看特定貼圖組
     if (text.startsWith('查看貼圖:')) {
       const setId = text.replace('查看貼圖:', '');
@@ -1218,3 +1223,92 @@ async function handleClearUploadQueue(replyToken, userId) {
   }
 }
 
+/**
+ * 生成示範圖集 Flex Message
+ */
+function generateDemoGalleryFlexMessage() {
+  // 示範貼圖（可以替換成真實的範例圖片 URL）
+  const demoStickers = [
+    { url: 'https://sticker-tycoon.netlify.app/demo/cute-1.png', style: '可愛風', expression: 'Hi' },
+    { url: 'https://sticker-tycoon.netlify.app/demo/cool-1.png', style: '酷炫風', expression: 'OK' },
+    { url: 'https://sticker-tycoon.netlify.app/demo/anime-1.png', style: '動漫風', expression: '讚讚' },
+    { url: 'https://sticker-tycoon.netlify.app/demo/realistic-1.png', style: '美顏真實', expression: '開心' }
+  ];
+
+  const infoBubble = {
+    type: 'bubble',
+    size: 'kilo',
+    header: {
+      type: 'box',
+      layout: 'vertical',
+      backgroundColor: '#FF6B6B',
+      paddingAll: 'lg',
+      contents: [
+        { type: 'text', text: '✨ 示範圖集', weight: 'bold', size: 'lg', color: '#FFFFFF' }
+      ]
+    },
+    body: {
+      type: 'box',
+      layout: 'vertical',
+      contents: [
+        { type: 'text', text: '以下是各種風格的貼圖範例', size: 'sm', wrap: true },
+        { type: 'text', text: '👈 左滑查看更多', size: 'xs', color: '#06C755', margin: 'lg' },
+        { type: 'separator', margin: 'lg' },
+        { type: 'text', text: '🎨 可選風格：', size: 'sm', weight: 'bold', margin: 'lg' },
+        { type: 'text', text: '美顏真實 / 可愛風 / 酷炫風', size: 'xs', color: '#666666', margin: 'sm' },
+        { type: 'text', text: '搞笑風 / 簡約風 / 動漫風', size: 'xs', color: '#666666', margin: 'sm' },
+        { type: 'text', text: '像素風 / 塗鴉風', size: 'xs', color: '#666666', margin: 'sm' }
+      ]
+    },
+    footer: {
+      type: 'box',
+      layout: 'vertical',
+      contents: [
+        {
+          type: 'button',
+          style: 'primary',
+          color: '#FF6B6B',
+          action: { type: 'message', label: '🚀 開始創建', text: '創建貼圖' }
+        }
+      ]
+    }
+  };
+
+  const demoBubbles = demoStickers.map(demo => ({
+    type: 'bubble',
+    size: 'kilo',
+    body: {
+      type: 'box',
+      layout: 'vertical',
+      paddingAll: 'sm',
+      contents: [
+        {
+          type: 'image',
+          url: demo.url,
+          size: 'full',
+          aspectRatio: '1:1',
+          aspectMode: 'fit',
+          backgroundColor: '#FFFFFF'
+        }
+      ]
+    },
+    footer: {
+      type: 'box',
+      layout: 'vertical',
+      paddingAll: 'sm',
+      contents: [
+        { type: 'text', text: demo.expression, size: 'sm', weight: 'bold', align: 'center' },
+        { type: 'text', text: demo.style, size: 'xs', color: '#999999', align: 'center', margin: 'sm' }
+      ]
+    }
+  }));
+
+  return {
+    type: 'flex',
+    altText: '✨ 示範圖集 - 各種風格的貼圖範例',
+    contents: {
+      type: 'carousel',
+      contents: [infoBubble, ...demoBubbles]
+    }
+  };
+}

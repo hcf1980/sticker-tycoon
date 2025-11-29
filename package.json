@@ -9,7 +9,9 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "deploy": "netlify deploy --prod"
+    "deploy": "netlify deploy --prod",
+    "setup:richmenu": "node scripts/setup-rich-menu.js",
+    "generate:richmenu-image": "node scripts/generate-rich-menu-image.js"
   },
   "keywords": [
     "line-bot",
@@ -23,10 +25,11 @@
   "dependencies": {
     "@line/bot-sdk": "^9.3.0",
     "@supabase/supabase-js": "^2.45.4",
+    "archiver": "^7.0.1",
     "axios": "^1.7.7",
+    "canvas": "^3.2.0",
     "dotenv": "^16.4.5",
     "sharp": "^0.34.5",
-    "archiver": "^7.0.1",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
@@ -38,4 +41,3 @@
     "node": ">=18.0.0"
   }
 }
-
