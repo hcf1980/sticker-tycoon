@@ -117,28 +117,74 @@
   </div>
 
   <script>
-    // Supabase 設定（需替換為實際值）
-    const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-    const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    // 使用 API 來載入資料（無需在前端暴露 Supabase 金鑰）
+    let allStickerSets = [];
+    let SUPABASE_URL = '';
 
     // 載入貼圖組
     async function loadStickerSets() {
-      const search = document.getElementById('search-input').value;
+      const search = document.getElementById('search-input').value.toLowerCase();
       const status = document.getElementById('status-filter').value;
 
-      let query = supabase.from('sticker_sets').select('*').order('created_at', { ascending: false });
-      if (search) query = query.ilike('name', `%${search}%`);
-      if (status) query = query.eq('status', status);
+      try {
+        // 從 API 取得統計和完整資料
+        const response = await fetch('/.netlify/functions/admin-cleanup?action=stats');
+        const result = await response.json();
 
-      const { data, error } = await query;
-      if (error) { console.error(error); return; }
+        if (result.success && result.stats) {
+          document.getElementById('stat-total').textContent = result.stats.total;
+          document.getElementById('stat-completed').textContent = result.stats.completed;
+          document.getElementById('stat-generating').textContent = result.stats.generating;
+          document.getElementById('stat-failed').textContent = result.stats.failed;
+          document.getElementById('stat-users').textContent = result.stats.users;
+          document.getElementById('stat-storage').textContent = result.stats.storageFolders;
+        }
 
-      updateStats(data);
-      renderStickerList(data);
+        // 從 orphaned API 取得完整的貼圖組列表
+        const orphanedResponse = await fetch('/.netlify/functions/admin-cleanup?action=orphaned');
+        const orphanedResult = await orphanedResponse.json();
+
+        // 顯示孤立資料
+        if (orphanedResult.success) {
+          document.getElementById('orphan-storage').textContent = orphanedResult.orphanedStorage;
+          document.getElementById('orphan-db').textContent = orphanedResult.orphanedDb;
+          orphanedData = orphanedResult.details;
+
+          if (orphanedResult.orphanedStorage > 0 || orphanedResult.orphanedDb > 0) {
+            document.getElementById('cleanup-btn').disabled = false;
+          }
+        }
+
+        // 使用 list API 取得貼圖組列表
+        const listResponse = await fetch('/.netlify/functions/admin-cleanup?action=list');
+        const listResult = await listResponse.json();
+
+        if (listResult.success && listResult.sets) {
+          allStickerSets = listResult.sets;
+          if (listResult.supabaseUrl) {
+            SUPABASE_URL = listResult.supabaseUrl;
+          }
+
+          // 篩選
+          let filtered = allStickerSets;
+          if (search) {
+            filtered = filtered.filter(s => s.name && s.name.toLowerCase().includes(search));
+          }
+          if (status) {
+            filtered = filtered.filter(s => s.status === status);
+          }
+
+          renderStickerList(filtered);
+        } else {
+          renderStickerList([]);
+        }
+      } catch (err) {
+        console.error('載入失敗:', err);
+        renderStickerList([]);
+      }
     }
 
-    // 更新統計
+    // 更新統計（保留給相容性）
     function updateStats(data) {
       document.getElementById('stat-total').textContent = data.length;
       document.getElementById('stat-completed').textContent = data.filter(s => s.status === 'completed').length;
@@ -146,21 +192,7 @@
       document.getElementById('stat-failed').textContent = data.filter(s => s.status === 'failed').length;
     }
 
-    // 載入完整統計（從 API）
-    async function loadFullStats() {
-      try {
-        const response = await fetch('/.netlify/functions/admin-cleanup?action=stats');
-        const result = await response.json();
-        if (result.success && result.stats) {
-          document.getElementById('stat-users').textContent = result.stats.users || 0;
-          document.getElementById('stat-storage').textContent = result.stats.storageFolders || 0;
-        }
-      } catch (err) {
-        console.error('載入統計失敗:', err);
-      }
-    }
-
-    // 檢查孤立資料
+    // 檢查孤立資料（獨立按鈕用）
     let orphanedData = null;
     async function checkOrphaned() {
       try {
@@ -175,7 +207,6 @@
           document.getElementById('orphan-storage').textContent = result.orphanedStorage;
           document.getElementById('orphan-db').textContent = result.orphanedDb;
 
-          // 如果有孤立資料，啟用清理按鈕
           if (result.orphanedStorage > 0 || result.orphanedDb > 0) {
             document.getElementById('cleanup-btn').disabled = false;
           } else {
@@ -298,21 +329,32 @@
     }
 
     async function showDetail(setId) {
-      const { data: set } = await supabase.from('sticker_sets').select('*').eq('set_id', setId).single();
-      const { data: stickers } = await supabase.storage.from('sticker-images').list(setId);
+      try {
+        const response = await fetch(`/.netlify/functions/admin-cleanup?action=detail&setId=${setId}`);
+        const result = await response.json();
 
-      document.getElementById('modal-title').textContent = set.name;
-      document.getElementById('modal-content').innerHTML = `
-        <div class="grid grid-cols-4 gap-4">
-          ${(stickers || []).filter(f => f.name.startsWith('sticker_')).map(f => `
-            <div class="bg-white rounded p-2 border border-gray-200">
-              <img src="${SUPABASE_URL}/storage/v1/object/public/sticker-images/${setId}/${f.name}" class="w-full" style="background-color: white;">
-            </div>
-          `).join('')}
-        </div>
-      `;
-      document.getElementById('detail-modal').classList.remove('hidden');
-      document.getElementById('detail-modal').classList.add('flex');
+        if (!result.success) {
+          alert('無法載入貼圖詳細資料');
+          return;
+        }
+
+        document.getElementById('modal-title').textContent = result.set.name;
+        document.getElementById('modal-content').innerHTML = `
+          <div class="grid grid-cols-4 gap-4">
+            ${(result.stickers || []).map(s => `
+              <div class="bg-white rounded p-2 border border-gray-200">
+                <img src="${s.url}" class="w-full" style="background-color: white;">
+              </div>
+            `).join('')}
+          </div>
+          ${result.stickers.length === 0 ? '<p class="text-gray-500 text-center py-4">沒有找到貼圖圖片</p>' : ''}
+        `;
+        document.getElementById('detail-modal').classList.remove('hidden');
+        document.getElementById('detail-modal').classList.add('flex');
+      } catch (err) {
+        console.error('載入詳細資料失敗:', err);
+        alert('載入失敗');
+      }
     }
 
     function closeModal() {
@@ -328,8 +370,6 @@
 
     // 初始載入
     loadStickerSets();
-    loadFullStats();
-    checkOrphaned();
   </script>
 </body>
 </html>

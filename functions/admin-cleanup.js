@@ -43,6 +43,18 @@ exports.handler = async (event, context) => {
         // 取得孤立資料
         return await getOrphanedData(supabase, headers);
 
+      case 'list':
+        // 取得貼圖組列表
+        return await getStickerSetsList(supabase, headers);
+
+      case 'detail':
+        // 取得單一貼圖組詳細資料
+        const setId = event.queryStringParameters?.setId;
+        if (!setId) {
+          return { statusCode: 400, headers, body: JSON.stringify({ error: 'setId required' }) };
+        }
+        return await getStickerSetDetail(supabase, headers, setId);
+
       case 'cleanup':
         // 執行清理（需 POST 請求）
         if (event.httpMethod !== 'POST') {
@@ -97,6 +109,78 @@ async function getStats(supabase, headers) {
     statusCode: 200,
     headers,
     body: JSON.stringify({ success: true, stats })
+  };
+}
+
+/**
+ * 取得單一貼圖組詳細資料
+ */
+async function getStickerSetDetail(supabase, headers, setId) {
+  const { data: set, error: setError } = await supabase
+    .from('sticker_sets')
+    .select('*')
+    .eq('set_id', setId)
+    .single();
+
+  if (setError) {
+    return {
+      statusCode: 404,
+      headers,
+      body: JSON.stringify({ success: false, error: 'Not found' })
+    };
+  }
+
+  // 列出 Storage 中的貼圖檔案
+  const { data: files } = await supabase.storage
+    .from('sticker-images')
+    .list(setId, { limit: 50 });
+
+  const stickers = (files || [])
+    .filter(f => f.name.startsWith('sticker_') && f.name.endsWith('.png'))
+    .map(f => ({
+      name: f.name,
+      url: `${process.env.SUPABASE_URL}/storage/v1/object/public/sticker-images/${setId}/${f.name}`
+    }));
+
+  return {
+    statusCode: 200,
+    headers,
+    body: JSON.stringify({
+      success: true,
+      set,
+      stickers,
+      supabaseUrl: process.env.SUPABASE_URL
+    })
+  };
+}
+
+/**
+ * 取得貼圖組列表
+ */
+async function getStickerSetsList(supabase, headers) {
+  const { data: sets, error } = await supabase
+    .from('sticker_sets')
+    .select('set_id, name, status, sticker_count, main_image_url, created_at')
+    .order('created_at', { ascending: false })
+    .limit(100);
+
+  if (error) {
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({ success: false, error: error.message })
+    };
+  }
+
+  // 加入 Supabase URL 供前端使用
+  return {
+    statusCode: 200,
+    headers,
+    body: JSON.stringify({
+      success: true,
+      sets: sets || [],
+      supabaseUrl: process.env.SUPABASE_URL
+    })
   };
 }
 
