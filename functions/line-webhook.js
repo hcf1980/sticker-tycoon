@@ -5,7 +5,7 @@
 
 const line = require('@line/bot-sdk');
 const axios = require('axios');
-const { isReplyTokenUsed, recordReplyToken, getOrCreateUser, getUserStickerSets, getUserLatestTask, getUserPendingTasks, getStickerSet, getStickerImages, deleteStickerSet, addToUploadQueue, removeFromUploadQueue, getUploadQueue, clearUploadQueue, getUserTokenBalance, getTokenTransactions, getUserReferralInfo, applyReferralCode } = require('./supabase-client');
+const { isReplyTokenUsed, recordReplyToken, getOrCreateUser, getUserStickerSets, getUserLatestTask, getUserPendingTasks, getStickerSet, getStickerImages, deleteStickerSet, addToUploadQueue, removeFromUploadQueue, getUploadQueue, clearUploadQueue, getUserTokenBalance, getTokenTransactions, getUserReferralInfo, applyReferralCode, deductTokens, addTokens } = require('./supabase-client');
 const { ConversationStage, getConversationState, updateConversationState, resetConversationState, isInCreationFlow } = require('./conversation-state');
 const { generateWelcomeFlexMessage } = require('./sticker-flex-message');
 const { handleStartCreate, handleNaming, handleStyleSelection, handleCharacterDescription, handleExpressionTemplate, handleSceneSelection, handleCustomScene, handleCountSelection, handlePhotoUpload } = require('./handlers/create-handler');
@@ -315,15 +315,49 @@ async function handleConfirmGeneration(replyToken, userId, state) {
     });
   }
 
+  // 🔒 防止重複點擊：檢查是否已有進行中的任務
+  const pendingTasks = await getUserPendingTasks(userId);
+  if (pendingTasks.length > 0) {
+    const task = pendingTasks[0];
+    return getLineClient().replyMessage(replyToken, {
+      type: 'text',
+      text: '⚠️ 你已有任務正在生成中！\n\n' +
+            `📛 名稱：${task.sticker_set?.name || '處理中'}\n` +
+            `📊 進度：${task.progress || 0}%\n\n` +
+            '請等待目前的任務完成後再開始新任務。\n\n' +
+            '📋 輸入「查詢進度」查看生成進度'
+    });
+  }
+
+  // 計算需要的代幣數量
+  const stickerCount = tempData.count || 8;
+
+  // 💰 先扣除代幣（避免重複扣款）
+  const deductResult = await deductTokens(
+    userId,
+    stickerCount,
+    `生成貼圖組「${tempData.name}」(${stickerCount}張)`,
+    null  // setId 還沒產生
+  );
+
+  if (!deductResult.success) {
+    return getLineClient().replyMessage(replyToken, {
+      type: 'text',
+      text: `❌ ${deductResult.error}\n\n` +
+            '💡 輸入「購買代幣」查看儲值方案'
+    });
+  }
+
   // 更新狀態為生成中
   await updateConversationState(userId, ConversationStage.GENERATING, tempData);
 
-  // 回覆生成中訊息（不再提到會通知）
+  // 回覆生成中訊息（包含代幣扣除通知）
   await getLineClient().replyMessage(replyToken, {
     type: 'text',
     text: '🎨 開始生成貼圖！\n\n' +
           `📛 名稱：${tempData.name}\n` +
           `📊 數量：${tempData.count} 張\n\n` +
+          `💰 已扣除 ${stickerCount} 代幣，剩餘 ${deductResult.balance} 代幣\n\n` +
           '⏳ 預計需要 2-5 分鐘\n\n' +
           '📋 輸入「查詢進度」查看生成進度\n' +
           '📁 輸入「我的貼圖」查看完成的貼圖'
@@ -341,7 +375,8 @@ async function handleConfirmGeneration(replyToken, userId, state) {
       expressions: tempData.expressions || [],
       scene: tempData.scene || 'none',
       sceneConfig: tempData.sceneConfig || null,
-      customSceneDescription: tempData.customSceneDescription || null
+      customSceneDescription: tempData.customSceneDescription || null,
+      tokensDeducted: true  // 標記已經扣過代幣
     });
 
     console.log(`✅ 已建立生成任務: taskId=${taskId}, setId=${setId}`);
@@ -366,10 +401,9 @@ async function handleConfirmGeneration(replyToken, userId, state) {
 
   } catch (error) {
     console.error('❌ 建立生成任務失敗:', error);
-    await getLineClient().pushMessage(userId, {
-      type: 'text',
-      text: '❌ 系統錯誤，無法建立生成任務，請稍後再試'
-    });
+    // 退還代幣（因為任務建立失敗）
+    await addTokens(userId, stickerCount, 'refund', `任務建立失敗退款「${tempData.name}」`);
+    console.log(`💰 已退還 ${stickerCount} 代幣`);
   }
 
   return;

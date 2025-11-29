@@ -21,23 +21,28 @@ async function createGenerationTask(userId, setData) {
     // 計算需要的代幣數量（每張貼圖 1 代幣）
     const stickerCount = setData.count || 8;
 
-    // 檢查並扣除代幣
-    const deductResult = await deductTokens(
-      userId,
-      stickerCount,
-      `生成貼圖組「${setData.name}」(${stickerCount}張)`,
-      setId
-    );
+    // 💰 代幣扣除邏輯已移到 line-webhook.js 的 handleConfirmGeneration
+    // 如果沒有預先扣除，才在這裡扣除（向後兼容）
+    if (!setData.tokensDeducted) {
+      const deductResult = await deductTokens(
+        userId,
+        stickerCount,
+        `生成貼圖組「${setData.name}」(${stickerCount}張)`,
+        setId
+      );
 
-    if (!deductResult.success) {
-      console.log(`❌ 代幣不足: ${deductResult.error}`);
-      return {
-        error: deductResult.error || '代幣不足，無法生成貼圖',
-        tokenBalance: deductResult.balance
-      };
+      if (!deductResult.success) {
+        console.log(`❌ 代幣不足: ${deductResult.error}`);
+        return {
+          error: deductResult.error || '代幣不足，無法生成貼圖',
+          tokenBalance: deductResult.balance
+        };
+      }
+
+      console.log(`💰 已扣除 ${stickerCount} 代幣，剩餘 ${deductResult.balance} 代幣`);
+    } else {
+      console.log(`💰 代幣已在確認階段扣除（${stickerCount} 代幣）`);
     }
-
-    console.log(`💰 已扣除 ${stickerCount} 代幣，剩餘 ${deductResult.balance} 代幣`);
 
     // 建立貼圖組記錄（包含用戶選擇的表情和場景）
     const { error: setError } = await supabase
