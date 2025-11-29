@@ -40,18 +40,21 @@
   </div>
 
   <script>
-    // 簡單的登入驗證（實際應用建議使用後端驗證）
-    const ADMIN_CREDENTIALS = {
-      username: 'admin',
-      password: 'sticker2024!'
-    };
+    // 預設密碼（首次使用時）
+    const DEFAULT_PASSWORD = 'sticker2024!';
+
+    // 取得儲存的密碼（如果已變更過）
+    function getAdminPassword() {
+      return localStorage.getItem('adminPassword') || DEFAULT_PASSWORD;
+    }
 
     document.getElementById('loginForm').addEventListener('submit', function(e) {
       e.preventDefault();
       const username = document.getElementById('username').value;
       const password = document.getElementById('password').value;
-      
-      if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
+      const currentPassword = getAdminPassword();
+
+      if (username === 'admin' && password === currentPassword) {
         // 設定登入狀態（24小時有效）
         const expiry = Date.now() + (24 * 60 * 60 * 1000);
         localStorage.setItem('adminAuth', JSON.stringify({ loggedIn: true, expiry }));

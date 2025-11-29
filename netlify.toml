@@ -26,6 +26,10 @@
 [functions."admin-rich-menu"]
   timeout = 30
 
+# Admin Cleanup API
+[functions."admin-cleanup"]
+  timeout = 60
+
 # API 路由重定向
 [[redirects]]
   from = "/api/admin/rich-menu-info"

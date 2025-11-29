@@ -28,9 +28,9 @@
   <div class="container mx-auto p-6">
     <!-- 搜尋區 -->
     <div class="bg-white rounded-lg shadow p-4 mb-6">
-      <div class="flex gap-4">
-        <input type="text" id="search-input" placeholder="搜尋貼圖組名稱..." 
-               class="flex-1 border rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-pink-500">
+      <div class="flex gap-4 flex-wrap">
+        <input type="text" id="search-input" placeholder="搜尋貼圖組名稱..."
+               class="flex-1 min-w-48 border rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-pink-500">
         <select id="status-filter" class="border rounded px-4 py-2">
           <option value="">全部狀態</option>
           <option value="completed">已完成</option>
@@ -41,26 +41,59 @@
         <button onclick="loadStickerSets()" class="bg-pink-500 text-white px-6 py-2 rounded hover:bg-pink-600">
           搜尋
         </button>
+        <a href="/admin/" class="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300">← 返回後台</a>
       </div>
     </div>
 
     <!-- 統計區 -->
-    <div class="grid grid-cols-4 gap-4 mb-6">
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
       <div class="bg-white rounded-lg shadow p-4 text-center">
-        <div class="text-3xl font-bold text-pink-500" id="stat-total">0</div>
-        <div class="text-gray-500">總貼圖組</div>
+        <div class="text-3xl font-bold text-pink-500" id="stat-total">-</div>
+        <div class="text-gray-500 text-sm">總貼圖組</div>
       </div>
       <div class="bg-white rounded-lg shadow p-4 text-center">
-        <div class="text-3xl font-bold text-green-500" id="stat-completed">0</div>
-        <div class="text-gray-500">已完成</div>
+        <div class="text-3xl font-bold text-green-500" id="stat-completed">-</div>
+        <div class="text-gray-500 text-sm">已完成</div>
       </div>
       <div class="bg-white rounded-lg shadow p-4 text-center">
-        <div class="text-3xl font-bold text-yellow-500" id="stat-generating">0</div>
-        <div class="text-gray-500">生成中</div>
+        <div class="text-3xl font-bold text-yellow-500" id="stat-generating">-</div>
+        <div class="text-gray-500 text-sm">生成中</div>
       </div>
       <div class="bg-white rounded-lg shadow p-4 text-center">
-        <div class="text-3xl font-bold text-red-500" id="stat-failed">0</div>
-        <div class="text-gray-500">失敗</div>
+        <div class="text-3xl font-bold text-red-500" id="stat-failed">-</div>
+        <div class="text-gray-500 text-sm">失敗</div>
+      </div>
+      <div class="bg-white rounded-lg shadow p-4 text-center">
+        <div class="text-3xl font-bold text-blue-500" id="stat-users">-</div>
+        <div class="text-gray-500 text-sm">用戶數</div>
+      </div>
+      <div class="bg-white rounded-lg shadow p-4 text-center">
+        <div class="text-3xl font-bold text-purple-500" id="stat-storage">-</div>
+        <div class="text-gray-500 text-sm">Storage資料夾</div>
+      </div>
+    </div>
+
+    <!-- 孤立資料清理區 -->
+    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+      <div class="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h3 class="font-bold text-yellow-800">🧹 資料清理</h3>
+          <p class="text-yellow-700 text-sm mt-1">
+            孤立 Storage: <span id="orphan-storage" class="font-bold">-</span> 個 |
+            孤立 DB 記錄: <span id="orphan-db" class="font-bold">-</span> 個
+          </p>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="checkOrphaned()" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 text-sm">
+            🔍 檢查孤立資料
+          </button>
+          <button onclick="cleanupOrphaned()" id="cleanup-btn" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 text-sm disabled:opacity-50" disabled>
+            🗑️ 清理孤立資料
+          </button>
+          <button onclick="cleanupOldFailed()" class="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600 text-sm">
+            🧹 清理舊失敗記錄
+          </button>
+        </div>
       </div>
     </div>
 
@@ -111,6 +144,118 @@
       document.getElementById('stat-completed').textContent = data.filter(s => s.status === 'completed').length;
       document.getElementById('stat-generating').textContent = data.filter(s => s.status === 'generating').length;
       document.getElementById('stat-failed').textContent = data.filter(s => s.status === 'failed').length;
+    }
+
+    // 載入完整統計（從 API）
+    async function loadFullStats() {
+      try {
+        const response = await fetch('/.netlify/functions/admin-cleanup?action=stats');
+        const result = await response.json();
+        if (result.success && result.stats) {
+          document.getElementById('stat-users').textContent = result.stats.users || 0;
+          document.getElementById('stat-storage').textContent = result.stats.storageFolders || 0;
+        }
+      } catch (err) {
+        console.error('載入統計失敗:', err);
+      }
+    }
+
+    // 檢查孤立資料
+    let orphanedData = null;
+    async function checkOrphaned() {
+      try {
+        document.getElementById('orphan-storage').textContent = '檢查中...';
+        document.getElementById('orphan-db').textContent = '檢查中...';
+
+        const response = await fetch('/.netlify/functions/admin-cleanup?action=orphaned');
+        const result = await response.json();
+
+        if (result.success) {
+          orphanedData = result.details;
+          document.getElementById('orphan-storage').textContent = result.orphanedStorage;
+          document.getElementById('orphan-db').textContent = result.orphanedDb;
+
+          // 如果有孤立資料，啟用清理按鈕
+          if (result.orphanedStorage > 0 || result.orphanedDb > 0) {
+            document.getElementById('cleanup-btn').disabled = false;
+          } else {
+            document.getElementById('cleanup-btn').disabled = true;
+          }
+        }
+      } catch (err) {
+        console.error('檢查孤立資料失敗:', err);
+        document.getElementById('orphan-storage').textContent = '錯誤';
+        document.getElementById('orphan-db').textContent = '錯誤';
+      }
+    }
+
+    // 清理孤立資料
+    async function cleanupOrphaned() {
+      if (!orphanedData) {
+        alert('請先檢查孤立資料');
+        return;
+      }
+
+      if (!confirm('確定要清理所有孤立資料嗎？此操作無法復原！')) {
+        return;
+      }
+
+      try {
+        // 清理孤立 Storage
+        if (orphanedData.storage && orphanedData.storage.length > 0) {
+          const setIds = orphanedData.storage.map(s => s.setId);
+          await fetch('/.netlify/functions/admin-cleanup?action=cleanup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'storage', setIds })
+          });
+        }
+
+        // 清理孤立 DB
+        if (orphanedData.db && orphanedData.db.length > 0) {
+          const setIds = orphanedData.db.map(s => s.setId);
+          await fetch('/.netlify/functions/admin-cleanup?action=cleanup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'db', setIds })
+          });
+        }
+
+        alert('清理完成！');
+        orphanedData = null;
+        document.getElementById('cleanup-btn').disabled = true;
+        checkOrphaned();
+        loadStickerSets();
+        loadFullStats();
+      } catch (err) {
+        console.error('清理失敗:', err);
+        alert('清理失敗: ' + err.message);
+      }
+    }
+
+    // 清理 30 天前的失敗記錄
+    async function cleanupOldFailed() {
+      if (!confirm('確定要清理 30 天前的失敗記錄嗎？此操作無法復原！')) {
+        return;
+      }
+
+      try {
+        const response = await fetch('/.netlify/functions/admin-cleanup?action=cleanup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'old_failed' })
+        });
+        const result = await response.json();
+
+        if (result.success) {
+          alert(`已清理 ${result.cleaned} 筆舊失敗記錄`);
+          loadStickerSets();
+          loadFullStats();
+        }
+      } catch (err) {
+        console.error('清理失敗:', err);
+        alert('清理失敗: ' + err.message);
+      }
     }
 
     // 渲染貼圖列表
@@ -183,6 +328,8 @@
 
     // 初始載入
     loadStickerSets();
+    loadFullStats();
+    checkOrphaned();
   </script>
 </body>
 </html>
