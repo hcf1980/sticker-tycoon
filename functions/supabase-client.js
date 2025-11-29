@@ -90,12 +90,18 @@ async function getOrCreateUser(lineUserId, displayName = null, pictureUrl = null
         line_user_id: lineUserId,
         display_name: displayName,
         picture_url: pictureUrl,
-        sticker_credits: 10
+        sticker_credits: 40  // 初始 40 代幣
       }])
       .select()
       .single();
 
     if (insertError) throw insertError;
+
+    // 記錄初始代幣交易
+    if (newUser) {
+      await recordTokenTransaction(lineUserId, 40, 40, 'initial', '新用戶贈送 40 代幣');
+    }
+
     return newUser;
   } catch (error) {
     console.error('取得/建立用戶失敗:', error);
@@ -572,6 +578,159 @@ async function isInUploadQueue(userId, stickerId) {
   }
 }
 
+/**
+ * 記錄代幣交易
+ */
+async function recordTokenTransaction(userId, amount, balanceAfter, type, description, referenceId = null, adminNote = null) {
+  try {
+    const { error } = await getSupabaseClient()
+      .from('token_transactions')
+      .insert([{
+        user_id: userId,
+        amount,
+        balance_after: balanceAfter,
+        transaction_type: type,
+        description,
+        reference_id: referenceId,
+        admin_note: adminNote
+      }]);
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error('記錄代幣交易失敗:', error);
+    return false;
+  }
+}
+
+/**
+ * 取得用戶代幣餘額
+ */
+async function getUserTokenBalance(lineUserId) {
+  try {
+    const { data, error } = await getSupabaseClient()
+      .from('users')
+      .select('sticker_credits')
+      .eq('line_user_id', lineUserId)
+      .single();
+
+    if (error) throw error;
+    return data?.sticker_credits || 0;
+  } catch (error) {
+    console.error('取得代幣餘額失敗:', error);
+    return 0;
+  }
+}
+
+/**
+ * 檢查並扣除代幣（生成貼圖用）
+ * @param {string} lineUserId - LINE 用戶 ID
+ * @param {number} amount - 要扣除的數量
+ * @param {string} description - 描述
+ * @param {string} referenceId - 關聯 ID（如貼圖組 ID）
+ * @returns {object} { success: boolean, balance: number, error?: string }
+ */
+async function deductTokens(lineUserId, amount, description, referenceId = null) {
+  try {
+    const supabase = getSupabaseClient();
+
+    // 取得當前餘額
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('sticker_credits')
+      .eq('line_user_id', lineUserId)
+      .single();
+
+    if (userError) throw userError;
+
+    const currentBalance = user?.sticker_credits || 0;
+
+    // 檢查是否足夠
+    if (currentBalance < amount) {
+      return {
+        success: false,
+        balance: currentBalance,
+        error: `代幣不足！目前餘額 ${currentBalance}，需要 ${amount} 代幣`
+      };
+    }
+
+    const newBalance = currentBalance - amount;
+
+    // 扣除代幣
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({ sticker_credits: newBalance, updated_at: new Date().toISOString() })
+      .eq('line_user_id', lineUserId);
+
+    if (updateError) throw updateError;
+
+    // 記錄交易
+    await recordTokenTransaction(lineUserId, -amount, newBalance, 'generate', description, referenceId);
+
+    return { success: true, balance: newBalance };
+  } catch (error) {
+    console.error('扣除代幣失敗:', error);
+    return { success: false, balance: 0, error: error.message };
+  }
+}
+
+/**
+ * 增加代幣（購買/管理員調整用）
+ */
+async function addTokens(lineUserId, amount, type, description, adminNote = null) {
+  try {
+    const supabase = getSupabaseClient();
+
+    // 取得當前餘額
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('sticker_credits')
+      .eq('line_user_id', lineUserId)
+      .single();
+
+    if (userError) throw userError;
+
+    const currentBalance = user?.sticker_credits || 0;
+    const newBalance = currentBalance + amount;
+
+    // 增加代幣
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({ sticker_credits: newBalance, updated_at: new Date().toISOString() })
+      .eq('line_user_id', lineUserId);
+
+    if (updateError) throw updateError;
+
+    // 記錄交易
+    await recordTokenTransaction(lineUserId, amount, newBalance, type, description, null, adminNote);
+
+    return { success: true, balance: newBalance };
+  } catch (error) {
+    console.error('增加代幣失敗:', error);
+    return { success: false, balance: 0, error: error.message };
+  }
+}
+
+/**
+ * 取得用戶代幣交易記錄
+ */
+async function getTokenTransactions(lineUserId, limit = 20) {
+  try {
+    const { data, error } = await getSupabaseClient()
+      .from('token_transactions')
+      .select('*')
+      .eq('user_id', lineUserId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('取得代幣交易記錄失敗:', error);
+    return [];
+  }
+}
+
 module.exports = {
   getSupabaseClient,
   isReplyTokenUsed,
@@ -590,6 +749,12 @@ module.exports = {
   removeFromUploadQueue,
   getUploadQueue,
   clearUploadQueue,
-  isInUploadQueue
+  isInUploadQueue,
+  // 代幣系統
+  recordTokenTransaction,
+  getUserTokenBalance,
+  deductTokens,
+  addTokens,
+  getTokenTransactions
 };
 

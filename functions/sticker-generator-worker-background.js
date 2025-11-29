@@ -4,7 +4,7 @@
  */
 
 const { v4: uuidv4 } = require('uuid');
-const { getSupabaseClient, updateStickerSetStatus, getStickerSet } = require('./supabase-client');
+const { getSupabaseClient, updateStickerSetStatus, getStickerSet, deductTokens, getUserTokenBalance } = require('./supabase-client');
 const { generateStickerSet, generateStickerSetFromPhoto } = require('./ai-generator');
 const { processStickerSet, generateMainImage, generateTabImage } = require('./image-processor');
 const { DefaultExpressions } = require('./sticker-styles');
@@ -18,6 +18,27 @@ async function createGenerationTask(userId, setData) {
   const setId = uuidv4();
 
   try {
+    // 計算需要的代幣數量（每張貼圖 1 代幣）
+    const stickerCount = setData.count || 8;
+
+    // 檢查並扣除代幣
+    const deductResult = await deductTokens(
+      userId,
+      stickerCount,
+      `生成貼圖組「${setData.name}」(${stickerCount}張)`,
+      setId
+    );
+
+    if (!deductResult.success) {
+      console.log(`❌ 代幣不足: ${deductResult.error}`);
+      return {
+        error: deductResult.error || '代幣不足，無法生成貼圖',
+        tokenBalance: deductResult.balance
+      };
+    }
+
+    console.log(`💰 已扣除 ${stickerCount} 代幣，剩餘 ${deductResult.balance} 代幣`);
+
     // 建立貼圖組記錄（包含用戶選擇的表情和場景）
     const { error: setError } = await supabase
       .from('sticker_sets')
@@ -34,7 +55,8 @@ async function createGenerationTask(userId, setData) {
         expressions: JSON.stringify(setData.expressions || []), // 用戶選擇的表情列表
         scene: setData.scene || 'none',             // 場景 ID
         scene_config: setData.sceneConfig ? JSON.stringify(setData.sceneConfig) : null, // 場景配置
-        status: 'generating'
+        status: 'generating',
+        tokens_used: stickerCount  // 記錄使用的代幣數
       }]);
 
     if (setError) throw setError;

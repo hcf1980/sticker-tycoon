@@ -5,7 +5,7 @@
 
 const line = require('@line/bot-sdk');
 const axios = require('axios');
-const { isReplyTokenUsed, recordReplyToken, getOrCreateUser, getUserStickerSets, getUserLatestTask, getUserPendingTasks, getStickerSet, getStickerImages, deleteStickerSet, addToUploadQueue, removeFromUploadQueue, getUploadQueue, clearUploadQueue } = require('./supabase-client');
+const { isReplyTokenUsed, recordReplyToken, getOrCreateUser, getUserStickerSets, getUserLatestTask, getUserPendingTasks, getStickerSet, getStickerImages, deleteStickerSet, addToUploadQueue, removeFromUploadQueue, getUploadQueue, clearUploadQueue, getUserTokenBalance, getTokenTransactions } = require('./supabase-client');
 const { ConversationStage, getConversationState, updateConversationState, resetConversationState, isInCreationFlow } = require('./conversation-state');
 const { generateWelcomeFlexMessage } = require('./sticker-flex-message');
 const { handleStartCreate, handleNaming, handleStyleSelection, handleCharacterDescription, handleExpressionTemplate, handleSceneSelection, handleCustomScene, handleCountSelection, handlePhotoUpload } = require('./handlers/create-handler');
@@ -97,6 +97,16 @@ async function handleTextMessage(replyToken, userId, text) {
     // 示範圖集
     if (text === '示範圖集' || text === '範例' || text === '作品集') {
       return getLineClient().replyMessage(replyToken, generateDemoGalleryFlexMessage());
+    }
+
+    // 代幣查詢
+    if (text === '代幣' || text === '餘額' || text === '我的代幣' || text === '查詢代幣') {
+      return await handleTokenQuery(replyToken, userId);
+    }
+
+    // 購買代幣
+    if (text === '購買代幣' || text === '儲值' || text === '買代幣') {
+      return await handlePurchaseInfo(replyToken);
     }
 
     // 查看特定貼圖組
@@ -1311,4 +1321,169 @@ function generateDemoGalleryFlexMessage() {
       contents: [infoBubble, ...demoBubbles]
     }
   };
+}
+
+/**
+ * 處理代幣查詢
+ */
+async function handleTokenQuery(replyToken, userId) {
+  const balance = await getUserTokenBalance(userId);
+  const transactions = await getTokenTransactions(userId, 5);
+
+  let transactionText = '';
+  if (transactions.length > 0) {
+    transactionText = '\n\n📜 最近交易：\n' + transactions.map(t => {
+      const sign = t.amount > 0 ? '+' : '';
+      const date = new Date(t.created_at).toLocaleDateString('zh-TW');
+      return `${date} ${sign}${t.amount} ${t.description || ''}`;
+    }).join('\n');
+  }
+
+  const message = {
+    type: 'flex',
+    altText: `💰 你的代幣餘額：${balance}`,
+    contents: {
+      type: 'bubble',
+      size: 'kilo',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#FFD700',
+        paddingAll: 'lg',
+        contents: [
+          { type: 'text', text: '💰 我的代幣', size: 'lg', weight: 'bold', color: '#333333', align: 'center' }
+        ]
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'xl',
+        contents: [
+          { type: 'text', text: `${balance}`, size: '3xl', weight: 'bold', align: 'center', color: '#FF6B00' },
+          { type: 'text', text: '代幣', size: 'sm', align: 'center', color: '#666666', margin: 'sm' },
+          { type: 'separator', margin: 'lg' },
+          { type: 'text', text: '💡 每生成1張貼圖消耗1代幣', size: 'xs', color: '#888888', margin: 'lg', wrap: true }
+        ]
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'md',
+        contents: [
+          {
+            type: 'button',
+            action: { type: 'message', label: '🛒 購買代幣', text: '購買代幣' },
+            style: 'primary',
+            color: '#FF6B00'
+          }
+        ]
+      }
+    }
+  };
+
+  return getLineClient().replyMessage(replyToken, message);
+}
+
+/**
+ * 處理購買代幣資訊
+ */
+async function handlePurchaseInfo(replyToken) {
+  const message = {
+    type: 'flex',
+    altText: '🛒 購買代幣方案',
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#FF6B00',
+        paddingAll: 'lg',
+        contents: [
+          { type: 'text', text: '🛒 購買代幣', size: 'xl', weight: 'bold', color: '#FFFFFF', align: 'center' },
+          { type: 'text', text: '用代幣創作專屬貼圖', size: 'sm', color: '#FFDDBB', align: 'center', margin: 'sm' }
+        ]
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'lg',
+        spacing: 'md',
+        contents: [
+          // 方案1
+          {
+            type: 'box',
+            layout: 'horizontal',
+            backgroundColor: '#FFF8F0',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            contents: [
+              { type: 'text', text: '💰 NT$300', size: 'md', weight: 'bold', color: '#333333', flex: 1 },
+              { type: 'text', text: '70 代幣', size: 'md', weight: 'bold', color: '#FF6B00', align: 'end' }
+            ]
+          },
+          // 方案2
+          {
+            type: 'box',
+            layout: 'horizontal',
+            backgroundColor: '#FFF0E0',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            contents: [
+              { type: 'text', text: '💰 NT$500', size: 'md', weight: 'bold', color: '#333333', flex: 1 },
+              { type: 'text', text: '130 代幣', size: 'md', weight: 'bold', color: '#FF6B00', align: 'end' },
+              { type: 'text', text: '熱門', size: 'xxs', color: '#FFFFFF', backgroundColor: '#FF3366', position: 'absolute', offsetTop: '0px', offsetEnd: '0px', paddingAll: 'xs' }
+            ]
+          },
+          // 方案3
+          {
+            type: 'box',
+            layout: 'horizontal',
+            backgroundColor: '#FFE8D0',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            contents: [
+              { type: 'text', text: '💰 NT$1000', size: 'md', weight: 'bold', color: '#333333', flex: 1 },
+              { type: 'text', text: '300 代幣', size: 'md', weight: 'bold', color: '#FF6B00', align: 'end' }
+            ]
+          },
+          { type: 'separator', margin: 'lg' },
+          // 付款資訊
+          { type: 'text', text: '📱 轉帳資訊', size: 'md', weight: 'bold', margin: 'lg' },
+          { type: 'text', text: '連線商業銀行（824）', size: 'sm', color: '#666666', margin: 'sm' },
+          { type: 'text', text: '帳號：111000196474', size: 'sm', color: '#333333', weight: 'bold', margin: 'sm' },
+          { type: 'text', text: '戶名：梁勝喜', size: 'sm', color: '#666666', margin: 'sm' },
+          { type: 'separator', margin: 'lg' },
+          { type: 'text', text: '⚠️ 轉帳後請截圖並傳送給我們', size: 'xs', color: '#FF6600', margin: 'md', wrap: true },
+          { type: 'text', text: '客服會在確認後幫您加值代幣', size: 'xs', color: '#888888', wrap: true }
+        ]
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'md',
+        contents: [
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#F0F0F0',
+            cornerRadius: 'md',
+            paddingAll: 'md',
+            contents: [
+              { type: 'text', text: '👇 掃碼轉帳更方便', size: 'sm', align: 'center', color: '#666666' }
+            ]
+          }
+        ]
+      }
+    }
+  };
+
+  // 傳送 QR Code 圖片
+  const qrMessage = {
+    type: 'image',
+    originalContentUrl: 'https://sticker-tycoon.netlify.app/payment-qr.png',
+    previewImageUrl: 'https://sticker-tycoon.netlify.app/payment-qr.png'
+  };
+
+  return getLineClient().replyMessage(replyToken, [message, qrMessage]);
 }

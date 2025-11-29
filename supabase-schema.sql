@@ -18,13 +18,30 @@ CREATE TABLE IF NOT EXISTS users (
   line_user_id TEXT UNIQUE NOT NULL,
   display_name TEXT,
   picture_url TEXT,
-  sticker_credits INTEGER DEFAULT 10,  -- 免費生成額度
+  sticker_credits INTEGER DEFAULT 40,  -- 免費生成額度（每張貼圖消耗1代幣）
   is_premium BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_line_user_id ON users(line_user_id);
+
+-- 2.1 代幣交易記錄表
+CREATE TABLE IF NOT EXISTS token_transactions (
+  id BIGSERIAL PRIMARY KEY,
+  user_id TEXT NOT NULL,  -- LINE user ID
+  amount INTEGER NOT NULL,  -- 正數=儲值，負數=消耗
+  balance_after INTEGER NOT NULL,  -- 交易後餘額
+  transaction_type TEXT NOT NULL,  -- initial(初始), purchase(購買), generate(生成消耗), admin_adjust(管理員調整), refund(退款)
+  description TEXT,  -- 描述（如：生成貼圖組「XXX」）
+  reference_id TEXT,  -- 關聯ID（如貼圖組ID）
+  admin_note TEXT,  -- 管理員備註（僅 admin_adjust 用）
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_token_transactions_user_id ON token_transactions(user_id);
+CREATE INDEX IF NOT EXISTS idx_token_transactions_type ON token_transactions(transaction_type);
+CREATE INDEX IF NOT EXISTS idx_token_transactions_created_at ON token_transactions(created_at);
 
 -- 3. 貼圖組資料表
 CREATE TABLE IF NOT EXISTS sticker_sets (
@@ -42,6 +59,7 @@ CREATE TABLE IF NOT EXISTS sticker_sets (
   main_image_url TEXT,  -- 主要圖片 URL
   tab_image_url TEXT,  -- 聊天室標籤圖片 URL
   zip_url TEXT,  -- 完整貼圖包下載 URL
+  tokens_used INTEGER DEFAULT 0,  -- 此貼圖組消耗的代幣數
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
