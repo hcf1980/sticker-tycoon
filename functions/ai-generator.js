@@ -436,14 +436,15 @@ Expression detail: ${enhancedExpression}`;
   const absoluteRequirements = `
 
 === 🔒 FINAL OUTPUT REQUIREMENTS ===
-1. BACKGROUND: 100% TRANSPARENT (alpha=0) - NOT white, NOT gray
-2. T-SHIRT: Solid pure white (#FFFFFF) - ZERO patterns/stripes/prints
+1. BACKGROUND: Pure solid WHITE (#FFFFFF) - clean white only
+2. T-SHIRT: Solid pure white - NO patterns, NO stripes
 3. CHARACTER: Same as photo, ID: ${characterID}
-4. OUTLINES: Thick black (2-3px)
-5. COMPOSITION: Upper body, centered, 70-80% fill
-6. TEXT: NONE
+4. STYLE: Apply ${style} style distinctly
+5. OUTLINES: Thick black (2-3px)
+6. COMPOSITION: Upper body, centered, 70-80% fill
+7. TEXT: NONE
 
-Generate the sticker NOW.`;
+Generate the ${style} style sticker NOW.`;
 
   finalPrompt += absoluteRequirements;
 

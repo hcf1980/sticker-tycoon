@@ -313,65 +313,54 @@ function generateStickerPromptV2(style, characterDescription, expression) {
 }
 
 /**
- * 🎯 生成照片貼圖的增強 Prompt V2.3
- * 極度精確的一致性描述
+ * 🎯 生成照片貼圖的增強 Prompt V3.0
+ * - 純白背景
+ * - 風格差異化（StyleEnhancer）
+ * - 角色一致性
  */
 function generatePhotoStickerPromptV2(style, expression, characterID = null) {
   const styleConfig = StickerStyles[style] || StickerStyles.cute;
+  const styleEnhance = StyleEnhancer[style] || StyleEnhancer.cute;
   const expressionEnhance = ExpressionEnhancer[expression] || expression;
-
-  // 🔒 固定的角色描述（不變的部分）
-  const fixedCharacterDesc = `
-FIXED CHARACTER APPEARANCE (DO NOT CHANGE):
-- Hair: SHORT BLACK hair, slightly messy, natural style
-- Face: Young boy, round face, large expressive eyes
-- Skin: Light/fair skin tone, consistent across all
-- Outfit: PURE WHITE crew-neck t-shirt (#FFFFFF), NO patterns, NO designs, NO prints, NO stripes, NO logo, NO decorations - just solid plain white
-- Body: Child/young boy proportions, upper body only`;
 
   const prompt = `Transform this photo into a LINE sticker illustration.
 
-=== 🔒 CRITICAL: EXACT SAME CHARACTER IN EVERY STICKER ===
-Character ID: ${characterID || 'default'}
-${fixedCharacterDesc}
-
-=== 🎨 STYLE: ${styleConfig.name} ===
+=== 🎨 ART STYLE: ${styleConfig.name} (${style.toUpperCase()}) ===
 ${styleConfig.promptBase}
+
+STYLE DETAILS:
+- Lighting: ${styleEnhance.lighting}
+- Composition: ${styleEnhance.composition}
+- Brushwork: ${styleEnhance.brushwork}
+- Mood: ${styleEnhance.mood}
 
 === 😊 EXPRESSION: ${expression} ===
 ${expressionEnhance}
-Show this emotion through facial expression and simple hand gesture.
+- Show emotion through FACE and HAND GESTURE
+- Make expression clear and exaggerated for sticker use
 
-=== ⚠️ MANDATORY TECHNICAL REQUIREMENTS ===
-1. BACKGROUND: 100% TRANSPARENT (alpha=0), NOT white (#FFFFFF), NOT gray (#808080), NOT any color
-2. T-SHIRT: Solid pure white (#FFFFFF), absolutely ZERO patterns/stripes/prints
-3. OUTLINES: Thick black lines (2-3px) around character
-4. COMPOSITION: Upper body only, centered, fills 70-80%
-5. SIZE: 370x320 pixels max
-6. TEXT: ZERO text, letters, numbers, symbols anywhere
+=== � CHARACTER (MUST BE CONSISTENT) ===
+Character ID: ${characterID || 'default'}
+- Copy EXACT face from photo: same face shape, eyes, nose, mouth
+- Copy EXACT hairstyle and hair color from photo
+- SAME outfit in ALL stickers: plain white t-shirt, NO patterns
+- Upper body only (head to chest)
 
-=== ❌ WILL BE REJECTED IF: ===
-- Background has ANY color (must be transparent/checkered)
-- T-shirt has ANY pattern, stripe, print, or is not pure white
-- Character looks different from the photo
-- Contains any text or watermark
-- Full body shown (must be upper body only)
+=== ⚠️ TECHNICAL REQUIREMENTS ===
+1. BACKGROUND: Pure solid WHITE (#FFFFFF) - clean white, no gray, no gradient
+2. T-SHIRT: Solid pure white, NO patterns, NO stripes, NO prints
+3. OUTLINES: Thick black lines (2-3px) for visibility
+4. COMPOSITION: Centered, fills 70-80% of canvas
+5. NO TEXT: Zero letters, numbers, symbols, watermarks
 
-=== ✅ CORRECT OUTPUT: ===
-Single sticker illustration with:
-- TRANSPARENT background (checkerboard pattern in editors)
-- PURE WHITE t-shirt (solid #FFFFFF, no patterns)
-- Same face as reference photo
-- Expression: ${expression}
-- Thick black outlines
-- Upper body, centered`;
+OUTPUT: ${styleConfig.name} style LINE sticker with WHITE background, expressive ${expression} face.`;
 
   const negativePrompt = `
-    white background, gray background, #FFFFFF background, #808080 background, solid background, colored background, gradient background,
-    patterned shirt, striped shirt, printed shirt, gray shirt, colored shirt, shirt with design, shirt with logo, decorated clothing,
-    text, words, letters, numbers, watermark, signature, logo,
-    full body, legs, feet, distant shot,
-    different face, different hair, different character,
+    transparent background, gray background, colored background, gradient,
+    patterned shirt, striped shirt, printed shirt, gray shirt,
+    text, words, letters, numbers, watermark, logo,
+    full body, legs, feet,
+    different face, inconsistent character,
     realistic photo, 3D render
   `.replace(/\s+/g, ' ').trim();
 
