@@ -167,9 +167,15 @@ async function handleTextMessage(replyToken, userId, text) {
       return await handleRemoveFromUploadQueue(replyToken, userId, stickerId);
     }
 
-    // 查看待上傳佇列
+    // 查看待上傳佇列（支援分頁）
     if (text === '待上傳' || text === '上傳佇列' || text === '待上傳列表') {
-      return await handleViewUploadQueue(replyToken, userId);
+      return await handleViewUploadQueue(replyToken, userId, 1);
+    }
+
+    // 待上傳佇列分頁
+    if (text.startsWith('待上傳頁:')) {
+      const page = parseInt(text.replace('待上傳頁:', '')) || 1;
+      return await handleViewUploadQueue(replyToken, userId, page);
     }
 
     // 清空待上傳佇列
@@ -621,9 +627,8 @@ async function handlePostback(replyToken, userId, data) {
   // 解析 postback data
   const params = new URLSearchParams(data);
   const action = params.get('action');
-  const setId = params.get('setId');
 
-  if (!action || !setId) {
+  if (!action) {
     return getLineClient().replyMessage(replyToken, {
       type: 'text',
       text: '⚠️ 操作無效，請重試'
@@ -631,18 +636,39 @@ async function handlePostback(replyToken, userId, data) {
   }
 
   switch (action) {
-    case 'view':
+    case 'view': {
+      const setId = params.get('setId');
+      if (!setId) return invalidPostback(replyToken);
       return await handleViewStickerSet(replyToken, userId, setId);
-    case 'delete':
+    }
+    case 'delete': {
+      const setId = params.get('setId');
+      if (!setId) return invalidPostback(replyToken);
       return await handleDeleteStickerSet(replyToken, userId, setId);
-    case 'confirmDelete':
+    }
+    case 'confirmDelete': {
+      const setId = params.get('setId');
+      if (!setId) return invalidPostback(replyToken);
       return await handleConfirmDeleteStickerSet(replyToken, userId, setId);
+    }
+    case 'removeUpload': {
+      const stickerId = params.get('stickerId');
+      if (!stickerId) return invalidPostback(replyToken);
+      return await handleRemoveFromUploadQueue(replyToken, userId, stickerId);
+    }
     default:
       return getLineClient().replyMessage(replyToken, {
         type: 'text',
         text: '⚠️ 不支援的操作'
       });
   }
+}
+
+function invalidPostback(replyToken) {
+  return getLineClient().replyMessage(replyToken, {
+    type: 'text',
+    text: '⚠️ 操作參數無效，請重試'
+  });
 }
 
 /**
@@ -1185,12 +1211,31 @@ async function handleRemoveFromUploadQueue(replyToken, userId, stickerId) {
       });
     }
 
-    // 取得更新後的佇列數量
+    // 取得更新後的佇列
     const queue = await getUploadQueue(userId);
+    const count = queue.length;
 
+    // 帶有 Quick Reply 方便繼續操作
     return getLineClient().replyMessage(replyToken, {
       type: 'text',
-      text: `✅ 已從待上傳佇列移除\n\n📊 目前佇列：${queue.length} / 40 張`
+      text: `✅ 已移除！\n\n📊 目前佇列：${count} / 40 張` +
+            (count > 0 ? `\n⏳ 還需要 ${40 - count} 張` : '\n📋 佇列已清空'),
+      quickReply: {
+        items: [
+          ...(count > 0 ? [{
+            type: 'action',
+            action: { type: 'message', label: '📤 查看佇列', text: '待上傳' }
+          }] : []),
+          {
+            type: 'action',
+            action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' }
+          },
+          {
+            type: 'action',
+            action: { type: 'message', label: '🏠 主選單', text: '選單' }
+          }
+        ]
+      }
     });
 
   } catch (error) {
@@ -1203,9 +1248,9 @@ async function handleRemoveFromUploadQueue(replyToken, userId, stickerId) {
 }
 
 /**
- * 處理查看上傳佇列
+ * 處理查看上傳佇列（支援分頁）
  */
-async function handleViewUploadQueue(replyToken, userId) {
+async function handleViewUploadQueue(replyToken, userId, page = 1) {
   try {
     const queue = await getUploadQueue(userId);
 
@@ -1221,8 +1266,8 @@ async function handleViewUploadQueue(replyToken, userId) {
       });
     }
 
-    // 生成佇列輪播
-    return await sendUploadQueueCarousel(replyToken, queue);
+    // 生成佇列輪播（帶分頁）
+    return await sendUploadQueueCarousel(replyToken, queue, page, userId);
 
   } catch (error) {
     console.error('❌ 查看上傳佇列失敗:', error);
@@ -1234,13 +1279,22 @@ async function handleViewUploadQueue(replyToken, userId) {
 }
 
 /**
- * 發送上傳佇列輪播
+ * 發送上傳佇列輪播（支援分頁）
  */
-async function sendUploadQueueCarousel(replyToken, queue) {
+async function sendUploadQueueCarousel(replyToken, queue, page = 1, userId) {
   const count = queue.length;
   const isReady = count >= 40;
+  const itemsPerPage = 8;  // 每頁顯示 8 張（留位置給狀態卡片和導航）
+  const totalPages = Math.ceil(count / itemsPerPage);
+  const currentPage = Math.min(Math.max(1, page), totalPages || 1);
+  const startIdx = (currentPage - 1) * itemsPerPage;
+  const endIdx = Math.min(startIdx + itemsPerPage, count);
+  const pageItems = queue.slice(startIdx, endIdx);
 
-  // 第一個 bubble：佇列狀態
+  // 計算進度條
+  const progressPercent = Math.round((count / 40) * 100);
+
+  // 第一個 bubble：佇列狀態總覽
   const statusBubble = {
     type: 'bubble',
     size: 'kilo',
@@ -1250,23 +1304,58 @@ async function sendUploadQueueCarousel(replyToken, queue) {
       backgroundColor: isReady ? '#06C755' : '#FF9800',
       paddingAll: 'lg',
       contents: [
-        { type: 'text', text: '📤 待上傳佇列', weight: 'bold', size: 'lg', color: '#FFFFFF' }
+        { type: 'text', text: '📤 待上傳佇列', weight: 'bold', size: 'lg', color: '#FFFFFF' },
+        { type: 'text', text: `第 ${currentPage} / ${totalPages || 1} 頁`, size: 'xs', color: '#FFFFFF', margin: 'sm' }
       ]
     },
     body: {
       type: 'box',
       layout: 'vertical',
       contents: [
-        { type: 'text', text: `📊 已選擇：${count} / 40 張`, size: 'md', weight: 'bold' },
+        // 大數字顯示
+        {
+          type: 'box',
+          layout: 'horizontal',
+          contents: [
+            { type: 'text', text: `${count}`, size: '3xl', weight: 'bold', color: isReady ? '#06C755' : '#FF9800' },
+            { type: 'text', text: '/ 40 張', size: 'md', color: '#666666', gravity: 'bottom', margin: 'sm' }
+          ]
+        },
+        // 進度條
+        {
+          type: 'box',
+          layout: 'vertical',
+          backgroundColor: '#EEEEEE',
+          height: '8px',
+          cornerRadius: 'md',
+          margin: 'lg',
+          contents: [{
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: isReady ? '#06C755' : '#FF9800',
+            height: '8px',
+            cornerRadius: 'md',
+            width: `${progressPercent}%`,
+            contents: []
+          }]
+        },
+        // 狀態文字
         {
           type: 'text',
-          text: isReady ? '🎉 已達到 40 張，可以下載打包！' : `⏳ 還需要 ${40 - count} 張`,
+          text: isReady ? '🎉 已滿 40 張，可以下載！' : `⏳ 還需要 ${40 - count} 張`,
           size: 'sm',
-          color: isReady ? '#06C755' : '#FF9800',
-          margin: 'md',
+          color: isReady ? '#06C755' : '#666666',
+          margin: 'lg',
           wrap: true
         },
-        { type: 'text', text: '👈 左滑查看已選貼圖', size: 'xs', color: '#999999', margin: 'lg' }
+        // 當前頁顯示範圍
+        count > 0 ? {
+          type: 'text',
+          text: `📍 顯示：第 ${startIdx + 1} - ${endIdx} 張`,
+          size: 'xs',
+          color: '#999999',
+          margin: 'md'
+        } : { type: 'filler' }
       ]
     },
     footer: {
@@ -1281,9 +1370,20 @@ async function sendUploadQueueCarousel(replyToken, queue) {
           action: {
             type: 'uri',
             label: '📥 下載貼圖包',
-            uri: `https://sticker-tycoon.netlify.app/download?userId=${encodeURIComponent(queue[0]?.user_id || '')}`
+            uri: `https://sticker-tycoon.netlify.app/download?userId=${encodeURIComponent(userId || '')}`
           }
         }] : []),
+        // 網頁版完整查看
+        {
+          type: 'button',
+          style: isReady ? 'secondary' : 'primary',
+          color: isReady ? undefined : '#4A90E2',
+          action: {
+            type: 'uri',
+            label: '🖼️ 網頁版完整查看',
+            uri: `https://sticker-tycoon.netlify.app/queue?userId=${encodeURIComponent(userId || '')}`
+          }
+        },
         {
           type: 'button',
           style: 'secondary',
@@ -1298,72 +1398,140 @@ async function sendUploadQueueCarousel(replyToken, queue) {
   };
 
   // 每張貼圖一個 bubble（帶移除按鈕）
-  const stickerBubbles = queue.slice(0, 10).map((item, index) => ({
-    type: 'bubble',
-    size: 'kilo',
-    body: {
-      type: 'box',
-      layout: 'vertical',
-      paddingAll: 'sm',
-      contents: [
-        {
-          type: 'image',
-          url: item.image_url,
-          size: 'full',
-          aspectRatio: '1:1',
-          aspectMode: 'fit',
-          backgroundColor: '#FFFFFF'
-        }
-      ]
-    },
-    footer: {
-      type: 'box',
-      layout: 'vertical',
-      paddingAll: 'sm',
-      spacing: 'sm',
-      contents: [
-        {
-          type: 'text',
-          text: item.expression || `#${index + 1}`,
-          size: 'sm',
-          color: '#333333',
-          align: 'center',
-          weight: 'bold'
-        },
-        {
-          type: 'text',
-          text: `${index + 1} / ${count}`,
-          size: 'xs',
-          color: '#999999',
-          align: 'center'
-        },
-        {
-          type: 'button',
-          style: 'secondary',
-          height: 'sm',
-          action: {
-            type: 'message',
-            label: '❌ 移除',
-            text: `移除上傳:${item.sticker_id}`
+  const stickerBubbles = pageItems.map((item, index) => {
+    const globalIndex = startIdx + index + 1;
+    return {
+      type: 'bubble',
+      size: 'kilo',
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'sm',
+        contents: [
+          {
+            type: 'image',
+            url: item.image_url,
+            size: 'full',
+            aspectRatio: '1:1',
+            aspectMode: 'fit',
+            backgroundColor: '#F5F5F5'
           }
-        }
-      ]
-    }
-  }));
+        ]
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'sm',
+        spacing: 'xs',
+        contents: [
+          {
+            type: 'text',
+            text: item.expression || `貼圖 #${globalIndex}`,
+            size: 'sm',
+            color: '#333333',
+            align: 'center',
+            weight: 'bold',
+            wrap: true,
+            maxLines: 1
+          },
+          {
+            type: 'text',
+            text: `#${globalIndex} / ${count}`,
+            size: 'xs',
+            color: '#999999',
+            align: 'center'
+          },
+          {
+            type: 'button',
+            style: 'secondary',
+            height: 'sm',
+            action: {
+              type: 'postback',
+              label: '❌ 移除',
+              data: `action=removeUpload&stickerId=${item.sticker_id}`,
+              displayText: `移除第 ${globalIndex} 張`
+            }
+          }
+        ]
+      }
+    };
+  });
 
   // 組合輪播
-  const allBubbles = [statusBubble, ...stickerBubbles].slice(0, 12);
+  const allBubbles = [statusBubble, ...stickerBubbles];
 
   const carouselMessage = {
     type: 'flex',
-    altText: `📤 待上傳佇列 - ${count}/40 張`,
+    altText: `📤 待上傳佇列 - ${count}/40 張 (第${currentPage}頁)`,
     contents: {
       type: 'carousel',
       contents: allBubbles
     }
   };
 
+  // 建立分頁 Quick Reply
+  const quickReplyItems = [];
+
+  // 上一頁
+  if (currentPage > 1) {
+    quickReplyItems.push({
+      type: 'action',
+      action: { type: 'message', label: `⬅️ 第${currentPage - 1}頁`, text: `待上傳頁:${currentPage - 1}` }
+    });
+  }
+
+  // 頁碼快捷（最多顯示 5 個頁碼）
+  const pageRange = getPageRange(currentPage, totalPages, 5);
+  pageRange.forEach(p => {
+    if (p !== currentPage) {
+      quickReplyItems.push({
+        type: 'action',
+        action: { type: 'message', label: `📄 第${p}頁`, text: `待上傳頁:${p}` }
+      });
+    }
+  });
+
+  // 下一頁
+  if (currentPage < totalPages) {
+    quickReplyItems.push({
+      type: 'action',
+      action: { type: 'message', label: `➡️ 第${currentPage + 1}頁`, text: `待上傳頁:${currentPage + 1}` }
+    });
+  }
+
+  // 我的貼圖（方便新增更多）
+  quickReplyItems.push({
+    type: 'action',
+    action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' }
+  });
+
+  // 加入 Quick Reply
+  if (quickReplyItems.length > 0) {
+    carouselMessage.quickReply = {
+      items: quickReplyItems.slice(0, 13)  // LINE 限制最多 13 個
+    };
+  }
+
   return getLineClient().replyMessage(replyToken, carouselMessage);
+}
+
+/**
+ * 計算分頁範圍
+ */
+function getPageRange(current, total, maxVisible) {
+  if (total <= maxVisible) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+
+  const half = Math.floor(maxVisible / 2);
+  let start = Math.max(1, current - half);
+  let end = Math.min(total, start + maxVisible - 1);
+
+  if (end - start + 1 < maxVisible) {
+    start = Math.max(1, end - maxVisible + 1);
+  }
+
+  return Array.from({ length: end - start + 1 }, (_, i) => start + i);
 }
 
 /**
