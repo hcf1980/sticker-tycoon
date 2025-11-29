@@ -121,13 +121,15 @@
 
   <script>
     // 驗證登入
-    const adminPassword = localStorage.getItem('adminPassword');
-    const loginTime = localStorage.getItem('adminLoginTime');
-    if (!adminPassword || !loginTime || Date.now() - parseInt(loginTime) > 24*60*60*1000) {
-      window.location.href = '/admin/login.html';
-    }
+    (function() {
+      const auth = JSON.parse(localStorage.getItem('adminAuth') || '{}');
+      if (!auth.loggedIn || auth.expiry < Date.now()) {
+        localStorage.removeItem('adminAuth');
+        window.location.href = '/admin/login.html';
+      }
+    })();
 
-    function logout() { localStorage.removeItem('adminPassword'); localStorage.removeItem('adminLoginTime'); window.location.href = '/admin/login.html'; }
+    function logout() { localStorage.removeItem('adminAuth'); window.location.href = '/admin/login.html'; }
     function setAmount(n) { document.getElementById('adjust-amount').value = n; }
     function closeAdjustModal() { document.getElementById('adjust-modal').classList.add('hidden'); }
 
