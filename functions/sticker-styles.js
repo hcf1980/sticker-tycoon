@@ -30,6 +30,12 @@ function generateCharacterID(characterDescription) {
 // ============================================
 
 const StyleEnhancer = {
+  realistic: {
+    lighting: "cinematic three-point lighting, natural soft shadows, professional studio quality",
+    composition: "professional portrait framing, balanced proportions, movie poster aesthetic",
+    brushwork: "refined digital painting strokes, subtle skin texture, photorealistic details",
+    mood: "cinematic Hollywood quality, professional polished feel, lifelike presence"
+  },
   cute: {
     lighting: "soft ambient lighting, gentle bounce light, warm glow",
     composition: "round composition, centered, thick outline, balanced proportions",
@@ -65,12 +71,6 @@ const StyleEnhancer = {
     composition: "8-bit center framing, grid-aligned positioning",
     brushwork: "pixel clusters, clean grid alignment, limited color dithering",
     mood: "retro gaming charm, nostalgic 8-bit aesthetic"
-  },
-  watercolor: {
-    lighting: "soft natural lighting, diffused glow",
-    composition: "organic flowing shapes, asymmetric beauty",
-    brushwork: "bleeding pigments, textured watercolor paper, wet-on-wet effects",
-    mood: "calm dreamy softness, artistic tranquility"
   },
   doodle: {
     lighting: "hand-drawn naive shading, casual light source",
@@ -146,6 +146,25 @@ const ExpressionEnhancer = {
 // ============================================
 
 const StickerStyles = {
+  realistic: {
+    id: 'realistic',
+    name: '美式寫實',
+    emoji: '🎬',
+    description: '美式寫實風格、電影感、精緻細節',
+    promptBase: `
+      American realistic illustration style, cinematic quality,
+      detailed facial features, natural skin texture, lifelike proportions,
+      professional portrait lighting, subtle color grading,
+      high-quality digital painting, photorealistic shading,
+      movie poster aesthetic, sharp refined details
+    `,
+    negativePrompt: `
+      cartoon, anime, chibi, pixel art, doodle,
+      flat colors, simple shapes, exaggerated proportions,
+      blurry, low quality, distorted features
+    `
+  },
+
   cute: {
     id: 'cute',
     name: '可愛風',
@@ -239,22 +258,6 @@ const StickerStyles = {
     negativePrompt: `
       smooth gradient, high resolution shading,
       anti-aliased edges, realistic textures
-    `
-  },
-
-  watercolor: {
-    id: 'watercolor',
-    name: '水彩風',
-    emoji: '🎨',
-    description: '柔和水彩、藝術感',
-    promptBase: `
-      watercolor illustration style, soft bleeding pigments,
-      natural brush texture, dreamy pastel wash,
-      hand-painted feel, airy composition, gentle outlines
-    `,
-    negativePrompt: `
-      sharp edges, flat digital colors,
-      vector lines, solid hard shadows
     `
   },
 
