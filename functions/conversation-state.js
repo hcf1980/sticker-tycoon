@@ -101,6 +101,8 @@ function isInCreationFlow(stage) {
     ConversationStage.STYLING,
     ConversationStage.CHARACTER,
     ConversationStage.EXPRESSIONS,
+    ConversationStage.SCENE_SELECT,    // 新增：場景選擇
+    ConversationStage.CUSTOM_SCENE,    // 新增：自訂場景
     ConversationStage.COUNT_SELECT,
     ConversationStage.CONFIRMING
   ].includes(stage);
