@@ -411,6 +411,167 @@ async function getUserPendingTasks(userId) {
   }
 }
 
+// ============================================
+// 上傳佇列相關函數
+// ============================================
+
+/**
+ * 新增貼圖到上傳佇列
+ */
+async function addToUploadQueue(userId, stickerId, sourceSetId, imageUrl, expression) {
+  try {
+    const supabase = getSupabaseClient();
+
+    // 先檢查佇列中已有多少張
+    const { count } = await supabase
+      .from('upload_queue')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId);
+
+    if (count >= 40) {
+      return { success: false, error: '待上傳佇列已滿（最多 40 張）' };
+    }
+
+    // 新增到佇列
+    const { data, error } = await supabase
+      .from('upload_queue')
+      .insert([{
+        user_id: userId,
+        sticker_id: stickerId,
+        source_set_id: sourceSetId,
+        image_url: imageUrl,
+        expression: expression,
+        queue_order: (count || 0) + 1
+      }])
+      .select()
+      .single();
+
+    if (error) {
+      if (error.code === '23505') {  // unique violation
+        return { success: false, error: '此貼圖已在待上傳佇列中' };
+      }
+      throw error;
+    }
+
+    return { success: true, data, currentCount: (count || 0) + 1 };
+  } catch (error) {
+    console.error('新增到上傳佇列失敗:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * 從上傳佇列移除貼圖
+ */
+async function removeFromUploadQueue(userId, stickerId) {
+  try {
+    const supabase = getSupabaseClient();
+
+    const { error } = await supabase
+      .from('upload_queue')
+      .delete()
+      .eq('user_id', userId)
+      .eq('sticker_id', stickerId);
+
+    if (error) throw error;
+
+    // 重新排序
+    await reorderUploadQueue(userId);
+
+    return { success: true };
+  } catch (error) {
+    console.error('從上傳佇列移除失敗:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * 重新排序上傳佇列
+ */
+async function reorderUploadQueue(userId) {
+  try {
+    const supabase = getSupabaseClient();
+
+    // 取得所有佇列項目
+    const { data: items } = await supabase
+      .from('upload_queue')
+      .select('id')
+      .eq('user_id', userId)
+      .order('queue_order', { ascending: true });
+
+    // 重新設定順序
+    for (let i = 0; i < items.length; i++) {
+      await supabase
+        .from('upload_queue')
+        .update({ queue_order: i + 1 })
+        .eq('id', items[i].id);
+    }
+  } catch (error) {
+    console.error('重新排序失敗:', error);
+  }
+}
+
+/**
+ * 取得用戶的上傳佇列
+ */
+async function getUploadQueue(userId) {
+  try {
+    const supabase = getSupabaseClient();
+
+    const { data, error } = await supabase
+      .from('upload_queue')
+      .select('*')
+      .eq('user_id', userId)
+      .order('queue_order', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('取得上傳佇列失敗:', error);
+    return [];
+  }
+}
+
+/**
+ * 清空用戶的上傳佇列
+ */
+async function clearUploadQueue(userId) {
+  try {
+    const supabase = getSupabaseClient();
+
+    const { error } = await supabase
+      .from('upload_queue')
+      .delete()
+      .eq('user_id', userId);
+
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    console.error('清空上傳佇列失敗:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * 檢查貼圖是否在上傳佇列中
+ */
+async function isInUploadQueue(userId, stickerId) {
+  try {
+    const supabase = getSupabaseClient();
+
+    const { data } = await supabase
+      .from('upload_queue')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('sticker_id', stickerId)
+      .single();
+
+    return !!data;
+  } catch (error) {
+    return false;
+  }
+}
+
 module.exports = {
   getSupabaseClient,
   isReplyTokenUsed,
@@ -423,6 +584,12 @@ module.exports = {
   getStickerImages,
   deleteStickerSet,
   getUserLatestTask,
-  getUserPendingTasks
+  getUserPendingTasks,
+  // 上傳佇列
+  addToUploadQueue,
+  removeFromUploadQueue,
+  getUploadQueue,
+  clearUploadQueue,
+  isInUploadQueue
 };
 

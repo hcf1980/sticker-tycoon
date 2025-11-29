@@ -5,7 +5,7 @@
 
 const line = require('@line/bot-sdk');
 const axios = require('axios');
-const { isReplyTokenUsed, recordReplyToken, getOrCreateUser, getUserStickerSets, getUserLatestTask, getUserPendingTasks, getStickerSet, getStickerImages, deleteStickerSet } = require('./supabase-client');
+const { isReplyTokenUsed, recordReplyToken, getOrCreateUser, getUserStickerSets, getUserLatestTask, getUserPendingTasks, getStickerSet, getStickerImages, deleteStickerSet, addToUploadQueue, removeFromUploadQueue, getUploadQueue, clearUploadQueue } = require('./supabase-client');
 const { ConversationStage, getConversationState, updateConversationState, resetConversationState, isInCreationFlow } = require('./conversation-state');
 const { generateWelcomeFlexMessage } = require('./sticker-flex-message');
 const { handleStartCreate, handleNaming, handleStyleSelection, handleCharacterDescription, handleExpressionTemplate, handleCountSelection, handlePhotoUpload } = require('./handlers/create-handler');
@@ -109,6 +109,29 @@ async function handleTextMessage(replyToken, userId, text) {
     if (text.startsWith('確認刪除:')) {
       const setId = text.replace('確認刪除:', '');
       return await handleConfirmDeleteStickerSet(replyToken, userId, setId);
+    }
+
+    // 加入待上傳佇列
+    if (text.startsWith('加入上傳:')) {
+      const params = text.replace('加入上傳:', '').split('|');
+      const [stickerId, setId, imageUrl, expression] = params;
+      return await handleAddToUploadQueue(replyToken, userId, stickerId, setId, imageUrl, expression);
+    }
+
+    // 從待上傳佇列移除
+    if (text.startsWith('移除上傳:')) {
+      const stickerId = text.replace('移除上傳:', '');
+      return await handleRemoveFromUploadQueue(replyToken, userId, stickerId);
+    }
+
+    // 查看待上傳佇列
+    if (text === '待上傳' || text === '上傳佇列' || text === '待上傳列表') {
+      return await handleViewUploadQueue(replyToken, userId);
+    }
+
+    // 清空待上傳佇列
+    if (text === '清空待上傳') {
+      return await handleClearUploadQueue(replyToken, userId);
     }
 
     // 4. 處理特殊指令格式
@@ -723,7 +746,7 @@ async function sendStickerCarousel(replyToken, set, stickers) {
     }
   };
 
-  // 每張貼圖一個 bubble
+  // 每張貼圖一個 bubble（帶「加入待上傳」按鈕）
   const stickerBubbles = stickers.map((s, index) => ({
     type: 'bubble',
     size: 'kilo',
@@ -746,6 +769,7 @@ async function sendStickerCarousel(replyToken, set, stickers) {
       type: 'box',
       layout: 'vertical',
       paddingAll: 'sm',
+      spacing: 'sm',
       contents: [
         {
           type: 'text',
@@ -760,8 +784,18 @@ async function sendStickerCarousel(replyToken, set, stickers) {
           text: `${index + 1} / ${stickers.length}`,
           size: 'xs',
           color: '#999999',
-          align: 'center',
-          margin: 'xs'
+          align: 'center'
+        },
+        {
+          type: 'button',
+          style: 'primary',
+          color: '#06C755',
+          height: 'sm',
+          action: {
+            type: 'message',
+            label: '✅ 加入待上傳',
+            text: `加入上傳:${s.sticker_id}|${set.set_id}|${s.image_url}|${s.expression || ''}`
+          }
         }
       ]
     }
@@ -880,6 +914,265 @@ async function handleConfirmDeleteStickerSet(replyToken, userId, setId) {
 
   } catch (error) {
     console.error('❌ 確認刪除失敗:', error);
+    return getLineClient().replyMessage(replyToken, {
+      type: 'text',
+      text: '❌ 系統錯誤，請稍後再試'
+    });
+  }
+}
+
+// ============================================
+// 上傳佇列相關功能
+// ============================================
+
+/**
+ * 處理加入上傳佇列
+ */
+async function handleAddToUploadQueue(replyToken, userId, stickerId, setId, imageUrl, expression) {
+  try {
+    const result = await addToUploadQueue(userId, stickerId, setId, imageUrl, expression);
+
+    if (!result.success) {
+      return getLineClient().replyMessage(replyToken, {
+        type: 'text',
+        text: `❌ ${result.error}`
+      });
+    }
+
+    return getLineClient().replyMessage(replyToken, {
+      type: 'text',
+      text: `✅ 已加入待上傳佇列！\n\n` +
+            `📊 目前佇列：${result.currentCount} / 40 張\n\n` +
+            (result.currentCount >= 40
+              ? '🎉 已達 40 張！輸入「待上傳」查看並下載'
+              : `💡 再選 ${40 - result.currentCount} 張即可上傳 LINE 貼圖`)
+    });
+
+  } catch (error) {
+    console.error('❌ 加入上傳佇列失敗:', error);
+    return getLineClient().replyMessage(replyToken, {
+      type: 'text',
+      text: '❌ 系統錯誤，請稍後再試'
+    });
+  }
+}
+
+/**
+ * 處理從上傳佇列移除
+ */
+async function handleRemoveFromUploadQueue(replyToken, userId, stickerId) {
+  try {
+    const result = await removeFromUploadQueue(userId, stickerId);
+
+    if (!result.success) {
+      return getLineClient().replyMessage(replyToken, {
+        type: 'text',
+        text: `❌ 移除失敗：${result.error}`
+      });
+    }
+
+    // 取得更新後的佇列數量
+    const queue = await getUploadQueue(userId);
+
+    return getLineClient().replyMessage(replyToken, {
+      type: 'text',
+      text: `✅ 已從待上傳佇列移除\n\n📊 目前佇列：${queue.length} / 40 張`
+    });
+
+  } catch (error) {
+    console.error('❌ 移除失敗:', error);
+    return getLineClient().replyMessage(replyToken, {
+      type: 'text',
+      text: '❌ 系統錯誤，請稍後再試'
+    });
+  }
+}
+
+/**
+ * 處理查看上傳佇列
+ */
+async function handleViewUploadQueue(replyToken, userId) {
+  try {
+    const queue = await getUploadQueue(userId);
+
+    if (queue.length === 0) {
+      return getLineClient().replyMessage(replyToken, {
+        type: 'text',
+        text: '📋 待上傳佇列是空的\n\n' +
+              '💡 操作說明：\n' +
+              '1. 輸入「我的貼圖」\n' +
+              '2. 點「查看詳情」\n' +
+              '3. 在每張貼圖下點「✅ 加入待上傳」\n' +
+              '4. 累積 40 張即可下載打包上傳 LINE'
+      });
+    }
+
+    // 生成佇列輪播
+    return await sendUploadQueueCarousel(replyToken, queue);
+
+  } catch (error) {
+    console.error('❌ 查看上傳佇列失敗:', error);
+    return getLineClient().replyMessage(replyToken, {
+      type: 'text',
+      text: '❌ 系統錯誤，請稍後再試'
+    });
+  }
+}
+
+/**
+ * 發送上傳佇列輪播
+ */
+async function sendUploadQueueCarousel(replyToken, queue) {
+  const count = queue.length;
+  const isReady = count >= 40;
+
+  // 第一個 bubble：佇列狀態
+  const statusBubble = {
+    type: 'bubble',
+    size: 'kilo',
+    header: {
+      type: 'box',
+      layout: 'vertical',
+      backgroundColor: isReady ? '#06C755' : '#FF9800',
+      paddingAll: 'lg',
+      contents: [
+        { type: 'text', text: '📤 待上傳佇列', weight: 'bold', size: 'lg', color: '#FFFFFF' }
+      ]
+    },
+    body: {
+      type: 'box',
+      layout: 'vertical',
+      contents: [
+        { type: 'text', text: `📊 已選擇：${count} / 40 張`, size: 'md', weight: 'bold' },
+        {
+          type: 'text',
+          text: isReady ? '🎉 已達到 40 張，可以下載打包！' : `⏳ 還需要 ${40 - count} 張`,
+          size: 'sm',
+          color: isReady ? '#06C755' : '#FF9800',
+          margin: 'md',
+          wrap: true
+        },
+        { type: 'text', text: '👈 左滑查看已選貼圖', size: 'xs', color: '#999999', margin: 'lg' }
+      ]
+    },
+    footer: {
+      type: 'box',
+      layout: 'vertical',
+      spacing: 'sm',
+      contents: [
+        ...(isReady ? [{
+          type: 'button',
+          style: 'primary',
+          color: '#06C755',
+          action: {
+            type: 'uri',
+            label: '📥 下載貼圖包',
+            uri: `https://sticker-tycoon.netlify.app/download?userId=${encodeURIComponent(queue[0]?.user_id || '')}`
+          }
+        }] : []),
+        {
+          type: 'button',
+          style: 'secondary',
+          action: {
+            type: 'message',
+            label: '🗑️ 清空佇列',
+            text: '清空待上傳'
+          }
+        }
+      ]
+    }
+  };
+
+  // 每張貼圖一個 bubble（帶移除按鈕）
+  const stickerBubbles = queue.slice(0, 10).map((item, index) => ({
+    type: 'bubble',
+    size: 'kilo',
+    body: {
+      type: 'box',
+      layout: 'vertical',
+      paddingAll: 'sm',
+      contents: [
+        {
+          type: 'image',
+          url: item.image_url,
+          size: 'full',
+          aspectRatio: '1:1',
+          aspectMode: 'fit',
+          backgroundColor: '#FFFFFF'
+        }
+      ]
+    },
+    footer: {
+      type: 'box',
+      layout: 'vertical',
+      paddingAll: 'sm',
+      spacing: 'sm',
+      contents: [
+        {
+          type: 'text',
+          text: item.expression || `#${index + 1}`,
+          size: 'sm',
+          color: '#333333',
+          align: 'center',
+          weight: 'bold'
+        },
+        {
+          type: 'text',
+          text: `${index + 1} / ${count}`,
+          size: 'xs',
+          color: '#999999',
+          align: 'center'
+        },
+        {
+          type: 'button',
+          style: 'secondary',
+          height: 'sm',
+          action: {
+            type: 'message',
+            label: '❌ 移除',
+            text: `移除上傳:${item.sticker_id}`
+          }
+        }
+      ]
+    }
+  }));
+
+  // 組合輪播
+  const allBubbles = [statusBubble, ...stickerBubbles].slice(0, 12);
+
+  const carouselMessage = {
+    type: 'flex',
+    altText: `📤 待上傳佇列 - ${count}/40 張`,
+    contents: {
+      type: 'carousel',
+      contents: allBubbles
+    }
+  };
+
+  return getLineClient().replyMessage(replyToken, carouselMessage);
+}
+
+/**
+ * 處理清空上傳佇列
+ */
+async function handleClearUploadQueue(replyToken, userId) {
+  try {
+    const result = await clearUploadQueue(userId);
+
+    if (!result.success) {
+      return getLineClient().replyMessage(replyToken, {
+        type: 'text',
+        text: `❌ 清空失敗：${result.error}`
+      });
+    }
+
+    return getLineClient().replyMessage(replyToken, {
+      type: 'text',
+      text: '✅ 待上傳佇列已清空\n\n輸入「我的貼圖」重新選擇貼圖'
+    });
+
+  } catch (error) {
+    console.error('❌ 清空佇列失敗:', error);
     return getLineClient().replyMessage(replyToken, {
       type: 'text',
       text: '❌ 系統錯誤，請稍後再試'

@@ -133,7 +133,23 @@ ALTER TABLE conversation_states ENABLE ROW LEVEL SECURITY;
 -- 設定為 Public（公開存取）
 -- 用於儲存用戶上傳的照片，作為 AI 生成貼圖的來源
 
--- 10. 清理舊資料的函數
+-- 10. 上傳佇列表（用戶選擇的待上傳貼圖）
+CREATE TABLE IF NOT EXISTS upload_queue (
+  id BIGSERIAL PRIMARY KEY,
+  user_id TEXT NOT NULL,  -- LINE user ID
+  sticker_id TEXT NOT NULL REFERENCES stickers(sticker_id) ON DELETE CASCADE,
+  source_set_id TEXT NOT NULL,  -- 來源貼圖組 ID
+  image_url TEXT NOT NULL,  -- 圖片 URL
+  expression TEXT,  -- 表情描述
+  queue_order INTEGER,  -- 在佇列中的順序
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(user_id, sticker_id)  -- 每個用戶每張貼圖只能加入一次
+);
+
+CREATE INDEX IF NOT EXISTS idx_upload_queue_user_id ON upload_queue(user_id);
+CREATE INDEX IF NOT EXISTS idx_upload_queue_sticker_id ON upload_queue(sticker_id);
+
+-- 11. 清理舊資料的函數
 CREATE OR REPLACE FUNCTION cleanup_old_data()
 RETURNS void AS $$
 BEGIN
