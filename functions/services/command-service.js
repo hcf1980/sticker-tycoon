@@ -15,7 +15,7 @@ const {
   getUploadQueue,
   clearUploadQueue,
 } = require('../supabase-client');
-const { generateStickerListFlexMessage, generateDemoGalleryFlexMessage } = require('../sticker-flex-message');
+const { generateStickerListFlexMessage } = require('../sticker-flex-message');
 const logger = require('../utils/logger');
 const { validator } = require('../utils');
 
@@ -37,14 +37,6 @@ async function handleMyStickers(userId) {
   // 生成貼圖列表 Flex Message（帶推薦好友資訊）
   const referralInfo = await getUserReferralInfo(userId);
   return generateStickerListFlexMessage(sets, referralInfo);
-}
-
-/**
- * 處理「示範圖集」命令
- */
-async function handleDemoGallery() {
-  logger.info('處理示範圖集命令');
-  return generateDemoGalleryFlexMessage();
 }
 
 /**
@@ -236,7 +228,6 @@ function getTransactionTypeText(type) {
 
 module.exports = {
   handleMyStickers,
-  handleDemoGallery,
   handleTokenQuery,
   handlePurchaseInfo,
   handleReferralInfo,
