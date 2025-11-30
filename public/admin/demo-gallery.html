@@ -280,10 +280,21 @@
       demoGallery.push(demoItem);
       alert('已加入示範圖集！');
 
-      // 如果在示範圖集頁面，更新顯示
-      if (!document.getElementById('tab-demo').classList.contains('hidden')) {
-        renderDemoGallery();
-      }
+      // 自動切換到示範圖集分頁
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('border-pink-500', 'text-pink-500');
+        b.classList.add('text-gray-500');
+      });
+
+      const demoTabBtn = document.querySelector('.tab-btn[data-tab="demo"]');
+      demoTabBtn.classList.add('border-pink-500', 'text-pink-500');
+      demoTabBtn.classList.remove('text-gray-500');
+
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+      document.getElementById('tab-demo').classList.remove('hidden');
+
+      // 更新顯示
+      renderDemoGallery();
     }
 
     // 載入當前示範圖集
