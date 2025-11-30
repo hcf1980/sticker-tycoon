@@ -11,7 +11,11 @@
     "test:coverage": "jest --coverage",
     "deploy": "netlify deploy --prod",
     "setup:richmenu": "node scripts/setup-rich-menu.js",
-    "generate:richmenu-image": "node scripts/generate-rich-menu-image.js"
+    "generate:richmenu-image": "node scripts/generate-rich-menu-image.js",
+    "lint": "eslint functions/**/*.js",
+    "lint:fix": "eslint functions/**/*.js --fix",
+    "format": "prettier --write \"functions/**/*.js\"",
+    "format:check": "prettier --check \"functions/**/*.js\""
   },
   "keywords": [
     "line-bot",
@@ -34,8 +38,14 @@
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
+    "eslint": "^9.39.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-node": "^11.1.0",
+    "globals": "^16.5.0",
     "jest": "^30.2.0",
-    "netlify-cli": "^17.36.4"
+    "netlify-cli": "^17.36.4",
+    "prettier": "^3.7.3",
+    "zod": "^4.1.13"
   },
   "engines": {
     "node": ">=18.0.0"

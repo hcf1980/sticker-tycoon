@@ -2151,7 +2151,10 @@ async function handleReferralInfo(replyToken, userId) {
             layout: 'vertical',
             margin: 'lg',
             contents: [
-              { type: 'text', text: '好友加入後只要輸入：', size: 'sm', color: '#666666' },
+              { type: 'text', text: '📤 分享方式：', size: 'md', weight: 'bold', color: '#333333' },
+              { type: 'text', text: '點擊下方按鈕即可直接分享', size: 'xs', color: '#666666', margin: 'sm' },
+              { type: 'separator', margin: 'md' },
+              { type: 'text', text: '好友加入後只要輸入：', size: 'sm', color: '#666666', margin: 'md' },
               {
                 type: 'box',
                 layout: 'vertical',
@@ -2180,18 +2183,8 @@ async function handleReferralInfo(replyToken, userId) {
             height: 'md',
             action: {
               type: 'uri',
-              label: '📤 分享給好友',
+              label: '📤 立即分享給好友',
               uri: `https://line.me/R/share?text=${encodeURIComponent(shareText)}`
-            }
-          },
-          {
-            type: 'button',
-            style: 'secondary',
-            height: 'sm',
-            action: {
-              type: 'uri',
-              label: '📋 複製官方帳號連結',
-              uri: lineOALink
             }
           }
         ]
@@ -2199,7 +2192,24 @@ async function handleReferralInfo(replyToken, userId) {
     }
   };
 
-  return getLineClient().replyMessage(replyToken, message);
+  // 提供純文字版本方便複製分享
+  const textMessage = {
+    type: 'text',
+    text: `📋 複製以下內容分享給好友：
+
+━━━━━━━━━━━━━━━━
+
+${shareText}
+
+━━━━━━━━━━━━━━━━
+
+💡 小提示：
+• 點擊上方綠色按鈕可直接透過 LINE 分享
+• 或複製上方訊息，手動傳送給好友
+• 好友需加入官方帳號並輸入推薦碼才能領取獎勵`
+  };
+
+  return getLineClient().replyMessage(replyToken, [message, textMessage]);
 }
 
 /**

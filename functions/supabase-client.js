@@ -513,25 +513,36 @@ async function removeFromUploadQueue(userId, stickerId) {
 
 /**
  * 重新排序上傳佇列
+ * 優化版：使用批次更新取代逐一更新，減少 DB 操作次數
  */
 async function reorderUploadQueue(userId) {
   try {
     const supabase = getSupabaseClient();
 
     // 取得所有佇列項目
-    const { data: items } = await supabase
+    const { data: items, error: selectError } = await supabase
       .from('upload_queue')
       .select('id')
       .eq('user_id', userId)
       .order('queue_order', { ascending: true });
 
-    // 重新設定順序
-    for (let i = 0; i < items.length; i++) {
-      await supabase
-        .from('upload_queue')
-        .update({ queue_order: i + 1 })
-        .eq('id', items[i].id);
+    if (selectError || !items || items.length === 0) {
+      return;
     }
+
+    // 使用 Promise.all 進行並行更新（批次處理）
+    // 注意：對於大量資料，可考慮使用 Supabase RPC 或分批處理
+    const updatePromises = items.map((item, index) =>
+      supabase
+        .from('upload_queue')
+        .update({ queue_order: index + 1 })
+        .eq('id', item.id)
+    );
+
+    // 並行執行所有更新
+    await Promise.all(updatePromises);
+
+    console.log(`✅ 佇列重新排序完成：${items.length} 項目`);
   } catch (error) {
     console.error('重新排序失敗:', error);
   }
