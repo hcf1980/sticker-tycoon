@@ -2053,7 +2053,7 @@ async function handlePurchaseInfo(replyToken) {
 }
 
 /**
- * 處理分享給好友資訊 - 可直接分享給好友
+ * 處理分享給好友資訊 - 簡化版本，直接發送分享連結
  */
 async function handleReferralInfo(replyToken, userId) {
   try {
@@ -2062,8 +2062,8 @@ async function handleReferralInfo(replyToken, userId) {
     const info = await getUserReferralInfo(userId);
     console.log(`📊 推薦資訊:`, JSON.stringify(info));
 
-    const remainingInvites = 3 - (info.referralCount || 0);
     const referralCode = info.referralCode || 'XXXXXX';
+    const remainingInvites = 3 - (info.referralCount || 0);
 
     // LINE 官方帳號連結
     const lineOALink = 'https://line.me/R/ti/p/@276vcfne';
@@ -2081,135 +2081,45 @@ async function handleReferralInfo(replyToken, userId) {
 
 加入後輸入「輸入推薦碼 ${referralCode}」即可領取獎勵！`;
 
-  // 主訊息卡片
-  const message = {
-    type: 'flex',
-    altText: '🎁 分享給好友賺代幣',
-    contents: {
-      type: 'bubble',
-      size: 'mega',
-      header: {
-        type: 'box',
-        layout: 'vertical',
-        backgroundColor: '#FF6B6B',
-        paddingAll: 'lg',
-        contents: [
-          { type: 'text', text: '🎁 分享給好友賺代幣', size: 'xl', weight: 'bold', color: '#FFFFFF', align: 'center' },
-          { type: 'text', text: '分享好友，雙方各得 10 代幣！', size: 'sm', color: '#FFDDDD', align: 'center', margin: 'sm' }
-        ]
-      },
-      body: {
-        type: 'box',
-        layout: 'vertical',
-        paddingAll: 'lg',
-        contents: [
-          // 推薦碼區塊
+    //簡單的文字訊息 + QuickReply 分享按鈕
+    const message = {
+      type: 'text',
+      text: `🎁 分享給好友賺代幣
+
+你的推薦碼：${referralCode}
+還可邀請：${remainingInvites} 位好友
+
+點擊下方按鈕即可分享給好友 👇`,
+      quickReply: {
+        items: [
           {
-            type: 'box',
-            layout: 'vertical',
-            backgroundColor: '#FFF5F5',
-            cornerRadius: 'xl',
-            paddingAll: 'xl',
-            contents: [
-              { type: 'text', text: '你的專屬推薦碼', size: 'sm', color: '#888888', align: 'center' },
-              { type: 'text', text: referralCode, size: '3xl', weight: 'bold', align: 'center', color: '#FF6B6B', margin: 'md' },
-              { type: 'text', text: `還可邀請 ${remainingInvites} 位好友`, size: 'xs', color: '#999999', align: 'center', margin: 'md' }
-            ]
-          },
-          // 進度條
-          info.referralCount > 0 ? {
-            type: 'box',
-            layout: 'vertical',
-            margin: 'lg',
-            contents: [
-              {
-                type: 'box',
-                layout: 'horizontal',
-                contents: [
-                  { type: 'text', text: '邀請進度', size: 'xs', color: '#888888' },
-                  { type: 'text', text: `${info.referralCount}/3`, size: 'xs', color: '#FF6B6B', align: 'end', weight: 'bold' }
-                ]
-              },
-              {
-                type: 'box',
-                layout: 'vertical',
-                backgroundColor: '#EEEEEE',
-                height: '6px',
-                cornerRadius: 'md',
-                margin: 'sm',
-                contents: [{
-                  type: 'box',
-                  layout: 'vertical',
-                  backgroundColor: '#FF6B6B',
-                  height: '6px',
-                  cornerRadius: 'md',
-                  width: `${Math.round(info.referralCount / 3 * 100)}%`,
-                  contents: []
-                }]
-              }
-            ]
-          } : { type: 'filler' },
-          { type: 'separator', margin: 'xl' },
-          // 說明
-          {
-            type: 'box',
-            layout: 'vertical',
-            margin: 'lg',
-            contents: [
-              { type: 'text', text: '📤 分享方式：', size: 'md', weight: 'bold', color: '#333333' },
-              { type: 'text', text: '點擊下方按鈕即可直接分享', size: 'xs', color: '#666666', margin: 'sm' },
-              { type: 'separator', margin: 'md' },
-              { type: 'text', text: '好友加入後只要輸入：', size: 'sm', color: '#666666', margin: 'md' },
-              {
-                type: 'box',
-                layout: 'vertical',
-                backgroundColor: '#F5F5F5',
-                cornerRadius: 'md',
-                paddingAll: 'md',
-                margin: 'sm',
-                contents: [
-                  { type: 'text', text: `輸入推薦碼 ${referralCode}`, size: 'md', weight: 'bold', color: '#333333', align: 'center' }
-                ]
-              }
-            ]
-          }
-        ]
-      },
-      footer: {
-        type: 'box',
-        layout: 'vertical',
-        spacing: 'sm',
-        paddingAll: 'md',
-        contents: [
-          {
-            type: 'button',
-            style: 'primary',
-            color: '#00B900',
-            height: 'md',
+            type: 'action',
             action: {
               type: 'uri',
-              label: '📤 立即分享給好友',
+              label: '📤 立即分享',
               uri: `https://line.me/R/share?text=${encodeURIComponent(shareText)}`
+            }
+          },
+          {
+            type: 'action',
+            action: {
+              type: 'message',
+              label: '💰 查詢代幣',
+              text: '查詢代幣'
             }
           }
         ]
       }
-    }
-  };
+    };
 
-  console.log(`✅ 準備發送分享訊息給用戶 ${userId}`);
-
-  // 只發送 Flex Message，不發送純文字版本（避免訊息過長導致 400 錯誤）
-  return getLineClient().replyMessage(replyToken, message);
+    console.log(`✅ 發送簡化版分享訊息給用戶 ${userId}`);
+    return getLineClient().replyMessage(replyToken, message);
 
   } catch (error) {
     console.error(`❌ handleReferralInfo 失敗:`, error);
-    console.error(`錯誤詳情:`, error.stack);
-
-    // 發送簡單的錯誤訊息
     return safeReply(replyToken, {
       type: 'text',
-      text: `❌ 無法載入分享資訊，請稍後再試\n\n錯誤: ${error.message}`
+      text: `❌ 無法載入分享資訊，請稍後再試`
     });
   }
 }
