@@ -102,7 +102,7 @@ async function handleTextMessage(replyToken, userId, text) {
 
     // 示範圖集
     if (text === '示範圖集' || text === '範例' || text === '作品集') {
-      return getLineClient().replyMessage(replyToken, generateDemoGalleryFlexMessage());
+      return await handleDemoGallery(replyToken, userId);
     }
 
     // 代幣查詢
@@ -1608,6 +1608,187 @@ async function handleClearUploadQueue(replyToken, userId) {
 }
 
 /**
+ * 處理示範圖集
+ */
+async function handleDemoGallery(replyToken, userId) {
+  try {
+    // 從數據庫讀取示範圖集
+    const { data: demoItems, error } = await supabase
+      .from('demo_gallery')
+      .select('*')
+      .order('display_order', { ascending: true })
+      .limit(8);
+
+    if (error) {
+      console.error('讀取示範圖集失敗:', error);
+      // 如果數據庫讀取失敗，使用舊版靜態圖集
+      return getLineClient().replyMessage(replyToken, generateDemoGalleryFlexMessage());
+    }
+
+    // 如果數據庫沒有資料，使用舊版靜態圖集
+    if (!demoItems || demoItems.length === 0) {
+      return getLineClient().replyMessage(replyToken, generateDemoGalleryFlexMessage());
+    }
+
+    // 生成新版示範圖集
+    const message = generateDemoGalleryFromDB(demoItems);
+    return getLineClient().replyMessage(replyToken, message);
+
+  } catch (error) {
+    console.error('示範圖集處理失敗:', error);
+    // 發生錯誤時使用舊版靜態圖集
+    return getLineClient().replyMessage(replyToken, generateDemoGalleryFlexMessage());
+  }
+}
+
+/**
+ * 從數據庫資料生成示範圖集 Flex Message
+ */
+function generateDemoGalleryFromDB(items) {
+  // LINE 官方帳號連結
+  const lineOALink = 'https://line.me/R/ti/p/@276vcfne';
+
+  // 分享文字
+  const shareText = `🎨 推薦你一個超讚的貼圖製作工具！
+
+【貼圖大亨】用 AI 幫你製作專屬 LINE 貼圖 ✨
+
+🎁 新用戶免費送 40 代幣
+📸 上傳照片就能生成貼圖
+🚀 3-7 天免費代上架 LINE 貼圖小舖
+
+👉 點擊加入：${lineOALink}`;
+
+  // 介紹卡片
+  const infoBubble = {
+    type: 'bubble',
+    size: 'kilo',
+    header: {
+      type: 'box',
+      layout: 'vertical',
+      backgroundColor: '#FF6B6B',
+      paddingAll: 'lg',
+      contents: [
+        { type: 'text', text: '✨ 示範圖集', weight: 'bold', size: 'lg', color: '#FFFFFF', align: 'center' },
+        { type: 'text', text: '精選貼圖範例與參數', size: 'xs', color: '#FFDDDD', align: 'center', margin: 'sm' }
+      ]
+    },
+    body: {
+      type: 'box',
+      layout: 'vertical',
+      contents: [
+        { type: 'text', text: '👈 左滑查看範例貼圖', size: 'sm', color: '#06C755', align: 'center' },
+        { type: 'separator', margin: 'lg' },
+        { type: 'text', text: '📝 每張圖都有生成參數', size: 'sm', weight: 'bold', margin: 'lg' },
+        { type: 'text', text: '包含風格、角色、場景等', size: 'xs', color: '#666666', margin: 'sm' },
+        { type: 'text', text: '參考這些參數創作類似效果！', size: 'xs', color: '#666666', margin: 'xs' },
+        { type: 'separator', margin: 'lg' },
+        { type: 'text', text: '🎁 新用戶免費送 40 代幣！', size: 'xs', color: '#FF6B6B', margin: 'lg', weight: 'bold' }
+      ]
+    },
+    footer: {
+      type: 'box',
+      layout: 'vertical',
+      spacing: 'sm',
+      contents: [
+        {
+          type: 'button',
+          style: 'primary',
+          color: '#FF6B6B',
+          action: { type: 'message', label: '🚀 開始創建貼圖', text: '創建貼圖' }
+        },
+        {
+          type: 'button',
+          style: 'link',
+          action: {
+            type: 'uri',
+            label: '🌐 查看完整圖集',
+            uri: 'https://sticker-tycoon.netlify.app/demo-gallery.html'
+          }
+        }
+      ]
+    }
+  };
+
+  // 示範貼圖卡片（帶參數資訊）
+  const demoBubbles = items.map(item => {
+    // 構建參數說明
+    const params = [];
+    if (item.style_name) params.push(`🎨 ${item.style_name}`);
+    if (item.character) params.push(`👤 ${truncateText(item.character, 30)}`);
+    if (item.scene) params.push(`🌄 ${truncateText(item.scene, 30)}`);
+    if (item.expression) params.push(`😊 ${truncateText(item.expression, 30)}`);
+
+    return {
+      type: 'bubble',
+      size: 'kilo',
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'sm',
+        contents: [
+          {
+            type: 'image',
+            url: item.url,
+            size: 'full',
+            aspectRatio: '1:1',
+            aspectMode: 'fit',
+            backgroundColor: '#FFFFFF'
+          },
+          {
+            type: 'box',
+            layout: 'vertical',
+            paddingTop: 'sm',
+            contents: [
+              {
+                type: 'text',
+                text: item.style_name || '未指定風格',
+                size: 'md',
+                weight: 'bold',
+                align: 'center',
+                color: '#FF6B6B'
+              },
+              {
+                type: 'text',
+                text: '生成參數 ↓',
+                size: 'xxs',
+                color: '#999999',
+                align: 'center',
+                margin: 'xs'
+              }
+            ]
+          }
+        ]
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'xs',
+        paddingAll: 'sm',
+        contents: params.length > 0 ?
+          params.map(param => ({
+            type: 'text',
+            text: param,
+            size: 'xxs',
+            color: '#666666',
+            wrap: true
+          })) :
+          [{ type: 'text', text: '無參數資訊', size: 'xxs', color: '#999999', align: 'center' }]
+      }
+    };
+  });
+
+  return {
+    type: 'flex',
+    altText: '✨ 示範圖集 - 精選貼圖範例與生成參數',
+    contents: {
+      type: 'carousel',
+      contents: [infoBubble, ...demoBubbles]
+    }
+  };
+}
+
+/**
  * 生成示範圖集 Flex Message（隨機展示不同風格）
  */
 function generateDemoGalleryFlexMessage() {
@@ -2194,4 +2375,13 @@ async function handleShareReferralCode(replyToken, userId) {
     type: 'text',
     text: shareText
   });
+}
+
+/**
+ * 截斷文字
+ */
+function truncateText(text, maxLength) {
+  if (!text) return '';
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + '...';
 }

@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>示範圖集管理 - 貼圖大亨</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <nav class="bg-gradient-to-r from-pink-500 to-orange-400 text-white p-4">
+    <div class="container mx-auto flex justify-between items-center">
+      <h1 class="text-2xl font-bold">✨ 示範圖集管理</h1>
+      <a href="/admin/" class="text-white hover:underline">← 返回後台</a>
+    </div>
+  </nav>
+
+  <div class="container mx-auto p-6">
+    <!-- 功能選項卡 -->
+    <div class="bg-white rounded-lg shadow mb-6">
+      <div class="flex border-b">
+        <button class="tab-btn px-6 py-3 font-semibold border-b-2 border-pink-500 text-pink-500" data-tab="browse">
+          🔍 瀏覽已生成貼圖
+        </button>
+        <button class="tab-btn px-6 py-3 font-semibold text-gray-500 hover:text-pink-500" data-tab="demo">
+          ✨ 當前示範圖集
+        </button>
+      </div>
+    </div>
+
+    <!-- 瀏覽已生成貼圖 -->
+    <div id="tab-browse" class="tab-content">
+      <!-- 篩選器 -->
+      <div class="bg-white rounded-lg shadow p-4 mb-6">
+        <div class="grid md:grid-cols-4 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">風格</label>
+            <select id="filterStyle" class="w-full border rounded px-3 py-2">
+              <option value="">全部風格</option>
+              <option value="realistic">📸 美顏真實</option>
+              <option value="cute">🥰 可愛風</option>
+              <option value="cool">😎 酷炫風</option>
+              <option value="funny">🤣 搞笑風</option>
+              <option value="simple">✨ 簡約風</option>
+              <option value="anime">🎌 動漫風</option>
+              <option value="pixel">👾 像素風</option>
+              <option value="sketch">✏️ 塗鴉風</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">狀態</label>
+            <select id="filterStatus" class="w-full border rounded px-3 py-2">
+              <option value="completed">已完成</option>
+              <option value="all">全部狀態</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">排序</label>
+            <select id="sortBy" class="w-full border rounded px-3 py-2">
+              <option value="created_desc">最新優先</option>
+              <option value="created_asc">最舊優先</option>
+            </select>
+          </div>
+          <div class="flex items-end">
+            <button id="btnApplyFilter" class="w-full bg-pink-500 text-white px-4 py-2 rounded hover:bg-pink-600">
+              🔍 套用篩選
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 貼圖列表 -->
+      <div id="stickerSets" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="text-center text-gray-500 col-span-full py-10">
+          載入中...
+        </div>
+      </div>
+
+      <!-- 分頁 -->
+      <div id="pagination" class="mt-6 flex justify-center gap-2"></div>
+    </div>
+
+    <!-- 當前示範圖集 -->
+    <div id="tab-demo" class="tab-content hidden">
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xl font-bold">當前示範圖集</h3>
+          <button id="btnSaveDemo" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+            💾 儲存變更
+          </button>
+        </div>
+        <div id="currentDemo" class="grid md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div class="text-center text-gray-500 col-span-full py-10">
+            載入中...
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 貼圖詳情彈窗 -->
+  <div id="stickerModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg max-w-4xl w-full mx-4 max-h-screen overflow-y-auto">
+      <div class="p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-2xl font-bold">貼圖詳情</h3>
+          <button id="closeModal" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+        </div>
+        <div id="modalContent"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 驗證登入
+    function checkAuth() {
+      const auth = JSON.parse(localStorage.getItem('adminAuth') || '{}');
+      if (!auth.loggedIn || auth.expiry < Date.now()) {
+        window.location.href = '/admin/login.html';
+        return false;
+      }
+      return true;
+    }
+    
+    if (!checkAuth()) {
+      document.body.innerHTML = '<div class="text-center p-10">跳轉中...</div>';
+    }
+
+    let currentPage = 1;
+    let currentData = [];
+    let demoGallery = [];
+
+    // 選項卡切換
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const tab = this.dataset.tab;
+        document.querySelectorAll('.tab-btn').forEach(b => {
+          b.classList.remove('border-pink-500', 'text-pink-500');
+          b.classList.add('text-gray-500');
+        });
+        this.classList.add('border-pink-500', 'text-pink-500');
+        this.classList.remove('text-gray-500');
+        
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+        document.getElementById(`tab-${tab}`).classList.remove('hidden');
+        
+        if (tab === 'demo') loadDemoGallery();
+      });
+    });
+
+    // 載入貼圖列表
+    async function loadStickerSets() {
+      try {
+        const style = document.getElementById('filterStyle').value;
+        const status = document.getElementById('filterStatus').value;
+        const sort = document.getElementById('sortBy').value;
+
+        const response = await fetch(`/.netlify/functions/admin-stickers?page=${currentPage}&style=${style}&status=${status}&sort=${sort}`);
+        if (!response.ok) throw new Error('載入失敗');
+
+        const data = await response.json();
+        currentData = data.sets || [];
+
+        renderStickerSets(currentData);
+        renderPagination(data.total, data.perPage);
+      } catch (error) {
+        document.getElementById('stickerSets').innerHTML = `
+          <div class="col-span-full text-center text-red-500 py-10">
+            載入失敗: ${error.message}
+          </div>
+        `;
+      }
+    }
+
+    // 渲染貼圖列表
+    function renderStickerSets(sets) {
+      const container = document.getElementById('stickerSets');
+      if (sets.length === 0) {
+        container.innerHTML = '<div class="col-span-full text-center text-gray-500 py-10">沒有找到貼圖</div>';
+        return;
+      }
+
+      container.innerHTML = sets.map(set => `
+        <div class="bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition">
+          <div class="aspect-square bg-gray-100 relative">
+            ${set.main_image_url ? `
+              <img src="${set.main_image_url}" alt="${set.name}" class="w-full h-full object-cover">
+            ` : `
+              <div class="flex items-center justify-center h-full text-gray-400">無預覽</div>
+            `}
+          </div>
+          <div class="p-4">
+            <h4 class="font-bold text-lg mb-2 truncate">${set.name || '未命名'}</h4>
+            <div class="text-sm text-gray-600 space-y-1">
+              <div>📊 ${set.sticker_count || 0} 張貼圖</div>
+              <div>🎨 ${getStyleName(set.style)}</div>
+              <div>👤 ${set.character_description || '未指定'}</div>
+            </div>
+            <button onclick="viewSetDetails('${set.set_id || set.id}')"
+                    class="mt-4 w-full bg-pink-500 text-white py-2 rounded hover:bg-pink-600">
+              查看詳情
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // 查看貼圖組詳情
+    async function viewSetDetails(setId) {
+      try {
+        const response = await fetch(`/.netlify/functions/admin-stickers?setId=${setId}`);
+        if (!response.ok) throw new Error('載入失敗');
+
+        const data = await response.json();
+        showStickerModal(data);
+      } catch (error) {
+        alert('載入失敗: ' + error.message);
+      }
+    }
+
+    // 顯示貼圖彈窗
+    function showStickerModal(data) {
+      const modal = document.getElementById('stickerModal');
+      const content = document.getElementById('modalContent');
+
+      content.innerHTML = `
+        <div class="mb-6">
+          <h4 class="text-xl font-bold mb-4">${data.set.name || '未命名'}</h4>
+          <div class="grid md:grid-cols-2 gap-4 text-sm">
+            <div><strong>風格：</strong>${getStyleName(data.set.style)}</div>
+            <div><strong>張數：</strong>${data.set.sticker_count || 0} 張</div>
+            <div><strong>角色描述：</strong>${data.set.character_description || '未指定'}</div>
+            <div><strong>場景：</strong>${data.set.scene || '未指定'}</div>
+            <div class="md:col-span-2"><strong>表情模板：</strong>${data.set.expression_template || '未指定'}</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          ${(data.images || []).map((img, idx) => `
+            <div class="relative group">
+              <img src="${img.image_url}" alt="貼圖 ${idx + 1}" class="w-full aspect-square object-cover rounded border">
+              <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition flex items-center justify-center">
+                <button onclick="addToDemo('${data.set.set_id || data.set.id}', ${idx}, '${img.image_url}')"
+                        class="opacity-0 group-hover:opacity-100 bg-green-500 text-white px-4 py-2 rounded text-sm hover:bg-green-600">
+                  ➕ 加入示範圖集
+                </button>
+              </div>
+              ${img.expression ? `<div class="mt-1 text-xs text-center text-gray-600">${img.expression}</div>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      `;
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    // 加入示範圖集
+    function addToDemo(setId, index, imageUrl) {
+      // 獲取貼圖的完整資訊
+      const set = currentData.find(s => (s.set_id || s.id) === setId);
+      if (!set) return;
+
+      const demoItem = {
+        url: imageUrl,
+        style: set.style,
+        styleName: getStyleName(set.style),
+        character: set.character_description,
+        scene: set.scene,
+        expression: set.expression_template,
+        setId: setId,
+        index: index
+      };
+
+      // 檢查是否已存在
+      if (demoGallery.some(item => item.url === imageUrl)) {
+        alert('此圖片已在示範圖集中');
+        return;
+      }
+
+      demoGallery.push(demoItem);
+      alert('已加入示範圖集！');
+
+      // 如果在示範圖集頁面，更新顯示
+      if (!document.getElementById('tab-demo').classList.contains('hidden')) {
+        renderDemoGallery();
+      }
+    }
+
+    // 載入當前示範圖集
+    async function loadDemoGallery() {
+      try {
+        const response = await fetch('/.netlify/functions/demo-gallery');
+        if (response.ok) {
+          const data = await response.json();
+          demoGallery = data.items || [];
+          renderDemoGallery();
+        }
+      } catch (error) {
+        console.error('載入示範圖集失敗:', error);
+      }
+    }
+
+    // 渲染示範圖集
+    function renderDemoGallery() {
+      const container = document.getElementById('currentDemo');
+      if (demoGallery.length === 0) {
+        container.innerHTML = '<div class="col-span-full text-center text-gray-500 py-10">尚未添加任何示範圖片</div>';
+        return;
+      }
+
+      container.innerHTML = demoGallery.map((item, idx) => `
+        <div class="bg-white border-2 border-pink-200 rounded-lg p-3">
+          <div class="relative group">
+            <img src="${item.url}" alt="示範 ${idx + 1}" class="w-full aspect-square object-cover rounded mb-2">
+            <button onclick="removeFromDemo(${idx})"
+                    class="absolute top-2 right-2 bg-red-500 text-white w-8 h-8 rounded-full opacity-0 group-hover:opacity-100 transition">
+              ✕
+            </button>
+          </div>
+          <div class="text-xs space-y-1">
+            <div class="font-bold text-pink-600">🎨 ${item.styleName}</div>
+            ${item.character ? `<div>👤 ${truncate(item.character, 30)}</div>` : ''}
+            ${item.scene ? `<div>🌄 ${truncate(item.scene, 30)}</div>` : ''}
+            ${item.expression ? `<div>😊 ${truncate(item.expression, 30)}</div>` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // 從示範圖集移除
+    function removeFromDemo(index) {
+      if (confirm('確定要移除此圖片？')) {
+        demoGallery.splice(index, 1);
+        renderDemoGallery();
+      }
+    }
+
+    // 儲存示範圖集
+    async function saveDemoGallery() {
+      try {
+        const btn = document.getElementById('btnSaveDemo');
+        btn.disabled = true;
+        btn.textContent = '儲存中...';
+
+        const response = await fetch('/.netlify/functions/demo-gallery', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items: demoGallery })
+        });
+
+        if (!response.ok) throw new Error('儲存失敗');
+
+        alert('✅ 示範圖集已儲存！');
+      } catch (error) {
+        alert('❌ 儲存失敗: ' + error.message);
+      } finally {
+        const btn = document.getElementById('btnSaveDemo');
+        btn.disabled = false;
+        btn.textContent = '💾 儲存變更';
+      }
+    }
+
+    // 分頁渲染
+    function renderPagination(total, perPage) {
+      const totalPages = Math.ceil(total / perPage);
+      const container = document.getElementById('pagination');
+
+      if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+      }
+
+      let html = '';
+      for (let i = 1; i <= totalPages; i++) {
+        html += `
+          <button onclick="currentPage = ${i}; loadStickerSets();"
+                  class="px-4 py-2 rounded ${i === currentPage ? 'bg-pink-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}">
+            ${i}
+          </button>
+        `;
+      }
+
+      container.innerHTML = html;
+    }
+
+    // 工具函數
+    function getStyleName(style) {
+      const styles = {
+        'realistic': '📸 美顏真實',
+        'cute': '🥰 可愛風',
+        'cool': '😎 酷炫風',
+        'funny': '🤣 搞笑風',
+        'simple': '✨ 簡約風',
+        'anime': '🎌 動漫風',
+        'pixel': '👾 像素風',
+        'sketch': '✏️ 塗鴉風'
+      };
+      return styles[style] || style || '未指定';
+    }
+
+    function truncate(str, len) {
+      if (!str) return '';
+      return str.length > len ? str.substring(0, len) + '...' : str;
+    }
+
+    // 事件監聽
+    document.getElementById('btnApplyFilter').addEventListener('click', () => {
+      currentPage = 1;
+      loadStickerSets();
+    });
+
+    document.getElementById('btnSaveDemo').addEventListener('click', saveDemoGallery);
+
+    document.getElementById('closeModal').addEventListener('click', () => {
+      document.getElementById('stickerModal').classList.add('hidden');
+      document.getElementById('stickerModal').classList.remove('flex');
+    });
+
+    // 初始化
+    loadStickerSets();
+    loadDemoGallery();
+  </script>
+</body>
+</html>
+
