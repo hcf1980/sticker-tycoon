@@ -222,15 +222,24 @@
       const modal = document.getElementById('stickerModal');
       const content = document.getElementById('modalContent');
 
+      // 解析表達式數組
+      let expressions = [];
+      if (data.set.expressions) {
+        try {
+          expressions = JSON.parse(data.set.expressions);
+        } catch (e) {
+          console.error('解析 expressions 失敗:', e);
+        }
+      }
+
       content.innerHTML = `
         <div class="mb-6">
           <h4 class="text-xl font-bold mb-4">${data.set.name || '未命名'}</h4>
           <div class="grid md:grid-cols-2 gap-4 text-sm">
             <div><strong>風格：</strong>${getStyleName(data.set.style)}</div>
             <div><strong>張數：</strong>${data.set.sticker_count || 0} 張</div>
-            <div><strong>角色描述：</strong>${data.set.character_description || '未指定'}</div>
+            <div><strong>角色描述：</strong>${data.set.character_prompt || data.set.name || '未指定'}</div>
             <div><strong>場景：</strong>${data.set.scene || '未指定'}</div>
-            <div class="md:col-span-2"><strong>表情模板：</strong>${data.set.expression_template || '未指定'}</div>
           </div>
         </div>
 
@@ -244,7 +253,7 @@
                   ➕ 加入示範圖集
                 </button>
               </div>
-              ${img.expression ? `<div class="mt-1 text-xs text-center text-gray-600">${img.expression}</div>` : ''}
+              ${expressions[idx] ? `<div class="mt-1 text-xs text-center text-gray-600">${expressions[idx]}</div>` : ''}
             </div>
           `).join('')}
         </div>
@@ -260,13 +269,24 @@
       const set = currentData.find(s => (s.set_id || s.id) === setId);
       if (!set) return;
 
+      // 從 expressions JSON 數組中取出對應的表達式
+      let expressionText = '';
+      if (set.expressions) {
+        try {
+          const expArray = JSON.parse(set.expressions);
+          expressionText = expArray[index] || '';
+        } catch (e) {
+          console.error('解析 expressions 失敗:', e);
+        }
+      }
+
       const demoItem = {
         url: imageUrl,
         style: set.style,
         styleName: getStyleName(set.style),
-        character: set.character_description,
-        scene: set.scene,
-        expression: set.expression_template,
+        character: set.character_prompt || set.name || '',
+        scene: set.scene || '',
+        expression: expressionText,
         setId: setId,
         index: index
       };
