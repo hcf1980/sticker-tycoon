@@ -30,10 +30,23 @@ exports.handler = async (event, context) => {
 
       if (error) throw error;
 
+      // 將資料庫的蛇形命名轉換為駝峰命名（符合前端期望）
+      const items = (data || []).map(item => ({
+        url: item.url,
+        style: item.style,
+        styleName: item.style_name,
+        character: item.character,
+        scene: item.scene,
+        expression: item.expression,
+        setId: item.set_id,
+        index: item.sticker_index,
+        displayOrder: item.display_order
+      }));
+
       return {
         statusCode: 200,
         headers,
-        body: JSON.stringify({ items: data || [] })
+        body: JSON.stringify({ items })
       };
     }
 
