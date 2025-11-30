@@ -246,7 +246,7 @@
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
           ${(data.images || []).map((img, idx) => `
             <div class="relative group">
-              <img src="${img.image_url}" alt="貼圖 ${idx + 1}" class="w-full aspect-square object-cover rounded border">
+              <img src="${img.image_url}" alt="貼圖 ${idx + 1}" class="w-full aspect-square object-contain rounded border" style="background-color: white;">
               <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition flex items-center justify-center">
                 <button onclick="addToDemo('${data.set.set_id || data.set.id}', ${idx}, '${img.image_url}')"
                         class="opacity-0 group-hover:opacity-100 bg-green-500 text-white px-4 py-2 rounded text-sm hover:bg-green-600">
@@ -342,7 +342,7 @@
       container.innerHTML = demoGallery.map((item, idx) => `
         <div class="bg-white border-2 border-pink-200 rounded-lg p-3">
           <div class="relative group">
-            <img src="${item.url}" alt="示範 ${idx + 1}" class="w-full aspect-square object-cover rounded mb-2">
+            <img src="${item.url}" alt="示範 ${idx + 1}" class="w-full aspect-square object-contain rounded mb-2" style="background-color: white;">
             <button onclick="removeFromDemo(${idx})"
                     class="absolute top-2 right-2 bg-red-500 text-white w-8 h-8 rounded-full opacity-0 group-hover:opacity-100 transition">
               ✕

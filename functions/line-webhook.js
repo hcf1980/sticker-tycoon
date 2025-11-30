@@ -828,7 +828,8 @@ function generateStickerListFlexMessage(sets, referralInfo = null) {
         url: previewUrl,
         size: 'full',
         aspectRatio: '1:1',
-        aspectMode: 'cover'
+        aspectMode: 'fit',
+        backgroundColor: '#FFFFFF'
       } : undefined,
       body: {
         type: 'box',
@@ -1453,7 +1454,7 @@ async function sendUploadQueueCarousel(replyToken, queue, page = 1, userId) {
             size: 'full',
             aspectRatio: '1:1',
             aspectMode: 'fit',
-            backgroundColor: '#F5F5F5'
+            backgroundColor: '#FFFFFF'
           }
         ]
       },

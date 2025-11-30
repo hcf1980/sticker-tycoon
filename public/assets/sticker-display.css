@@ -1,0 +1,26 @@
+/**
+ * 貼圖顯示全局樣式
+ * 解決透明背景格子問題：所有貼圖圖片統一使用白色背景
+ */
+
+/* 所有貼圖圖片預設白色背景 */
+img[src*="sticker-images"],
+img[src*="/sticker_"],
+img[src*="/main.png"],
+img[src*="/tab.png"],
+.sticker-image,
+.demo-image {
+  background-color: white !important;
+}
+
+/* Flex Message 中的圖片也要白色背景 */
+.line-flex-message img {
+  background-color: white !important;
+}
+
+/* 確保容器也不會顯示格子背景 */
+.sticker-container,
+.demo-container {
+  background-color: white;
+}
+

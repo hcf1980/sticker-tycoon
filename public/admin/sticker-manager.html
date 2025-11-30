@@ -299,7 +299,7 @@
 
       container.innerHTML = sets.map(set => `
         <div class="bg-white rounded-lg shadow overflow-hidden">
-          <div class="h-40 bg-gray-200 flex items-center justify-center">
+          <div class="h-40 flex items-center justify-center" style="background-color: white;">
             ${set.main_image_url ? `<img src="${set.main_image_url}" class="h-full object-contain">` : '<span class="text-gray-400">無預覽圖</span>'}
           </div>
           <div class="p-4">

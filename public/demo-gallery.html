@@ -78,8 +78,8 @@
       container.innerHTML = demoItems.map((item, idx) => `
         <div class="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition cursor-pointer"
              onclick="showDetail(${idx})">
-          <div class="aspect-square bg-gray-100">
-            <img src="${item.url}" alt="示範 ${idx + 1}" class="w-full h-full object-cover">
+          <div class="aspect-square" style="background-color: white;">
+            <img src="${item.url}" alt="示範 ${idx + 1}" class="w-full h-full object-contain">
           </div>
           <div class="p-4">
             <div class="text-lg font-bold text-pink-600 mb-2">
