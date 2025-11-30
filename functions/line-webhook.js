@@ -2056,15 +2056,20 @@ async function handlePurchaseInfo(replyToken) {
  * 處理分享給好友資訊 - 可直接分享給好友
  */
 async function handleReferralInfo(replyToken, userId) {
-  const info = await getUserReferralInfo(userId);
-  const remainingInvites = 3 - (info.referralCount || 0);
-  const referralCode = info.referralCode || 'XXXXXX';
+  try {
+    console.log(`📤 處理分享給好友請求 - User: ${userId}`);
 
-  // LINE 官方帳號連結
-  const lineOALink = 'https://line.me/R/ti/p/@276vcfne';
+    const info = await getUserReferralInfo(userId);
+    console.log(`📊 推薦資訊:`, JSON.stringify(info));
 
-  // 分享文字訊息
-  const shareText = `🎨 推薦你一個超讚的貼圖製作工具！
+    const remainingInvites = 3 - (info.referralCount || 0);
+    const referralCode = info.referralCode || 'XXXXXX';
+
+    // LINE 官方帳號連結
+    const lineOALink = 'https://line.me/R/ti/p/@276vcfne';
+
+    // 分享文字訊息
+    const shareText = `🎨 推薦你一個超讚的貼圖製作工具！
 
 【貼圖大亨】用 AI 幫你製作專屬 LINE 貼圖 ✨
 
@@ -2192,24 +2197,21 @@ async function handleReferralInfo(replyToken, userId) {
     }
   };
 
-  // 提供純文字版本方便複製分享
-  const textMessage = {
-    type: 'text',
-    text: `📋 複製以下內容分享給好友：
+  console.log(`✅ 準備發送分享訊息給用戶 ${userId}`);
 
-━━━━━━━━━━━━━━━━
+  // 只發送 Flex Message，不發送純文字版本（避免訊息過長導致 400 錯誤）
+  return getLineClient().replyMessage(replyToken, message);
 
-${shareText}
+  } catch (error) {
+    console.error(`❌ handleReferralInfo 失敗:`, error);
+    console.error(`錯誤詳情:`, error.stack);
 
-━━━━━━━━━━━━━━━━
-
-💡 小提示：
-• 點擊上方綠色按鈕可直接透過 LINE 分享
-• 或複製上方訊息，手動傳送給好友
-• 好友需加入官方帳號並輸入推薦碼才能領取獎勵`
-  };
-
-  return getLineClient().replyMessage(replyToken, [message, textMessage]);
+    // 發送簡單的錯誤訊息
+    return safeReply(replyToken, {
+      type: 'text',
+      text: `❌ 無法載入分享資訊，請稍後再試\n\n錯誤: ${error.message}`
+    });
+  }
 }
 
 /**
