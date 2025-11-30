@@ -2053,7 +2053,7 @@ async function handlePurchaseInfo(replyToken) {
 }
 
 /**
- * 處理分享給好友資訊 - 簡化版本，直接發送分享連結
+ * 處理分享給好友資訊 - 簡化版本，縮短分享文字
  */
 async function handleReferralInfo(replyToken, userId) {
   try {
@@ -2065,23 +2065,14 @@ async function handleReferralInfo(replyToken, userId) {
     const referralCode = info.referralCode || 'XXXXXX';
     const remainingInvites = 3 - (info.referralCount || 0);
 
-    // LINE 官方帳號連結
-    const lineOALink = 'https://line.me/R/ti/p/@276vcfne';
+    // 縮短分享文字（避免 URI 過長導致 400 錯誤）
+    const shareText = `🎨 推薦貼圖製作工具！
+AI 幫你做專屬 LINE 貼圖 ✨
+🎁 新用戶 40 代幣+推薦碼「${referralCode}」再送 10！
+👉 https://line.me/R/ti/p/@276vcfne
+加入後輸入「輸入推薦碼 ${referralCode}」`;
 
-    // 分享文字訊息
-    const shareText = `🎨 推薦你一個超讚的貼圖製作工具！
-
-【貼圖大亨】用 AI 幫你製作專屬 LINE 貼圖 ✨
-
-🎁 新用戶免費送 40 代幣
-📸 上傳照片就能生成貼圖
-🎉 使用我的推薦碼「${referralCode}」再送 10 代幣！
-
-👉 點擊加入：${lineOALink}
-
-加入後輸入「輸入推薦碼 ${referralCode}」即可領取獎勵！`;
-
-    //簡單的文字訊息 + QuickReply 分享按鈕
+    // 簡單的文字訊息 + QuickReply 分享按鈕
     const message = {
       type: 'text',
       text: `🎁 分享給好友賺代幣
