@@ -1613,12 +1613,12 @@ async function handleClearUploadQueue(replyToken, userId) {
  */
 async function handleDemoGallery(userId) {
   try {
-    // 從數據庫讀取示範圖集（限制 6 張，避免訊息過大）
+    // 從數據庫讀取示範圖集（限制 10 張）
     const { data: demoItems, error } = await supabase
       .from('demo_gallery')
       .select('*')
       .order('display_order', { ascending: true })
-      .limit(6);
+      .limit(10);
 
     if (error) {
       console.error('讀取示範圖集失敗:', error);
@@ -1737,7 +1737,8 @@ function generateDemoGalleryFromDB(items) {
       body: {
         type: 'box',
         layout: 'vertical',
-        paddingAll: 'sm',
+        paddingAll: 'md',
+        backgroundColor: '#F8F9FA',  // 淡灰色背景
         contents: [
           {
             type: 'image',
@@ -1750,12 +1751,16 @@ function generateDemoGalleryFromDB(items) {
           {
             type: 'box',
             layout: 'vertical',
-            paddingTop: 'sm',
+            paddingTop: 'md',
+            paddingAll: 'sm',
+            backgroundColor: '#FFFFFF',  // 白色背景提升對比
+            cornerRadius: 'md',
+            margin: 'md',
             contents: [
               {
                 type: 'text',
                 text: item.style_name || '未指定風格',
-                size: 'md',
+                size: 'xl',  // 從 md 改為 xl
                 weight: 'bold',
                 align: 'center',
                 color: '#FF6B6B'
@@ -1763,10 +1768,11 @@ function generateDemoGalleryFromDB(items) {
               {
                 type: 'text',
                 text: '生成參數 ↓',
-                size: 'xxs',
-                color: '#999999',
+                size: 'sm',  // 從 xxs 改為 sm
+                color: '#666666',  // 從 #999999 改為更深的灰色
                 align: 'center',
-                margin: 'xs'
+                margin: 'sm',
+                weight: 'bold'
               }
             ]
           }
@@ -1775,17 +1781,19 @@ function generateDemoGalleryFromDB(items) {
       footer: {
         type: 'box',
         layout: 'vertical',
-        spacing: 'xs',
-        paddingAll: 'sm',
+        spacing: 'sm',  // 從 xs 改為 sm
+        paddingAll: 'md',  // 從 sm 改為 md
+        backgroundColor: '#FFFFFF',  // 白色背景
         contents: params.length > 0 ?
           params.map(param => ({
             type: 'text',
             text: param,
-            size: 'xxs',
-            color: '#666666',
-            wrap: true
+            size: 'sm',  // 從 xxs 改為 sm
+            color: '#333333',  // 從 #666666 改為更深的顏色
+            wrap: true,
+            weight: 'bold'  // 加粗字體
           })) :
-          [{ type: 'text', text: '無參數資訊', size: 'xxs', color: '#999999', align: 'center' }]
+          [{ type: 'text', text: '無參數資訊', size: 'sm', color: '#999999', align: 'center' }]
       }
     };
   });
