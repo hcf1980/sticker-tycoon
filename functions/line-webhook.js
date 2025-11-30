@@ -102,7 +102,7 @@ async function handleTextMessage(replyToken, userId, text) {
 
     // 示範圖集
     if (text === '示範圖集' || text === '範例' || text === '作品集') {
-      return await handleDemoGallery(replyToken, userId);
+      return await handleDemoGallery(userId);
     }
 
     // 代幣查詢
@@ -1609,20 +1609,21 @@ async function handleClearUploadQueue(replyToken, userId) {
 
 /**
  * 處理示範圖集
+ * 使用 pushMessage 直接推送，不依賴 reply token
  */
-async function handleDemoGallery(replyToken, userId) {
+async function handleDemoGallery(userId) {
   try {
-    // 從數據庫讀取示範圖集
+    // 從數據庫讀取示範圖集（限制 6 張，避免訊息過大）
     const { data: demoItems, error } = await supabase
       .from('demo_gallery')
       .select('*')
       .order('display_order', { ascending: true })
-      .limit(12);
+      .limit(6);
 
     if (error) {
       console.error('讀取示範圖集失敗:', error);
-      // 數據庫讀取失敗，返回錯誤訊息
-      return getLineClient().replyMessage(replyToken, {
+      // 數據庫讀取失敗，使用 pushMessage
+      return getLineClient().pushMessage(userId, {
         type: 'text',
         text: '❌ 示範圖集讀取失敗，請稍後再試\n\n如果問題持續發生，請聯繫客服。'
       });
@@ -1631,21 +1632,21 @@ async function handleDemoGallery(replyToken, userId) {
     // 如果數據庫沒有資料，提示需要在後台設定
     if (!demoItems || demoItems.length === 0) {
       console.log('⚠️ 示範圖集資料庫為空，需要在後台設定');
-      return getLineClient().replyMessage(replyToken, {
+      return getLineClient().pushMessage(userId, {
         type: 'text',
         text: '📭 目前尚無示範圖集\n\n請聯繫管理員在後台設定示範圖集，或直接輸入「創建貼圖」開始製作你的專屬貼圖！'
       });
     }
 
     // 生成從資料庫讀取的示範圖集
-    console.log(`✨ 成功讀取 ${demoItems.length} 個示範圖集項目`);
+    console.log(`✨ 成功讀取 ${demoItems.length} 個示範圖集項目，使用 pushMessage 發送`);
     const message = generateDemoGalleryFromDB(demoItems);
-    return getLineClient().replyMessage(replyToken, message);
+    return getLineClient().pushMessage(userId, message);
 
   } catch (error) {
     console.error('示範圖集處理失敗:', error);
-    // 發生錯誤時返回錯誤訊息
-    return getLineClient().replyMessage(replyToken, {
+    // 發生錯誤時使用 pushMessage
+    return getLineClient().pushMessage(userId, {
       type: 'text',
       text: '❌ 系統錯誤，請稍後再試\n\n如需協助，請輸入「客服」聯繫我們。'
     });
