@@ -357,14 +357,16 @@ async function handleConfirmGeneration(replyToken, userId, state) {
     });
   }
 
-  // 計算需要的代幣數量
-  const stickerCount = tempData.count || 8;
+  // 計算需要的代幣數量（9宮格批次生成：每9張只需3枚代幣）
+  const stickerCount = tempData.count || 9;
+  const apiCalls = Math.ceil(stickerCount / 9);  // 每次API調用生成9張
+  const tokenCost = apiCalls * 3;  // 每次API調用消耗3枚代幣
 
   // 💰 先扣除代幣（避免重複扣款）
   const deductResult = await deductTokens(
     userId,
-    stickerCount,
-    `生成貼圖組「${tempData.name}」(${stickerCount}張)`,
+    tokenCost,
+    `生成貼圖組「${tempData.name}」(${stickerCount}張/${apiCalls}次API)`,
     null  // setId 還沒產生
   );
 
@@ -386,8 +388,9 @@ async function handleConfirmGeneration(replyToken, userId, state) {
   // 組合訊息文字
   let messageText = '🎨 開始生成貼圖！\n\n' +
         `📛 名稱：${tempData.name}\n` +
-        `📊 數量：${tempData.count} 張\n\n` +
-        `💰 已扣除 ${stickerCount} 代幣，剩餘 ${deductResult.balance} 代幣\n\n` +
+        `📊 數量：${stickerCount} 張（${apiCalls}次API調用）\n\n` +
+        `💰 已扣除 ${tokenCost} 代幣，剩餘 ${deductResult.balance} 代幣\n` +
+        `💡 9宮格批次生成特價：每9張僅需3枚代幣！\n\n` +
         '⏳ 預計需要 2-5 分鐘';
 
   // 如果未達推薦上限，加入推薦碼提醒
@@ -464,8 +467,8 @@ async function handleConfirmGeneration(replyToken, userId, state) {
   } catch (error) {
     console.error('❌ 建立生成任務失敗:', error);
     // 退還代幣（因為任務建立失敗）
-    await addTokens(userId, stickerCount, 'refund', `任務建立失敗退款「${tempData.name}」`);
-    console.log(`💰 已退還 ${stickerCount} 代幣`);
+    await addTokens(userId, tokenCost, 'refund', `任務建立失敗退款「${tempData.name}」`);
+    console.log(`💰 已退還 ${tokenCost} 代幣`);
   }
 
   return;
@@ -1915,7 +1918,7 @@ async function handleTokenQuery(replyToken, userId) {
           { type: 'text', text: `${balance}`, size: '3xl', weight: 'bold', align: 'center', color: '#FF6B00' },
           { type: 'text', text: '代幣', size: 'sm', align: 'center', color: '#666666', margin: 'sm' },
           { type: 'separator', margin: 'lg' },
-          { type: 'text', text: '💡 每生成1張貼圖消耗1代幣', size: 'xs', color: '#888888', margin: 'lg', wrap: true },
+          { type: 'text', text: '💡 9宮格特價：每9張僅需3代幣！', size: 'xs', color: '#28A745', margin: 'lg', wrap: true, weight: 'bold' },
           // 分享給好友提示
           ...(canRefer ? [{
             type: 'box',

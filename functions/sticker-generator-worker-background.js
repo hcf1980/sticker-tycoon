@@ -19,16 +19,18 @@ async function createGenerationTask(userId, setData) {
   const setId = uuidv4();
 
   try {
-    // 計算需要的代幣數量（每張貼圖 1 代幣）
-    const stickerCount = setData.count || 8;
+    // 計算需要的代幣數量（9宮格批次生成：每9張只需3枚代幣）
+    const stickerCount = setData.count || 9;
+    const apiCalls = Math.ceil(stickerCount / 9);  // 每次API調用生成9張
+    const tokenCost = apiCalls * 3;  // 每次API調用消耗3枚代幣
 
     // 💰 代幣扣除邏輯已移到 line-webhook.js 的 handleConfirmGeneration
     // 如果沒有預先扣除，才在這裡扣除（向後兼容）
     if (!setData.tokensDeducted) {
       const deductResult = await deductTokens(
         userId,
-        stickerCount,
-        `生成貼圖組「${setData.name}」(${stickerCount}張)`,
+        tokenCost,
+        `生成貼圖組「${setData.name}」(${stickerCount}張/${apiCalls}次API)`,
         setId
       );
 
@@ -40,9 +42,9 @@ async function createGenerationTask(userId, setData) {
         };
       }
 
-      console.log(`💰 已扣除 ${stickerCount} 代幣，剩餘 ${deductResult.balance} 代幣`);
+      console.log(`💰 已扣除 ${tokenCost} 代幣，剩餘 ${deductResult.balance} 代幣`);
     } else {
-      console.log(`💰 代幣已在確認階段扣除（${stickerCount} 代幣）`);
+      console.log(`💰 代幣已在確認階段扣除（${tokenCost} 代幣）`);
     }
 
     // 建立貼圖組記錄（包含用戶選擇的表情和場景）

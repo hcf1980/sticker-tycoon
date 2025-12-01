@@ -481,14 +481,15 @@ async function handleCustomScene(userId, description) {
 function generateCountSelectionMessage(expressions) {
   const validCounts = LineStickerSpecs.validCounts; // [9, 18, 27]
 
-  // Quick Reply 項目
+  // Quick Reply 項目（包含代幣消耗說明）
   const quickReplyItems = validCounts.map(count => {
     const apiCalls = count / 9;
+    const tokenCost = apiCalls * 3;  // 每次API調用消耗3枚代幣
     return {
       type: 'action',
       action: {
         type: 'message',
-        label: `${count}張 (${apiCalls}次API)`,
+        label: `${count}張 (${tokenCost}代幣)`,
         text: `數量:${count}`
       }
     };
@@ -516,7 +517,7 @@ function generateCountSelectionMessage(expressions) {
           },
           {
             type: 'text',
-            text: '🎨 9宮格批次生成 - 成本節省 89%！',
+            text: '🎨 9宮格批次生成特價！',
             size: 'sm',
             color: '#FF6B6B',
             margin: 'xs',
@@ -524,10 +525,11 @@ function generateCountSelectionMessage(expressions) {
           },
           {
             type: 'text',
-            text: '每張貼圖消耗 1 代幣',
+            text: '💰 每9張僅需 3 枚代幣',
             size: 'xs',
-            color: '#666666',
-            margin: 'sm'
+            color: '#28A745',
+            margin: 'sm',
+            weight: 'bold'
           },
           { type: 'separator', margin: 'lg' },
           // 9張選項
@@ -555,11 +557,12 @@ function generateCountSelectionMessage(expressions) {
                   },
                   {
                     type: 'text',
-                    text: '1次API',
+                    text: '3 代幣',
                     size: 'xxs',
-                    color: '#999999',
+                    color: '#28A745',
                     align: 'center',
-                    margin: 'xs'
+                    margin: 'xs',
+                    weight: 'bold'
                   }
                 ]
               }
@@ -589,11 +592,12 @@ function generateCountSelectionMessage(expressions) {
                   },
                   {
                     type: 'text',
-                    text: '2次API',
+                    text: '6 代幣',
                     size: 'xxs',
-                    color: '#999999',
+                    color: '#28A745',
                     align: 'center',
-                    margin: 'xs'
+                    margin: 'xs',
+                    weight: 'bold'
                   }
                 ]
               }
@@ -623,11 +627,12 @@ function generateCountSelectionMessage(expressions) {
                   },
                   {
                     type: 'text',
-                    text: '3次API',
+                    text: '9 代幣',
                     size: 'xxs',
-                    color: '#999999',
+                    color: '#28A745',
                     align: 'center',
-                    margin: 'xs'
+                    margin: 'xs',
+                    weight: 'bold'
                   }
                 ]
               }
@@ -679,6 +684,11 @@ function generateConfirmationMessage(data) {
     ? `🌍 場景：${data.customSceneDescription.substring(0, 20)}${data.customSceneDescription.length > 20 ? '...' : ''}`
     : `🌍 場景：${scene.emoji} ${scene.name}`;
 
+  // 計算代幣消耗
+  const stickerCount = data.count || 9;
+  const apiCalls = Math.ceil(stickerCount / 9);
+  const tokenCost = apiCalls * 3;
+
   return {
     type: 'flex',
     altText: '確認貼圖設定',
@@ -693,7 +703,8 @@ function generateConfirmationMessage(data) {
           { type: 'text', text: `🎨 風格：${style.emoji} ${style.name}`, size: 'sm', margin: 'sm' },
           { type: 'text', text: sourceText, size: 'sm', margin: 'sm', wrap: true },
           { type: 'text', text: sceneText, size: 'sm', margin: 'sm', wrap: true },
-          { type: 'text', text: `📊 數量：${data.count} 張`, size: 'sm', margin: 'sm' },
+          { type: 'text', text: `📊 數量：${stickerCount} 張`, size: 'sm', margin: 'sm' },
+          { type: 'text', text: `💰 消耗：${tokenCost} 代幣（${apiCalls}次API調用）`, size: 'sm', margin: 'sm', color: '#28A745', weight: 'bold' },
           { type: 'separator', margin: 'lg' }
         ]
       },

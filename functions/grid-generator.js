@@ -131,26 +131,34 @@ ID: ${characterID}
 - Framing: ${framing.name} (${framing.characterFocus})
 
 === ⚠️ CRITICAL REQUIREMENTS ===
-✅ 100% TRANSPARENT background (NO white/gray)
+✅ 100% TRANSPARENT/CLEAR background - PNG alpha transparency
+✅ Character ONLY - no background at all
 ✅ Thick black outlines (2-3px) for visibility
 ✅ Character fills 80% of each cell
 ✅ Vibrant colors, high saturation
 ✅ Clear separation between cells (can be cropped)
 ✅ POP text and decorations in each cell
+❌ NO background of any kind - PURE TRANSPARENCY
+❌ NO checkered/checker pattern background
+❌ NO gray-white grid pattern
 ❌ NO grid lines or borders
 ❌ NO overlapping between cells
 ❌ NO realistic style - must be ${styleConfig.name}
 
+IMPORTANT: Output must have TRUE TRANSPARENT background (alpha channel), NOT a checkered pattern or any simulated transparency. The background must be completely empty/clear.
+
 Generate the 3×3 sticker grid NOW.`;
 
   const negativePrompt = `white background, gray background, solid background, colored background,
+checkered background, checker pattern, checkerboard pattern, transparency grid, gray-white squares,
 grid lines, borders, separators, frames,
 realistic photo, photorealistic, ultra-realism,
 text watermark, signature, logo,
 different people, inconsistent character,
 tiny character, small figure, excessive empty space,
 overlapping cells, merged cells,
-dull colors, low saturation, blurry, low quality`;
+dull colors, low saturation, blurry, low quality,
+simulated transparency, fake transparency`;
 
   return { prompt, negativePrompt };
 }

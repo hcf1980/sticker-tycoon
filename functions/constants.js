@@ -16,8 +16,14 @@ const TOKEN_CONFIG = {
     REFEREE: 5      // 被推薦人獲得
   },
 
-  // 貼圖生成費用
+  // 貼圖生成費用（9宮格批次生成特價）
   GENERATION_COST: {
+    // 9宮格模式：每次API調用生成9張，消耗3枚代幣
+    PER_API_CALL: 3,       // 每次API調用（生成9張）
+    PER_9_STICKERS: 3,     // 9張 = 1次API = 3代幣
+    PER_18_STICKERS: 6,    // 18張 = 2次API = 6代幣
+    PER_27_STICKERS: 9,    // 27張 = 3次API = 9代幣
+    // 向後兼容舊設定（已棄用）
     PER_4_STICKERS: 10,
     PER_8_STICKERS: 20,
     PER_12_STICKERS: 30
