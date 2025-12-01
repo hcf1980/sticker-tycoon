@@ -125,47 +125,114 @@ overlapping characters, merged cells, frames, patterns`;
 
 /**
  * 📥 從 Chat Completions 回應提取圖片
+ * 支援多種回應格式：陣列、字串、Markdown、直接 URL
  */
 function extractImageFromResponse(response) {
   const choices = response.data.choices;
   if (!choices || !choices[0]) {
+    console.log('🔍 API 回應結構:', JSON.stringify(response.data).substring(0, 500));
     throw new Error('API 回應中沒有 choices');
   }
 
   const message = choices[0].message;
   if (!message || !message.content) {
+    console.log('🔍 Message 結構:', JSON.stringify(message).substring(0, 500));
     throw new Error('API 回應中沒有 message content');
   }
 
   const content = message.content;
+  console.log(`🔍 Content 類型: ${typeof content}, 是否陣列: ${Array.isArray(content)}`);
 
   // 處理陣列格式
   if (Array.isArray(content)) {
     for (const item of content) {
-      // Gemini 格式: { type: 'image_url', image_url: { url: 'data:image...' } }
-      if (item.type === 'image_url' && item.image_url?.url) {
-        return item.image_url.url;
+      // 檢查 image_url 格式
+      if (item.type === 'image_url' && item.image_url) {
+        const url = item.image_url.url || item.image_url;
+        console.log(`📷 從 image_url 格式提取圖片`);
+        return url;
       }
 
-      // 其他可能格式
-      if (item.type === 'image' && item.source?.url) {
-        return item.source.url;
+      // 檢查 image 格式
+      if (item.type === 'image' && item.image) {
+        if (item.image.url) {
+          console.log(`📷 從 image.url 格式提取圖片`);
+          return item.image.url;
+        }
+        if (item.image.data) {
+          const mimeType = item.image.mime_type || 'image/png';
+          console.log(`📷 從 image.data 格式提取圖片`);
+          return `data:${mimeType};base64,${item.image.data}`;
+        }
       }
+
+      // 檢查 inline_data 格式 (Gemini 風格)
       if (item.inline_data || item.inlineData) {
-        const data = item.inline_data || item.inlineData;
-        return `data:${data.mimeType || 'image/png'};base64,${data.data}`;
+        const inlineData = item.inline_data || item.inlineData;
+        const mimeType = inlineData.mime_type || inlineData.mimeType || 'image/png';
+        console.log(`📷 從 inline_data 格式提取圖片`);
+        return `data:${mimeType};base64,${inlineData.data}`;
+      }
+    }
+
+    // 如果陣列中沒找到，檢查是否有 text 類型包含 URL
+    for (const item of content) {
+      if (item.type === 'text' && item.text) {
+        const urlFromText = extractUrlFromText(item.text);
+        if (urlFromText) return urlFromText;
       }
     }
   }
 
-  // 處理字串格式（直接是 URL 或 base64）
+  // 處理字串格式
   if (typeof content === 'string') {
-    if (content.startsWith('data:image') || content.startsWith('http')) {
+    // 直接是 base64 data URL
+    if (content.startsWith('data:image')) {
+      console.log(`📷 從 base64 data URL 提取圖片`);
       return content;
     }
+
+    // 直接是 http URL
+    if (content.startsWith('http')) {
+      console.log(`📷 從 HTTP URL 提取圖片`);
+      return content;
+    }
+
+    // 嘗試從文字中提取 URL
+    const urlFromText = extractUrlFromText(content);
+    if (urlFromText) return urlFromText;
   }
 
+  console.log('🔍 無法解析的 content:', JSON.stringify(content).substring(0, 500));
   throw new Error('無法從回應中提取圖片');
+}
+
+/**
+ * 從文字中提取圖片 URL
+ */
+function extractUrlFromText(text) {
+  // 檢查 Markdown 圖片格式: ![alt](url)
+  const markdownMatch = text.match(/!\[.*?\]\((https?:\/\/[^\s\)]+)\)/);
+  if (markdownMatch) {
+    console.log(`📷 從 Markdown 格式提取圖片 URL`);
+    return markdownMatch[1];
+  }
+
+  // 檢查是否為直接的圖片 URL（帶副檔名）
+  const urlMatch = text.match(/(https?:\/\/[^\s]+\.(png|jpg|jpeg|webp|gif))/i);
+  if (urlMatch) {
+    console.log(`📷 提取圖片 URL: ${urlMatch[1].substring(0, 50)}...`);
+    return urlMatch[1];
+  }
+
+  // 檢查任何 https URL（可能是圖片）
+  const anyUrlMatch = text.match(/(https?:\/\/[^\s\)\]"']+)/);
+  if (anyUrlMatch) {
+    console.log(`📷 提取可能的圖片 URL: ${anyUrlMatch[1].substring(0, 50)}...`);
+    return anyUrlMatch[1];
+  }
+
+  return null;
 }
 
 /**
@@ -184,8 +251,10 @@ async function generateGridImage(photoBase64, style, expressions, characterID) {
 
   console.log(`🎨 開始生成 9宮格貼圖（${style}風格）`);
   console.log(`📝 表情列表：${expressions.join(', ')}`);
+  console.log(`🔑 使用 API: ${AI_API_URL}, 模型: ${AI_MODEL}`);
 
   const { prompt, negativePrompt } = generateGridPrompt(photoBase64, style, expressions, characterID);
+  console.log(`📝 Prompt 長度: ${prompt.length} 字元`);
 
   try {
     const response = await axios.post(
@@ -220,14 +289,18 @@ async function generateGridImage(photoBase64, style, expressions, characterID) {
       }
     );
 
+    console.log(`📡 API 回應狀態: ${response.status}`);
+    console.log(`📡 API 回應結構: choices=${response.data?.choices?.length || 0}`);
+
     const imageUrl = extractImageFromResponse(response);
-    console.log(`✅ 9宮格生成成功！`);
+    console.log(`✅ 9宮格生成成功！圖片類型: ${imageUrl.startsWith('data:') ? 'base64' : 'URL'}`);
     return imageUrl;
 
   } catch (error) {
     console.error(`❌ 9宮格生成失敗:`, error.message);
-    if (error.response?.data) {
-      console.error('API 錯誤詳情:', JSON.stringify(error.response.data));
+    if (error.response) {
+      console.error('API 回應狀態碼:', error.response.status);
+      console.error('API 錯誤詳情:', JSON.stringify(error.response.data).substring(0, 1000));
     }
     throw error;
   }
