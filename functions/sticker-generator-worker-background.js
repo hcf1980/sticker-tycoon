@@ -132,7 +132,7 @@ async function executeGeneration(taskId, setId) {
       throw new Error('找不到貼圖組資料');
     }
 
-    const { style, character_prompt, sticker_count, photo_base64, expressions: expressionsJson, scene, scene_config: sceneConfigJson, framing } = stickerSet;
+    const { user_id: userId, style, character_prompt, sticker_count, photo_base64, expressions: expressionsJson, scene, scene_config: sceneConfigJson, framing } = stickerSet;
 
     // 詳細日誌
     console.log(`📋 貼圖組資料：style=${style}, count=${sticker_count}`);
