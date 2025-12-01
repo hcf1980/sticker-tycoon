@@ -1042,6 +1042,7 @@ async function sendStickerCarousel(replyToken, set, stickers) {
       type: 'box',
       layout: 'vertical',
       paddingAll: 'sm',
+      backgroundColor: '#FFFFFF',
       contents: [
         {
           type: 'image',
@@ -1508,6 +1509,7 @@ async function sendUploadQueueCarousel(replyToken, queue, page = 1, userId) {
         type: 'box',
         layout: 'vertical',
         paddingAll: 'sm',
+        backgroundColor: '#FFFFFF',
         contents: [
           {
             type: 'image',
