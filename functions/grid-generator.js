@@ -342,7 +342,7 @@ async function generateGridImage(photoBase64, style, expressions, characterID, o
 }
 
 /**
- * ✂️ 裁切 9宮格為獨立貼圖
+ * ✂️ 裁切 9宮格為獨立貼圖（修正版）
  *
  * @param {Buffer|string} gridImage - 3x3 網格圖片（Buffer 或 URL）
  * @returns {Array<Buffer>} - 9 張 370×320 的貼圖 Buffer
@@ -371,10 +371,10 @@ async function cropGridToStickers(gridImage) {
   const imageHeight = metadata.height;
   console.log(`📐 圖片實際尺寸: ${imageWidth}×${imageHeight}`);
 
-  // 動態計算格子大小（基於實際圖片尺寸）
+  // 🆕 計算正確的格子大小（精確除以 3）
   const cellWidth = Math.floor(imageWidth / 3);
   const cellHeight = Math.floor(imageHeight / 3);
-  console.log(`📏 動態格子大小: ${cellWidth}×${cellHeight}`);
+  console.log(`📏 格子大小: ${cellWidth}×${cellHeight}`);
 
   const results = [];
   const { output } = GRID_CONFIG;
@@ -388,13 +388,22 @@ async function cropGridToStickers(gridImage) {
       console.log(`  ⏳ 裁切第 ${index + 1} 張（行 ${row + 1}, 列 ${col + 1}）`);
 
       try {
-        // 計算裁切位置
+        // 🆕 精確計算裁切位置（避免邊緣裁切問題）
         const left = col * cellWidth;
         const top = row * cellHeight;
 
-        // 確保不超出邊界
-        const extractWidth = Math.min(cellWidth, imageWidth - left);
-        const extractHeight = Math.min(cellHeight, imageHeight - top);
+        // 🆕 確保最後一列/行能完整裁切
+        let extractWidth = cellWidth;
+        let extractHeight = cellHeight;
+
+        // 最後一列：取到右邊界
+        if (col === 2) {
+          extractWidth = imageWidth - left;
+        }
+        // 最後一行：取到下邊界
+        if (row === 2) {
+          extractHeight = imageHeight - top;
+        }
 
         console.log(`    📍 位置: (${left}, ${top}), 裁切: ${extractWidth}×${extractHeight}`);
 
@@ -411,47 +420,57 @@ async function cropGridToStickers(gridImage) {
           continue;
         }
 
-        // 裁切並調整尺寸
-        const croppedBuffer = await sharp(imageBuffer)
+        // 🆕 改進的裁切流程：
+        // 1. 先裁切出格子
+        // 2. 縮放到 350×300（內容區）並保持比例
+        // 3. 創建 370×320 透明畫布，將內容置中
+
+        // 步驟 1: 裁切格子
+        const extractedBuffer = await sharp(imageBuffer)
           .extract({
             left: left,
             top: top,
             width: extractWidth,
             height: extractHeight
           })
-          // 縮放到內容區尺寸（保持比例）
+          .toBuffer();
+
+        // 步驟 2: 縮放到內容區尺寸（350×300），保持比例
+        const resizedBuffer = await sharp(extractedBuffer)
           .resize(output.contentWidth, output.contentHeight, {
-            fit: 'inside',
+            fit: 'contain',  // 保持比例，可能有透明邊
             withoutEnlargement: false,
             background: { r: 0, g: 0, b: 0, alpha: 0 }
           })
-          // 確保透明背景
           .ensureAlpha()
-          // 加入留白（10px）
-          .extend({
-            top: output.padding,
-            bottom: output.padding,
-            left: output.padding,
-            right: output.padding,
-            background: { r: 0, g: 0, b: 0, alpha: 0 }
-          })
-          // 強制調整到最終尺寸
-          .resize(output.width, output.height, {
-            fit: 'contain',
-            background: { r: 0, g: 0, b: 0, alpha: 0 }
-          })
-          // 圖片增強（與 image-processor 一致）
-          .modulate({
-            saturation: 1.25,
-            brightness: 1.02
-          })
-          .linear(1.15, -(128 * 0.15))
-          // 輸出 PNG
-          .png({
-            compressionLevel: 9,
-            adaptiveFiltering: true
-          })
           .toBuffer();
+
+        // 步驟 3: 創建 370×320 透明畫布，將 350×300 置中
+        const croppedBuffer = await sharp({
+          create: {
+            width: output.width,
+            height: output.height,
+            channels: 4,
+            background: { r: 0, g: 0, b: 0, alpha: 0 }
+          }
+        })
+        .composite([{
+          input: resizedBuffer,
+          left: output.padding,  // 10px 左邊距
+          top: output.padding    // 10px 上邊距
+        }])
+        // 圖片增強
+        .modulate({
+          saturation: 1.25,
+          brightness: 1.02
+        })
+        .linear(1.15, -(128 * 0.15))
+        // 輸出 PNG
+        .png({
+          compressionLevel: 9,
+          adaptiveFiltering: true
+        })
+        .toBuffer();
 
         const fileSize = croppedBuffer.length;
         console.log(`    ✅ 第 ${index + 1} 張完成：${output.width}×${output.height}, ${(fileSize / 1024).toFixed(2)}KB`);

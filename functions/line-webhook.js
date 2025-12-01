@@ -998,6 +998,15 @@ async function sendStickerCarousel(replyToken, set, stickers) {
   const sceneInfo = SceneTemplates[set.scene] || null;
   const sceneName = sceneInfo ? `${sceneInfo.emoji} ${sceneInfo.name}` : (set.scene === 'none' || !set.scene ? '✨ 簡約風' : set.scene);
 
+  // 🆕 計算需要多少個 carousel（每個最多 12 個 bubble）
+  // 第一個 carousel：1 個資訊 bubble + 最多 11 張貼圖
+  // 後續 carousel：最多 12 張貼圖
+  const FIRST_CAROUSEL_STICKERS = 11;  // 第一個 carousel 除了 info bubble 還能放 11 張
+  const SUBSEQUENT_CAROUSEL_STICKERS = 12;  // 後續 carousel 可放 12 張
+
+  const totalStickers = stickers.length;
+  let carouselMessages = [];
+
   // 第一張 bubble：貼圖組資訊
   const infoBubble = {
     type: 'bubble',
@@ -1016,7 +1025,7 @@ async function sendStickerCarousel(replyToken, set, stickers) {
       layout: 'vertical',
       contents: [
         { type: 'text', text: statusText[set.status] || set.status, size: 'md', color: '#06C755', weight: 'bold' },
-        { type: 'text', text: `📊 共 ${stickers.length} 張貼圖`, size: 'sm', margin: 'md' },
+        { type: 'text', text: `📊 共 ${totalStickers} 張貼圖`, size: 'sm', margin: 'md' },
         { type: 'text', text: `🎨 風格：${styleName}`, size: 'sm', margin: 'sm' },
         { type: 'text', text: `🎭 裝飾：${sceneName}`, size: 'sm', margin: 'sm' },
         { type: 'text', text: `📅 ${new Date(set.created_at).toLocaleDateString('zh-TW')}`, size: 'xs', color: '#999999', margin: 'lg' },
@@ -1025,8 +1034,8 @@ async function sendStickerCarousel(replyToken, set, stickers) {
     }
   };
 
-  // 每張貼圖一個 bubble（帶「加入待上傳」按鈕）
-  const stickerBubbles = stickers.map((s, index) => ({
+  // 創建貼圖 bubble 的函數
+  const createStickerBubble = (s, index) => ({
     type: 'bubble',
     size: 'kilo',
     body: {
@@ -1060,7 +1069,7 @@ async function sendStickerCarousel(replyToken, set, stickers) {
         },
         {
           type: 'text',
-          text: `${index + 1} / ${stickers.length}`,
+          text: `${index + 1} / ${totalStickers}`,
           size: 'xs',
           color: '#999999',
           align: 'center'
@@ -1078,21 +1087,73 @@ async function sendStickerCarousel(replyToken, set, stickers) {
         }
       ]
     }
-  }));
+  });
 
-  // 組合輪播（最多 12 個 bubble，LINE 限制）
-  const allBubbles = [infoBubble, ...stickerBubbles].slice(0, 12);
+  // 🆕 分組貼圖
+  if (totalStickers <= FIRST_CAROUSEL_STICKERS) {
+    // 全部放在一個 carousel
+    const stickerBubbles = stickers.map((s, index) => createStickerBubble(s, index));
+    const allBubbles = [infoBubble, ...stickerBubbles];
 
-  const carouselMessage = {
-    type: 'flex',
-    altText: `📁 ${set.name} - ${stickers.length} 張貼圖`,
-    contents: {
-      type: 'carousel',
-      contents: allBubbles
+    carouselMessages.push({
+      type: 'flex',
+      altText: `📁 ${set.name} - ${totalStickers} 張貼圖`,
+      contents: {
+        type: 'carousel',
+        contents: allBubbles
+      }
+    });
+  } else {
+    // 需要多個 carousel
+    // 第一個 carousel：info + 前 11 張
+    const firstBatch = stickers.slice(0, FIRST_CAROUSEL_STICKERS);
+    const firstBubbles = [infoBubble, ...firstBatch.map((s, index) => createStickerBubble(s, index))];
+
+    carouselMessages.push({
+      type: 'flex',
+      altText: `📁 ${set.name} (1-${FIRST_CAROUSEL_STICKERS}張)`,
+      contents: {
+        type: 'carousel',
+        contents: firstBubbles
+      }
+    });
+
+    // 後續 carousel：每批 12 張
+    let remaining = stickers.slice(FIRST_CAROUSEL_STICKERS);
+    let batchNumber = 2;
+    let startIndex = FIRST_CAROUSEL_STICKERS;
+
+    while (remaining.length > 0) {
+      const batch = remaining.slice(0, SUBSEQUENT_CAROUSEL_STICKERS);
+      remaining = remaining.slice(SUBSEQUENT_CAROUSEL_STICKERS);
+
+      const batchBubbles = batch.map((s, i) => createStickerBubble(s, startIndex + i));
+      const endIndex = startIndex + batch.length;
+
+      carouselMessages.push({
+        type: 'flex',
+        altText: `📁 ${set.name} (${startIndex + 1}-${endIndex}張)`,
+        contents: {
+          type: 'carousel',
+          contents: batchBubbles
+        }
+      });
+
+      startIndex = endIndex;
+      batchNumber++;
     }
-  };
+  }
 
-  return getLineClient().replyMessage(replyToken, carouselMessage);
+  // 🆕 LINE 限制：一次最多發送 5 則訊息
+  // 如果超過 5 個 carousel，截取前 5 個
+  if (carouselMessages.length > 5) {
+    console.log(`⚠️ 貼圖太多，需要 ${carouselMessages.length} 個 carousel，但 LINE 限制最多 5 則`);
+    carouselMessages = carouselMessages.slice(0, 5);
+  }
+
+  console.log(`📤 發送 ${carouselMessages.length} 個 carousel，共 ${totalStickers} 張貼圖`);
+
+  return getLineClient().replyMessage(replyToken, carouselMessages);
 }
 
 /**
