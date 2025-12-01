@@ -42,83 +42,115 @@ const GRID_CONFIG = {
 };
 
 /**
- * 🎨 生成 9宮格貼圖 Prompt
- * 
+ * 🎨 生成 9宮格貼圖 Prompt（完整版）
+ * 整合 sticker-styles.js 的所有增強功能
+ *
  * @param {string} photoBase64 - 照片 base64
- * @param {string} style - 風格
+ * @param {string} style - 風格 ID
  * @param {Array<string>} expressions - 9 個表情
  * @param {string} characterID - 角色一致性 ID
+ * @param {object} options - 額外選項 { sceneConfig, framingId }
  * @returns {object} - { prompt, negativePrompt }
  */
-function generateGridPrompt(photoBase64, style, expressions, characterID) {
+function generateGridPrompt(photoBase64, style, expressions, characterID, options = {}) {
   if (expressions.length !== 9) {
     throw new Error(`必須提供 9 個表情，目前：${expressions.length} 個`);
   }
 
-  // 建立 3x3 佈局說明
-  const gridLayout = `
-╔═══════╦═══════╦═══════╗
-║   1   ║   2   ║   3   ║
-║ ${expressions[0].padEnd(5)} ║ ${expressions[1].padEnd(5)} ║ ${expressions[2].padEnd(5)} ║
-╠═══════╬═══════╬═══════╣
-║   4   ║   5   ║   6   ║
-║ ${expressions[3].padEnd(5)} ║ ${expressions[4].padEnd(5)} ║ ${expressions[5].padEnd(5)} ║
-╠═══════╬═══════╬═══════╣
-║   7   ║   8   ║   9   ║
-║ ${expressions[6].padEnd(5)} ║ ${expressions[7].padEnd(5)} ║ ${expressions[8].padEnd(5)} ║
-╚═══════╩═══════╩═══════╝`;
+  const { sceneConfig, framingId } = options;
 
-  const prompt = `Generate a 3x3 grid of LINE stickers (1024x1024px total).
-Each cell contains ONE character from the photo with different expressions.
+  // 從 sticker-styles.js 引入設定
+  const {
+    StickerStyles,
+    StyleEnhancer,
+    ExpressionEnhancer,
+    SceneTemplates,
+    FramingTemplates
+  } = require('./sticker-styles');
 
-=== GRID LAYOUT (3 rows × 3 columns) ===
-${gridLayout}
+  const styleConfig = StickerStyles[style] || StickerStyles.cute;
+  const styleEnhance = StyleEnhancer[style] || StyleEnhancer.cute;
+  const framing = FramingTemplates[framingId] || FramingTemplates.halfbody;
+  const scene = sceneConfig || SceneTemplates.kawaii; // 預設使用夢幻可愛風格
 
-=== CHARACTER REQUIREMENTS ===
-- Character ID: ${characterID}
-- Style: ${style}
-- Same person in ALL 9 cells
-- Consistent appearance (face, hair, clothes)
-- Half-body framing (waist up)
-- Centered in each cell
+  // 為每個表情生成詳細描述
+  const expressionDetails = expressions.map((expr, idx) => {
+    const data = ExpressionEnhancer[expr];
+    if (typeof data === 'object' && data !== null) {
+      return {
+        cell: idx + 1,
+        expression: expr,
+        action: data.action,
+        popText: data.popText,
+        decorations: data.decorations
+      };
+    }
+    return {
+      cell: idx + 1,
+      expression: expr,
+      action: expr,
+      popText: '',
+      decorations: 'sparkles, hearts'
+    };
+  });
 
-=== EXPRESSION DETAILS ===
-Cell 1 (Top-Left): ${expressions[0]}
-Cell 2 (Top-Center): ${expressions[1]}
-Cell 3 (Top-Right): ${expressions[2]}
-Cell 4 (Middle-Left): ${expressions[3]}
-Cell 5 (Middle-Center): ${expressions[4]}
-Cell 6 (Middle-Right): ${expressions[5]}
-Cell 7 (Bottom-Left): ${expressions[6]}
-Cell 8 (Bottom-Center): ${expressions[7]}
-Cell 9 (Bottom-Right): ${expressions[8]}
+  // 建立格子描述（簡潔版）
+  const cellDescriptions = expressionDetails.map(e =>
+    `Cell ${e.cell}: "${e.expression}" - ${e.action}${e.popText ? ` [TEXT: "${e.popText}"]` : ''}`
+  ).join('\n');
 
-=== TECHNICAL SPECS ===
-1. Total size: 1024×1024 pixels
-2. Grid: 3 rows × 3 columns
-3. Each cell: ~341×341 pixels
-4. Background: 100% TRANSPARENT
-5. Border: NO grid lines, NO separators
-6. Spacing: Natural spacing between characters
-7. Style: ${style} sticker style
-8. Outlines: Thick black (2-3px)
+  const prompt = `Create a 3×3 grid of LINE stickers (1024×1024 total) from this photo.
 
-=== CRITICAL RULES ===
-✅ Same character in all 9 cells
-✅ Each cell has different expression
-✅ Transparent background everywhere
-✅ No text, no watermarks
-✅ Clean separation (can be cropped later)
-✅ Centered characters in each cell
+=== 🎨 STYLE: ${styleConfig.name} ===
+${styleConfig.promptBase}
+${styleEnhance.lighting}
+${styleEnhance.brushwork}
+
+=== 📐 GRID LAYOUT ===
+9 stickers arranged in 3 rows × 3 columns.
+Each cell: ~341×341 pixels, same character, different expression.
+
+=== 😊 9 EXPRESSIONS (with actions & text) ===
+${cellDescriptions}
+
+=== 🎀 DECORATIONS (${scene.name}) ===
+Style: ${scene.decorationStyle || 'kawaii pastel style'}
+Elements: ${scene.decorationElements?.join(', ') || 'hearts, sparkles, stars'}
+Text style: ${scene.popTextStyle || 'cute rounded text'}
+
+Each sticker should have:
+- Floating decorations (${expressionDetails[0].decorations})
+- POP text matching the expression
+- Dynamic placement (not centered)
+
+=== 👤 CHARACTER CONSISTENCY ===
+ID: ${characterID}
+- SAME face in all 9 cells (copy from photo)
+- SAME hairstyle and hair color
+- SAME clothing style
+- Framing: ${framing.name} (${framing.characterFocus})
+
+=== ⚠️ CRITICAL REQUIREMENTS ===
+✅ 100% TRANSPARENT background (NO white/gray)
+✅ Thick black outlines (2-3px) for visibility
+✅ Character fills 80% of each cell
+✅ Vibrant colors, high saturation
+✅ Clear separation between cells (can be cropped)
+✅ POP text and decorations in each cell
 ❌ NO grid lines or borders
 ❌ NO overlapping between cells
-❌ NO background patterns
+❌ NO realistic style - must be ${styleConfig.name}
 
 Generate the 3×3 sticker grid NOW.`;
 
-  const negativePrompt = `white background, gray background, colored background, grid lines, borders, separators, 
-text, watermarks, signatures, different people, inconsistent style, realistic photo, 
-overlapping characters, merged cells, frames, patterns`;
+  const negativePrompt = `white background, gray background, solid background, colored background,
+grid lines, borders, separators, frames,
+realistic photo, photorealistic, ultra-realism,
+text watermark, signature, logo,
+different people, inconsistent character,
+tiny character, small figure, excessive empty space,
+overlapping cells, merged cells,
+dull colors, low saturation, blurry, low quality`;
 
   return { prompt, negativePrompt };
 }
@@ -242,9 +274,10 @@ function extractUrlFromText(text) {
  * @param {string} style - 風格
  * @param {Array<string>} expressions - 9 個表情
  * @param {string} characterID - 角色一致性 ID
+ * @param {object} options - 額外選項 { sceneConfig, framingId }
  * @returns {string} - 1024×1024 圖片的 URL 或 base64
  */
-async function generateGridImage(photoBase64, style, expressions, characterID) {
+async function generateGridImage(photoBase64, style, expressions, characterID, options = {}) {
   if (!AI_API_KEY) {
     throw new Error('AI_IMAGE_API_KEY 未設定');
   }
@@ -252,8 +285,10 @@ async function generateGridImage(photoBase64, style, expressions, characterID) {
   console.log(`🎨 開始生成 9宮格貼圖（${style}風格）`);
   console.log(`📝 表情列表：${expressions.join(', ')}`);
   console.log(`🔑 使用 API: ${AI_API_URL}, 模型: ${AI_MODEL}`);
+  console.log(`🎀 裝飾風格: ${options.sceneConfig?.name || '夢幻可愛'}`);
+  console.log(`📐 構圖: ${options.framingId || 'halfbody'}`);
 
-  const { prompt, negativePrompt } = generateGridPrompt(photoBase64, style, expressions, characterID);
+  const { prompt, negativePrompt } = generateGridPrompt(photoBase64, style, expressions, characterID, options);
   console.log(`📝 Prompt 長度: ${prompt.length} 字元`);
 
   try {
@@ -458,15 +493,17 @@ async function cropGridToStickers(gridImage) {
  * @param {string} style - 風格
  * @param {Array<string>} expressions - 9 個表情
  * @param {string} characterID - 角色一致性 ID
+ * @param {object} options - 額外選項 { sceneConfig, framingId }
  * @returns {Array<object>} - 9 張貼圖的結果
  */
-async function generate9StickersBatch(photoBase64, style, expressions, characterID) {
+async function generate9StickersBatch(photoBase64, style, expressions, characterID, options = {}) {
   console.log(`🚀 開始 9宮格批次生成流程`);
   console.log(`📊 風格：${style}, 角色 ID：${characterID}`);
+  console.log(`🎀 裝飾：${options.sceneConfig?.name || '夢幻可愛'}, 構圖：${options.framingId || 'halfbody'}`);
 
   try {
     // 1. 生成 9宮格圖片（1 次 API 調用）
-    const gridImageUrl = await generateGridImage(photoBase64, style, expressions, characterID);
+    const gridImageUrl = await generateGridImage(photoBase64, style, expressions, characterID, options);
 
     // 2. 裁切成 9 張獨立貼圖
     const stickers = await cropGridToStickers(gridImageUrl);

@@ -121,11 +121,13 @@ async function generateTraditionalMode(photoBase64, style, expressions, options)
  * 🎨 9宮格模式：批次生成（新功能）
  */
 async function generateGridMode(photoBase64, style, expressions, options) {
-  const { userId, setId, characterID } = options;
+  const { userId, setId, characterID, sceneConfig, framingId } = options;
   const totalCount = expressions.length;
   const batchCount = Math.ceil(totalCount / 9);
 
   console.log(`🎨 9宮格模式：共 ${batchCount} 批次，總計 ${totalCount} 張`);
+  console.log(`🎀 裝飾風格：${sceneConfig?.name || '夢幻可愛'}`);
+  console.log(`📐 構圖：${framingId || 'halfbody'}`);
 
   const allResults = [];
 
@@ -142,12 +144,13 @@ async function generateGridMode(photoBase64, style, expressions, options) {
     console.log(`📦 批次 ${batchIndex + 1}/${batchCount}：生成 9 張`);
 
     try {
-      // 生成 9宮格
+      // 生成 9宮格（傳遞完整 options）
       const batchResults = await generate9StickersBatch(
         photoBase64,
         style,
         batchExpressions,
-        characterID
+        characterID,
+        { sceneConfig, framingId }
       );
 
       // 上傳到 Storage
