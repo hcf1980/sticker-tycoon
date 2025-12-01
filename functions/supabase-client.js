@@ -400,6 +400,7 @@ async function getUserLatestTask(userId) {
 
 /**
  * 取得用戶所有進行中的任務
+ * 🆕 增加超時檢查：超過 15 分鐘的任務自動標記為失敗
  */
 async function getUserPendingTasks(userId) {
   try {
@@ -416,8 +417,43 @@ async function getUserPendingTasks(userId) {
     if (error) throw error;
     if (!tasks || tasks.length === 0) return [];
 
+    // 🆕 檢查超時任務（超過 15 分鐘）
+    const TIMEOUT_MINUTES = 15;
+    const now = new Date();
+    const validTasks = [];
+
+    for (const task of tasks) {
+      const createdAt = new Date(task.created_at);
+      const diffMinutes = (now - createdAt) / 1000 / 60;
+
+      if (diffMinutes > TIMEOUT_MINUTES) {
+        // 超時了，標記為失敗
+        console.log(`⏰ 任務 ${task.task_id} 超時 (${Math.round(diffMinutes)} 分鐘)，自動標記為失敗`);
+        await supabase
+          .from('generation_tasks')
+          .update({
+            status: 'failed',
+            error_message: `任務超時（超過 ${TIMEOUT_MINUTES} 分鐘）`,
+            updated_at: new Date().toISOString()
+          })
+          .eq('task_id', task.task_id);
+
+        // 同時更新貼圖組狀態
+        if (task.set_id) {
+          await supabase
+            .from('sticker_sets')
+            .update({ status: 'failed' })
+            .eq('set_id', task.set_id);
+        }
+      } else {
+        validTasks.push(task);
+      }
+    }
+
+    if (validTasks.length === 0) return [];
+
     // 查詢對應的貼圖組
-    const setIds = tasks.map(t => t.set_id).filter(Boolean);
+    const setIds = validTasks.map(t => t.set_id).filter(Boolean);
     if (setIds.length > 0) {
       const { data: stickerSets } = await supabase
         .from('sticker_sets')
@@ -427,10 +463,10 @@ async function getUserPendingTasks(userId) {
       // 合併資料
       const setMap = {};
       (stickerSets || []).forEach(s => setMap[s.set_id] = s);
-      tasks.forEach(t => t.sticker_set = setMap[t.set_id] || null);
+      validTasks.forEach(t => t.sticker_set = setMap[t.set_id] || null);
     }
 
-    return tasks;
+    return validTasks;
   } catch (error) {
     console.error('取得進行中任務失敗:', error);
     return [];
