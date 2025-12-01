@@ -37,15 +37,19 @@ async function generateStickersIntelligent(photoBase64, style, expressions, opti
 
   console.log(`🚀 智能貼圖生成器啟動`);
   console.log(`📊 總數：${totalCount} 張，模式：${useGridMode}`);
+  console.log(`🎀 裝飾風格：${sceneConfig?.name || '預設'}`);
+  console.log(`📐 構圖：${framingId}`);
 
   // 決定生成模式
   let shouldUseGrid = false;
-  
+
   if (useGridMode === 'always') {
     shouldUseGrid = true;
   } else if (useGridMode === 'auto') {
-    // 自動判斷：9/18/27 張時優先使用網格模式
-    shouldUseGrid = totalCount >= 9 && totalCount % 9 === 0;
+    // 🆕 修改：只要 >= 9 張就使用網格模式（會自動補齊）
+    shouldUseGrid = totalCount >= 9;
+  } else if (useGridMode === 'never') {
+    shouldUseGrid = false;
   }
 
   if (!shouldUseGrid) {

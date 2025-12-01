@@ -183,11 +183,16 @@ async function executeGeneration(taskId, setId) {
       // 照片流程：使用智能生成器（自動判斷是否用9宮格）
       console.log('📷 使用智能生成器（照片模式）');
 
-      // 判斷是否使用9宮格模式
-      const useGridMode = [9, 18, 27].includes(sticker_count) ? 'auto' : 'never';
+      // 🆕 修改：只要表情數量 >= 9 就使用 9宮格模式
+      // 原本只檢查 sticker_count 是否是 9/18/27，但實際 expressions 可能不同
+      const actualCount = expressions.length;
+      const useGridMode = actualCount >= 9 ? 'auto' : 'never';
 
       if (useGridMode === 'auto') {
-        console.log(`🎨 使用 9宮格批次模式（${sticker_count}張 = ${sticker_count/9}次API，節省89%成本）`);
+        const batchCount = Math.ceil(actualCount / 9);
+        console.log(`🎨 使用 9宮格批次模式（${actualCount}張 = ${batchCount}次API，節省成本）`);
+      } else {
+        console.log(`📌 使用傳統模式（${actualCount}張，少於9張）`);
       }
 
       generatedImages = await generateStickersIntelligent(photo_base64, style, expressions, {
