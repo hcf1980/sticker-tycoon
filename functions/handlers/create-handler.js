@@ -476,20 +476,23 @@ async function handleCustomScene(userId, description) {
 }
 
 /**
- * 生成數量選擇訊息
+ * 生成數量選擇訊息（9宮格批次生成優化版）
  */
 function generateCountSelectionMessage(expressions) {
-  const validCounts = LineStickerSpecs.validCounts; // [4, 8, 12, 24]
+  const validCounts = LineStickerSpecs.validCounts; // [9, 18, 27]
 
   // Quick Reply 項目
-  const quickReplyItems = validCounts.map(count => ({
-    type: 'action',
-    action: {
-      type: 'message',
-      label: `${count}張`,
-      text: `數量:${count}`
-    }
-  }));
+  const quickReplyItems = validCounts.map(count => {
+    const apiCalls = count / 9;
+    return {
+      type: 'action',
+      action: {
+        type: 'message',
+        label: `${count}張 (${apiCalls}次API)`,
+        text: `數量:${count}`
+      }
+    };
+  });
   quickReplyItems.push({
     type: 'action',
     action: { type: 'message', label: '❌ 取消', text: '取消' }
@@ -504,19 +507,131 @@ function generateCountSelectionMessage(expressions) {
         type: 'box',
         layout: 'vertical',
         contents: [
-          { type: 'text', text: '📊 選擇貼圖數量', weight: 'bold', size: 'lg', color: '#FF6B6B' },
-          { type: 'text', text: '每張貼圖消耗 1 代幣', size: 'sm', color: '#666666', margin: 'md' },
-          { type: 'separator', margin: 'lg' },
           {
-            type: 'box', layout: 'horizontal', margin: 'lg', spacing: 'sm',
-            contents: validCounts.map(count => ({
-              type: 'button',
-              style: count === 8 ? 'primary' : 'secondary',
-              height: 'sm',
-              flex: 1,
-              action: { type: 'message', label: `${count}張`, text: `數量:${count}` },
-              color: count === 8 ? '#FF6B6B' : undefined
-            }))
+            type: 'text',
+            text: '📊 選擇貼圖數量',
+            weight: 'bold',
+            size: 'lg',
+            color: '#FF6B6B'
+          },
+          {
+            type: 'text',
+            text: '🎨 9宮格批次生成 - 成本節省 89%！',
+            size: 'sm',
+            color: '#FF6B6B',
+            margin: 'xs',
+            weight: 'bold'
+          },
+          {
+            type: 'text',
+            text: '每張貼圖消耗 1 代幣',
+            size: 'xs',
+            color: '#666666',
+            margin: 'sm'
+          },
+          { type: 'separator', margin: 'lg' },
+          // 9張選項
+          {
+            type: 'box',
+            layout: 'horizontal',
+            margin: 'lg',
+            spacing: 'sm',
+            contents: [
+              {
+                type: 'box',
+                layout: 'vertical',
+                flex: 1,
+                contents: [
+                  {
+                    type: 'button',
+                    style: 'primary',
+                    height: 'sm',
+                    action: {
+                      type: 'message',
+                      label: '9 張',
+                      text: '數量:9'
+                    },
+                    color: '#FF6B6B'
+                  },
+                  {
+                    type: 'text',
+                    text: '1次API',
+                    size: 'xxs',
+                    color: '#999999',
+                    align: 'center',
+                    margin: 'xs'
+                  }
+                ]
+              }
+            ]
+          },
+          // 18張選項
+          {
+            type: 'box',
+            layout: 'horizontal',
+            margin: 'sm',
+            spacing: 'sm',
+            contents: [
+              {
+                type: 'box',
+                layout: 'vertical',
+                flex: 1,
+                contents: [
+                  {
+                    type: 'button',
+                    style: 'secondary',
+                    height: 'sm',
+                    action: {
+                      type: 'message',
+                      label: '18 張',
+                      text: '數量:18'
+                    }
+                  },
+                  {
+                    type: 'text',
+                    text: '2次API',
+                    size: 'xxs',
+                    color: '#999999',
+                    align: 'center',
+                    margin: 'xs'
+                  }
+                ]
+              }
+            ]
+          },
+          // 27張選項
+          {
+            type: 'box',
+            layout: 'horizontal',
+            margin: 'sm',
+            spacing: 'sm',
+            contents: [
+              {
+                type: 'box',
+                layout: 'vertical',
+                flex: 1,
+                contents: [
+                  {
+                    type: 'button',
+                    style: 'secondary',
+                    height: 'sm',
+                    action: {
+                      type: 'message',
+                      label: '27 張',
+                      text: '數量:27'
+                    }
+                  },
+                  {
+                    type: 'text',
+                    text: '3次API',
+                    size: 'xxs',
+                    color: '#999999',
+                    align: 'center',
+                    margin: 'xs'
+                  }
+                ]
+              }
+            ]
           }
         ]
       }

@@ -6,6 +6,7 @@
 const { v4: uuidv4 } = require('uuid');
 const { getSupabaseClient, updateStickerSetStatus, getStickerSet, deductTokens, getUserTokenBalance } = require('./supabase-client');
 const { generateStickerSet, generateStickerSetFromPhoto } = require('./ai-generator');
+const { generateStickersIntelligent } = require('./sticker-generator-enhanced');
 const { processStickerSet, generateMainImage, generateTabImage } = require('./image-processor');
 const { DefaultExpressions } = require('./sticker-styles');
 
@@ -174,52 +175,107 @@ async function executeGeneration(taskId, setId) {
     // 更新進度：開始 AI 生成
     await updateTaskProgress(taskId, 10, 'processing');
 
-    // 1. AI 生成圖片（根據是否有照片選擇不同方式）
+    // 1. AI 生成圖片（使用智能生成器自動選擇最優模式）
     console.log(`🎨 開始 AI 生成 ${sticker_count} 張貼圖...`);
     let generatedImages;
 
     if (photo_base64) {
-      // 照片流程：使用照片生成（含場景配置和構圖設定）
-      console.log('📷 使用照片模式生成');
-      generatedImages = await generateStickerSetFromPhoto(photo_base64, style, expressions, sceneConfig, framing);
+      // 照片流程：使用智能生成器（自動判斷是否用9宮格）
+      console.log('📷 使用智能生成器（照片模式）');
+
+      // 判斷是否使用9宮格模式
+      const useGridMode = [9, 18, 27].includes(sticker_count) ? 'auto' : 'never';
+
+      if (useGridMode === 'auto') {
+        console.log(`🎨 使用 9宮格批次模式（${sticker_count}張 = ${sticker_count/9}次API，節省89%成本）`);
+      }
+
+      generatedImages = await generateStickersIntelligent(photo_base64, style, expressions, {
+        userId,
+        setId,
+        useGridMode,      // 'auto' 或 'never'
+        sceneConfig,
+        framingId: framing
+      });
     } else {
-      // 傳統流程：使用角色描述生成
+      // 傳統流程：使用角色描述生成（不支持網格模式）
       console.log('✏️ 使用角色描述模式生成');
       generatedImages = await generateStickerSet(style, character_prompt, expressions);
     }
 
     // 詳細日誌 - 生成結果
-    console.log(`📊 AI 生成結果：${JSON.stringify(generatedImages.map(img => ({ index: img.index, status: img.status, hasUrl: !!img.imageUrl })))}`);
+    console.log(`📊 AI 生成結果：${JSON.stringify(generatedImages.map(img => ({
+      index: img.index,
+      status: img.status,
+      hasUrl: !!img.imageUrl,
+      hasBuffer: !!img.buffer,
+      mode: img.mode || 'traditional'
+    })))}`);
     await updateTaskProgress(taskId, 50, 'processing');
 
     // 2. 處理圖片（符合 LINE 規格）
     const successImages = generatedImages.filter(img => img.status === 'completed');
-    const imageUrls = successImages.map(img => img.imageUrl);
-    console.log(`📊 成功的圖片: ${successImages.length} 張, URLs: ${imageUrls.length} 個`);
+
+    // 🆕 處理不同格式的結果（網格模式返回 buffer + storagePath，傳統模式返回 imageUrl）
+    const imageUrls = [];
+    const storageProcessed = [];  // 已經處理並上傳的圖片（網格模式）
+
+    for (const img of successImages) {
+      if (img.storagePath && img.buffer) {
+        // 網格模式：已經處理並上傳
+        storageProcessed.push(img);
+      } else if (img.imageUrl) {
+        // 傳統模式：需要處理
+        imageUrls.push(img.imageUrl);
+      }
+    }
+
+    console.log(`📊 成功的圖片: ${successImages.length} 張`);
+    console.log(`   - 網格模式（已處理）: ${storageProcessed.length} 張`);
+    console.log(`   - 傳統模式（待處理）: ${imageUrls.length} 張`);
 
     // 檢查是否有成功生成的圖片
-    if (imageUrls.length === 0) {
-      // 沒有任何圖片成功生成，標記為失敗
+    if (successImages.length === 0) {
       const failedReasons = generatedImages.filter(img => img.status === 'failed').map(img => img.error).join('; ');
       throw new Error(`所有圖片生成失敗：${failedReasons || 'API 錯誤'}`);
     }
 
-    console.log(`🖼️ 開始處理 ${imageUrls.length} 張圖片...`);
-    const processedImages = await processStickerSet(imageUrls);
+    // 處理傳統模式的圖片
+    let processedImages = [];
+    if (imageUrls.length > 0) {
+      console.log(`🖼️ 開始處理 ${imageUrls.length} 張圖片（傳統模式）...`);
+      processedImages = await processStickerSet(imageUrls);
+    }
+
     await updateTaskProgress(taskId, 80, 'processing');
 
-    // 3. 生成主圖和標籤圖
+    // 3. 生成主圖和標籤圖（使用第一張圖片）
     let mainImageBuffer = null;
     let tabImageBuffer = null;
 
-    if (imageUrls.length > 0) {
+    if (storageProcessed.length > 0) {
+      // 網格模式：從 buffer 生成
+      const firstBuffer = storageProcessed[0].buffer;
+      mainImageBuffer = await generateMainImage(firstBuffer);
+      tabImageBuffer = await generateTabImage(firstBuffer);
+    } else if (imageUrls.length > 0) {
+      // 傳統模式：從 URL 生成
       mainImageBuffer = await generateMainImage(imageUrls[0]);
       tabImageBuffer = await generateTabImage(imageUrls[0]);
     }
+
     await updateTaskProgress(taskId, 90, 'processing');
 
     // 4. 上傳圖片到 Storage 並寫入資料庫
-    const uploadResults = await uploadImagesToStorage(setId, processedImages, mainImageBuffer, tabImageBuffer, expressions);
+    let uploadResults;
+
+    if (storageProcessed.length > 0) {
+      // 網格模式：圖片已上傳，只需更新資料庫和上傳主圖/標籤
+      uploadResults = await uploadGridModeResults(setId, storageProcessed, mainImageBuffer, tabImageBuffer, expressions);
+    } else {
+      // 傳統模式：使用現有上傳邏輯
+      uploadResults = await uploadImagesToStorage(setId, processedImages, mainImageBuffer, tabImageBuffer, expressions);
+    }
 
     // 檢查上傳結果
     const uploadedCount = uploadResults.stickerRecords?.length || 0;
@@ -343,6 +399,80 @@ async function uploadImagesToStorage(setId, processedImages, mainImageBuffer, ta
 }
 
 /**
+ * 🆕 處理網格模式結果（圖片已上傳，只需更新資料庫）
+ */
+async function uploadGridModeResults(setId, storageProcessed, mainImageBuffer, tabImageBuffer, expressions = []) {
+  const supabase = getSupabaseClient();
+  const bucket = 'sticker-images';
+  const uploadResults = { imageUrls: [], mainImageUrl: null, tabImageUrl: null, stickerRecords: [] };
+
+  try {
+    // 上傳主圖
+    if (mainImageBuffer) {
+      const mainPath = `${setId}/main.png`;
+      const { error } = await supabase.storage.from(bucket).upload(mainPath, mainImageBuffer, {
+        contentType: 'image/png', upsert: true
+      });
+      if (!error) {
+        const { data } = supabase.storage.from(bucket).getPublicUrl(mainPath);
+        uploadResults.mainImageUrl = data.publicUrl;
+      }
+    }
+
+    // 上傳標籤圖
+    if (tabImageBuffer) {
+      const tabPath = `${setId}/tab.png`;
+      const { error } = await supabase.storage.from(bucket).upload(tabPath, tabImageBuffer, {
+        contentType: 'image/png', upsert: true
+      });
+      if (!error) {
+        const { data } = supabase.storage.from(bucket).getPublicUrl(tabPath);
+        uploadResults.tabImageUrl = data.publicUrl;
+      }
+    }
+
+    // 寫入資料庫（圖片已在網格模式中上傳）
+    for (const img of storageProcessed) {
+      if (img.status !== 'completed' || !img.storagePath) continue;
+
+      // 取得公開 URL
+      const { data } = supabase.storage.from(bucket).getPublicUrl(img.storagePath);
+      const imageUrl = data.publicUrl;
+      uploadResults.imageUrls.push(imageUrl);
+
+      // 寫入 stickers 資料表
+      const stickerId = uuidv4();
+      const expression = img.expression || expressions[img.index - 1] || `表情 ${img.index}`;
+
+      const { error: dbError } = await supabase
+        .from('stickers')
+        .insert([{
+          sticker_id: stickerId,
+          set_id: setId,
+          index_number: img.index,
+          expression: expression,
+          image_url: imageUrl,
+          status: 'completed'
+        }]);
+
+      if (dbError) {
+        console.error(`❌ 寫入貼圖記錄失敗 (${img.index}):`, dbError);
+      } else {
+        uploadResults.stickerRecords.push({ stickerId, index: img.index, imageUrl });
+      }
+    }
+
+    console.log(`📤 網格模式：已處理 ${uploadResults.imageUrls.length} 張貼圖`);
+    console.log(`📝 已寫入 ${uploadResults.stickerRecords.length} 筆貼圖記錄到資料庫`);
+    return uploadResults;
+
+  } catch (error) {
+    console.error('❌ 處理網格模式結果失敗:', error);
+    return uploadResults;
+  }
+}
+
+/**
  * 記錄生成結果（不再 Push 通知，由用戶自己查詢）
  */
 async function logGenerationResult(userId, success, setId, errorMessage = null) {
@@ -406,6 +536,7 @@ exports.handler = async function(event, context) {
 module.exports = {
   handler: exports.handler,
   createGenerationTask,
-  executeGeneration
+  executeGeneration,
+  uploadGridModeResults  // 新增導出
 };
 
