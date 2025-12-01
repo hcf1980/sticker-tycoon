@@ -216,13 +216,13 @@ async function executeGeneration(taskId, setId) {
     // 2. 處理圖片（符合 LINE 規格）
     const successImages = generatedImages.filter(img => img.status === 'completed');
 
-    // 🆕 處理不同格式的結果（網格模式返回 buffer + storagePath，傳統模式返回 imageUrl）
+    // 🆕 處理不同格式的結果（網格模式返回 storagePath，傳統模式返回 imageUrl）
     const imageUrls = [];
     const storageProcessed = [];  // 已經處理並上傳的圖片（網格模式）
 
     for (const img of successImages) {
-      if (img.storagePath && img.buffer) {
-        // 網格模式：已經處理並上傳
+      if (img.storagePath) {
+        // 網格模式：已經處理並上傳（storagePath 存在即可）
         storageProcessed.push(img);
       } else if (img.imageUrl) {
         // 傳統模式：需要處理
@@ -254,10 +254,14 @@ async function executeGeneration(taskId, setId) {
     let tabImageBuffer = null;
 
     if (storageProcessed.length > 0) {
-      // 網格模式：從 buffer 生成
-      const firstBuffer = storageProcessed[0].buffer;
-      mainImageBuffer = await generateMainImage(firstBuffer);
-      tabImageBuffer = await generateTabImage(firstBuffer);
+      // 網格模式：從 Storage URL 獲取第一張圖片
+      const firstImg = storageProcessed[0];
+      const bucket = 'sticker-images';
+      const { data } = supabase.storage.from(bucket).getPublicUrl(firstImg.storagePath);
+      const firstImageUrl = data.publicUrl;
+      console.log(`📷 使用第一張圖片生成主圖/標籤: ${firstImageUrl}`);
+      mainImageBuffer = await generateMainImage(firstImageUrl);
+      tabImageBuffer = await generateTabImage(firstImageUrl);
     } else if (imageUrls.length > 0) {
       // 傳統模式：從 URL 生成
       mainImageBuffer = await generateMainImage(imageUrls[0]);

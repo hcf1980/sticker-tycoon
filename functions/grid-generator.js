@@ -309,7 +309,7 @@ async function generateGridImage(photoBase64, style, expressions, characterID) {
 /**
  * ✂️ 裁切 9宮格為獨立貼圖
  *
- * @param {Buffer|string} gridImage - 1024×1024 的圖片（Buffer 或 URL）
+ * @param {Buffer|string} gridImage - 3x3 網格圖片（Buffer 或 URL）
  * @returns {Array<Buffer>} - 9 張 370×320 的貼圖 Buffer
  */
 async function cropGridToStickers(gridImage) {
@@ -330,8 +330,19 @@ async function cropGridToStickers(gridImage) {
     }
   }
 
+  // 🆕 獲取圖片實際尺寸
+  const metadata = await sharp(imageBuffer).metadata();
+  const imageWidth = metadata.width;
+  const imageHeight = metadata.height;
+  console.log(`📐 圖片實際尺寸: ${imageWidth}×${imageHeight}`);
+
+  // 動態計算格子大小（基於實際圖片尺寸）
+  const cellWidth = Math.floor(imageWidth / 3);
+  const cellHeight = Math.floor(imageHeight / 3);
+  console.log(`📏 動態格子大小: ${cellWidth}×${cellHeight}`);
+
   const results = [];
-  const { cellSize, output } = GRID_CONFIG;
+  const { output } = GRID_CONFIG;
 
   // 裁切 9 個格子
   for (let row = 0; row < 3; row++) {
@@ -343,16 +354,35 @@ async function cropGridToStickers(gridImage) {
 
       try {
         // 計算裁切位置
-        const left = col * cellSize;
-        const top = row * cellSize;
+        const left = col * cellWidth;
+        const top = row * cellHeight;
+
+        // 確保不超出邊界
+        const extractWidth = Math.min(cellWidth, imageWidth - left);
+        const extractHeight = Math.min(cellHeight, imageHeight - top);
+
+        console.log(`    📍 位置: (${left}, ${top}), 裁切: ${extractWidth}×${extractHeight}`);
+
+        // 檢查是否有足夠的區域可裁切
+        if (extractWidth < 50 || extractHeight < 50) {
+          console.log(`    ⚠️ 區域太小，跳過`);
+          results.push({
+            index: index + 1,
+            buffer: null,
+            expression,
+            status: 'failed',
+            error: '裁切區域太小'
+          });
+          continue;
+        }
 
         // 裁切並調整尺寸
         const croppedBuffer = await sharp(imageBuffer)
           .extract({
             left: left,
             top: top,
-            width: cellSize,
-            height: cellSize
+            width: extractWidth,
+            height: extractHeight
           })
           // 縮放到內容區尺寸（保持比例）
           .resize(output.contentWidth, output.contentHeight, {
