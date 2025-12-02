@@ -1,22 +1,27 @@
 /**
  * Sticker Generator Enhanced Module
- * 整合傳統單張生成 & 9宮格批次生成
- * 
+ * 整合傳統單張生成 & 6宮格批次生成
+ *
  * 功能：
- * - 智能選擇生成模式（單張 vs 9宮格）
+ * - 智能選擇生成模式（單張 vs 6宮格）
  * - 統一的 API 介面
  * - 自動上傳到 Storage
- * - 成本優化（優先使用 9宮格）
+ * - 成本優化（優先使用 6宮格）
+ *
+ * 6宮格系統（v2）：
+ * - 每次 API 生成 3列×2行 = 6 張
+ * - 每 6 張 = 3 代幣
+ * - 套餐：6/12/18 張
  */
 
-const { generate9StickersBatch } = require('./grid-generator');
+const { generate6StickersBatch, generateMultipleBatches } = require('./grid-generator');
 const { generateStickerSetFromPhoto } = require('./ai-generator');
 const { getSupabaseClient } = require('./supabase-client');
 const { generateCharacterID } = require('./sticker-styles');
 
 /**
  * 🎯 智能貼圖生成器（自動選擇最優模式）
- * 
+ *
  * @param {string} photoBase64 - 照片 base64
  * @param {string} style - 風格
  * @param {Array<string>} expressions - 表情列表
@@ -46,8 +51,8 @@ async function generateStickersIntelligent(photoBase64, style, expressions, opti
   if (useGridMode === 'always') {
     shouldUseGrid = true;
   } else if (useGridMode === 'auto') {
-    // 🆕 修改：只要 >= 9 張就使用網格模式（會自動補齊）
-    shouldUseGrid = totalCount >= 9;
+    // 🆕 修改：只要 >= 6 張就使用網格模式
+    shouldUseGrid = totalCount >= 6;
   } else if (useGridMode === 'never') {
     shouldUseGrid = false;
   }
@@ -63,7 +68,7 @@ async function generateStickersIntelligent(photoBase64, style, expressions, opti
     });
   }
 
-  console.log(`🎨 使用 9宮格批次模式（成本節省 89%）`);
+  console.log(`🎨 使用 6宮格批次模式（每6張=3代幣）`);
   return await generateGridMode(photoBase64, style, expressions, {
     userId,
     setId,
@@ -122,34 +127,36 @@ async function generateTraditionalMode(photoBase64, style, expressions, options)
 }
 
 /**
- * 🎨 9宮格模式：批次生成（新功能）
+ * 🎨 6宮格模式：批次生成（3列×2行）
+ * 每次 API 生成 6 張，每 6 張消耗 3 代幣
  */
 async function generateGridMode(photoBase64, style, expressions, options) {
   const { userId, setId, characterID, sceneConfig, framingId } = options;
   const totalCount = expressions.length;
-  const batchCount = Math.ceil(totalCount / 9);
+  const batchSize = 6;  // 每批 6 張
+  const batchCount = Math.ceil(totalCount / batchSize);
 
-  console.log(`🎨 9宮格模式：共 ${batchCount} 批次，總計 ${totalCount} 張`);
+  console.log(`🎨 6宮格模式：共 ${batchCount} 批次，總計 ${totalCount} 張`);
   console.log(`🎀 裝飾風格：${sceneConfig?.name || '夢幻可愛'}`);
   console.log(`📐 構圖：${framingId || 'halfbody'}`);
 
   const allResults = [];
 
   for (let batchIndex = 0; batchIndex < batchCount; batchIndex++) {
-    const startIdx = batchIndex * 9;
-    const endIdx = Math.min(startIdx + 9, totalCount);
+    const startIdx = batchIndex * batchSize;
+    const endIdx = Math.min(startIdx + batchSize, totalCount);
     const batchExpressions = expressions.slice(startIdx, endIdx);
 
-    // 如果不足 9 張，補齊（複製最後一個表情）
-    while (batchExpressions.length < 9) {
-      batchExpressions.push(batchExpressions[batchExpressions.length - 1]);
+    // 如果不足 6 張，補齊（複製最後一個表情）
+    while (batchExpressions.length < batchSize) {
+      batchExpressions.push(batchExpressions[batchExpressions.length - 1] || '開心');
     }
 
-    console.log(`📦 批次 ${batchIndex + 1}/${batchCount}：生成 9 張`);
+    console.log(`📦 批次 ${batchIndex + 1}/${batchCount}：生成 6 張`);
 
     try {
-      // 生成 9宮格（傳遞完整 options）
-      const batchResults = await generate9StickersBatch(
+      // 生成 6宮格
+      const batchResults = await generate6StickersBatch(
         photoBase64,
         style,
         batchExpressions,
@@ -158,7 +165,7 @@ async function generateGridMode(photoBase64, style, expressions, options) {
       );
 
       // 上傳到 Storage
-      for (let i = 0; i < Math.min(9, endIdx - startIdx); i++) {
+      for (let i = 0; i < Math.min(batchSize, endIdx - startIdx); i++) {
         const result = batchResults[i];
         const globalIndex = startIdx + i + 1;
 
@@ -222,7 +229,7 @@ async function generateGridMode(photoBase64, style, expressions, options) {
   }
 
   const successCount = allResults.filter(r => r.status === 'completed').length;
-  console.log(`✅ 9宮格批次完成：${successCount}/${totalCount} 成功`);
+  console.log(`✅ 6宮格批次完成：${successCount}/${totalCount} 成功`);
 
   return allResults;
 }

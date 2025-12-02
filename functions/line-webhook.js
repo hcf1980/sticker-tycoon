@@ -357,9 +357,9 @@ async function handleConfirmGeneration(replyToken, userId, state) {
     });
   }
 
-  // 計算需要的代幣數量（9宮格批次生成：每9張只需3枚代幣）
-  const stickerCount = tempData.count || 9;
-  const apiCalls = Math.ceil(stickerCount / 9);  // 每次API調用生成9張
+  // 計算需要的代幣數量（6宮格批次生成：每6張只需3枚代幣）
+  const stickerCount = tempData.count || 6;
+  const apiCalls = Math.ceil(stickerCount / 6);  // 每次API調用生成6張
   const tokenCost = apiCalls * 3;  // 每次API調用消耗3枚代幣
 
   // 💰 先扣除代幣（避免重複扣款）

@@ -476,14 +476,15 @@ async function handleCustomScene(userId, description) {
 }
 
 /**
- * 生成數量選擇訊息（9宮格批次生成優化版）
+ * 生成數量選擇訊息（6宮格批次生成優化版）
+ * 每 6 張 = 1 次 API = 3 代幣
  */
 function generateCountSelectionMessage(expressions) {
-  const validCounts = LineStickerSpecs.validCounts; // [9, 18, 27]
+  const validCounts = LineStickerSpecs.validCounts; // [6, 12, 18]
 
   // Quick Reply 項目（包含代幣消耗說明）
   const quickReplyItems = validCounts.map(count => {
-    const apiCalls = count / 9;
+    const apiCalls = count / 6;
     const tokenCost = apiCalls * 3;  // 每次API調用消耗3枚代幣
     return {
       type: 'action',
@@ -517,7 +518,7 @@ function generateCountSelectionMessage(expressions) {
           },
           {
             type: 'text',
-            text: '🎨 9宮格批次生成特價！',
+            text: '🎨 6宮格批次生成特價！',
             size: 'sm',
             color: '#FF6B6B',
             margin: 'xs',
@@ -525,14 +526,14 @@ function generateCountSelectionMessage(expressions) {
           },
           {
             type: 'text',
-            text: '💰 每9張僅需 3 枚代幣',
+            text: '💰 每6張僅需 3 枚代幣',
             size: 'xs',
             color: '#28A745',
             margin: 'sm',
             weight: 'bold'
           },
           { type: 'separator', margin: 'lg' },
-          // 9張選項
+          // 6張選項
           {
             type: 'box',
             layout: 'horizontal',
@@ -550,14 +551,49 @@ function generateCountSelectionMessage(expressions) {
                     height: 'sm',
                     action: {
                       type: 'message',
-                      label: '9 張',
-                      text: '數量:9'
+                      label: '6 張',
+                      text: '數量:6'
                     },
                     color: '#FF6B6B'
                   },
                   {
                     type: 'text',
                     text: '3 代幣',
+                    size: 'xxs',
+                    color: '#28A745',
+                    align: 'center',
+                    margin: 'xs',
+                    weight: 'bold'
+                  }
+                ]
+              }
+            ]
+          },
+          // 12張選項
+          {
+            type: 'box',
+            layout: 'horizontal',
+            margin: 'sm',
+            spacing: 'sm',
+            contents: [
+              {
+                type: 'box',
+                layout: 'vertical',
+                flex: 1,
+                contents: [
+                  {
+                    type: 'button',
+                    style: 'secondary',
+                    height: 'sm',
+                    action: {
+                      type: 'message',
+                      label: '12 張',
+                      text: '數量:12'
+                    }
+                  },
+                  {
+                    type: 'text',
+                    text: '6 代幣',
                     size: 'xxs',
                     color: '#28A745',
                     align: 'center',
@@ -588,41 +624,6 @@ function generateCountSelectionMessage(expressions) {
                       type: 'message',
                       label: '18 張',
                       text: '數量:18'
-                    }
-                  },
-                  {
-                    type: 'text',
-                    text: '6 代幣',
-                    size: 'xxs',
-                    color: '#28A745',
-                    align: 'center',
-                    margin: 'xs',
-                    weight: 'bold'
-                  }
-                ]
-              }
-            ]
-          },
-          // 27張選項
-          {
-            type: 'box',
-            layout: 'horizontal',
-            margin: 'sm',
-            spacing: 'sm',
-            contents: [
-              {
-                type: 'box',
-                layout: 'vertical',
-                flex: 1,
-                contents: [
-                  {
-                    type: 'button',
-                    style: 'secondary',
-                    height: 'sm',
-                    action: {
-                      type: 'message',
-                      label: '27 張',
-                      text: '數量:27'
                     }
                   },
                   {

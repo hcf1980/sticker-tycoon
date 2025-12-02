@@ -19,9 +19,9 @@ async function createGenerationTask(userId, setData) {
   const setId = uuidv4();
 
   try {
-    // 計算需要的代幣數量（9宮格批次生成：每9張只需3枚代幣）
-    const stickerCount = setData.count || 9;
-    const apiCalls = Math.ceil(stickerCount / 9);  // 每次API調用生成9張
+    // 計算需要的代幣數量（6宮格批次生成：每6張只需3枚代幣）
+    const stickerCount = setData.count || 6;
+    const apiCalls = Math.ceil(stickerCount / 6);  // 每次API調用生成6張
     const tokenCost = apiCalls * 3;  // 每次API調用消耗3枚代幣
 
     // 💰 代幣扣除邏輯已移到 line-webhook.js 的 handleConfirmGeneration
@@ -182,19 +182,18 @@ async function executeGeneration(taskId, setId) {
     let generatedImages;
 
     if (photo_base64) {
-      // 照片流程：使用智能生成器（自動判斷是否用9宮格）
+      // 照片流程：使用智能生成器（自動判斷是否用6宮格）
       console.log('📷 使用智能生成器（照片模式）');
 
-      // 🆕 修改：只要表情數量 >= 9 就使用 9宮格模式
-      // 原本只檢查 sticker_count 是否是 9/18/27，但實際 expressions 可能不同
+      // 🆕 修改：只要表情數量 >= 6 就使用 6宮格模式
       const actualCount = expressions.length;
-      const useGridMode = actualCount >= 9 ? 'auto' : 'never';
+      const useGridMode = actualCount >= 6 ? 'auto' : 'never';
 
       if (useGridMode === 'auto') {
-        const batchCount = Math.ceil(actualCount / 9);
-        console.log(`🎨 使用 9宮格批次模式（${actualCount}張 = ${batchCount}次API，節省成本）`);
+        const batchCount = Math.ceil(actualCount / 6);
+        console.log(`🎨 使用 6宮格批次模式（${actualCount}張 = ${batchCount}次API，每6張=3代幣）`);
       } else {
-        console.log(`📌 使用傳統模式（${actualCount}張，少於9張）`);
+        console.log(`📌 使用傳統模式（${actualCount}張，少於6張）`);
       }
 
       generatedImages = await generateStickersIntelligent(photo_base64, style, expressions, {

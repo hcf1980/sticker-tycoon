@@ -910,8 +910,9 @@ const LineStickerSpecs = {
   maxFileSize: 1024 * 1024, // 單張最大 1MB
   maxZipSize: 60 * 1024 * 1024, // ZIP 最大 60MB
 
-  // 可選數量（9, 18, 27 張 - 9宮格批次生成優化）
-  validCounts: [9, 18, 27],
+  // 可選數量（6, 12, 18 張 - 6宮格批次生成優化）
+  // 每 6 張 = 1 次 API = 3 代幣
+  validCounts: [6, 12, 18],
 
   // 文字限制
   textLimits: {

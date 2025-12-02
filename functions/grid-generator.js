@@ -1,12 +1,17 @@
 /**
- * Grid Generator Module v1.0
- * 9宮格批次生成系統 - 大幅節省 API 成本
- * 
+ * Grid Generator Module v2.0
+ * 6宮格批次生成系統 - 配合 AI 生成的 16:9 圖片
+ *
  * 核心概念：
- * - AI 生成 1024×1024 的 3×3 網格圖
- * - 自動裁切成 9 張獨立貼圖（370×320）
+ * - AI 傾向生成 1365×768 (約 16:9) 的圖片
+ * - 自動裁切成 3列×2行 = 6 張獨立貼圖（370×320）
  * - 每張內容區 350×300，留白 10px
- * - API 調用減少至原本的 1/9
+ * - 每 6 張消耗 3 代幣
+ *
+ * 套餐選項：
+ * - 基本：6 張 = 3 代幣（1 次 API）
+ * - 標準：12 張 = 6 代幣（2 次 API）
+ * - 豪華：18 張 = 9 代幣（3 次 API）
  */
 
 const sharp = require('sharp');
@@ -18,43 +23,55 @@ const AI_API_KEY = process.env.AI_IMAGE_API_KEY;
 const AI_API_URL = process.env.AI_IMAGE_API_URL || 'https://newapi.pockgo.com';
 const AI_MODEL = process.env.AI_MODEL || 'gemini-2.5-flash-image';
 
-// 9宮格設定
+// 6宮格設定（3列×2行）
 const GRID_CONFIG = {
-  // AI 生成尺寸
-  sourceSize: 1024,
-  
-  // 網格佈局
-  gridRows: 3,
+  // AI 生成尺寸（實際會是約 1365×768）
+  expectedWidth: 1365,
+  expectedHeight: 768,
+
+  // 網格佈局：3列×2行
+  gridRows: 2,
   gridCols: 3,
-  totalCells: 9,
-  
-  // 每格在 1024x1024 中的尺寸
-  cellSize: 341,  // 1024 / 3 ≈ 341
-  
-  // 最終輸出尺寸
+  totalCells: 6,
+
+  // 每格預期尺寸
+  cellWidth: 455,   // 1365 / 3 = 455
+  cellHeight: 384,  // 768 / 2 = 384
+
+  // 最終輸出尺寸（固定）
   output: {
     width: 370,
     height: 320,
     contentWidth: 350,   // 370 - 20
     contentHeight: 300,  // 320 - 20
     padding: 10
+  },
+
+  // 代幣設定
+  tokensPerBatch: 3,  // 每 6 張 = 3 代幣
+
+  // 套餐配置
+  packages: {
+    basic: { stickers: 6, tokens: 3, apiCalls: 1 },
+    standard: { stickers: 12, tokens: 6, apiCalls: 2 },
+    premium: { stickers: 18, tokens: 9, apiCalls: 3 }
   }
 };
 
 /**
- * 🎨 生成 9宮格貼圖 Prompt（完整版）
- * 整合 sticker-styles.js 的所有增強功能
+ * 🎨 生成 6宮格貼圖 Prompt（v2 - 配合 AI 的 16:9 輸出）
+ * 3列×2行的網格佈局
  *
  * @param {string} photoBase64 - 照片 base64
  * @param {string} style - 風格 ID
- * @param {Array<string>} expressions - 9 個表情
+ * @param {Array<string>} expressions - 6 個表情
  * @param {string} characterID - 角色一致性 ID
  * @param {object} options - 額外選項 { sceneConfig, framingId }
  * @returns {object} - { prompt, negativePrompt }
  */
 function generateGridPrompt(photoBase64, style, expressions, characterID, options = {}) {
-  if (expressions.length !== 9) {
-    throw new Error(`必須提供 9 個表情，目前：${expressions.length} 個`);
+  if (expressions.length !== 6) {
+    throw new Error(`必須提供 6 個表情，目前：${expressions.length} 個`);
   }
 
   const { sceneConfig, framingId } = options;
@@ -94,31 +111,26 @@ function generateGridPrompt(photoBase64, style, expressions, characterID, option
     };
   });
 
-  // 建立格子描述（簡潔版）
+  // 建立格子描述（6格版）
   const cellDescriptions = expressionDetails.map(e =>
     `Cell ${e.cell}: "${e.expression}" - ${e.action}${e.popText ? ` [TEXT: "${e.popText}"]` : ''}`
   ).join('\n');
 
-  const prompt = `Create a PERFECT 3×3 sticker grid from this photo.
+  const prompt = `Create a 3×2 sticker grid (3 columns × 2 rows = 6 stickers) from this photo.
 
-=== 📐 CRITICAL: IMAGE DIMENSIONS ===
-⚠️ OUTPUT MUST BE EXACTLY 1024×1024 PIXELS (SQUARE)
-⚠️ 3 rows × 3 columns = 9 equal cells
-⚠️ Each cell: exactly 341×341 pixels
-⚠️ NO rectangular output - MUST be SQUARE 1:1 ratio
+=== 📐 GRID LAYOUT (IMPORTANT!) ===
+⚠️ 3 columns × 2 rows = 6 equal cells
+⚠️ Row 1: Cells 1, 2, 3 (top row)
+⚠️ Row 2: Cells 4, 5, 6 (bottom row)
+⚠️ Each cell should be roughly equal size
+⚠️ Widescreen layout (wider than tall)
 
 === 🎨 STYLE: ${styleConfig.name} ===
 ${styleConfig.promptBase}
 ${styleEnhance.lighting}
 ${styleEnhance.brushwork}
 
-=== 📐 GRID LAYOUT ===
-Row 1: Cells 1-2-3 (top)
-Row 2: Cells 4-5-6 (middle)
-Row 3: Cells 7-8-9 (bottom)
-Each cell contains ONE sticker with the SAME character.
-
-=== 😊 9 EXPRESSIONS ===
+=== 😊 6 EXPRESSIONS (one per cell) ===
 ${cellDescriptions}
 
 === 🎀 DECORATIONS (${scene.name}) ===
@@ -128,7 +140,7 @@ Text style: ${scene.popTextStyle || 'cute rounded text'}
 
 === 👤 CHARACTER CONSISTENCY ===
 ID: ${characterID}
-- SAME face in all 9 cells (copy from photo)
+- SAME face in all 6 cells (copy from photo)
 - SAME hairstyle and hair color
 - SAME clothing style
 - Framing: ${framing.name} (${framing.characterFocus})
@@ -141,21 +153,18 @@ ID: ${characterID}
 ❌ NO checkered pattern
 ❌ NO gray background
 ❌ NO transparency simulation
-❌ NO colored background
 
 === ⚠️ LAYOUT REQUIREMENTS ===
-✅ SQUARE output (1024×1024)
-✅ 9 equal-sized cells (341×341 each)
+✅ 3 columns × 2 rows layout
+✅ 6 equal-sized cells
 ✅ Clear visual separation between cells
 ✅ Each cell is a complete sticker
 ❌ NO overlapping between cells
 ❌ NO merged cells
-❌ NO rectangular output
 
-Generate the 3×3 sticker grid NOW. Remember: 1024×1024 SQUARE output.`;
+Generate the 3×2 sticker grid NOW (6 stickers total).`;
 
-  const negativePrompt = `white background, gray background, solid background, colored background,
-checkered background, checker pattern, checkerboard pattern, transparency grid, gray-white squares,
+  const negativePrompt = `checkered background, checker pattern, checkerboard pattern, transparency grid, gray-white squares,
 grid lines, borders, separators, frames,
 realistic photo, photorealistic, ultra-realism,
 text watermark, signature, logo,
@@ -295,7 +304,7 @@ async function generateGridImage(photoBase64, style, expressions, characterID, o
     throw new Error('AI_IMAGE_API_KEY 未設定');
   }
 
-  console.log(`🎨 開始生成 9宮格貼圖（${style}風格）`);
+  console.log(`🎨 開始生成 6宮格貼圖（${style}風格）`);
   console.log(`📝 表情列表：${expressions.join(', ')}`);
   console.log(`🔑 使用 API: ${AI_API_URL}, 模型: ${AI_MODEL}`);
   console.log(`🎀 裝飾風格: ${options.sceneConfig?.name || '夢幻可愛'}`);
@@ -341,11 +350,11 @@ async function generateGridImage(photoBase64, style, expressions, characterID, o
     console.log(`📡 API 回應結構: choices=${response.data?.choices?.length || 0}`);
 
     const imageUrl = extractImageFromResponse(response);
-    console.log(`✅ 9宮格生成成功！圖片類型: ${imageUrl.startsWith('data:') ? 'base64' : 'URL'}`);
+    console.log(`✅ 6宮格生成成功！圖片類型: ${imageUrl.startsWith('data:') ? 'base64' : 'URL'}`);
     return imageUrl;
 
   } catch (error) {
-    console.error(`❌ 9宮格生成失敗:`, error.message);
+    console.error(`❌ 6宮格生成失敗:`, error.message);
     if (error.response) {
       console.error('API 回應狀態碼:', error.response.status);
       console.error('API 錯誤詳情:', JSON.stringify(error.response.data).substring(0, 1000));
@@ -605,18 +614,18 @@ async function detectContentBounds(imageBuffer) {
 }
 
 /**
- * ✂️ 裁切 9宮格為獨立貼圖（增強版 v2）
+ * ✂️ 裁切 6宮格為獨立貼圖（v2 - 3列×2行）
  *
- * 新增功能：
- * - 智能網格檢測（驗證圖片是否為有效的 3x3）
+ * 功能：
+ * - 自動偵測 3×2 網格（配合 AI 生成的 16:9 圖片）
+ * - 每張固定輸出 370×320 像素
  * - 棋盤格背景自動移除
- * - 內容區域檢測
  *
- * @param {Buffer|string} gridImage - 3x3 網格圖片（Buffer 或 URL）
- * @returns {Array<Buffer>} - 9 張 370×320 的貼圖 Buffer
+ * @param {Buffer|string} gridImage - 3×2 網格圖片（Buffer 或 URL）
+ * @returns {Array<Buffer>} - 6 張 370×320 的貼圖 Buffer
  */
 async function cropGridToStickers(gridImage) {
-  console.log(`✂️ 開始裁切 9宮格（增強版 v2）...`);
+  console.log(`✂️ 開始裁切 6宮格（3列×2行）...`);
 
   // 下載圖片（如果是 URL）
   let imageBuffer;
@@ -633,56 +642,55 @@ async function cropGridToStickers(gridImage) {
     }
   }
 
-  // 🆕 步驟 1：先進行棋盤格背景移除
+  // 步驟 1：先進行棋盤格背景移除
   console.log(`🧹 步驟 1：檢測並移除棋盤格背景...`);
   imageBuffer = await removeCheckerboardBackground(imageBuffer);
 
-  // 🆕 獲取圖片實際尺寸
+  // 獲取圖片實際尺寸
   const metadata = await sharp(imageBuffer).metadata();
   const imageWidth = metadata.width;
   const imageHeight = metadata.height;
   console.log(`📐 圖片實際尺寸: ${imageWidth}×${imageHeight}`);
 
-  // 🆕 步驟 2：驗證圖片比例是否接近正方形（3x3 網格應該是正方形）
+  // 計算寬高比
   const aspectRatio = imageWidth / imageHeight;
-  const isSquarish = aspectRatio >= 0.8 && aspectRatio <= 1.25;
+  console.log(`📊 寬高比: ${aspectRatio.toFixed(2)}`);
 
-  if (!isSquarish) {
-    console.log(`⚠️ 圖片比例異常 (${aspectRatio.toFixed(2)})，可能不是標準 3x3 網格`);
-    console.log(`🔄 嘗試智能裁切模式...`);
-  }
+  // 🆕 固定使用 3列×2行 佈局
+  const gridCols = 3;
+  const gridRows = 2;
 
-  // 🆕 計算正確的格子大小（精確除以 3）
-  const cellWidth = Math.floor(imageWidth / 3);
-  const cellHeight = Math.floor(imageHeight / 3);
-  console.log(`📏 格子大小: ${cellWidth}×${cellHeight}`);
+  // 計算每格大小（精確除以行列數）
+  const cellWidth = Math.floor(imageWidth / gridCols);
+  const cellHeight = Math.floor(imageHeight / gridRows);
+  console.log(`📏 格子大小: ${cellWidth}×${cellHeight}（${gridCols}列×${gridRows}行）`);
 
   const results = [];
   const { output } = GRID_CONFIG;
 
-  // 裁切 9 個格子
-  for (let row = 0; row < 3; row++) {
-    for (let col = 0; col < 3; col++) {
-      const index = row * 3 + col;
+  // 🆕 裁切 6 個格子（3列×2行）
+  for (let row = 0; row < gridRows; row++) {
+    for (let col = 0; col < gridCols; col++) {
+      const index = row * gridCols + col;
       const expression = `格子 ${index + 1}`;
 
       console.log(`  ⏳ 裁切第 ${index + 1} 張（行 ${row + 1}, 列 ${col + 1}）`);
 
       try {
-        // 🆕 精確計算裁切位置（避免邊緣裁切問題）
+        // 精確計算裁切位置
         const left = col * cellWidth;
         const top = row * cellHeight;
 
-        // 🆕 確保最後一列/行能完整裁切
+        // 確保最後一列/行能完整裁切
         let extractWidth = cellWidth;
         let extractHeight = cellHeight;
 
         // 最後一列：取到右邊界
-        if (col === 2) {
+        if (col === gridCols - 1) {
           extractWidth = imageWidth - left;
         }
         // 最後一行：取到下邊界
-        if (row === 2) {
+        if (row === gridRows - 1) {
           extractHeight = imageHeight - top;
         }
 
@@ -797,48 +805,108 @@ async function cropGridToStickers(gridImage) {
   }
 
   const successCount = results.filter(r => r.status === 'completed').length;
-  console.log(`✅ 裁切完成：${successCount}/9 成功`);
+  console.log(`✅ 裁切完成：${successCount}/6 成功`);
 
   return results;
 }
 
 /**
- * 🚀 完整的 9宮格批次生成流程
+ * 🚀 完整的 6宮格批次生成流程（單次 API）
  *
  * @param {string} photoBase64 - 照片 base64
  * @param {string} style - 風格
- * @param {Array<string>} expressions - 9 個表情
+ * @param {Array<string>} expressions - 6 個表情
  * @param {string} characterID - 角色一致性 ID
  * @param {object} options - 額外選項 { sceneConfig, framingId }
- * @returns {Array<object>} - 9 張貼圖的結果
+ * @returns {Array<object>} - 6 張貼圖的結果
  */
-async function generate9StickersBatch(photoBase64, style, expressions, characterID, options = {}) {
-  console.log(`🚀 開始 9宮格批次生成流程`);
+async function generate6StickersBatch(photoBase64, style, expressions, characterID, options = {}) {
+  console.log(`🚀 開始 6宮格批次生成流程`);
   console.log(`📊 風格：${style}, 角色 ID：${characterID}`);
   console.log(`🎀 裝飾：${options.sceneConfig?.name || '夢幻可愛'}, 構圖：${options.framingId || 'halfbody'}`);
 
   try {
-    // 1. 生成 9宮格圖片（1 次 API 調用）
+    // 1. 生成 6宮格圖片（1 次 API 調用）
     const gridImageUrl = await generateGridImage(photoBase64, style, expressions, characterID, options);
 
-    // 2. 裁切成 9 張獨立貼圖
+    // 2. 裁切成 6 張獨立貼圖
     const stickers = await cropGridToStickers(gridImageUrl);
 
     // 3. 整合表情名稱
     const results = stickers.map((sticker, i) => ({
       ...sticker,
-      expression: expressions[i],
+      expression: expressions[i] || `表情 ${i + 1}`,
       imageUrl: null,  // 已經是 buffer，不需要 URL
       characterID
     }));
 
-    console.log(`🎉 9宮格批次生成完成！成本節省 89%`);
+    console.log(`🎉 6宮格批次生成完成！消耗 3 代幣`);
     return results;
 
   } catch (error) {
-    console.error(`❌ 9宮格批次生成失敗:`, error.message);
+    console.error(`❌ 6宮格批次生成失敗:`, error.message);
     throw error;
   }
+}
+
+/**
+ * 🚀 多批次生成（用於 12 張、18 張套餐）
+ *
+ * @param {string} photoBase64 - 照片 base64
+ * @param {string} style - 風格
+ * @param {Array<string>} expressions - 所有表情（6/12/18 個）
+ * @param {string} characterID - 角色一致性 ID
+ * @param {object} options - 額外選項
+ * @returns {Array<object>} - 所有貼圖的結果
+ */
+async function generateMultipleBatches(photoBase64, style, expressions, characterID, options = {}) {
+  const totalStickers = expressions.length;
+  const batchSize = 6;
+  const batches = Math.ceil(totalStickers / batchSize);
+
+  console.log(`🚀 開始多批次生成：${totalStickers} 張貼圖，${batches} 次 API 呼叫`);
+
+  const allResults = [];
+
+  for (let i = 0; i < batches; i++) {
+    const batchExpressions = expressions.slice(i * batchSize, (i + 1) * batchSize);
+
+    // 如果最後一批不足 6 個，補齊
+    while (batchExpressions.length < batchSize) {
+      batchExpressions.push(batchExpressions[batchExpressions.length - 1] || '開心');
+    }
+
+    console.log(`📦 批次 ${i + 1}/${batches}：${batchExpressions.join(', ')}`);
+
+    const batchResults = await generate6StickersBatch(
+      photoBase64,
+      style,
+      batchExpressions,
+      characterID,
+      options
+    );
+
+    // 調整索引
+    batchResults.forEach((result, idx) => {
+      result.index = i * batchSize + idx + 1;
+    });
+
+    allResults.push(...batchResults);
+  }
+
+  // 只取需要的數量
+  const finalResults = allResults.slice(0, totalStickers);
+  console.log(`🎉 多批次生成完成！共 ${finalResults.length} 張貼圖`);
+
+  return finalResults;
+}
+
+// 保持向後兼容：generate9StickersBatch 現在會呼叫 generateMultipleBatches
+async function generate9StickersBatch(photoBase64, style, expressions, characterID, options = {}) {
+  console.log(`⚠️ generate9StickersBatch 已改用 6宮格系統`);
+  // 如果傳入 9 個表情，只取前 6 個
+  const sixExpressions = expressions.slice(0, 6);
+  return generate6StickersBatch(photoBase64, style, sixExpressions, characterID, options);
 }
 
 module.exports = {
@@ -846,5 +914,7 @@ module.exports = {
   generateGridPrompt,
   generateGridImage,
   cropGridToStickers,
-  generate9StickersBatch
+  generate6StickersBatch,
+  generateMultipleBatches,
+  generate9StickersBatch  // 向後兼容
 };
