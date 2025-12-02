@@ -705,10 +705,9 @@ function generateConfirmationMessage(data) {
     ? `🌍 場景：${data.customSceneDescription.substring(0, 20)}${data.customSceneDescription.length > 20 ? '...' : ''}`
     : `🌍 場景：${scene.emoji} ${scene.name}`;
 
-  // 計算代幣消耗
-  const stickerCount = data.count || 9;
-  const apiCalls = Math.ceil(stickerCount / 9);
-  const tokenCost = apiCalls * 3;
+  // 計算代幣消耗（每 6 張 = 3 代幣）
+  const stickerCount = data.count || 6;
+  const tokenCost = Math.ceil(stickerCount / 6) * 3;
 
   return {
     type: 'flex',
@@ -725,7 +724,7 @@ function generateConfirmationMessage(data) {
           { type: 'text', text: sourceText, size: 'sm', margin: 'sm', wrap: true },
           { type: 'text', text: sceneText, size: 'sm', margin: 'sm', wrap: true },
           { type: 'text', text: `📊 數量：${stickerCount} 張`, size: 'sm', margin: 'sm' },
-          { type: 'text', text: `💰 消耗：${tokenCost} 代幣（${apiCalls}次API調用）`, size: 'sm', margin: 'sm', color: '#28A745', weight: 'bold' },
+          { type: 'text', text: `💰 消耗：${tokenCost} 代幣`, size: 'sm', margin: 'sm', color: '#28A745', weight: 'bold' },
           { type: 'separator', margin: 'lg' }
         ]
       },
