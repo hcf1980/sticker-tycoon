@@ -260,10 +260,6 @@ function generateExpressionSelectionFlexMessage() {
   }));
   quickReplyItems.push({
     type: 'action',
-    action: { type: 'message', label: '✏️ 自訂表情', text: '自訂表情' }
-  });
-  quickReplyItems.push({
-    type: 'action',
     action: { type: 'message', label: '❌ 取消', text: '取消' }
   });
 
@@ -277,17 +273,9 @@ function generateExpressionSelectionFlexMessage() {
         layout: 'vertical',
         contents: [
           { type: 'text', text: '😀 選擇表情模板', weight: 'bold', size: 'lg', color: '#FF6B6B' },
-          { type: 'text', text: '選擇預設模板或自訂表情', size: 'sm', color: '#666666', margin: 'md' },
+          { type: 'text', text: '選擇預設模板', size: 'sm', color: '#666666', margin: 'md' },
           { type: 'separator', margin: 'lg' },
-          { type: 'box', layout: 'vertical', margin: 'lg', contents: templateButtons },
-          {
-            type: 'button',
-            style: 'primary',
-            height: 'sm',
-            action: { type: 'message', label: '✏️ 自訂表情', text: '自訂表情' },
-            margin: 'lg',
-            color: '#FF6B6B'
-          }
+          { type: 'box', layout: 'vertical', margin: 'lg', contents: templateButtons }
         ]
       }
     },

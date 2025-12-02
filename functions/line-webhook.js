@@ -1667,6 +1667,12 @@ async function sendUploadQueueCarousel(replyToken, queue, page = 1, userId) {
     });
   }
 
+  // 創建貼圖（方便生成更多）
+  quickReplyItems.push({
+    type: 'action',
+    action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' }
+  });
+
   // 我的貼圖（方便新增更多）
   quickReplyItems.push({
     type: 'action',

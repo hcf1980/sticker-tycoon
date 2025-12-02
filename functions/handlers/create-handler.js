@@ -334,9 +334,13 @@ async function handleExpressionTemplate(userId, templateId) {
 function generateSceneSelectionFlexMessage() {
   const scenes = Object.values(SceneTemplates);
 
-  // 分成兩行顯示
-  const row1 = scenes.slice(0, 4);
-  const row2 = scenes.slice(4);
+  // 排除 custom，分開處理
+  const regularScenes = scenes.filter(s => s.id !== 'custom');
+  const customScene = scenes.find(s => s.id === 'custom');
+
+  // 分成兩行顯示（不包含 custom）
+  const row1 = regularScenes.slice(0, 4);
+  const row2 = regularScenes.slice(4);
 
   // Quick Reply 項目
   const quickReplyItems = scenes.map(scene => ({
@@ -373,14 +377,13 @@ function generateSceneSelectionFlexMessage() {
             spacing: 'sm',
             contents: row1.map(scene => ({
               type: 'button',
-              style: scene.id === 'pop' ? 'primary' : 'secondary',
+              style: 'secondary',
               height: 'sm',
               action: {
                 type: 'message',
                 label: `${scene.emoji} ${scene.name}`,
                 text: `場景:${scene.id}`
-              },
-              color: scene.id === 'pop' ? '#FF6B6B' : undefined
+              }
             }))
           },
           {
@@ -398,6 +401,19 @@ function generateSceneSelectionFlexMessage() {
                 text: `場景:${scene.id}`
               }
             }))
+          },
+          // 自訂風格（無限延伸）- 強調色
+          {
+            type: 'button',
+            style: 'primary',
+            height: 'sm',
+            action: {
+              type: 'message',
+              label: `${customScene.emoji} ${customScene.name}（無限延伸）`,
+              text: `場景:${customScene.id}`
+            },
+            margin: 'lg',
+            color: '#FF6B6B'
           }
         ]
       }
@@ -426,17 +442,21 @@ async function handleSceneSelection(userId, sceneId) {
     await updateConversationState(userId, ConversationStage.CUSTOM_SCENE, state.temp_data);
     return {
       type: 'text',
-      text: '✏️ 請描述你想要的裝飾風格\n\n' +
-            '例如：\n' +
-            '• 「粉紅色愛心和蝴蝶結」\n' +
-            '• 「霓虹燈效果」\n' +
-            '• 「日系漫畫音效文字」\n\n' +
-            '💡 AI 會根據你的描述加入裝飾元素！',
+      text: '✏️ 請描述你想要的風格\n\n' +
+            '🔥 熱門風格範例：\n' +
+            '• 「宮崎駿吉卜力水彩風」\n' +
+            '• 「Q版大頭公仔 chibi」\n' +
+            '• 「Nanana Banana 香蕉人風格」\n' +
+            '• 「像素風 pixel art」\n' +
+            '• 「賽博龐克霓虹風」\n\n' +
+            '💡 直接複製或輸入你想要的風格描述！',
       quickReply: {
         items: [
-          { type: 'action', action: { type: 'message', label: '💖 粉紅愛心', text: '粉紅色愛心和蝴蝶結裝飾' } },
-          { type: 'action', action: { type: 'message', label: '🌈 彩虹夢幻', text: '彩虹色漸層搭配閃亮星星' } },
-          { type: 'action', action: { type: 'message', label: '💫 霓虹燈', text: '霓虹燈發光效果' } },
+          { type: 'action', action: { type: 'message', label: '🎨 宮崎駿風', text: '宮崎駿吉卜力水彩風格，溫暖柔和的色調' } },
+          { type: 'action', action: { type: 'message', label: '🎀 Q版大頭', text: 'Q版大頭公仔 chibi style，超可愛大眼睛' } },
+          { type: 'action', action: { type: 'message', label: '🍌 香蕉人風', text: 'Nanana Banana 香蕉人風格，黃色系可愛' } },
+          { type: 'action', action: { type: 'message', label: '👾 像素風', text: '像素風 pixel art 8-bit 復古遊戲風格' } },
+          { type: 'action', action: { type: 'message', label: '💜 賽博龐克', text: '賽博龐克霓虹風，紫色藍色發光效果' } },
           { type: 'action', action: { type: 'message', label: '❌ 取消', text: '取消' } }
         ]
       }
