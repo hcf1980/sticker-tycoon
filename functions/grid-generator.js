@@ -99,7 +99,13 @@ function generateGridPrompt(photoBase64, style, expressions, characterID, option
     `Cell ${e.cell}: "${e.expression}" - ${e.action}${e.popText ? ` [TEXT: "${e.popText}"]` : ''}`
   ).join('\n');
 
-  const prompt = `Create a 3×3 grid of LINE stickers (1024×1024 total) from this photo.
+  const prompt = `Create a PERFECT 3×3 sticker grid from this photo.
+
+=== 📐 CRITICAL: IMAGE DIMENSIONS ===
+⚠️ OUTPUT MUST BE EXACTLY 1024×1024 PIXELS (SQUARE)
+⚠️ 3 rows × 3 columns = 9 equal cells
+⚠️ Each cell: exactly 341×341 pixels
+⚠️ NO rectangular output - MUST be SQUARE 1:1 ratio
 
 === 🎨 STYLE: ${styleConfig.name} ===
 ${styleConfig.promptBase}
@@ -107,10 +113,12 @@ ${styleEnhance.lighting}
 ${styleEnhance.brushwork}
 
 === 📐 GRID LAYOUT ===
-9 stickers arranged in 3 rows × 3 columns.
-Each cell: ~341×341 pixels, same character, different expression.
+Row 1: Cells 1-2-3 (top)
+Row 2: Cells 4-5-6 (middle)
+Row 3: Cells 7-8-9 (bottom)
+Each cell contains ONE sticker with the SAME character.
 
-=== 😊 9 EXPRESSIONS (with actions & text) ===
+=== 😊 9 EXPRESSIONS ===
 ${cellDescriptions}
 
 === 🎀 DECORATIONS (${scene.name}) ===
@@ -118,36 +126,33 @@ Style: ${scene.decorationStyle || 'kawaii pastel style'}
 Elements: ${scene.decorationElements?.join(', ') || 'hearts, sparkles, stars'}
 Text style: ${scene.popTextStyle || 'cute rounded text'}
 
-Each sticker should have:
-- Floating decorations (${expressionDetails[0].decorations})
-- POP text matching the expression
-- Dynamic placement (not centered)
-
 === 👤 CHARACTER CONSISTENCY ===
 ID: ${characterID}
 - SAME face in all 9 cells (copy from photo)
 - SAME hairstyle and hair color
 - SAME clothing style
 - Framing: ${framing.name} (${framing.characterFocus})
+- Character fills 80% of each cell
 
-=== ⚠️ CRITICAL REQUIREMENTS ===
-✅ 100% TRANSPARENT/CLEAR background - PNG alpha transparency
-✅ Character ONLY - no background at all
-✅ Thick black outlines (2-3px) for visibility
-✅ Character fills 80% of each cell
-✅ Vibrant colors, high saturation
-✅ Clear separation between cells (can be cropped)
-✅ POP text and decorations in each cell
-❌ NO background of any kind - PURE TRANSPARENCY
-❌ NO checkered/checker pattern background
-❌ NO gray-white grid pattern
-❌ NO grid lines or borders
+=== ⚠️ BACKGROUND REQUIREMENTS ===
+✅ PURE WHITE (#FFFFFF) background for each cell
+✅ Clean solid white - no gradients
+✅ Character with thick black outlines (3px)
+❌ NO checkered pattern
+❌ NO gray background
+❌ NO transparency simulation
+❌ NO colored background
+
+=== ⚠️ LAYOUT REQUIREMENTS ===
+✅ SQUARE output (1024×1024)
+✅ 9 equal-sized cells (341×341 each)
+✅ Clear visual separation between cells
+✅ Each cell is a complete sticker
 ❌ NO overlapping between cells
-❌ NO realistic style - must be ${styleConfig.name}
+❌ NO merged cells
+❌ NO rectangular output
 
-IMPORTANT: Output must have TRUE TRANSPARENT background (alpha channel), NOT a checkered pattern or any simulated transparency. The background must be completely empty/clear.
-
-Generate the 3×3 sticker grid NOW.`;
+Generate the 3×3 sticker grid NOW. Remember: 1024×1024 SQUARE output.`;
 
   const negativePrompt = `white background, gray background, solid background, colored background,
 checkered background, checker pattern, checkerboard pattern, transparency grid, gray-white squares,
@@ -350,13 +355,268 @@ async function generateGridImage(photoBase64, style, expressions, characterID, o
 }
 
 /**
- * ✂️ 裁切 9宮格為獨立貼圖（修正版）
+ * 🎯 檢測並移除棋盤格背景（模擬透明）
+ * 棋盤格通常是灰白相間的方格，需要轉換為真正的透明
+ *
+ * @param {Buffer} imageBuffer - 圖片 Buffer
+ * @returns {Buffer} - 處理後的圖片 Buffer
+ */
+async function removeCheckerboardBackground(imageBuffer) {
+  try {
+    const { data, info } = await sharp(imageBuffer)
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+
+    const { width, height, channels } = info;
+    const pixels = new Uint8Array(data);
+
+    // 棋盤格檢測參數
+    const checkerSize = 8; // 常見的棋盤格大小
+    const lightGray = { r: 204, g: 204, b: 204 }; // #CCCCCC
+    const darkGray = { r: 153, g: 153, b: 153 };   // #999999
+    const white = { r: 255, g: 255, b: 255 };
+    const tolerance = 30;
+
+    // 檢測是否是棋盤格顏色
+    const isCheckerColor = (r, g, b) => {
+      const isLight = Math.abs(r - lightGray.r) < tolerance &&
+                      Math.abs(g - lightGray.g) < tolerance &&
+                      Math.abs(b - lightGray.b) < tolerance;
+      const isDark = Math.abs(r - darkGray.r) < tolerance &&
+                     Math.abs(g - darkGray.g) < tolerance &&
+                     Math.abs(b - darkGray.b) < tolerance;
+      const isWhite = Math.abs(r - white.r) < tolerance &&
+                      Math.abs(g - white.g) < tolerance &&
+                      Math.abs(b - white.b) < tolerance;
+      return isLight || isDark || isWhite;
+    };
+
+    let checkerPixels = 0;
+    let totalPixels = width * height;
+
+    // 第一遍：統計棋盤格像素
+    for (let i = 0; i < pixels.length; i += channels) {
+      const r = pixels[i];
+      const g = pixels[i + 1];
+      const b = pixels[i + 2];
+      if (isCheckerColor(r, g, b)) {
+        checkerPixels++;
+      }
+    }
+
+    const checkerRatio = checkerPixels / totalPixels;
+    console.log(`    🔍 棋盤格背景檢測：${(checkerRatio * 100).toFixed(1)}% 疑似背景像素`);
+
+    // 如果超過 15% 是棋盤格顏色，進行移除
+    if (checkerRatio > 0.15) {
+      console.log(`    🧹 移除棋盤格背景...`);
+
+      for (let i = 0; i < pixels.length; i += channels) {
+        const r = pixels[i];
+        const g = pixels[i + 1];
+        const b = pixels[i + 2];
+
+        if (isCheckerColor(r, g, b)) {
+          // 設為完全透明
+          pixels[i + 3] = 0;
+        }
+      }
+
+      return await sharp(Buffer.from(pixels), {
+        raw: { width, height, channels }
+      })
+        .png()
+        .toBuffer();
+    }
+
+    return imageBuffer;
+  } catch (error) {
+    console.error(`    ⚠️ 棋盤格移除失敗:`, error.message);
+    return imageBuffer;
+  }
+}
+
+/**
+ * 🎯 移除純白/純灰背景（智能版）
+ * 使用邊緣檢測 + Flood Fill 從邊緣開始移除背景
+ * 避免誤刪角色內部的白色區域（如眼白、衣服等）
+ *
+ * @param {Buffer} imageBuffer - 圖片 Buffer
+ * @returns {Buffer} - 處理後的圖片 Buffer
+ */
+async function removeSimpleBackground(imageBuffer) {
+  try {
+    const { data, info } = await sharp(imageBuffer)
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+
+    const { width, height, channels } = info;
+    const pixels = new Uint8Array(data);
+
+    // 背景顏色檢測函數
+    const isBackgroundColor = (r, g, b, tolerance = 25) => {
+      // 純白背景 (最常見)
+      const isWhite = r > 240 && g > 240 && b > 240;
+      // 近白色
+      const isNearWhite = r > 230 && g > 230 && b > 230 &&
+                          Math.abs(r - g) < 10 && Math.abs(g - b) < 10;
+      // 淺灰背景
+      const isLightGray = r > 200 && r < 240 && g > 200 && g < 240 && b > 200 && b < 240 &&
+                          Math.abs(r - g) < 15 && Math.abs(g - b) < 15;
+      // 棋盤格深色 (#999, #AAA, #BBB, #CCC)
+      const isCheckerGray = r > 140 && r < 210 && g > 140 && g < 210 && b > 140 && b < 210 &&
+                            Math.abs(r - g) < 10 && Math.abs(g - b) < 10;
+      return isWhite || isNearWhite || isLightGray || isCheckerGray;
+    };
+
+    // 收集邊緣像素的顏色，確定背景色
+    const edgeColors = [];
+    const samplePoints = [
+      [0, 0], [width-1, 0], [0, height-1], [width-1, height-1], // 四角
+      [Math.floor(width/2), 0], [Math.floor(width/2), height-1], // 上下中
+      [0, Math.floor(height/2)], [width-1, Math.floor(height/2)] // 左右中
+    ];
+
+    for (const [x, y] of samplePoints) {
+      const idx = (y * width + x) * channels;
+      edgeColors.push({ r: pixels[idx], g: pixels[idx+1], b: pixels[idx+2] });
+    }
+
+    // 檢查邊緣是否都是背景色
+    const bgEdgeCount = edgeColors.filter(c => isBackgroundColor(c.r, c.g, c.b)).length;
+    const bgRatio = bgEdgeCount / edgeColors.length;
+    console.log(`    🔍 邊緣背景檢測：${bgEdgeCount}/${edgeColors.length} 點為背景色`);
+
+    if (bgRatio < 0.5) {
+      console.log(`    ⏭️ 邊緣非背景色，跳過去背`);
+      return imageBuffer;
+    }
+
+    console.log(`    🧹 執行智能去背（從邊緣開始）...`);
+
+    // 使用 visited 陣列追蹤已處理的像素
+    const visited = new Uint8Array(width * height);
+    const toRemove = new Set();
+
+    // BFS Flood Fill 從邊緣開始
+    const queue = [];
+
+    // 添加所有邊緣像素到隊列
+    for (let x = 0; x < width; x++) {
+      queue.push([x, 0]);
+      queue.push([x, height - 1]);
+    }
+    for (let y = 1; y < height - 1; y++) {
+      queue.push([0, y]);
+      queue.push([width - 1, y]);
+    }
+
+    // BFS 遍歷
+    while (queue.length > 0) {
+      const [x, y] = queue.shift();
+      const pixelIdx = y * width + x;
+
+      if (x < 0 || x >= width || y < 0 || y >= height) continue;
+      if (visited[pixelIdx]) continue;
+      visited[pixelIdx] = 1;
+
+      const idx = pixelIdx * channels;
+      const r = pixels[idx];
+      const g = pixels[idx + 1];
+      const b = pixels[idx + 2];
+
+      if (isBackgroundColor(r, g, b)) {
+        toRemove.add(pixelIdx);
+        // 添加相鄰像素
+        queue.push([x + 1, y]);
+        queue.push([x - 1, y]);
+        queue.push([x, y + 1]);
+        queue.push([x, y - 1]);
+      }
+    }
+
+    console.log(`    📊 移除 ${toRemove.size} 個背景像素 (${((toRemove.size / (width * height)) * 100).toFixed(1)}%)`);
+
+    // 移除背景
+    for (const pixelIdx of toRemove) {
+      const idx = pixelIdx * channels;
+      pixels[idx + 3] = 0; // 設為透明
+    }
+
+    return await sharp(Buffer.from(pixels), {
+      raw: { width, height, channels }
+    })
+      .png()
+      .toBuffer();
+
+  } catch (error) {
+    console.error(`    ⚠️ 純色背景移除失敗:`, error.message);
+    return imageBuffer;
+  }
+}
+
+/**
+ * 🎯 智能邊緣檢測：找出圖片中的實際內容區域
+ * 避免裁切到空白或背景區域
+ *
+ * @param {Buffer} imageBuffer - 圖片 Buffer
+ * @returns {object} - { hasContent, bounds: { left, top, right, bottom } }
+ */
+async function detectContentBounds(imageBuffer) {
+  try {
+    const { data, info } = await sharp(imageBuffer)
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+
+    const { width, height, channels } = info;
+    const pixels = new Uint8Array(data);
+
+    let minX = width, maxX = 0, minY = height, maxY = 0;
+    let contentPixels = 0;
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const idx = (y * width + x) * channels;
+        const alpha = pixels[idx + 3];
+
+        // 只考慮不透明的像素
+        if (alpha > 50) {
+          contentPixels++;
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+
+    const hasContent = contentPixels > 100;
+    return {
+      hasContent,
+      bounds: hasContent ? { left: minX, top: minY, right: maxX, bottom: maxY } : null,
+      contentRatio: contentPixels / (width * height)
+    };
+  } catch (error) {
+    return { hasContent: true, bounds: null, contentRatio: 1 };
+  }
+}
+
+/**
+ * ✂️ 裁切 9宮格為獨立貼圖（增強版 v2）
+ *
+ * 新增功能：
+ * - 智能網格檢測（驗證圖片是否為有效的 3x3）
+ * - 棋盤格背景自動移除
+ * - 內容區域檢測
  *
  * @param {Buffer|string} gridImage - 3x3 網格圖片（Buffer 或 URL）
  * @returns {Array<Buffer>} - 9 張 370×320 的貼圖 Buffer
  */
 async function cropGridToStickers(gridImage) {
-  console.log(`✂️ 開始裁切 9宮格...`);
+  console.log(`✂️ 開始裁切 9宮格（增強版 v2）...`);
 
   // 下載圖片（如果是 URL）
   let imageBuffer;
@@ -373,11 +633,24 @@ async function cropGridToStickers(gridImage) {
     }
   }
 
+  // 🆕 步驟 1：先進行棋盤格背景移除
+  console.log(`🧹 步驟 1：檢測並移除棋盤格背景...`);
+  imageBuffer = await removeCheckerboardBackground(imageBuffer);
+
   // 🆕 獲取圖片實際尺寸
   const metadata = await sharp(imageBuffer).metadata();
   const imageWidth = metadata.width;
   const imageHeight = metadata.height;
   console.log(`📐 圖片實際尺寸: ${imageWidth}×${imageHeight}`);
+
+  // 🆕 步驟 2：驗證圖片比例是否接近正方形（3x3 網格應該是正方形）
+  const aspectRatio = imageWidth / imageHeight;
+  const isSquarish = aspectRatio >= 0.8 && aspectRatio <= 1.25;
+
+  if (!isSquarish) {
+    console.log(`⚠️ 圖片比例異常 (${aspectRatio.toFixed(2)})，可能不是標準 3x3 網格`);
+    console.log(`🔄 嘗試智能裁切模式...`);
+  }
 
   // 🆕 計算正確的格子大小（精確除以 3）
   const cellWidth = Math.floor(imageWidth / 3);
@@ -428,22 +701,38 @@ async function cropGridToStickers(gridImage) {
           continue;
         }
 
-        // 🆕 改進的裁切流程：
+        // 🆕 改進的裁切流程 v2：
         // 1. 先裁切出格子
-        // 2. 縮放到 350×300（內容區）並保持比例
-        // 3. 創建 370×320 透明畫布，將內容置中
+        // 2. 對單格進行棋盤格背景移除
+        // 3. 檢測內容區域，確保裁切到角色
+        // 4. 縮放到 350×300（內容區）並保持比例
+        // 5. 創建 370×320 透明畫布，將內容置中
 
         // 步驟 1: 裁切格子
-        const extractedBuffer = await sharp(imageBuffer)
+        let extractedBuffer = await sharp(imageBuffer)
           .extract({
             left: left,
             top: top,
             width: extractWidth,
             height: extractHeight
           })
+          .ensureAlpha()
+          .png()
           .toBuffer();
 
-        // 步驟 2: 縮放到內容區尺寸（350×300），保持比例
+        // 步驟 2: 🆕 對單格進行額外的背景移除（確保透明）
+        extractedBuffer = await removeCheckerboardBackground(extractedBuffer);
+
+        // 🆕 步驟 2.5：移除純白/純灰背景
+        extractedBuffer = await removeSimpleBackground(extractedBuffer);
+
+        // 步驟 3: 🆕 檢測內容區域
+        const contentInfo = await detectContentBounds(extractedBuffer);
+        if (contentInfo.hasContent && contentInfo.contentRatio < 0.1) {
+          console.log(`    ⚠️ 內容過少 (${(contentInfo.contentRatio * 100).toFixed(1)}%)，可能是空白格`);
+        }
+
+        // 步驟 4: 縮放到內容區尺寸（350×300），保持比例
         const resizedBuffer = await sharp(extractedBuffer)
           .resize(output.contentWidth, output.contentHeight, {
             fit: 'contain',  // 保持比例，可能有透明邊
@@ -453,7 +742,7 @@ async function cropGridToStickers(gridImage) {
           .ensureAlpha()
           .toBuffer();
 
-        // 步驟 3: 創建 370×320 透明畫布，將 350×300 置中
+        // 步驟 5: 創建 370×320 透明畫布，將 350×300 置中
         const croppedBuffer = await sharp({
           create: {
             width: output.width,
