@@ -111,60 +111,29 @@ function generateGridPrompt(photoBase64, style, expressions, characterID, option
     };
   });
 
-  // 建立格子描述（6格版）
+  // 建立格子描述（6格版）- 簡化版
   const cellDescriptions = expressionDetails.map(e =>
-    `Cell ${e.cell}: "${e.expression}" - ${e.action}${e.popText ? ` [TEXT: "${e.popText}"]` : ''}`
-  ).join('\n');
+    `${e.cell}. ${e.expression}${e.popText ? ` "${e.popText}"` : ''}`
+  ).join(', ');
 
-  const prompt = `Create a 3×2 sticker grid (3 columns × 2 rows = 6 stickers) from this photo.
+  // 🆕 簡化版 Prompt（避免過長導致 API 錯誤）
+  const prompt = `Create a 3×2 sticker grid from this photo. 6 equal cells (3 columns × 2 rows).
 
-=== 📐 GRID LAYOUT (CRITICAL!) ===
-⚠️ 3 columns × 2 rows = 6 equal cells
-⚠️ Row 1: Cells 1, 2, 3 (top row)
-⚠️ Row 2: Cells 4, 5, 6 (bottom row)
-⚠️ Each cell should be roughly equal size
+STYLE: ${styleConfig.name} - ${styleConfig.promptBase.substring(0, 100)}
 
-=== 🎨 STYLE: ${styleConfig.name} ===
-${styleConfig.promptBase}
-${styleEnhance.lighting}
-${styleEnhance.brushwork}
+6 EXPRESSIONS: ${cellDescriptions}
 
-=== 😊 6 EXPRESSIONS (one per cell) ===
-${cellDescriptions}
+IMPORTANT RULES:
+- Same person in all 6 cells (copy face from photo exactly)
+- ${framing.name} view for each sticker
+- Character CENTERED in each cell with 15% margin on all sides
+- HEAD fully visible, never cut off
+- Pure WHITE background (#FFFFFF)
+- Black outline (3px) around character
+- Cute decorations: hearts, sparkles, stars
+- Pop text in ${scene.popTextStyle || 'cute rounded style'}
 
-=== 🎀 DECORATIONS (${scene.name}) ===
-Style: ${scene.decorationStyle || 'kawaii pastel style'}
-Elements: ${scene.decorationElements?.join(', ') || 'hearts, sparkles, stars'}
-Text style: ${scene.popTextStyle || 'cute rounded text'}
-
-=== 👤 CHARACTER POSITION (VERY IMPORTANT!) ===
-ID: ${characterID}
-- SAME face in all 6 cells (copy from photo)
-- SAME hairstyle and hair color
-- SAME clothing style
-- Framing: ${framing.name} (${framing.characterFocus})
-⭐ CHARACTER MUST BE PERFECTLY CENTERED in each cell
-⭐ Leave 15% SAFE MARGIN on ALL sides (top, bottom, left, right)
-⭐ Character should fill only 70% of each cell (centered)
-⭐ HEAD must be FULLY VISIBLE - never cut off at top!
-⭐ Pop text should be INSIDE the character area, not at edges
-
-=== ⚠️ BACKGROUND REQUIREMENTS ===
-✅ PURE WHITE (#FFFFFF) background for each cell
-✅ Clean solid white - no gradients
-✅ Character with thick black outlines (3px)
-❌ NO checkered pattern
-❌ NO gray background
-
-=== ⚠️ LAYOUT REQUIREMENTS ===
-✅ 3 columns × 2 rows layout
-✅ 6 equal-sized cells
-✅ Clear visual separation between cells
-✅ Each character CENTERED with SAFE MARGINS
-❌ NO overlapping between cells
-❌ NO content touching cell edges
-
-Generate the 3×2 sticker grid NOW (6 stickers total).`;
+OUTPUT: 3×2 grid image with 6 complete stickers.`;
 
   const negativePrompt = `checkered background, checker pattern, checkerboard pattern, transparency grid, gray-white squares,
 grid lines, borders, separators, frames,
@@ -315,54 +284,78 @@ async function generateGridImage(photoBase64, style, expressions, characterID, o
   const { prompt, negativePrompt } = generateGridPrompt(photoBase64, style, expressions, characterID, options);
   console.log(`📝 Prompt 長度: ${prompt.length} 字元`);
 
-  try {
-    const response = await axios.post(
-      `${AI_API_URL}/v1/chat/completions`,
-      {
-        model: AI_MODEL,
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: prompt
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: photoBase64.startsWith('data:') ? photoBase64 : `data:image/jpeg;base64,${photoBase64}`
+  // 🆕 重試機制：最多嘗試 3 次
+  const maxRetries = 3;
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`🔄 嘗試第 ${attempt}/${maxRetries} 次...`);
+
+      const response = await axios.post(
+        `${AI_API_URL}/v1/chat/completions`,
+        {
+          model: AI_MODEL,
+          messages: [
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'text',
+                  text: prompt
+                },
+                {
+                  type: 'image_url',
+                  image_url: {
+                    url: photoBase64.startsWith('data:') ? photoBase64 : `data:image/jpeg;base64,${photoBase64}`
+                  }
                 }
-              }
-            ]
-          }
-        ],
-        max_tokens: 4096
-      },
-      {
-        headers: {
-          'Authorization': `Bearer ${AI_API_KEY}`,
-          'Content-Type': 'application/json'
+              ]
+            }
+          ],
+          max_tokens: 4096
         },
-        timeout: 120000
+        {
+          headers: {
+            'Authorization': `Bearer ${AI_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          timeout: 120000
+        }
+      );
+
+      console.log(`📡 API 回應狀態: ${response.status}`);
+      console.log(`📡 API 回應結構: choices=${response.data?.choices?.length || 0}`);
+
+      const imageUrl = extractImageFromResponse(response);
+      console.log(`✅ 6宮格生成成功！圖片類型: ${imageUrl.startsWith('data:') ? 'base64' : 'URL'}`);
+      return imageUrl;
+
+    } catch (error) {
+      lastError = error;
+      console.error(`❌ 第 ${attempt} 次嘗試失敗:`, error.message);
+
+      if (error.response) {
+        console.error('API 回應狀態碼:', error.response.status);
+        console.error('API 錯誤詳情:', JSON.stringify(error.response.data).substring(0, 500));
+
+        // 如果是 400 錯誤（Empty Response），等待後重試
+        if (error.response.status === 400 && attempt < maxRetries) {
+          const waitTime = attempt * 3000; // 3秒、6秒、9秒
+          console.log(`⏳ 等待 ${waitTime / 1000} 秒後重試...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+          continue;
+        }
       }
-    );
 
-    console.log(`📡 API 回應狀態: ${response.status}`);
-    console.log(`📡 API 回應結構: choices=${response.data?.choices?.length || 0}`);
-
-    const imageUrl = extractImageFromResponse(response);
-    console.log(`✅ 6宮格生成成功！圖片類型: ${imageUrl.startsWith('data:') ? 'base64' : 'URL'}`);
-    return imageUrl;
-
-  } catch (error) {
-    console.error(`❌ 6宮格生成失敗:`, error.message);
-    if (error.response) {
-      console.error('API 回應狀態碼:', error.response.status);
-      console.error('API 錯誤詳情:', JSON.stringify(error.response.data).substring(0, 1000));
+      // 其他錯誤或最後一次嘗試，直接拋出
+      if (attempt === maxRetries) {
+        throw error;
+      }
     }
-    throw error;
   }
+
+  throw lastError || new Error('生成失敗：未知錯誤');
 }
 
 /**
