@@ -118,12 +118,11 @@ function generateGridPrompt(photoBase64, style, expressions, characterID, option
 
   const prompt = `Create a 3×2 sticker grid (3 columns × 2 rows = 6 stickers) from this photo.
 
-=== 📐 GRID LAYOUT (IMPORTANT!) ===
+=== 📐 GRID LAYOUT (CRITICAL!) ===
 ⚠️ 3 columns × 2 rows = 6 equal cells
 ⚠️ Row 1: Cells 1, 2, 3 (top row)
 ⚠️ Row 2: Cells 4, 5, 6 (bottom row)
 ⚠️ Each cell should be roughly equal size
-⚠️ Widescreen layout (wider than tall)
 
 === 🎨 STYLE: ${styleConfig.name} ===
 ${styleConfig.promptBase}
@@ -138,13 +137,17 @@ Style: ${scene.decorationStyle || 'kawaii pastel style'}
 Elements: ${scene.decorationElements?.join(', ') || 'hearts, sparkles, stars'}
 Text style: ${scene.popTextStyle || 'cute rounded text'}
 
-=== 👤 CHARACTER CONSISTENCY ===
+=== 👤 CHARACTER POSITION (VERY IMPORTANT!) ===
 ID: ${characterID}
 - SAME face in all 6 cells (copy from photo)
 - SAME hairstyle and hair color
 - SAME clothing style
 - Framing: ${framing.name} (${framing.characterFocus})
-- Character fills 80% of each cell
+⭐ CHARACTER MUST BE PERFECTLY CENTERED in each cell
+⭐ Leave 15% SAFE MARGIN on ALL sides (top, bottom, left, right)
+⭐ Character should fill only 70% of each cell (centered)
+⭐ HEAD must be FULLY VISIBLE - never cut off at top!
+⭐ Pop text should be INSIDE the character area, not at edges
 
 === ⚠️ BACKGROUND REQUIREMENTS ===
 ✅ PURE WHITE (#FFFFFF) background for each cell
@@ -152,15 +155,14 @@ ID: ${characterID}
 ✅ Character with thick black outlines (3px)
 ❌ NO checkered pattern
 ❌ NO gray background
-❌ NO transparency simulation
 
 === ⚠️ LAYOUT REQUIREMENTS ===
 ✅ 3 columns × 2 rows layout
 ✅ 6 equal-sized cells
 ✅ Clear visual separation between cells
-✅ Each cell is a complete sticker
+✅ Each character CENTERED with SAFE MARGINS
 ❌ NO overlapping between cells
-❌ NO merged cells
+❌ NO content touching cell edges
 
 Generate the 3×2 sticker grid NOW (6 stickers total).`;
 
@@ -677,24 +679,34 @@ async function cropGridToStickers(gridImage) {
       console.log(`  ⏳ 裁切第 ${index + 1} 張（行 ${row + 1}, 列 ${col + 1}）`);
 
       try {
-        // 精確計算裁切位置
-        const left = col * cellWidth;
-        const top = row * cellHeight;
+        // 精確計算裁切位置（加入安全內縮）
+        const baseLeft = col * cellWidth;
+        const baseTop = row * cellHeight;
 
         // 確保最後一列/行能完整裁切
-        let extractWidth = cellWidth;
-        let extractHeight = cellHeight;
+        let baseCellWidth = cellWidth;
+        let baseCellHeight = cellHeight;
 
         // 最後一列：取到右邊界
         if (col === gridCols - 1) {
-          extractWidth = imageWidth - left;
+          baseCellWidth = imageWidth - baseLeft;
         }
         // 最後一行：取到下邊界
         if (row === gridRows - 1) {
-          extractHeight = imageHeight - top;
+          baseCellHeight = imageHeight - baseTop;
         }
 
-        console.log(`    📍 位置: (${left}, ${top}), 裁切: ${extractWidth}×${extractHeight}`);
+        // 🆕 安全內縮：內縮 3% 避免切到邊緣內容
+        const insetRatio = 0.03;
+        const insetX = Math.floor(baseCellWidth * insetRatio);
+        const insetY = Math.floor(baseCellHeight * insetRatio);
+
+        const left = baseLeft + insetX;
+        const top = baseTop + insetY;
+        const extractWidth = baseCellWidth - (insetX * 2);
+        const extractHeight = baseCellHeight - (insetY * 2);
+
+        console.log(`    📍 位置: (${left}, ${top}), 裁切: ${extractWidth}×${extractHeight}（內縮 ${insetRatio * 100}%）`);
 
         // 檢查是否有足夠的區域可裁切
         if (extractWidth < 50 || extractHeight < 50) {
