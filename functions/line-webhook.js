@@ -1284,13 +1284,37 @@ async function handleAddToUploadQueue(replyToken, userId, stickerId, setId, imag
       });
     }
 
+    const selectUrl = `https://sticker-tycoon.netlify.app/select-stickers.html?userId=${encodeURIComponent(userId)}`;
+    const queueUrl = `https://sticker-tycoon.netlify.app/queue.html?userId=${encodeURIComponent(userId)}`;
+
+    // 使用 Flex Message 帶連結
     return getLineClient().replyMessage(replyToken, {
-      type: 'text',
-      text: `✅ 已加入待上傳佇列！\n\n` +
-            `📊 目前佇列：${result.currentCount} / 40 張\n\n` +
-            (result.currentCount >= 40
-              ? '🎉 已達 40 張！輸入「待上傳」查看並下載'
-              : `💡 再選 ${40 - result.currentCount} 張即可上傳 LINE 貼圖`)
+      type: 'flex',
+      altText: `已加入待上傳佇列 (${result.currentCount}/40)`,
+      contents: {
+        type: 'bubble',
+        size: 'kilo',
+        body: {
+          type: 'box',
+          layout: 'vertical',
+          contents: [
+            { type: 'text', text: '✅ 已加入待上傳', weight: 'bold', color: '#06C755' },
+            { type: 'text', text: `📊 目前佇列：${result.currentCount} / 40 張`, size: 'sm', margin: 'md' },
+            { type: 'text', text: result.currentCount >= 40 ? '🎉 已滿！可以上架了' : `⏳ 還需 ${40 - result.currentCount} 張`, size: 'xs', color: '#999', margin: 'sm' }
+          ]
+        },
+        footer: {
+          type: 'box',
+          layout: 'horizontal',
+          spacing: 'sm',
+          contents: result.currentCount >= 40 ? [
+            { type: 'button', style: 'primary', color: '#06C755', height: 'sm', action: { type: 'uri', label: '🚀 去上架', uri: queueUrl } }
+          ] : [
+            { type: 'button', style: 'primary', color: '#FF6B6B', height: 'sm', flex: 2, action: { type: 'uri', label: '📌 多選加入', uri: selectUrl } },
+            { type: 'button', style: 'secondary', height: 'sm', flex: 1, action: { type: 'message', label: '佇列', text: '待上傳' } }
+          ]
+        }
+      }
     });
 
   } catch (error) {
@@ -1358,16 +1382,44 @@ async function handleRemoveFromUploadQueue(replyToken, userId, stickerId) {
 async function handleViewUploadQueue(replyToken, userId, page = 1) {
   try {
     const queue = await getUploadQueue(userId);
+    const selectUrl = `https://sticker-tycoon.netlify.app/select-stickers.html?userId=${encodeURIComponent(userId)}`;
 
     if (queue.length === 0) {
       return getLineClient().replyMessage(replyToken, {
-        type: 'text',
-        text: '📋 待上傳佇列是空的\n\n' +
-              '💡 操作說明：\n' +
-              '1. 輸入「我的貼圖」\n' +
-              '2. 點「查看詳情」\n' +
-              '3. 在每張貼圖下點「✅ 加入待上傳」\n' +
-              '4. 累積 40 張即可下載打包上傳 LINE'
+        type: 'flex',
+        altText: '待上傳佇列是空的',
+        contents: {
+          type: 'bubble',
+          body: {
+            type: 'box',
+            layout: 'vertical',
+            contents: [
+              { type: 'text', text: '📋 待上傳佇列是空的', weight: 'bold', size: 'lg', color: '#FF6B6B' },
+              { type: 'text', text: '需要累積 40 張貼圖才能上架 LINE', size: 'sm', color: '#666', margin: 'md', wrap: true },
+              { type: 'separator', margin: 'lg' },
+              { type: 'text', text: '💡 快速選擇貼圖', weight: 'bold', size: 'md', margin: 'lg' },
+              { type: 'text', text: '點擊下方按鈕，一次勾選多張貼圖加入佇列', size: 'xs', color: '#999', margin: 'sm', wrap: true }
+            ]
+          },
+          footer: {
+            type: 'box',
+            layout: 'vertical',
+            spacing: 'sm',
+            contents: [
+              {
+                type: 'button',
+                style: 'primary',
+                color: '#06C755',
+                action: { type: 'uri', label: '📌 選擇貼圖（多選）', uri: selectUrl }
+              },
+              {
+                type: 'button',
+                style: 'secondary',
+                action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' }
+              }
+            ]
+          }
+        }
       });
     }
 
@@ -1478,15 +1530,25 @@ async function sendUploadQueueCarousel(replyToken, queue, page = 1, userId) {
             uri: `https://sticker-tycoon.netlify.app/queue.html?userId=${encodeURIComponent(userId || '')}`
           }
         }] : []),
+        // 選擇更多貼圖（未滿時顯示）
+        ...(!isReady ? [{
+          type: 'button',
+          style: 'primary',
+          color: '#FF6B6B',
+          action: {
+            type: 'uri',
+            label: '📌 選擇更多貼圖',
+            uri: `https://sticker-tycoon.netlify.app/select-stickers.html?userId=${encodeURIComponent(userId || '')}`
+          }
+        }] : []),
         // 網頁版完整查看
         {
           type: 'button',
-          style: isReady ? 'secondary' : 'primary',
-          color: isReady ? undefined : '#4A90E2',
+          style: 'secondary',
           action: {
             type: 'uri',
-            label: '🖼️ 網頁版完整查看',
-            uri: `https://sticker-tycoon.netlify.app/queue?userId=${encodeURIComponent(userId || '')}`
+            label: '🖼️ 網頁版查看佇列',
+            uri: `https://sticker-tycoon.netlify.app/queue.html?userId=${encodeURIComponent(userId || '')}`
           }
         },
         {

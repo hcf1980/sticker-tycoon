@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>選擇貼圖 - Sticker Tycoon</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; padding-bottom: 140px; }
+    
+    .header { background: linear-gradient(135deg, #FF6B6B, #FF8E8E); color: white; padding: 16px; text-align: center; position: sticky; top: 0; z-index: 100; }
+    .header h1 { font-size: 1.2rem; margin-bottom: 4px; }
+    .header .subtitle { font-size: 0.85rem; opacity: 0.9; }
+    
+    .queue-status { background: #fff; padding: 12px 16px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+    .queue-status .count { font-weight: bold; color: #FF6B6B; }
+    .queue-status .progress { flex: 1; margin: 0 12px; height: 8px; background: #eee; border-radius: 4px; overflow: hidden; }
+    .queue-status .progress-fill { height: 100%; background: linear-gradient(90deg, #FF6B6B, #06C755); transition: width 0.3s; }
+    
+    .tabs { display: flex; background: #fff; border-bottom: 1px solid #eee; overflow-x: auto; }
+    .tab { flex: 1; min-width: 100px; padding: 12px 8px; text-align: center; font-size: 0.85rem; color: #666; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; }
+    .tab.active { color: #FF6B6B; border-bottom-color: #FF6B6B; font-weight: bold; }
+    
+    .set-section { background: #fff; margin: 12px; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .set-header { padding: 12px 16px; background: #fafafa; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+    .set-header .set-name { font-weight: bold; font-size: 0.95rem; }
+    .set-header .set-meta { font-size: 0.75rem; color: #999; }
+    .set-header .select-all-btn { background: #FF6B6B; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; }
+    .set-header .select-all-btn:active { transform: scale(0.95); }
+    
+    .sticker-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 12px; }
+    .sticker-item { position: relative; aspect-ratio: 370/320; border-radius: 8px; overflow: hidden; cursor: pointer; border: 3px solid transparent; transition: all 0.2s; }
+    .sticker-item img { width: 100%; height: 100%; object-fit: contain; background: #f9f9f9; }
+    .sticker-item.selected { border-color: #06C755; background: #e8f5e9; }
+    .sticker-item.in-queue { border-color: #999; opacity: 0.5; pointer-events: none; }
+    .sticker-item .checkbox { position: absolute; top: 6px; right: 6px; width: 24px; height: 24px; background: white; border: 2px solid #ddd; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+    .sticker-item.selected .checkbox { background: #06C755; border-color: #06C755; }
+    .sticker-item.selected .checkbox::after { content: '✓'; color: white; font-size: 14px; font-weight: bold; }
+    .sticker-item.in-queue .checkbox { background: #999; border-color: #999; }
+    .sticker-item.in-queue .checkbox::after { content: '✓'; color: white; font-size: 14px; }
+    .sticker-item .expression { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.6); color: white; font-size: 0.7rem; padding: 4px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    
+    .empty { text-align: center; padding: 60px 20px; color: #999; }
+    .empty .icon { font-size: 3rem; margin-bottom: 12px; }
+    
+    .loading { text-align: center; padding: 60px 20px; }
+    .spinner { width: 40px; height: 40px; border: 3px solid #eee; border-top-color: #FF6B6B; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 12px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    
+    .bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #eee; padding: 12px 16px; padding-bottom: max(12px, env(safe-area-inset-bottom)); z-index: 100; }
+    .selection-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 0.9rem; }
+    .selection-info .selected-count { color: #06C755; font-weight: bold; }
+    .btn-row { display: flex; gap: 10px; }
+    .btn { flex: 1; padding: 14px; border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: all 0.2s; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-secondary { background: #eee; color: #666; }
+    .btn-primary { background: linear-gradient(135deg, #06C755, #00B341); color: white; }
+    .btn:active:not(:disabled) { transform: scale(0.98); }
+    
+    .toast { position: fixed; bottom: 160px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 12px 24px; border-radius: 25px; font-size: 0.9rem; z-index: 200; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>📌 選擇貼圖加入待上傳</h1>
+    <div class="subtitle">勾選想要的貼圖，一次加入佇列</div>
+  </div>
+  
+  <div class="queue-status">
+    <span>待上傳：<span class="count" id="queueCount">0</span>/40</span>
+    <div class="progress"><div class="progress-fill" id="progressFill" style="width: 0%"></div></div>
+    <span id="remainText">還需 40 張</span>
+  </div>
+  
+  <div class="tabs" id="tabs"></div>
+  
+  <div id="content">
+    <div class="loading"><div class="spinner"></div><p>載入中...</p></div>
+  </div>
+  
+  <div class="bottom-bar">
+    <div class="selection-info">
+      <span>已選擇：<span class="selected-count" id="selectedCount">0</span> 張</span>
+      <span id="canAddText">可再加入 40 張</span>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="clearSelection()">清除選擇</button>
+      <button class="btn btn-primary" id="addBtn" disabled onclick="addToQueue()">加入待上傳</button>
+    </div>
+  </div>
+  
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const API_BASE = '/.netlify/functions';
+    const urlParams = new URLSearchParams(window.location.search);
+    const userId = urlParams.get('userId');
+
+    let stickerSets = [];
+    let queuedStickerIds = new Set();
+    let selectedStickers = [];
+    let currentSetIndex = 0;
+    let queueCount = 0;
+
+    // 載入資料
+    async function loadData() {
+      if (!userId) { showEmpty('請從 LINE 開啟此頁面'); return; }
+      try {
+        // 同時載入貼圖組和佇列
+        const [setsRes, queueRes] = await Promise.all([
+          fetch(`${API_BASE}/get-user-sticker-sets?userId=${encodeURIComponent(userId)}`),
+          fetch(`${API_BASE}/get-upload-queue?userId=${encodeURIComponent(userId)}`)
+        ]);
+
+        const setsData = await setsRes.json();
+        const queueData = await queueRes.json();
+
+        if (setsData.success) {
+          stickerSets = setsData.sets || [];
+        }
+        if (queueData.success) {
+          queueCount = queueData.count || 0;
+          queueData.queue.forEach(item => queuedStickerIds.add(item.sticker_id));
+        }
+
+        updateQueueStatus();
+        renderTabs();
+        renderCurrentSet();
+      } catch (e) {
+        console.error(e);
+        showEmpty('載入失敗，請重試');
+      }
+    }
+
+    function updateQueueStatus() {
+      document.getElementById('queueCount').textContent = queueCount;
+      document.getElementById('progressFill').style.width = `${(queueCount/40)*100}%`;
+      const remain = Math.max(0, 40 - queueCount);
+      document.getElementById('remainText').textContent = remain > 0 ? `還需 ${remain} 張` : '✅ 已滿';
+      document.getElementById('canAddText').textContent = `可再加入 ${remain} 張`;
+    }
+
+    function updateSelectionInfo() {
+      const count = selectedStickers.length;
+      document.getElementById('selectedCount').textContent = count;
+      document.getElementById('addBtn').disabled = count === 0;
+    }
+
+    function renderTabs() {
+      const tabs = document.getElementById('tabs');
+      if (stickerSets.length === 0) {
+        tabs.innerHTML = '';
+        return;
+      }
+      tabs.innerHTML = stickerSets.map((set, i) => `
+        <div class="tab ${i === currentSetIndex ? 'active' : ''}" onclick="switchSet(${i})">
+          ${set.name || '未命名'}<br><small>${set.stickers?.length || 0}張</small>
+        </div>
+      `).join('');
+    }
+
+    function switchSet(index) {
+      currentSetIndex = index;
+      renderTabs();
+      renderCurrentSet();
+    }
+
+    function renderCurrentSet() {
+      const content = document.getElementById('content');
+      if (stickerSets.length === 0) {
+        showEmpty('還沒有貼圖組<br>先去生成一些貼圖吧！');
+        return;
+      }
+
+      const set = stickerSets[currentSetIndex];
+      const stickers = set.stickers || [];
+
+      if (stickers.length === 0) {
+        content.innerHTML = `<div class="empty"><div class="icon">📭</div><p>此貼圖組沒有貼圖</p></div>`;
+        return;
+      }
+
+      content.innerHTML = `
+        <div class="set-section">
+          <div class="set-header">
+            <div>
+              <div class="set-name">${set.name || '未命名'}</div>
+              <div class="set-meta">${set.style || ''} · ${stickers.length} 張</div>
+            </div>
+            <button class="select-all-btn" onclick="selectAllInSet('${set.set_id}')">全選此組</button>
+          </div>
+          <div class="sticker-grid">
+            ${stickers.map(s => renderStickerItem(s, set.set_id)).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderStickerItem(sticker, setId) {
+      const inQueue = queuedStickerIds.has(sticker.sticker_id);
+      const isSelected = selectedStickers.some(s => s.sticker_id === sticker.sticker_id);
+      const classes = ['sticker-item'];
+      if (inQueue) classes.push('in-queue');
+      else if (isSelected) classes.push('selected');
+
+      return `
+        <div class="${classes.join(' ')}" onclick="toggleSticker('${sticker.sticker_id}', '${setId}', '${encodeURIComponent(sticker.image_url)}', '${encodeURIComponent(sticker.expression || '')}')">
+          <img src="${sticker.image_url}" alt="${sticker.expression || ''}">
+          <div class="checkbox"></div>
+          <div class="expression">${sticker.expression || '#' + sticker.index_number}</div>
+        </div>
+      `;
+    }
+
+    function toggleSticker(stickerId, setId, imageUrlEncoded, expressionEncoded) {
+      if (queuedStickerIds.has(stickerId)) return;
+
+      const imageUrl = decodeURIComponent(imageUrlEncoded);
+      const expression = decodeURIComponent(expressionEncoded);
+      const index = selectedStickers.findIndex(s => s.sticker_id === stickerId);
+
+      if (index >= 0) {
+        selectedStickers.splice(index, 1);
+      } else {
+        const canAdd = 40 - queueCount - selectedStickers.length;
+        if (canAdd <= 0) {
+          showToast('已達上限 40 張！');
+          return;
+        }
+        selectedStickers.push({ sticker_id: stickerId, set_id: setId, image_url: imageUrl, expression });
+      }
+
+      updateSelectionInfo();
+      renderCurrentSet();
+    }
+
+    function selectAllInSet(setId) {
+      const set = stickerSets.find(s => s.set_id === setId);
+      if (!set) return;
+
+      const available = (set.stickers || []).filter(s => !queuedStickerIds.has(s.sticker_id) && !selectedStickers.some(sel => sel.sticker_id === s.sticker_id));
+      const canAdd = 40 - queueCount - selectedStickers.length;
+      const toAdd = available.slice(0, canAdd);
+
+      toAdd.forEach(s => {
+        selectedStickers.push({ sticker_id: s.sticker_id, set_id: setId, image_url: s.image_url, expression: s.expression || '' });
+      });
+
+      if (toAdd.length < available.length) {
+        showToast(`已選 ${toAdd.length} 張（達上限）`);
+      } else {
+        showToast(`已選 ${toAdd.length} 張`);
+      }
+
+      updateSelectionInfo();
+      renderCurrentSet();
+    }
+
+    function clearSelection() {
+      selectedStickers = [];
+      updateSelectionInfo();
+      renderCurrentSet();
+    }
+
+    async function addToQueue() {
+      if (selectedStickers.length === 0) return;
+
+      const btn = document.getElementById('addBtn');
+      btn.disabled = true;
+      btn.textContent = '加入中...';
+
+      try {
+        const res = await fetch(`${API_BASE}/batch-add-to-queue`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, stickers: selectedStickers })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          queueCount = data.newCount;
+          selectedStickers.forEach(s => queuedStickerIds.add(s.sticker_id));
+          selectedStickers = [];
+          updateQueueStatus();
+          updateSelectionInfo();
+          renderCurrentSet();
+          showToast(`✅ 已加入 ${data.addedCount} 張！`);
+
+          if (queueCount >= 40) {
+            setTimeout(() => {
+              if (confirm('🎉 已滿 40 張！\n要前往待上傳頁面嗎？')) {
+                window.location.href = `/queue.html?userId=${encodeURIComponent(userId)}`;
+              }
+            }, 500);
+          }
+        } else {
+          showToast('❌ ' + (data.error || '加入失敗'));
+        }
+      } catch (e) {
+        console.error(e);
+        showToast('❌ 網路錯誤');
+      }
+
+      btn.disabled = false;
+      btn.textContent = '加入待上傳';
+    }
+
+    function showEmpty(msg) {
+      document.getElementById('content').innerHTML = `<div class="empty"><div class="icon">📭</div><p>${msg}</p></div>`;
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    loadData();
+  </script>
+</body>
+</html>
+
