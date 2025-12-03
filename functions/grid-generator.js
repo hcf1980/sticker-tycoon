@@ -130,6 +130,8 @@ IMPORTANT RULES:
 - HEAD fully visible, never cut off
 - Pure WHITE background (#FFFFFF)
 - Black outline (3px) around character
+- NO borders, frames, or lines around each cell
+- Clean artwork, NO artifacts, spots, or stray pixels
 - Cute decorations: hearts, sparkles, stars
 - Pop text in ${scene.popTextStyle || 'cute rounded style'}
 

@@ -94,9 +94,11 @@ async function handleTextMessage(replyToken, userId, text) {
           text: '📁 你還沒有創建任何貼圖組\n\n輸入「創建貼圖」開始創建你的第一組貼圖！'
         });
       }
-      // 生成貼圖列表 Flex Message（帶推薦好友資訊）
+      // 生成貼圖列表 Flex Message（帶推薦好友資訊 + 待上傳數量）
       const referralInfo = await getUserReferralInfo(userId);
-      const stickerListMessage = generateStickerListFlexMessage(sets, referralInfo);
+      const uploadQueue = await getUploadQueue(userId);
+      const queueCount = uploadQueue.length;
+      const stickerListMessage = generateStickerListFlexMessage(sets, referralInfo, queueCount);
       return getLineClient().replyMessage(replyToken, stickerListMessage);
     }
 
@@ -762,8 +764,11 @@ exports.handler = async function(event, context) {
 
 /**
  * 生成貼圖列表 Flex Message（可選擇性顯示推薦好友提示）
+ * @param {Array} sets - 貼圖組列表
+ * @param {Object} referralInfo - 推薦資訊
+ * @param {number} queueCount - 待上傳佇列數量
  */
-function generateStickerListFlexMessage(sets, referralInfo = null) {
+function generateStickerListFlexMessage(sets, referralInfo = null, queueCount = 0) {
   const statusEmoji = {
     'completed': '✅',
     'processing': '⏳',
@@ -771,10 +776,79 @@ function generateStickerListFlexMessage(sets, referralInfo = null) {
     'failed': '❌'
   };
 
-  // 最多顯示 10 組
-  const displaySets = sets.slice(0, 10);
+  const bubbles = [];
 
-  const bubbles = displaySets.map(set => {
+  // 🆕 首先加入「待上傳狀態 + 分享給好友」卡片（移到最前面！）
+  const canRefer = referralInfo && (referralInfo.referralCount || 0) < 3;
+
+  // 計算待上傳進度
+  const progressText = queueCount >= 40
+    ? '✅ 已達 40 張，可以上傳！'
+    : `📊 待上傳：${queueCount}/40 張`;
+  const progressColor = queueCount >= 40 ? '#4CAF50' : '#FF6B00';
+  const needMore = Math.max(0, 40 - queueCount);
+
+  // 待上傳狀態卡片（永遠顯示在最前面）
+  const uploadStatusCard = {
+    type: 'bubble',
+    size: 'kilo',
+    body: {
+      type: 'box',
+      layout: 'vertical',
+      backgroundColor: queueCount >= 40 ? '#E8F5E9' : '#FFF3E0',
+      paddingAll: 'lg',
+      contents: [
+        { type: 'text', text: queueCount >= 40 ? '🎉' : '📤', size: '3xl', align: 'center' },
+        { type: 'text', text: '上傳準備狀態', size: 'lg', weight: 'bold', align: 'center', color: '#333333', margin: 'md' },
+        { type: 'text', text: progressText, size: 'md', align: 'center', color: progressColor, margin: 'md', weight: 'bold' },
+        queueCount < 40
+          ? { type: 'text', text: `還需 ${needMore} 張貼圖`, size: 'sm', align: 'center', color: '#666666', margin: 'sm' }
+          : { type: 'text', text: '可以打包上傳 LINE 了！', size: 'sm', align: 'center', color: '#4CAF50', margin: 'sm' }
+      ]
+    },
+    footer: {
+      type: 'box',
+      layout: 'vertical',
+      spacing: 'sm',
+      contents: [
+        {
+          type: 'button',
+          style: 'primary',
+          color: '#06C755',
+          action: {
+            type: 'uri',
+            label: '📋 管理待上傳',
+            uri: `https://sticker-tycoon.netlify.app/select-stickers.html`
+          }
+        }
+      ]
+    }
+  };
+
+  // 如果可以推薦，在待上傳卡片下方加入分享資訊
+  if (canRefer && referralInfo.referralCode) {
+    uploadStatusCard.body.contents.push(
+      { type: 'separator', margin: 'lg' },
+      { type: 'text', text: '🎁 分享給好友得代幣', size: 'sm', weight: 'bold', align: 'center', color: '#E65100', margin: 'md' },
+      { type: 'text', text: `推薦碼：${referralInfo.referralCode}`, size: 'sm', align: 'center', color: '#FF8A00', margin: 'sm' }
+    );
+    uploadStatusCard.footer.contents.push({
+      type: 'button',
+      style: 'secondary',
+      action: {
+        type: 'message',
+        label: '🎁 分享給好友',
+        text: '分享給好友'
+      }
+    });
+  }
+
+  bubbles.push(uploadStatusCard);
+
+  // 最多顯示 9 組（因為第一個是狀態卡片）
+  const displaySets = sets.slice(0, 9);
+
+  displaySets.forEach(set => {
     const emoji = statusEmoji[set.status] || '📁';
     const createdDate = new Date(set.created_at).toLocaleDateString('zh-TW');
 
@@ -823,7 +897,7 @@ function generateStickerListFlexMessage(sets, referralInfo = null) {
       }
     });
 
-    return {
+    const bubble = {
       type: 'bubble',
       size: 'kilo',
       hero: previewUrl ? {
@@ -846,54 +920,16 @@ function generateStickerListFlexMessage(sets, referralInfo = null) {
         contents: footerContents
       }
     };
-  });
 
-  // 過濾掉 undefined 的 hero
-  bubbles.forEach(bubble => {
+    // 過濾掉 undefined 的 hero
     if (!bubble.hero) delete bubble.hero;
-  });
 
-  // 如果可以分享，在最後加入分享給好友卡片
-  const canRefer = referralInfo && (referralInfo.referralCount || 0) < 3;
-  if (canRefer && referralInfo.referralCode) {
-    bubbles.push({
-      type: 'bubble',
-      size: 'kilo',
-      body: {
-        type: 'box',
-        layout: 'vertical',
-        backgroundColor: '#FFF3E0',
-        paddingAll: 'lg',
-        contents: [
-          { type: 'text', text: '🎁', size: '3xl', align: 'center' },
-          { type: 'text', text: '分享給好友得代幣', size: 'lg', weight: 'bold', align: 'center', color: '#E65100', margin: 'md' },
-          { type: 'text', text: `推薦碼：${referralInfo.referralCode}`, size: 'md', align: 'center', color: '#FF8A00', margin: 'md', weight: 'bold' },
-          { type: 'text', text: `雙方各得 10 代幣！`, size: 'sm', align: 'center', color: '#666666', margin: 'sm' },
-          { type: 'text', text: `還可分享 ${3 - referralInfo.referralCount} 位好友`, size: 'xs', align: 'center', color: '#999999', margin: 'xs' }
-        ]
-      },
-      footer: {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
-          {
-            type: 'button',
-            style: 'primary',
-            color: '#FF6B00',
-            action: {
-              type: 'message',
-              label: '📤 分享給好友',
-              text: '分享給好友'
-            }
-          }
-        ]
-      }
-    });
-  }
+    bubbles.push(bubble);
+  });
 
   return {
     type: 'flex',
-    altText: `📁 你有 ${sets.length} 組貼圖`,
+    altText: `📁 你有 ${sets.length} 組貼圖（待上傳：${queueCount}/40）`,
     contents: {
       type: 'carousel',
       contents: bubbles
