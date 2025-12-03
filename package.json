@@ -31,7 +31,6 @@
     "@supabase/supabase-js": "^2.45.4",
     "archiver": "^7.0.1",
     "axios": "^1.7.7",
-    "canvas": "^3.2.0",
     "dotenv": "^16.4.5",
     "sharp": "^0.34.5",
     "uuid": "^9.0.1"
