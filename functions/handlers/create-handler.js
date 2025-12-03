@@ -31,7 +31,6 @@ async function handleStartCreate(userId) {
       items: [
         { type: 'action', action: { type: 'message', label: '我的日常', text: '我的日常' } },
         { type: 'action', action: { type: 'message', label: '辦公室趣事', text: '辦公室趣事' } },
-        { type: 'action', action: { type: 'message', label: '可愛表情包', text: '可愛表情包' } },
         { type: 'action', action: { type: 'message', label: '❌ 取消', text: '取消' } }
       ]
     }
