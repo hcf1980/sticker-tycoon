@@ -98,7 +98,7 @@ async function handleTextMessage(replyToken, userId, text) {
       const referralInfo = await getUserReferralInfo(userId);
       const uploadQueue = await getUploadQueue(userId);
       const queueCount = uploadQueue.length;
-      const stickerListMessage = generateStickerListFlexMessage(sets, referralInfo, queueCount);
+            const stickerListMessage = generateStickerListFlexMessage(userId, sets, referralInfo, queueCount);
       return getLineClient().replyMessage(replyToken, stickerListMessage);
     }
 
@@ -768,7 +768,7 @@ exports.handler = async function(event, context) {
  * @param {Object} referralInfo - 推薦資訊
  * @param {number} queueCount - 待上傳佇列數量
  */
-function generateStickerListFlexMessage(sets, referralInfo = null, queueCount = 0) {
+function generateStickerListFlexMessage(userId, sets, referralInfo = null, queueCount = 0) {
   const statusEmoji = {
     'completed': '✅',
     'processing': '⏳',
@@ -818,7 +818,7 @@ function generateStickerListFlexMessage(sets, referralInfo = null, queueCount = 
           action: {
             type: 'uri',
             label: '📋 管理待上傳',
-            uri: `https://sticker-tycoon.netlify.app/select-stickers.html`
+            uri: `https://sticker-tycoon.netlify.app/queue.html?userId=${userId}`
           }
         }
       ]
