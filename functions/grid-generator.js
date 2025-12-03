@@ -461,42 +461,54 @@ async function removeSimpleBackground(imageBuffer) {
     const { width, height, channels } = info;
     const pixels = new Uint8Array(data);
 
-    // 背景顏色檢測函數
-    const isBackgroundColor = (r, g, b, tolerance = 25) => {
-      // 純白背景 (最常見)
-      const isWhite = r > 240 && g > 240 && b > 240;
-      // 近白色
-      const isNearWhite = r > 230 && g > 230 && b > 230 &&
-                          Math.abs(r - g) < 10 && Math.abs(g - b) < 10;
-      // 淺灰背景
-      const isLightGray = r > 200 && r < 240 && g > 200 && g < 240 && b > 200 && b < 240 &&
-                          Math.abs(r - g) < 15 && Math.abs(g - b) < 15;
-      // 棋盤格深色 (#999, #AAA, #BBB, #CCC)
-      const isCheckerGray = r > 140 && r < 210 && g > 140 && g < 210 && b > 140 && b < 210 &&
-                            Math.abs(r - g) < 10 && Math.abs(g - b) < 10;
-      return isWhite || isNearWhite || isLightGray || isCheckerGray;
+    // ✅ v2: 更嚴格的背景顏色檢測（避免誤刪角色區域）
+    const isBackgroundColor = (r, g, b) => {
+      // ✅ 只移除純白背景（RGB 都 > 250）
+      // 這樣可以保留角色的眼白、牙齒、衣服等亮色區域
+      const isPureWhite = r > 250 && g > 250 && b > 250;
+
+      // ✅ 只移除特定的棋盤格顏色（精確匹配）
+      // 避免誤刪膚色、頭髮等灰色調
+      const isCheckerboardLight = r === 204 && g === 204 && b === 204;  // #CCCCCC
+      const isCheckerboardDark = r === 153 && g === 153 && b === 153;   // #999999
+
+      return isPureWhite || isCheckerboardLight || isCheckerboardDark;
     };
 
-    // 收集邊緣像素的顏色，確定背景色
+    // ✅ v2: 增加邊緣採樣點（從 8 個增加到 20+ 個）
     const edgeColors = [];
-    const samplePoints = [
-      [0, 0], [width-1, 0], [0, height-1], [width-1, height-1], // 四角
-      [Math.floor(width/2), 0], [Math.floor(width/2), height-1], // 上下中
-      [0, Math.floor(height/2)], [width-1, Math.floor(height/2)] // 左右中
-    ];
+    const samplePoints = [];
+
+    // 四角
+    samplePoints.push([0, 0], [width-1, 0], [0, height-1], [width-1, height-1]);
+
+    // 上下邊緣均勻採樣
+    const xStep = Math.max(1, Math.floor(width / 5));
+    for (let x = 0; x < width; x += xStep) {
+      samplePoints.push([x, 0]);
+      samplePoints.push([x, height-1]);
+    }
+
+    // 左右邊緣均勻採樣
+    const yStep = Math.max(1, Math.floor(height / 5));
+    for (let y = 0; y < height; y += yStep) {
+      samplePoints.push([0, y]);
+      samplePoints.push([width-1, y]);
+    }
 
     for (const [x, y] of samplePoints) {
       const idx = (y * width + x) * channels;
       edgeColors.push({ r: pixels[idx], g: pixels[idx+1], b: pixels[idx+2] });
     }
 
-    // 檢查邊緣是否都是背景色
+    // ✅ v2: 提高觸發閾值（從 0.5 改為 0.8）
+    // 只有 80% 以上的邊緣點都是背景色，才執行去背
     const bgEdgeCount = edgeColors.filter(c => isBackgroundColor(c.r, c.g, c.b)).length;
     const bgRatio = bgEdgeCount / edgeColors.length;
-    console.log(`    🔍 邊緣背景檢測：${bgEdgeCount}/${edgeColors.length} 點為背景色`);
+    console.log(`    🔍 邊緣背景檢測：${bgEdgeCount}/${edgeColors.length} 點為背景色（比例：${(bgRatio*100).toFixed(1)}%）`);
 
-    if (bgRatio < 0.5) {
-      console.log(`    ⏭️ 邊緣非背景色，跳過去背`);
+    if (bgRatio < 0.8) {
+      console.log(`    ⏭️ 邊緣非背景色（< 80%），跳過去背`);
       return imageBuffer;
     }
 
