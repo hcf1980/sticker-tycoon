@@ -810,46 +810,28 @@ function generateStickerListFlexMessage(userId, sets, referralInfo = null, queue
       type: 'box',
       layout: 'vertical',
       spacing: 'sm',
-      contents: [] // 動態生成
+      contents: [
+        {
+          type: 'button',
+          style: 'primary',
+          color: '#FF6B00', // Orange
+          action: {
+            type: 'uri',
+            label: '➕ 選擇更多貼圖',
+            uri: `https://sticker-tycoon.netlify.app/select-stickers.html?userId=${userId}`
+          }
+        },
+        {
+          type: 'button',
+          style: 'secondary',
+          action: {
+            type: 'uri',
+            label: '📋 管理待上傳',
+            uri: `https://sticker-tycoon.netlify.app/queue.html?userId=${userId}`
+          }
+        }
+      ]
     }
-
-  // 🆕 動態決定 footer 按鈕
-  if (queueCount >= 40) {
-    // 已滿 40 張，只顯示管理按鈕
-    uploadStatusCard.footer.contents.push({
-      type: 'button',
-      style: 'primary',
-      color: '#06C755', // Green
-      action: {
-        type: 'uri',
-        label: '📋 管理待上傳',
-        uri: `https://sticker-tycoon.netlify.app/queue.html?userId=${userId}`
-      }
-    });
-  } else {
-    // 未滿 40 張，顯示選擇和管理按鈕
-    uploadStatusCard.footer.contents.push(
-      {
-        type: 'button',
-        style: 'primary',
-        color: '#FF6B00', // Orange
-        action: {
-          type: 'uri',
-          label: '➕ 選擇更多貼圖',
-          uri: `https://sticker-tycoon.netlify.app/select-stickers.html?userId=${userId}`
-        }
-      },
-      {
-        type: 'button',
-        style: 'secondary',
-        action: {
-          type: 'uri',
-          label: '📋 管理待上傳',
-          uri: `https://sticker-tycoon.netlify.app/queue.html?userId=${userId}`
-        }
-      }
-    );
-  }
 
   };
 
