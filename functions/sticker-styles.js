@@ -49,10 +49,10 @@ const StyleEnhancer = {
     mood: "powerful confident atmosphere, street style energy"
   },
   funny: {
-    lighting: "flat comedy lighting, simple shadows, bright overall",
-    composition: "exaggerated distorted perspective, off-center for comedy effect",
-    brushwork: "cartoon bold strokes, over-expressive lines, wobbly outlines",
-    mood: "chaotic, humorous, playful vibes, meme energy"
+    lighting: "bright cheerful lighting, simple shadows, playful glow",
+    composition: "centered composition, exaggerated expressions (not distorted face), playful framing",
+    brushwork: "cartoon bold strokes, expressive lines, clean outlines",
+    mood: "humorous, playful vibes, fun energy"
   },
   simple: {
     lighting: "minimal soft lighting, flat illumination",
@@ -295,13 +295,14 @@ const StickerStyles = {
     emoji: '🤣',
     description: '誇張表情、幽默感、搞怪',
     promptBase: `
-      funny cartoon style, extreme exaggerated facial expressions,
-      comedic timing pose, distorted proportions, meme-style humor,
+      funny cartoon style, exaggerated facial expressions (not distorted face),
+      comedic timing pose, playful proportions, meme-style humor,
       bold lines, bright punchy colors, high emotional clarity
     `,
     negativePrompt: `
       serious, realistic anatomy, elegant style,
-      low energy, subtle expression
+      low energy, subtle expression,
+      distorted face, warped features, deformed proportions
     `
   },
 

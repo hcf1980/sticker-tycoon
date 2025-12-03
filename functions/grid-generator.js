@@ -116,36 +116,38 @@ function generateGridPrompt(photoBase64, style, expressions, characterID, option
     `${e.cell}. ${e.expression}${e.popText ? ` "${e.popText}"` : ''}`
   ).join(', ');
 
-  // 🆕 簡化版 Prompt（避免過長導致 API 錯誤）
-  const prompt = `Create a 3×2 sticker grid from this photo. 6 equal cells (3 columns × 2 rows).
+  // 簡化版 Prompt v4 - 提高生成質量（移除 emoji 和複雜格式）
+  const prompt = `Create a 3x2 sticker grid (6 cells) from this photo.
 
-STYLE: ${styleConfig.name} - ${styleConfig.promptBase.substring(0, 100)}
+CRITICAL: Use the EXACT SAME PERSON in all 6 cells. Keep facial features identical.
 
-6 EXPRESSIONS: ${cellDescriptions}
+STYLE: ${styleConfig.name}
 
-IMPORTANT RULES:
-- Same person in all 6 cells (copy face from photo exactly)
-- ${framing.name} view for each sticker
-- Character CENTERED in each cell with 15% margin on all sides
-- HEAD fully visible, never cut off
-- Pure WHITE background (#FFFFFF)
-- Black outline (3px) around character
-- NO borders, frames, or lines around each cell
-- Clean artwork, NO artifacts, spots, or stray pixels
-- Cute decorations: hearts, sparkles, stars
-- Pop text in ${scene.popTextStyle || 'cute rounded style'}
+6 EXPRESSIONS:
+${cellDescriptions}
 
-OUTPUT: 3×2 grid image with 6 complete stickers.`;
+REQUIREMENTS:
+- Same person in all cells (identical face, eyes, nose, mouth)
+- ${framing.name} view
+- Character centered in each cell
+- Head fully visible
+- White background
+- Black outline around character (2-3px)
+- No grid lines between cells
+- Clean artwork, no artifacts
+- Cute decorations (hearts, sparkles, stars)
+- Pop text in cute style
 
-  const negativePrompt = `checkered background, checker pattern, checkerboard pattern, transparency grid, gray-white squares,
-grid lines, borders, separators, frames,
-realistic photo, photorealistic, ultra-realism,
-text watermark, signature, logo,
-different people, inconsistent character,
-tiny character, small figure, excessive empty space,
-overlapping cells, merged cells,
-dull colors, low saturation, blurry, low quality,
-simulated transparency, fake transparency`;
+OUTPUT: 3x2 grid with 6 stickers of the SAME PERSON with different expressions.`;
+
+  const negativePrompt = `distorted face, warped features, deformed face, stretched face,
+wrong number of fingers, extra fingers, missing fingers,
+asymmetrical face, uneven features, lopsided face,
+melting face, dissolving features, blended faces,
+different people, multiple faces, changing person,
+grid lines, borders, frames,
+checkered background, transparency grid,
+blurry, low quality, artifacts, stray pixels`;
 
   return { prompt, negativePrompt };
 }
@@ -644,11 +646,36 @@ async function cropGridToStickers(gridImage) {
     if (gridImage.startsWith('data:image')) {
       const base64Data = gridImage.split(',')[1];
       imageBuffer = Buffer.from(base64Data, 'base64');
+      console.log(`📥 Base64 圖片大小: ${imageBuffer.length} bytes`);
     } else {
       // 從 URL 下載
-      const response = await axios.get(gridImage, { responseType: 'arraybuffer' });
+      console.log(`📥 正在從 URL 下載圖片: ${gridImage.substring(0, 80)}...`);
+      const response = await axios.get(gridImage, {
+        responseType: 'arraybuffer',
+        timeout: 60000,
+        maxContentLength: 50 * 1024 * 1024,  // 50MB 限制
+        maxRedirects: 5
+      });
       imageBuffer = Buffer.from(response.data);
+      console.log(`📥 下載完成，圖片大小: ${imageBuffer.length} bytes`);
+
+      // 驗證圖片完整性
+      if (imageBuffer.length < 1000) {
+        throw new Error(`⚠️ 下載的圖片過小 (${imageBuffer.length} bytes)，可能不完整`);
+      }
     }
+  }
+
+  // 驗證圖片格式
+  try {
+    const metadata = await sharp(imageBuffer).metadata();
+    console.log(`✅ 圖片驗證成功: ${metadata.width}×${metadata.height}, 格式: ${metadata.format}`);
+    if (!metadata.width || !metadata.height) {
+      throw new Error('圖片尺寸無效');
+    }
+  } catch (error) {
+    console.error(`❌ 圖片驗證失敗:`, error.message);
+    throw new Error(`圖片損壞或格式不支援: ${error.message}`);
   }
 
   // 步驟 1：先進行棋盤格背景移除
@@ -703,8 +730,8 @@ async function cropGridToStickers(gridImage) {
           baseCellHeight = imageHeight - baseTop;
         }
 
-        // 🆕 安全內縮：內縮 3% 避免切到邊緣內容
-        const insetRatio = 0.03;
+        // 🆕 安全內縮：內縮 1% 避免切到邊緣內容（從 3% 降低到 1%）
+        const insetRatio = 0.01;
         const insetX = Math.floor(baseCellWidth * insetRatio);
         const insetY = Math.floor(baseCellHeight * insetRatio);
 
@@ -783,12 +810,12 @@ async function cropGridToStickers(gridImage) {
           left: output.padding,  // 10px 左邊距
           top: output.padding    // 10px 上邊距
         }])
-        // 圖片增強
+        // 圖片增強（溫和的增強，避免變形）
         .modulate({
-          saturation: 1.25,
-          brightness: 1.02
+          saturation: 1.1,   // 降低飽和度增強（從 1.25 → 1.1）
+          brightness: 1.0    // 不調整亮度（從 1.02 → 1.0）
         })
-        .linear(1.15, -(128 * 0.15))
+        .linear(1.05, -(128 * 0.05))  // 降低對比度增強（從 1.15 → 1.05）
         // 輸出 PNG
         .png({
           compressionLevel: 9,
