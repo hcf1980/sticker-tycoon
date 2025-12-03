@@ -50,7 +50,7 @@ async function handleTextMessage(replyToken, userId, text) {
 
     // 詳細日誌
     console.log(`🔍 用戶狀態: stage=${currentStage}, temp_data=${JSON.stringify(state.temp_data)}`);
-    
+
     // 1. 檢查是否要取消
     if (text === '取消' || text === '取消創建') {
       await resetConversationState(userId);
@@ -59,7 +59,7 @@ async function handleTextMessage(replyToken, userId, text) {
         text: '❌ 已取消創建流程\n\n輸入「創建貼圖」重新開始！'
       });
     }
-    
+
     // 2. 優先處理全局命令（即使在創建流程中也可以使用）
     const globalCommands = ['分享給好友', '推薦好友', '我的推薦碼', '推薦碼', '邀請好友', '查詢進度', '我的貼圖', '貼圖列表', '代幣', '餘額', '我的代幣', '查詢代幣'];
     if (globalCommands.includes(text)) {
@@ -210,7 +210,7 @@ async function handleTextMessage(replyToken, userId, text) {
       const message = await handleCountSelection(userId, count);
       return getLineClient().replyMessage(replyToken, message);
     }
-    
+
     if (text === '確認生成') {
       return await handleConfirmGeneration(replyToken, userId, state);
     }
@@ -222,7 +222,7 @@ async function handleTextMessage(replyToken, userId, text) {
 
     // 5. 預設回覆 - 歡迎訊息
     return getLineClient().replyMessage(replyToken, generateWelcomeFlexMessage());
-    
+
   } catch (error) {
     console.error('❌ 處理訊息失敗:', error);
     return getLineClient().replyMessage(replyToken, {
@@ -810,19 +810,47 @@ function generateStickerListFlexMessage(userId, sets, referralInfo = null, queue
       type: 'box',
       layout: 'vertical',
       spacing: 'sm',
-      contents: [
-        {
-          type: 'button',
-          style: 'primary',
-          color: '#06C755',
-          action: {
-            type: 'uri',
-            label: '📋 管理待上傳',
-            uri: `https://sticker-tycoon.netlify.app/queue.html?userId=${userId}`
-          }
-        }
-      ]
+      contents: [] // 動態生成
     }
+
+  // 🆕 動態決定 footer 按鈕
+  if (queueCount >= 40) {
+    // 已滿 40 張，只顯示管理按鈕
+    uploadStatusCard.footer.contents.push({
+      type: 'button',
+      style: 'primary',
+      color: '#06C755', // Green
+      action: {
+        type: 'uri',
+        label: '📋 管理待上傳',
+        uri: `https://sticker-tycoon.netlify.app/queue.html?userId=${userId}`
+      }
+    });
+  } else {
+    // 未滿 40 張，顯示選擇和管理按鈕
+    uploadStatusCard.footer.contents.push(
+      {
+        type: 'button',
+        style: 'primary',
+        color: '#FF6B00', // Orange
+        action: {
+          type: 'uri',
+          label: '➕ 選擇更多貼圖',
+          uri: `https://sticker-tycoon.netlify.app/select-stickers.html?userId=${userId}`
+        }
+      },
+      {
+        type: 'button',
+        style: 'secondary',
+        action: {
+          type: 'uri',
+          label: '📋 管理待上傳',
+          uri: `https://sticker-tycoon.netlify.app/queue.html?userId=${userId}`
+        }
+      }
+    );
+  }
+
   };
 
   // 如果可以推薦，在待上傳卡片下方加入分享資訊
