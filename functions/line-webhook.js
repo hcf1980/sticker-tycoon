@@ -399,17 +399,16 @@ async function handleConfirmGeneration(replyToken, userId, state) {
   const referralInfo = await getUserReferralInfo(userId);
   const showReferralReminder = referralInfo.referralCount < 3;
 
-  // 組合訊息文字
+  // 組合訊息文字（移除 API 調用與特價行）
   let messageText = '🎨 開始生成貼圖！\n\n' +
         `📛 名稱：${tempData.name}\n` +
-        `📊 數量：${stickerCount} 張（${apiCalls}次API調用）\n\n` +
+        `📊 數量：${stickerCount} 張\n\n` +
         `💰 已扣除 ${tokenCost} 代幣，剩餘 ${deductResult.balance} 代幣\n` +
-        `💡 9宮格批次生成特價：每9張僅需3枚代幣！\n\n` +
         '⏳ 預計需要 2-5 分鐘';
 
   // 如果未達推薦上限，加入推薦碼提醒
   if (showReferralReminder && referralInfo.referralCode) {
-    messageText += `\n\n🎁 分享推薦碼「${referralInfo.referralCode}」給好友，雙方各得 10 代幣！(${referralInfo.referralCount}/3)`;
+    messageText += `\n\n🎁 分享推薦碼「${referralInfo.referralCode}」給好友，雙方各得 10 代幣！`;
   }
 
   // 建立 QuickReply 按鈕
@@ -2064,7 +2063,6 @@ async function handleTokenQuery(replyToken, userId) {
           { type: 'text', text: `${balance}`, size: '3xl', weight: 'bold', align: 'center', color: '#FF6B00' },
           { type: 'text', text: '代幣', size: 'sm', align: 'center', color: '#666666', margin: 'sm' },
           { type: 'separator', margin: 'lg' },
-          { type: 'text', text: '💡 9宮格特價：每9張僅需3代幣！', size: 'xs', color: '#28A745', margin: 'lg', wrap: true, weight: 'bold' },
           // 分享給好友提示
           ...(canRefer ? [{
             type: 'box',
