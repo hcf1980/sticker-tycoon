@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>管理後台 - 貼圖大亨</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <!-- Supabase 配置 -->
+  <script type="application/json" id="supabase-config">
+  {
+    "url": "https://your-project.supabase.co",
+    "anonKey": "your-anon-key"
+  }
+  </script>
 </head>
 <body class="bg-gray-100 min-h-screen">
   <nav class="bg-gradient-to-r from-pink-500 to-orange-400 text-white p-4">
@@ -99,27 +106,18 @@
     貼圖大亨 Admin © 2024 | <a href="#" id="logoutBtn" class="hover:text-pink-500">登出</a>
   </footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.38.0/dist/umd/supabase.js"></script>
+  <script src="/admin/supabase-admin-client.js"></script>
   <script>
-    // 驗證登入狀態
-    function checkAuth() {
-      const auth = JSON.parse(localStorage.getItem('adminAuth') || '{}');
-      if (!auth.loggedIn || auth.expiry < Date.now()) {
-        localStorage.removeItem('adminAuth');
-        window.location.href = '/admin/login.html';
-        return false;
-      }
-      return true;
-    }
-
     // 頁面載入時檢查
-    if (!checkAuth()) {
+    if (!checkAdminAuth()) {
       document.body.innerHTML = '<div class="text-center p-10">正在跳轉到登入頁面...</div>';
     }
 
     // 登出功能
     document.getElementById('logoutBtn')?.addEventListener('click', function(e) {
       e.preventDefault();
-      localStorage.removeItem('adminAuth');
+      clearAdminAuthStatus();
       window.location.href = '/admin/login.html';
     });
   </script>
