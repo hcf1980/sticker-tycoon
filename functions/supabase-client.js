@@ -269,11 +269,16 @@ async function scanAndCreateStickerRecords(setId) {
       return [];
     }
 
-    // 篩選出貼圖檔案 (sticker_01.png, sticker_02.png, ...)
-    const stickerFiles = files.filter(f => f.name.startsWith('sticker_') && f.name.endsWith('.png'));
+    // 篩選出貼圖檔案（接受所有 PNG 檔案，不限制檔案名稱格式）
+    const stickerFiles = files.filter(f => {
+      // 排除資料夾（資料夾沒有副檔名）
+      if (f.id && !f.name.includes('.')) return false;
+      // 只接受 PNG 檔案
+      return f.name.toLowerCase().endsWith('.png');
+    });
     stickerFiles.sort((a, b) => a.name.localeCompare(b.name));
 
-    console.log(`🔍 找到 ${stickerFiles.length} 個貼圖檔案`);
+    console.log(`🔍 找到 ${stickerFiles.length} 個貼圖檔案`, stickerFiles.map(f => f.name));
 
     // 為每個檔案建立記錄
     const { v4: uuidv4 } = require('uuid');

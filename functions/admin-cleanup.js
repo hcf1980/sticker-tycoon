@@ -131,16 +131,27 @@ async function getStickerSetDetail(supabase, headers, setId) {
   }
 
   // 列出 Storage 中的貼圖檔案
-  const { data: files } = await supabase.storage
+  const { data: files, error: filesError } = await supabase.storage
     .from('sticker-images')
     .list(setId, { limit: 50 });
 
+  // 調試日誌
+  console.log(`[getStickerSetDetail] setId: ${setId}, files found: ${files?.length || 0}`, files);
+
+  // 篩選 PNG 檔案（不限制檔案名稱格式）
   const stickers = (files || [])
-    .filter(f => f.name.startsWith('sticker_') && f.name.endsWith('.png'))
+    .filter(f => {
+      // 排除資料夾（資料夾沒有副檔名）
+      if (f.id && !f.name.includes('.')) return false;
+      // 只接受 PNG 檔案
+      return f.name.toLowerCase().endsWith('.png');
+    })
     .map(f => ({
       name: f.name,
       url: `${process.env.SUPABASE_URL}/storage/v1/object/public/sticker-images/${setId}/${f.name}`
     }));
+
+  console.log(`[getStickerSetDetail] filtered stickers: ${stickers.length}`, stickers);
 
   return {
     statusCode: 200,
