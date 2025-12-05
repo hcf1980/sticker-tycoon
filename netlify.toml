@@ -45,6 +45,12 @@
   to = "/.netlify/functions/admin-rich-menu"
   status = 200
 
+# YouTuber 推廣計畫 API
+[[redirects]]
+  from = "/api/youtuber-promotion/apply"
+  to = "/.netlify/functions/youtuber-promotion/apply"
+  status = 200
+
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
