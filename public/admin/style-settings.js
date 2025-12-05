@@ -517,15 +517,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // 檢查登入狀態
 function checkAuth() {
-  const isLoggedIn = localStorage.getItem('admin_logged_in');
-  if (!isLoggedIn) {
+  const auth = JSON.parse(localStorage.getItem('adminAuth') || '{}');
+  if (!auth.loggedIn || auth.expiry < Date.now()) {
+    localStorage.removeItem('adminAuth');
     window.location.href = '/admin/login.html';
+    return false;
   }
+  return true;
 }
 
 // 登出
 function logout() {
-  localStorage.removeItem('admin_logged_in');
+  localStorage.removeItem('adminAuth');
   window.location.href = '/admin/login.html';
 }
 
