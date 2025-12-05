@@ -4,6 +4,7 @@
  */
 
 const { getSupabaseClient } = require('./supabase-client');
+const { globalCache } = require('./utils/cache-manager');
 
 // 對話階段定義
 const ConversationStage = {
@@ -23,10 +24,18 @@ const ConversationStage = {
 };
 
 /**
- * 取得用戶對話狀態
+ * 取得用戶對話狀態（優化版：加入快取）
  */
 async function getConversationState(userId) {
   try {
+    const cacheKey = globalCache.generateKey('conv_state', userId);
+
+    // 先嘗試從快取取得
+    const cached = globalCache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const { data, error } = await getSupabaseClient()
       .from('conversation_states')
       .select('*')
@@ -34,13 +43,18 @@ async function getConversationState(userId) {
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    
-    return data || {
+
+    const state = data || {
       user_id: userId,
       current_stage: ConversationStage.IDLE,
       current_set_id: null,
       temp_data: {}
     };
+
+    // 快取狀態（較短的 TTL，因為狀態變化較頻繁）
+    globalCache.set(cacheKey, state, 60000); // 快取 1 分鐘
+
+    return state;
   } catch (error) {
     console.error('取得對話狀態失敗:', error);
     return {
@@ -53,21 +67,23 @@ async function getConversationState(userId) {
 }
 
 /**
- * 更新用戶對話狀態
+ * 更新用戶對話狀態（優化版：更新快取）
  */
 async function updateConversationState(userId, stage, tempData = {}, setId = null) {
   try {
     console.log(`📝 更新對話狀態: userId=${userId}, stage=${stage}`);
 
+    const newState = {
+      user_id: userId,
+      current_stage: stage,
+      current_set_id: setId,
+      temp_data: tempData,
+      updated_at: new Date().toISOString()
+    };
+
     const { data, error } = await getSupabaseClient()
       .from('conversation_states')
-      .upsert({
-        user_id: userId,
-        current_stage: stage,
-        current_set_id: setId,
-        temp_data: tempData,
-        updated_at: new Date().toISOString()
-      }, {
+      .upsert(newState, {
         onConflict: 'user_id'
       })
       .select();
@@ -76,6 +92,10 @@ async function updateConversationState(userId, stage, tempData = {}, setId = nul
       console.error('❌ Supabase upsert 錯誤:', error);
       throw error;
     }
+
+    // 更新快取
+    const cacheKey = globalCache.generateKey('conv_state', userId);
+    globalCache.set(cacheKey, newState, 60000); // 快取 1 分鐘
 
     console.log(`✅ 對話狀態更新成功:`, data);
     return true;
@@ -86,9 +106,11 @@ async function updateConversationState(userId, stage, tempData = {}, setId = nul
 }
 
 /**
- * 重置用戶對話狀態
+ * 重置用戶對話狀態（優化版：清除快取）
  */
 async function resetConversationState(userId) {
+  const cacheKey = globalCache.generateKey('conv_state', userId);
+  globalCache.delete(cacheKey);
   return updateConversationState(userId, ConversationStage.IDLE, {}, null);
 }
 
@@ -111,17 +133,26 @@ function isInCreationFlow(stage) {
 }
 
 /**
- * 取得表情模板
+ * 取得表情模板（優化版：加入快取）
  */
 async function getExpressionTemplates() {
   try {
-    const { data, error } = await getSupabaseClient()
-      .from('expression_templates')
-      .select('*')
-      .eq('is_active', true);
+    const cacheKey = 'expression_templates:all';
 
-    if (error) throw error;
-    return data || [];
+    // 表情模板變化不頻繁，可以長時間快取
+    return await globalCache.getOrSet(
+      cacheKey,
+      async () => {
+        const { data, error } = await getSupabaseClient()
+          .from('expression_templates')
+          .select('*')
+          .eq('is_active', true);
+
+        if (error) throw error;
+        return data || [];
+      },
+      1800000 // 快取 30 分鐘
+    );
   } catch (error) {
     console.error('取得表情模板失敗:', error);
     return [];

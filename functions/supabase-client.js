@@ -4,6 +4,7 @@
  */
 
 const { createClient } = require('@supabase/supabase-js');
+const { globalCache } = require('./utils/cache-manager');
 
 // 延遲初始化 Supabase client
 let supabase = null;
@@ -66,10 +67,20 @@ async function recordReplyToken(replyToken) {
 }
 
 /**
- * 取得或建立用戶
+ * 取得或建立用戶（優化版：加入快取）
  */
 async function getOrCreateUser(lineUserId, displayName = null, pictureUrl = null) {
   try {
+    const cacheKey = globalCache.generateKey('user', lineUserId);
+
+    // 如果沒有提供 displayName 和 pictureUrl，優先使用快取
+    if (!displayName && !pictureUrl) {
+      const cached = globalCache.get(cacheKey);
+      if (cached) {
+        return cached;
+      }
+    }
+
     // 先查詢是否存在
     const { data: existing, error: selectError } = await getSupabaseClient()
       .from('users')
@@ -81,7 +92,8 @@ async function getOrCreateUser(lineUserId, displayName = null, pictureUrl = null
 
     if (existing && existing.length > 0) {
       const user = existing[0];
-      // 如果有新的 displayName 或 pictureUrl，更新現有用戶
+
+      // 如果有新的 displayName 或 pictureUrl，非同步更新（不阻塞回應）
       if ((displayName && displayName !== user.display_name) ||
           (pictureUrl && pictureUrl !== user.picture_url)) {
         const updateData = {};
@@ -89,13 +101,26 @@ async function getOrCreateUser(lineUserId, displayName = null, pictureUrl = null
         if (pictureUrl) updateData.picture_url = pictureUrl;
         updateData.updated_at = new Date().toISOString();
 
-        await getSupabaseClient()
+        // 非同步更新，不等待結果
+        getSupabaseClient()
           .from('users')
           .update(updateData)
-          .eq('line_user_id', lineUserId);
+          .eq('line_user_id', lineUserId)
+          .then(() => {
+            // 更新快取
+            const updatedUser = { ...user, ...updateData };
+            globalCache.set(cacheKey, updatedUser, 600000); // 快取 10 分鐘
+          })
+          .catch(err => console.error('非同步更新用戶失敗:', err));
 
-        return { ...user, ...updateData };
+        // 立即返回合併後的資料
+        const updatedUser = { ...user, ...updateData };
+        globalCache.set(cacheKey, updatedUser, 600000);
+        return updatedUser;
       }
+
+      // 快取用戶資料
+      globalCache.set(cacheKey, user, 600000); // 快取 10 分鐘
       return user;
     }
 
@@ -117,9 +142,13 @@ async function getOrCreateUser(lineUserId, displayName = null, pictureUrl = null
 
     if (insertError) throw insertError;
 
-    // 記錄初始代幣交易
+    // 非同步記錄初始代幣交易（不阻塞回應）
     if (newUser) {
-      await recordTokenTransaction(lineUserId, 40, 40, 'initial', '新用戶贈送 40 代幣');
+      recordTokenTransaction(lineUserId, 40, 40, 'initial', '新用戶贈送 40 代幣')
+        .catch(err => console.error('記錄初始代幣失敗:', err));
+
+      // 快取新用戶
+      globalCache.set(cacheKey, newUser, 600000);
     }
 
     return newUser;
@@ -130,18 +159,26 @@ async function getOrCreateUser(lineUserId, displayName = null, pictureUrl = null
 }
 
 /**
- * 取得用戶的貼圖組列表
+ * 取得用戶的貼圖組列表（優化版：加入快取）
  */
 async function getUserStickerSets(userId) {
   try {
-    const { data, error } = await getSupabaseClient()
-      .from('sticker_sets')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+    const cacheKey = globalCache.generateKey('sticker_sets', userId);
 
-    if (error) throw error;
-    return data || [];
+    return await globalCache.getOrSet(
+      cacheKey,
+      async () => {
+        const { data, error } = await getSupabaseClient()
+          .from('sticker_sets')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        return data || [];
+      },
+      120000 // 快取 2 分鐘
+    );
   } catch (error) {
     console.error('取得貼圖組失敗:', error);
     return [];
@@ -149,7 +186,7 @@ async function getUserStickerSets(userId) {
 }
 
 /**
- * 建立新的貼圖組
+ * 建立新的貼圖組（優化版：清除快取）
  */
 async function createStickerSet(setData) {
   try {
@@ -160,6 +197,13 @@ async function createStickerSet(setData) {
       .single();
 
     if (error) throw error;
+
+    // 清除用戶的貼圖組列表快取
+    if (data && setData.user_id) {
+      const cacheKey = globalCache.generateKey('sticker_sets', setData.user_id);
+      globalCache.delete(cacheKey);
+    }
+
     return data;
   } catch (error) {
     console.error('建立貼圖組失敗:', error);
@@ -168,7 +212,7 @@ async function createStickerSet(setData) {
 }
 
 /**
- * 更新貼圖組狀態
+ * 更新貼圖組狀態（優化版：清除相關快取）
  */
 async function updateStickerSetStatus(setId, status, additionalData = {}) {
   try {
@@ -178,6 +222,11 @@ async function updateStickerSetStatus(setId, status, additionalData = {}) {
       .eq('set_id', setId);
 
     if (error) throw error;
+
+    // 清除相關快取
+    globalCache.deleteByPrefix('sticker_sets:');
+    globalCache.deleteByPrefix('sticker_set:');
+
     return true;
   } catch (error) {
     console.error('更新貼圖組狀態失敗:', error);
@@ -186,31 +235,39 @@ async function updateStickerSetStatus(setId, status, additionalData = {}) {
 }
 
 /**
- * 取得貼圖組詳情（支援 set_id 或 id 查詢）
+ * 取得貼圖組詳情（優化版：加入快取，支援 set_id 或 id 查詢）
  */
 async function getStickerSet(setId) {
   try {
-    // 先嘗試用 set_id 查詢
-    let { data, error } = await getSupabaseClient()
-      .from('sticker_sets')
-      .select('*')
-      .eq('set_id', setId)
-      .single();
+    const cacheKey = globalCache.generateKey('sticker_set', setId);
 
-    // 如果找不到，再嘗試用 id 查詢
-    if (error || !data) {
-      const result = await getSupabaseClient()
-        .from('sticker_sets')
-        .select('*')
-        .eq('id', setId)
-        .single();
+    return await globalCache.getOrSet(
+      cacheKey,
+      async () => {
+        // 先嘗試用 set_id 查詢
+        let { data, error } = await getSupabaseClient()
+          .from('sticker_sets')
+          .select('*')
+          .eq('set_id', setId)
+          .single();
 
-      data = result.data;
-      error = result.error;
-    }
+        // 如果找不到，再嘗試用 id 查詢
+        if (error || !data) {
+          const result = await getSupabaseClient()
+            .from('sticker_sets')
+            .select('*')
+            .eq('id', setId)
+            .single();
 
-    if (error) throw error;
-    return data;
+          data = result.data;
+          error = result.error;
+        }
+
+        if (error) throw error;
+        return data;
+      },
+      180000 // 快取 3 分鐘
+    );
   } catch (error) {
     console.error('取得貼圖組詳情失敗:', error);
     return null;
@@ -676,10 +733,19 @@ async function recordTokenTransaction(userId, amount, balanceAfter, type, descri
 }
 
 /**
- * 取得用戶代幣餘額
+ * 取得用戶代幣餘額（優化版：使用快取的用戶資料）
  */
 async function getUserTokenBalance(lineUserId) {
   try {
+    const cacheKey = globalCache.generateKey('user', lineUserId);
+    const cachedUser = globalCache.get(cacheKey);
+
+    // 如果有快取的用戶資料，直接返回
+    if (cachedUser && cachedUser.sticker_credits !== undefined) {
+      return cachedUser.sticker_credits;
+    }
+
+    // 否則查詢資料庫
     const { data, error } = await getSupabaseClient()
       .from('users')
       .select('sticker_credits')
@@ -695,7 +761,7 @@ async function getUserTokenBalance(lineUserId) {
 }
 
 /**
- * 檢查並扣除代幣（生成貼圖用）
+ * 檢查並扣除代幣（優化版：更新快取）
  * @param {string} lineUserId - LINE 用戶 ID
  * @param {number} amount - 要扣除的數量
  * @param {string} description - 描述
@@ -736,8 +802,17 @@ async function deductTokens(lineUserId, amount, description, referenceId = null)
 
     if (updateError) throw updateError;
 
-    // 記錄交易
-    await recordTokenTransaction(lineUserId, -amount, newBalance, 'generate', description, referenceId);
+    // 更新快取
+    const cacheKey = globalCache.generateKey('user', lineUserId);
+    const cachedUser = globalCache.get(cacheKey);
+    if (cachedUser) {
+      cachedUser.sticker_credits = newBalance;
+      globalCache.set(cacheKey, cachedUser, 600000);
+    }
+
+    // 非同步記錄交易（不阻塞回應）
+    recordTokenTransaction(lineUserId, -amount, newBalance, 'generate', description, referenceId)
+      .catch(err => console.error('記錄代幣交易失敗:', err));
 
     return { success: true, balance: newBalance };
   } catch (error) {
@@ -747,7 +822,7 @@ async function deductTokens(lineUserId, amount, description, referenceId = null)
 }
 
 /**
- * 增加代幣（購買/管理員調整用）
+ * 增加代幣（優化版：更新快取，購買/管理員調整用）
  */
 async function addTokens(lineUserId, amount, type, description, adminNote = null) {
   try {
@@ -773,8 +848,17 @@ async function addTokens(lineUserId, amount, type, description, adminNote = null
 
     if (updateError) throw updateError;
 
-    // 記錄交易
-    await recordTokenTransaction(lineUserId, amount, newBalance, type, description, null, adminNote);
+    // 更新快取
+    const cacheKey = globalCache.generateKey('user', lineUserId);
+    const cachedUser = globalCache.get(cacheKey);
+    if (cachedUser) {
+      cachedUser.sticker_credits = newBalance;
+      globalCache.set(cacheKey, cachedUser, 600000);
+    }
+
+    // 非同步記錄交易（不阻塞回應）
+    recordTokenTransaction(lineUserId, amount, newBalance, type, description, null, adminNote)
+      .catch(err => console.error('記錄代幣交易失敗:', err));
 
     return { success: true, balance: newBalance };
   } catch (error) {
@@ -839,31 +923,39 @@ async function getUserByReferralCode(referralCode) {
 }
 
 /**
- * 取得用戶的推薦資訊
+ * 取得用戶的推薦資訊（優化版：加入快取）
  */
 async function getUserReferralInfo(lineUserId) {
   try {
-    const { data: user, error } = await getSupabaseClient()
-      .from('users')
-      .select('referral_code, referral_count, referred_by')
-      .eq('line_user_id', lineUserId)
-      .single();
+    const cacheKey = globalCache.generateKey('referral_info', lineUserId);
 
-    if (error) throw error;
+    return await globalCache.getOrSet(
+      cacheKey,
+      async () => {
+        const { data: user, error } = await getSupabaseClient()
+          .from('users')
+          .select('referral_code, referral_count, referred_by')
+          .eq('line_user_id', lineUserId)
+          .single();
 
-    // 查詢推薦成功記錄
-    const { data: referrals } = await getSupabaseClient()
-      .from('referrals')
-      .select('referee_id, created_at')
-      .eq('referrer_id', lineUserId)
-      .order('created_at', { ascending: false });
+        if (error) throw error;
 
-    return {
-      referralCode: user?.referral_code,
-      referralCount: user?.referral_count || 0,
-      referredBy: user?.referred_by,
-      referrals: referrals || []
-    };
+        // 查詢推薦成功記錄
+        const { data: referrals } = await getSupabaseClient()
+          .from('referrals')
+          .select('referee_id, created_at')
+          .eq('referrer_id', lineUserId)
+          .order('created_at', { ascending: false });
+
+        return {
+          referralCode: user?.referral_code,
+          referralCount: user?.referral_count || 0,
+          referredBy: user?.referred_by,
+          referrals: referrals || []
+        };
+      },
+      300000 // 快取 5 分鐘
+    );
   } catch (error) {
     console.error('取得推薦資訊失敗:', error);
     return { referralCode: null, referralCount: 0, referredBy: null, referrals: [] };

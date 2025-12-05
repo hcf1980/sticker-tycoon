@@ -8,6 +8,8 @@ const axios = require('axios');
 const { supabase, isReplyTokenUsed, recordReplyToken, getOrCreateUser, getUserStickerSets, getUserLatestTask, getUserPendingTasks, getStickerSet, getStickerImages, deleteStickerSet, addToUploadQueue, removeFromUploadQueue, getUploadQueue, clearUploadQueue, getUserTokenBalance, getTokenTransactions, getUserReferralInfo, applyReferralCode, deductTokens, addTokens } = require('./supabase-client');
 const { ConversationStage, getConversationState, updateConversationState, resetConversationState, isInCreationFlow } = require('./conversation-state');
 const { generateWelcomeFlexMessage } = require('./sticker-flex-message');
+const { scheduleProfileUpdate } = require('./utils/profile-updater');
+const { globalMonitor } = require('./utils/performance-monitor');
 const { handleStartCreate, handleNaming, handleStyleSelection, handleFramingSelection, handleCharacterDescription, handleExpressionTemplate, handleSceneSelection, handleCustomScene, handleCountSelection, handlePhotoUpload } = require('./handlers/create-handler');
 const { handleUserPhoto } = require('./photo-handler');
 const { createGenerationTask } = require('./sticker-generator-worker-background');
@@ -725,34 +727,37 @@ exports.handler = async function(event, context) {
     const body = JSON.parse(event.body);
     const events = body.events || [];
 
-    for (const ev of events) {
+    // 優化：並行處理多個事件（如果有多個）
+    const eventPromises = events.map(async (ev) => {
       const replyToken = ev.replyToken;
       const userId = ev.source.userId;
 
-      // 去重檢查
-      const isUsed = await isReplyTokenUsed(replyToken);
-      if (isUsed) {
-        console.log(`⚠️ ReplyToken 已處理過: ${replyToken.substring(0, 8)}...`);
-        continue;
-      }
-
-      // 先記錄 token（確保不會重複處理）
-      await recordReplyToken(replyToken);
-
-      // 取得用戶資料並儲存到資料庫
-      try {
-        const profile = await getLineClient().getProfile(userId);
-        await getOrCreateUser(userId, profile.displayName, profile.pictureUrl);
-      } catch (profileError) {
-        console.log('⚠️ 無法取得用戶 Profile:', profileError.message);
-        await getOrCreateUser(userId);
-      }
+      // 開始計時
+      globalMonitor.start(`event_${ev.type}_${userId}`);
 
       try {
+        // 去重檢查
+        const isUsed = await isReplyTokenUsed(replyToken);
+        if (isUsed) {
+          console.log(`⚠️ ReplyToken 已處理過: ${replyToken.substring(0, 8)}...`);
+          globalMonitor.end(`event_${ev.type}_${userId}`);
+          return;
+        }
+
+        // 優化：並行執行記錄 token 和確保用戶存在
+        await Promise.all([
+          recordReplyToken(replyToken),
+          getOrCreateUser(userId) // 不查詢 Profile，使用快取或基本資料
+        ]);
+
+        // 非同步更新 Profile（不阻塞回應）
+        scheduleProfileUpdate(userId);
+
         // 處理 postback 事件
         if (ev.type === 'postback') {
           await handlePostback(replyToken, userId, ev.postback.data);
-          continue;
+          globalMonitor.end(`event_${ev.type}_${userId}`);
+          return;
         }
 
         // 處理訊息事件
@@ -764,14 +769,20 @@ exports.handler = async function(event, context) {
             await handleImageMessage(replyToken, userId, ev.message.id);
           }
         }
+
+        globalMonitor.end(`event_${ev.type}_${userId}`);
       } catch (innerError) {
         console.error('❌ 處理事件失敗:', innerError.message);
+        globalMonitor.end(`event_${ev.type}_${userId}`);
         await safeReply(replyToken, {
           type: 'text',
           text: '❌ 系統發生錯誤，請稍後再試'
         });
       }
-    }
+    });
+
+    // 等待所有事件處理完成
+    await Promise.allSettled(eventPromises);
 
   } catch (error) {
     console.error('❌ Webhook 處理失敗:', error.message);

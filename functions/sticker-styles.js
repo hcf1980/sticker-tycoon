@@ -31,52 +31,84 @@ function generateCharacterID(characterDescription) {
 
 const StyleEnhancer = {
   realistic: {
-    lighting: "soft diffused beauty lighting, gentle fill light, flattering glow on face",
-    composition: "beauty portrait framing, flawless skin focus, elegant proportions",
-    brushwork: "smooth airbrushed skin, subtle pore texture, refined soft details",
-    mood: "beauty camera aesthetic, youthful radiant glow, naturally enhanced look"
+    coreStyle: "(((PHOTOREALISTIC BEAUTY FILTER STYLE))) - Instagram beauty filter aesthetic, professional beauty photography",
+    lighting: "soft diffused beauty lighting with gentle fill light, flattering glow on face, professional studio quality",
+    composition: "beauty portrait framing, flawless skin focus, elegant proportions, magazine cover quality",
+    brushwork: "smooth airbrushed skin with subtle pore texture, refined soft details, high-end retouching",
+    mood: "beauty camera aesthetic, youthful radiant glow, naturally enhanced look",
+    colorPalette: "natural skin tones, soft warm colors, subtle pastels",
+    forbidden: "cartoon, anime, chibi, illustration, painting, sketch, flat colors, cel shading",
+    reference: "beauty influencer selfie, professional portrait photography, high-end beauty ads"
   },
   cute: {
-    lighting: "soft ambient lighting, gentle bounce light, warm glow",
-    composition: "round composition, centered, thick outline, balanced proportions",
-    brushwork: "smooth soft shading, glossy highlights, clean edges",
-    mood: "warm cozy atmosphere, heartwarming feeling"
+    coreStyle: "(((KAWAII CHIBI ILLUSTRATION STYLE))) - Sanrio/Line Friends character design, super deformed proportions",
+    lighting: "soft ambient lighting, gentle bounce light, warm glow, no harsh shadows",
+    composition: "round composition, oversized head (head:body = 1:1 ratio), huge sparkling eyes (40% of face), centered, thick outline",
+    brushwork: "smooth soft shading, glossy highlights, clean edges, rounded everything",
+    mood: "warm cozy atmosphere, heartwarming feeling, adorable charm",
+    colorPalette: "pastel pink, baby blue, mint green, lavender, soft yellows",
+    forbidden: "realistic, detailed anatomy, sharp edges, dark colors, gritty textures",
+    reference: "Pusheen, Molang, Rilakkuma, Line Friends, Sanrio characters"
   },
   cool: {
-    lighting: "strong rim light, neon glowing edges, dramatic shadows, high contrast",
-    composition: "dynamic diagonal composition, energetic silhouette, bold framing",
-    brushwork: "bold sharp strokes, high contrast shading, defined edges",
-    mood: "powerful confident atmosphere, street style energy"
+    coreStyle: "(((URBAN STREET STYLE ILLUSTRATION))) - Cyberpunk neon aesthetic, edgy modern design",
+    lighting: "strong rim light with neon glowing edges (cyan/pink), dramatic shadows, high contrast black shadows",
+    composition: "dynamic diagonal composition, sharp angular features, energetic silhouette, bold framing, confident pose",
+    brushwork: "bold sharp strokes, high contrast shading, defined edges, graffiti art influence",
+    mood: "powerful confident atmosphere, street style energy, rebellious attitude",
+    colorPalette: "neon cyan, hot pink, electric purple, black, white accents",
+    forbidden: "cute, soft, pastel, rounded, gentle, sweet, kawaii",
+    reference: "street art, hip-hop album covers, cyberpunk aesthetics, urban fashion"
   },
   funny: {
-    lighting: "bright cheerful lighting, simple shadows, playful glow",
-    composition: "centered composition, exaggerated expressions (not distorted face), playful framing",
-    brushwork: "cartoon bold strokes, expressive lines, clean outlines",
-    mood: "humorous, playful vibes, fun energy"
+    coreStyle: "(((COMEDY CARTOON STYLE))) - Exaggerated expressions, meme-worthy humor",
+    lighting: "bright cheerful lighting, simple shadows, playful glow, high visibility",
+    composition: "centered composition, exaggerated expressions (not distorted face), playful framing, comedic timing",
+    brushwork: "cartoon bold strokes, expressive lines, clean outlines, dynamic action lines",
+    mood: "humorous, playful vibes, fun energy, laugh-out-loud funny",
+    colorPalette: "bright primary colors, bold contrasts, vibrant saturated tones",
+    forbidden: "serious, elegant, subtle, realistic, sophisticated",
+    reference: "classic cartoons, comic strips, meme illustrations, funny stickers"
   },
   simple: {
-    lighting: "minimal soft lighting, flat illumination",
-    composition: "clean centered flat layout, geometric balance",
-    brushwork: "thin vector-like lines, minimal shading, crisp edges",
-    mood: "clean modern neutral tone, sophisticated simplicity"
+    coreStyle: "(((MINIMALIST FLAT DESIGN))) - Clean geometric shapes, modern simplicity",
+    lighting: "minimal soft lighting, flat illumination, no dramatic shadows",
+    composition: "clean centered flat layout, geometric balance, negative space emphasis",
+    brushwork: "thin vector-like lines (1-2px), minimal shading, crisp edges, flat colors",
+    mood: "clean modern neutral tone, sophisticated simplicity, zen aesthetic",
+    colorPalette: "limited palette (2-4 colors), muted tones, black and white accents",
+    forbidden: "detailed, textured, gradient-heavy, complex shading, busy patterns",
+    reference: "flat design icons, minimalist logos, modern UI design, Scandinavian design"
   },
   anime: {
-    lighting: "vivid anime highlight, cel shading, dramatic rim light",
-    composition: "strong silhouette, clean framing, dynamic angles",
-    brushwork: "cel-shaded edges, gradient hair highlights, smooth color blocks",
-    mood: "energetic dramatic anime style, Japanese illustration feel"
+    coreStyle: "(((JAPANESE ANIME STYLE))) - Manga/anime illustration, cel-shaded aesthetic",
+    lighting: "vivid anime highlight, cel shading, dramatic rim light, high contrast",
+    composition: "strong silhouette, clean framing, dynamic angles, action-ready pose",
+    brushwork: "cel-shaded edges, gradient hair highlights, smooth color blocks, sharp outlines",
+    mood: "energetic dramatic anime style, Japanese illustration feel, dynamic action",
+    colorPalette: "vibrant saturated colors, anime skin tones, gradient hair colors",
+    forbidden: "realistic shading, western cartoon, 3D render, photorealistic",
+    reference: "popular anime series, manga illustrations, Japanese mobile game art"
   },
   pixel: {
-    lighting: "pixel shading blocks, dithering effects",
-    composition: "8-bit center framing, grid-aligned positioning",
-    brushwork: "pixel clusters, clean grid alignment, limited color dithering",
-    mood: "retro gaming charm, nostalgic 8-bit aesthetic"
+    coreStyle: "(((8-BIT PIXEL ART STYLE))) - Retro gaming aesthetic, grid-based design",
+    lighting: "pixel shading blocks, dithering effects, limited color gradients",
+    composition: "8-bit center framing, grid-aligned positioning (pixel-perfect)",
+    brushwork: "pixel clusters, clean grid alignment, limited color dithering, no anti-aliasing",
+    mood: "retro gaming charm, nostalgic 8-bit aesthetic, arcade game feel",
+    colorPalette: "limited 16-color palette, retro game colors, high contrast",
+    forbidden: "smooth gradients, anti-aliasing, high resolution, detailed shading",
+    reference: "NES/SNES games, Game Boy graphics, retro arcade games"
   },
   sketch: {
+    coreStyle: "(((HYPERREALISTIC PENCIL SKETCH))) - Fine art graphite drawing, museum quality",
     lighting: "single directional light source, strong tonal contrast, dramatic shadow mapping",
     composition: "portrait-focused framing, classical fine art composition, balanced negative space",
-    brushwork: "precise graphite pencil strokes, cross-hatching for shadows, smooth gradient tones",
-    mood: "fine art aesthetic, museum-quality portrait, timeless elegance"
+    brushwork: "precise graphite pencil strokes, cross-hatching for shadows, smooth gradient tones, visible pencil texture",
+    mood: "fine art aesthetic, museum-quality portrait, timeless elegance, artistic mastery",
+    colorPalette: "monochromatic grayscale, deep blacks to subtle grays, paper white",
+    forbidden: "colored, vibrant colors, digital art, cartoon, anime, flat shading",
+    reference: "classical portrait drawings, fine art sketches, Renaissance drawings"
   }
 };
 
@@ -397,16 +429,30 @@ const FramingTemplates = {
     emoji: '🧍',
     description: '完整全身，適合動作表情',
     promptAddition: `
-      FULL BODY shot from head to feet,
-      entire body visible including legs and feet,
-      character standing or in full body action pose,
-      CHARACTER MUST FILL 85-90% of the frame height,
-      MINIMAL padding around character (only 10px margin needed),
-      character should be LARGE and dominant in composition,
-      full figure composition showing complete outfit,
-      AVOID excessive empty space around character
+      (((FULL BODY SHOT - HEAD TO TOE)))
+
+      CRITICAL MEASUREMENTS:
+      - Head size: 15% of frame height (SMALL head relative to body)
+      - Body length: 80% of frame height
+      - Feet MUST be visible at bottom edge
+      - Top margin: 5%, Bottom margin: 5%
+      - Character fills 90% of vertical space
+
+      COMPOSITION RULES:
+      - Standing, walking, jumping, or full-body action pose
+      - Entire body from head to feet visible
+      - Legs fully extended and visible
+      - Feet touching or near bottom edge
+      - Camera angle: Eye-level or slightly below
+
+      ABSOLUTELY FORBIDDEN:
+      - Cropped legs or cut-off feet
+      - Close-up shots
+      - Large head proportions
+      - Character smaller than 80% of frame
+      - Excessive empty space above or below
     `,
-    characterFocus: 'full body visible, head to toe, FILLING 85-90% of frame'
+    characterFocus: 'FULL BODY visible head to toe, character fills 90% of frame height, SMALL head (15%), legs and feet visible'
   },
   halfbody: {
     id: 'halfbody',
@@ -414,16 +460,30 @@ const FramingTemplates = {
     emoji: '👤',
     description: '上半身，表情手勢兼顧',
     promptAddition: `
-      UPPER BODY shot from waist up,
-      torso, arms and head clearly visible,
-      hands and arm gestures prominent,
-      CHARACTER MUST FILL 85-90% of the frame,
-      LARGE prominent figure with minimal margins,
-      waist-up framing with room for hand movements,
-      character should dominate the composition,
-      AVOID excessive empty space - character is the focus
+      (((HALF BODY SHOT - WAIST UP)))
+
+      CRITICAL MEASUREMENTS:
+      - Head size: 25% of frame height (MEDIUM head)
+      - Torso: 60% of frame height
+      - Cut at waist level (belly button visible)
+      - Hands and arms MUST be in frame
+      - Character fills 85% of vertical space
+
+      COMPOSITION RULES:
+      - Upper body from waist up
+      - Both arms visible and expressive
+      - Hands doing gestures (waving, pointing, etc.)
+      - Torso and chest clearly visible
+      - Camera angle: Slightly below eye-level
+
+      ABSOLUTELY FORBIDDEN:
+      - Full body with legs visible
+      - Head-only shots
+      - Cut at chest level
+      - Arms cropped out of frame
+      - Character smaller than 80% of frame
     `,
-    characterFocus: 'upper body, waist up, LARGE and FILLING 85-90% of frame'
+    characterFocus: 'UPPER BODY waist up, character fills 85% of frame, MEDIUM head (25%), hands visible and gesturing'
   },
   portrait: {
     id: 'portrait',
@@ -431,16 +491,30 @@ const FramingTemplates = {
     emoji: '😊',
     description: '頭部特寫，表情清晰',
     promptAddition: `
-      HEAD AND SHOULDERS portrait shot,
-      face is the main focus,
-      HEAD MUST FILL 85-90% of the frame,
-      LARGE head composition with minimal margins,
-      shoulders visible for context,
-      facial expression clearly readable,
-      head takes up MOST of the frame with only 10px padding,
-      AVOID small head with too much empty space
+      (((HEAD AND SHOULDERS PORTRAIT)))
+
+      CRITICAL MEASUREMENTS:
+      - Head size: 60% of frame height (LARGE head)
+      - Face fills 50% of total frame area
+      - Shoulders visible (cut at mid-chest)
+      - Neck fully visible
+      - Character fills 85% of vertical space
+
+      COMPOSITION RULES:
+      - Head and shoulders only
+      - Face is the main focus
+      - Facial expression clearly readable
+      - Shoulders provide context
+      - Camera angle: Eye-level, straight on
+
+      ABSOLUTELY FORBIDDEN:
+      - Full body or half body visible
+      - Extreme close-up (face only)
+      - Profile or side view
+      - Small head with too much space
+      - Character smaller than 80% of frame
     `,
-    characterFocus: 'head and shoulders, LARGE face FILLING 85-90% of frame'
+    characterFocus: 'HEAD AND SHOULDERS, character fills 85% of frame, LARGE head (60%), face is main focus'
   },
   closeup: {
     id: 'closeup',
@@ -448,16 +522,30 @@ const FramingTemplates = {
     emoji: '👁️',
     description: '臉部特寫，表情超大',
     promptAddition: `
-      EXTREME CLOSE-UP on face,
-      FACE FILLS 90% of the frame,
-      eyes and facial expression are the main focus,
-      dramatic close-up composition,
-      every facial detail visible,
-      intimate emotional connection,
-      MINIMAL margins - face should nearly touch edges,
-      NO excessive empty space around face
+      (((EXTREME FACE CLOSE-UP)))
+
+      CRITICAL MEASUREMENTS:
+      - Face fills 85% of frame (HUGE face)
+      - Eyes at center of frame
+      - Forehead may be slightly cropped
+      - Chin visible at bottom
+      - Face nearly touches all edges
+
+      COMPOSITION RULES:
+      - Face only, no shoulders
+      - Eyes are the focal point
+      - Every facial detail visible
+      - Intimate emotional connection
+      - Camera angle: Straight on, direct eye contact
+
+      ABSOLUTELY FORBIDDEN:
+      - Shoulders or body visible
+      - Full head with space around
+      - Distant shot
+      - Small face with empty space
+      - Face smaller than 80% of frame
     `,
-    characterFocus: 'face close-up, FILLING 90% of frame, nearly edge-to-edge'
+    characterFocus: 'EXTREME FACE CLOSE-UP, face fills 85% of frame, HUGE face nearly touching edges, eyes at center'
   }
 };
 
@@ -740,14 +828,22 @@ Add "${popText}" as decorative text element:
 
   const prompt = `Transform this photo into a LINE sticker illustration with decorative elements.
 
-=== 🎨 ART STYLE: ${styleConfig.name} (${style.toUpperCase()}) ===
+=== 🎨 PRIORITY 0: CORE ART STYLE (MOST IMPORTANT) ===
+${styleEnhance.coreStyle}
+
+STYLE IDENTITY:
 ${styleConfig.promptBase}
 
-STYLE DETAILS:
+STYLE EXECUTION:
 - Lighting: ${styleEnhance.lighting}
 - Composition: ${styleEnhance.composition}
 - Brushwork: ${styleEnhance.brushwork}
 - Mood: ${styleEnhance.mood}
+- Color Palette: ${styleEnhance.colorPalette}
+- Reference: ${styleEnhance.reference}
+
+⚠️ ABSOLUTELY FORBIDDEN FOR THIS STYLE:
+${styleEnhance.forbidden}
 
 === 😊 EXPRESSION & ACTION: ${expression} ===
 ACTION: ${actionDesc}
@@ -779,23 +875,33 @@ Character ID: ${characterID || 'default'}
 - CLOTHING: Colorful casual outfit (can vary per sticker)
 - GAZE DIRECTION: Natural eye direction matching expression
 
-=== 🖼️ FRAMING / COMPOSITION: ${framing.name} (${framing.id.toUpperCase()}) ===
-${framing.promptAddition}
-- CHARACTER FOCUS: ${framing.characterFocus}
-- This framing style is CRITICAL - follow it strictly!
+=== 🖼️ PRIORITY 1: FRAMING / COMPOSITION (CRITICAL) ===
+FRAMING TYPE: ${framing.name} (${framing.id.toUpperCase()})
 
-=== 📐 SIZE & FILL REQUIREMENTS (CRITICAL) ===
+${framing.promptAddition}
+
+CHARACTER FOCUS REQUIREMENT:
+${framing.characterFocus}
+
+⚠️ THIS FRAMING STYLE IS ABSOLUTELY CRITICAL:
+- Follow the measurements EXACTLY as specified
+- Do NOT mix with other framing styles
+- The head size percentage is NON-NEGOTIABLE
+- Forbidden items for this framing MUST be avoided
+
+=== 📐 PRIORITY 2: SIZE & FILL REQUIREMENTS ===
 LINE STICKER SPECS: 370px width × 320px height
 SAFE MARGIN: 10px on all sides (required by LINE)
 EFFECTIVE DRAWING AREA: 350px × 300px
 
-⚠️ CHARACTER MUST FILL 85-90% OF THE EFFECTIVE AREA:
+CHARACTER FILL REQUIREMENTS:
+- Character MUST fill 85-90% of effective area
 - Character should be LARGE and DOMINANT
 - MINIMAL empty space around character
-- Only ~10px padding from edges needed
-- Character should nearly touch the safe margins
-- DO NOT make character too small with excessive whitespace
-- The sticker should look FULL and IMPACTFUL at small display size
+- Only ~10px padding from edges
+- Character nearly touches safe margins
+- NO tiny character with excessive whitespace
+- Sticker must look FULL and IMPACTFUL at small size
 
 === ⚠️ TECHNICAL REQUIREMENTS (STRICT) ===
 1. BACKGROUND: 100% TRANSPARENT (alpha=0) - NO white, NO gray
@@ -820,13 +926,21 @@ EFFECTIVE DRAWING AREA: 350px × 300px
 OUTPUT: ${styleConfig.name} LINE sticker with ${popText ? `"${popText}" text and ` : ''}decorations, 370x320px, character FILLING 85-90% of frame, TRANSPARENT background.`;
 
   const negativePrompt = `
+    === STYLE-SPECIFIC FORBIDDEN (CRITICAL) ===
+    ${styleEnhance.forbidden},
+
+    === GENERAL FORBIDDEN ===
     white background, gray background, colored background, solid background,
     circular frame, round border, circle crop, avatar style, profile picture frame,
-    full body with legs, feet showing,
     different face, inconsistent character, pale skin, gray skin,
     realistic photo, 3D render, blurry, low quality,
     tiny character, small figure, excessive whitespace, too much empty space,
-    character too small, miniature figure, distant shot, far away
+    character too small, miniature figure, distant shot, far away,
+
+    === FRAMING-SPECIFIC FORBIDDEN ===
+    ${framing.promptAddition.includes('FORBIDDEN') ?
+      framing.promptAddition.split('ABSOLUTELY FORBIDDEN:')[1]?.split('`,')[0] || '' :
+      'wrong framing, incorrect composition'}
   `.replace(/\s+/g, ' ').trim();
 
   return {
