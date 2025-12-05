@@ -25,12 +25,16 @@ async function handleStartCreate(userId) {
     type: 'text',
     text: '🎨 開始創建你的專屬貼圖！\n\n' +
           '📝 第一步：請輸入貼圖組名稱\n\n' +
-          '例如：「我的日常」、「辦公室趣事」\n\n' +
+          '例如：「我的日常」、「辦公室趣事」、「可愛寵物」\n\n' +
           '💡 名稱最長 40 字，請盡量簡潔有創意！',
     quickReply: {
       items: [
         { type: 'action', action: { type: 'message', label: '我的日常', text: '我的日常' } },
         { type: 'action', action: { type: 'message', label: '辦公室趣事', text: '辦公室趣事' } },
+        { type: 'action', action: { type: 'message', label: '可愛寵物', text: '可愛寵物' } },
+        { type: 'action', action: { type: 'message', label: '情侶專用', text: '情侶專用' } },
+        { type: 'action', action: { type: 'message', label: '搞笑日常', text: '搞笑日常' } },
+        { type: 'action', action: { type: 'message', label: '心情語錄', text: '心情語錄' } },
         { type: 'action', action: { type: 'message', label: '❌ 取消', text: '取消' } }
       ]
     }
