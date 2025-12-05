@@ -48,7 +48,7 @@
 # YouTuber 推廣計畫 API
 [[redirects]]
   from = "/api/youtuber-promotion/apply"
-  to = "/.netlify/functions/youtuber-promotion/apply"
+  to = "/.netlify/functions/youtuber-promotion-apply"
   status = 200
 
 [[redirects]]
