@@ -5,6 +5,12 @@
 let currentEditingStyle = null;
 let currentEditingType = null; // 'style', 'framing', 'scene'
 
+// 登出功能
+function logout() {
+  clearAdminAuthStatus();
+  window.location.href = '/admin/login.html';
+}
+
 // 頁籤切換
 function switchTab(tab) {
   // 更新頁籤樣式
@@ -743,3 +749,25 @@ async function exportStyles() {
   }
 }
 
+// 等待 Supabase 初始化後再載入資料
+window.addEventListener('DOMContentLoaded', async () => {
+  // 等待 supabase 客戶端初始化
+  let retries = 0;
+  const maxRetries = 50; // 最多等待 5 秒
+
+  const waitForSupabase = setInterval(() => {
+    if (typeof supabase !== 'undefined' && supabase !== null) {
+      clearInterval(waitForSupabase);
+      console.log('✅ Supabase ready, loading styles...');
+      loadStyles(); // 載入預設頁籤的資料
+    } else {
+      retries++;
+      if (retries >= maxRetries) {
+        clearInterval(waitForSupabase);
+        console.error('❌ Supabase initialization timeout');
+        document.getElementById('styles-list').innerHTML =
+          '<div class="text-center text-red-500 py-8">載入失敗: supabase.from is not a function<br>請重新整理頁面</div>';
+      }
+    }
+  }, 100);
+});

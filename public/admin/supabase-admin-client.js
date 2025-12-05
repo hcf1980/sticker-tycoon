@@ -18,6 +18,7 @@ function getSupabaseConfig() {
 
 // 初始化 Supabase 客戶端
 let supabaseClient = null;
+let supabase = null; // 全局變數供其他腳本使用
 
 async function initSupabaseClient() {
   if (supabaseClient) return supabaseClient;
@@ -35,6 +36,7 @@ async function initSupabaseClient() {
         if (typeof window.supabase !== 'undefined') {
           clearInterval(checkInterval);
           supabaseClient = window.supabase.createClient(config.url, config.anonKey);
+          supabase = supabaseClient; // 設定全局變數
           resolve(supabaseClient);
         }
       }, 100);
@@ -48,7 +50,16 @@ async function initSupabaseClient() {
   }
 
   supabaseClient = window.supabase.createClient(config.url, config.anonKey);
+  supabase = supabaseClient; // 設定全局變數
   return supabaseClient;
+}
+
+// 自動初始化（當頁面載入時）
+if (typeof window !== 'undefined') {
+  window.addEventListener('DOMContentLoaded', async () => {
+    await initSupabaseClient();
+    console.log('✅ Supabase client initialized');
+  });
 }
 
 /**
