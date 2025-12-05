@@ -415,6 +415,14 @@ async function handleConfirmGeneration(replyToken, userId, state) {
   const quickReplyItems = [
     {
       type: 'action',
+      action: {
+        type: 'uri',
+        label: '🎬 YouTuber 推廣計畫',
+        uri: `${process.env.URL || 'https://sticker-tycoon.netlify.app'}/youtuber-promotion.html`
+      }
+    },
+    {
+      type: 'action',
       action: { type: 'message', label: '📋 查詢進度', text: '查詢進度' }
     },
     {
@@ -957,6 +965,14 @@ function generateStickerListFlexMessage(userId, sets, referralInfo = null, queue
     },
     quickReply: {
       items: [
+        {
+          type: 'action',
+          action: {
+            type: 'uri',
+            label: '🎬 YouTuber 推廣計畫',
+            uri: `${process.env.URL || 'https://sticker-tycoon.netlify.app'}/youtuber-promotion.html`
+          }
+        },
         {
           type: 'action',
           action: {

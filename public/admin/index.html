@@ -63,6 +63,16 @@
         </div>
       </a>
 
+      <!-- YouTuber 推廣管理 -->
+      <a href="/admin/youtuber-applications.html" class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition block border-2 border-purple-400">
+        <div class="text-5xl mb-4 text-center">🎬</div>
+        <h3 class="text-xl font-bold text-gray-800 text-center mb-2">YouTuber 推廣管理</h3>
+        <p class="text-gray-600 text-center text-sm">審核 YouTuber 申請、發放代幣獎勵</p>
+        <div class="mt-2 text-center">
+          <span class="bg-purple-100 text-purple-600 text-xs px-2 py-1 rounded-full" id="youtuber-pending-count">載入中...</span>
+        </div>
+      </a>
+
       <!-- 風格設定 -->
       <a href="/admin/styles.html" class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition block opacity-50 cursor-not-allowed">
         <div class="text-5xl mb-4 text-center">🎭</div>
@@ -120,6 +130,50 @@
       clearAdminAuthStatus();
       window.location.href = '/admin/login.html';
     });
+
+    // 載入待審核的上架申請數量
+    async function loadPendingCount() {
+      try {
+        const supabaseConfig = JSON.parse(document.getElementById('supabase-config').textContent);
+        const supabase = window.supabase.createClient(supabaseConfig.url, supabaseConfig.anonKey);
+
+        const { count, error } = await supabase
+          .from('listing_requests')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'pending');
+
+        if (!error && count !== null) {
+          document.getElementById('pending-count').textContent = `${count} 個待審核`;
+        }
+      } catch (error) {
+        console.error('載入上架申請數量失敗:', error);
+        document.getElementById('pending-count').textContent = '載入失敗';
+      }
+    }
+
+    // 載入待審核的 YouTuber 申請數量
+    async function loadYoutuberPendingCount() {
+      try {
+        const supabaseConfig = JSON.parse(document.getElementById('supabase-config').textContent);
+        const supabase = window.supabase.createClient(supabaseConfig.url, supabaseConfig.anonKey);
+
+        const { count, error } = await supabase
+          .from('youtuber_promotions')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'pending');
+
+        if (!error && count !== null) {
+          document.getElementById('youtuber-pending-count').textContent = `${count} 個待審核`;
+        }
+      } catch (error) {
+        console.error('載入 YouTuber 申請數量失敗:', error);
+        document.getElementById('youtuber-pending-count').textContent = '載入失敗';
+      }
+    }
+
+    // 載入統計數據
+    loadPendingCount();
+    loadYoutuberPendingCount();
   </script>
 </body>
 </html>
