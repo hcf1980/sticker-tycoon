@@ -5,7 +5,7 @@
 
 const { v4: uuidv4 } = require('uuid');
 const { ConversationStage, getConversationState, updateConversationState, getExpressionTemplates } = require('../conversation-state');
-const { createStickerSet, getOrCreateUser } = require('../supabase-client');
+const { createStickerSet, getOrCreateUser, getSupabaseClient } = require('../supabase-client');
 const { StickerStyles, DefaultExpressions, LineStickerSpecs, SceneTemplates, FramingTemplates, getSceneConfig, getFramingConfig } = require('../sticker-styles');
 const { generateStyleSelectionFlexMessage, generateExpressionSelectionFlexMessage } = require('../sticker-flex-message');
 
@@ -59,7 +59,9 @@ async function handlePhotoUpload(userId, photoResult) {
   // 進入風格選擇階段
   await updateConversationState(userId, ConversationStage.STYLING, tempData);
 
-  return generateStyleSelectionFlexMessage();
+  // 從資料庫讀取風格設定
+  const styles = await getActiveStyles();
+  return generateStyleSelectionFlexMessage(styles);
 }
 
 /**
@@ -104,7 +106,8 @@ async function handleNaming(userId, name) {
 async function handleStyleSelection(userId, styleId) {
   console.log(`🎨 用戶 ${userId} 選擇風格：${styleId}`);
 
-  const style = StickerStyles[styleId];
+  // 從資料庫讀取風格設定
+  const style = await getStyleById(styleId);
   if (!style) {
     return {
       type: 'text',
@@ -740,6 +743,63 @@ function generateConfirmationMessage(data) {
       }
     }
   };
+}
+
+/**
+ * 從資料庫讀取啟用的風格設定
+ */
+async function getActiveStyles() {
+  try {
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase
+      .from('style_settings')
+      .select('*')
+      .eq('is_active', true)
+      .order('style_id');
+
+    if (error) {
+      console.error('讀取風格設定失敗:', error);
+      // 如果資料庫讀取失敗，返回預設風格
+      return Object.values(StickerStyles);
+    }
+
+    // 如果沒有資料，返回預設風格
+    if (!data || data.length === 0) {
+      console.log('資料庫無風格設定，使用預設值');
+      return Object.values(StickerStyles);
+    }
+
+    return data;
+  } catch (error) {
+    console.error('讀取風格設定異常:', error);
+    return Object.values(StickerStyles);
+  }
+}
+
+/**
+ * 根據 ID 從資料庫讀取單一風格設定
+ */
+async function getStyleById(styleId) {
+  try {
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase
+      .from('style_settings')
+      .select('*')
+      .eq('style_id', styleId)
+      .eq('is_active', true)
+      .single();
+
+    if (error || !data) {
+      console.error('讀取風格失敗，使用預設值:', error);
+      // 如果資料庫讀取失敗，返回預設風格
+      return StickerStyles[styleId];
+    }
+
+    return data;
+  } catch (error) {
+    console.error('讀取風格異常:', error);
+    return StickerStyles[styleId];
+  }
 }
 
 module.exports = {

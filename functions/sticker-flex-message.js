@@ -153,29 +153,32 @@ function generateWelcomeFlexMessage() {
 
 /**
  * 風格選擇 Flex Message
+ * @param {Array} styles - 從資料庫讀取的風格設定陣列，如果為空則使用預設值
  */
-function generateStyleSelectionFlexMessage() {
-  const styles = Object.values(StickerStyles);
+function generateStyleSelectionFlexMessage(styles = null) {
+  // 如果沒有提供風格資料，使用預設的 StickerStyles
+  const styleList = styles || Object.values(StickerStyles);
 
-  const styleButtons = styles.map(style => ({
+  // 將資料庫格式轉換為按鈕格式
+  const styleButtons = styleList.map(style => ({
     type: 'button',
     style: 'secondary',
     height: 'sm',
     action: {
       type: 'message',
       label: `${style.emoji} ${style.name}`,
-      text: `風格:${style.id}`
+      text: `風格:${style.style_id || style.id}`
     },
     margin: 'sm'
   }));
 
   // Quick Reply 項目
-  const quickReplyItems = styles.map(style => ({
+  const quickReplyItems = styleList.map(style => ({
     type: 'action',
     action: {
       type: 'message',
       label: `${style.emoji} ${style.name}`,
-      text: `風格:${style.id}`
+      text: `風格:${style.style_id || style.id}`
     }
   }));
   quickReplyItems.push({
