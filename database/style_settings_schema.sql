@@ -61,18 +61,29 @@ ALTER TABLE style_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE framing_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE scene_settings ENABLE ROW LEVEL SECURITY;
 
+-- 刪除已存在的 policies（如果存在）
+DROP POLICY IF EXISTS "Allow public read access" ON style_settings;
+DROP POLICY IF EXISTS "Allow public read access" ON framing_settings;
+DROP POLICY IF EXISTS "Allow public read access" ON scene_settings;
+DROP POLICY IF EXISTS "Allow authenticated users to insert" ON style_settings;
+DROP POLICY IF EXISTS "Allow authenticated users to update" ON style_settings;
+DROP POLICY IF EXISTS "Allow authenticated users to insert" ON framing_settings;
+DROP POLICY IF EXISTS "Allow authenticated users to update" ON framing_settings;
+DROP POLICY IF EXISTS "Allow authenticated users to insert" ON scene_settings;
+DROP POLICY IF EXISTS "Allow authenticated users to update" ON scene_settings;
+
 -- 允許所有人讀取（用於前端查詢）
 CREATE POLICY "Allow public read access" ON style_settings FOR SELECT USING (true);
 CREATE POLICY "Allow public read access" ON framing_settings FOR SELECT USING (true);
 CREATE POLICY "Allow public read access" ON scene_settings FOR SELECT USING (true);
 
--- 只允許認證用戶寫入（管理員）
-CREATE POLICY "Allow authenticated users to insert" ON style_settings FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Allow authenticated users to update" ON style_settings FOR UPDATE USING (auth.role() = 'authenticated');
-CREATE POLICY "Allow authenticated users to insert" ON framing_settings FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Allow authenticated users to update" ON framing_settings FOR UPDATE USING (auth.role() = 'authenticated');
-CREATE POLICY "Allow authenticated users to insert" ON scene_settings FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Allow authenticated users to update" ON scene_settings FOR UPDATE USING (auth.role() = 'authenticated');
+-- 允許所有人寫入（管理後台已有登入驗證）
+CREATE POLICY "Allow public insert access" ON style_settings FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public update access" ON style_settings FOR UPDATE USING (true);
+CREATE POLICY "Allow public insert access" ON framing_settings FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public update access" ON framing_settings FOR UPDATE USING (true);
+CREATE POLICY "Allow public insert access" ON scene_settings FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public update access" ON scene_settings FOR UPDATE USING (true);
 
 -- 註解
 COMMENT ON TABLE style_settings IS '貼圖風格設定表';

@@ -585,7 +585,76 @@ async function initializeStyles() {
       forbidden: 'cute, soft, pastel, rounded, gentle, sweet, kawaii',
       reference: 'street art, hip-hop album covers, cyberpunk aesthetics, urban fashion'
     },
-    // 其他風格...
+    {
+      style_id: 'funny',
+      name: '搞笑風',
+      emoji: '🤣',
+      description: '誇張表情、幽默感、搞怪',
+      core_style: '(((COMEDY CARTOON STYLE))) - Exaggerated expressions, meme-worthy humor',
+      lighting: 'bright cheerful lighting, simple shadows, playful glow, high visibility',
+      composition: 'centered composition, exaggerated expressions (not distorted face), playful framing, comedic timing',
+      brushwork: 'cartoon bold strokes, expressive lines, clean outlines, dynamic action lines',
+      mood: 'humorous, playful vibes, fun energy, laugh-out-loud funny',
+      color_palette: 'bright primary colors, bold contrasts, vibrant saturated tones',
+      forbidden: 'serious, elegant, subtle, realistic, sophisticated',
+      reference: 'classic cartoons, comic strips, meme illustrations, funny stickers'
+    },
+    {
+      style_id: 'simple',
+      name: '簡約風',
+      emoji: '✨',
+      description: '線條簡潔、極簡設計、清新',
+      core_style: '(((MINIMALIST FLAT DESIGN))) - Clean geometric shapes, modern simplicity',
+      lighting: 'minimal soft lighting, flat illumination, no dramatic shadows',
+      composition: 'clean centered flat layout, geometric balance, negative space emphasis',
+      brushwork: 'thin vector-like lines (1-2px), minimal shading, crisp edges, flat colors',
+      mood: 'clean modern neutral tone, sophisticated simplicity, zen aesthetic',
+      color_palette: 'limited palette (2-4 colors), muted tones, black and white accents',
+      forbidden: 'detailed, textured, gradient-heavy, complex shading, busy patterns',
+      reference: 'flat design icons, minimalist logos, modern UI design, Scandinavian design'
+    },
+    {
+      style_id: 'anime',
+      name: '動漫風',
+      emoji: '🎌',
+      description: '日系動漫、漫畫風格',
+      core_style: '(((JAPANESE ANIME STYLE))) - Manga/anime illustration, cel-shaded aesthetic',
+      lighting: 'vivid anime highlight, cel shading, dramatic rim light, high contrast',
+      composition: 'strong silhouette, clean framing, dynamic angles, action-ready pose',
+      brushwork: 'cel-shaded edges, gradient hair highlights, smooth color blocks, sharp outlines',
+      mood: 'energetic dramatic anime style, Japanese illustration feel, dynamic action',
+      color_palette: 'vibrant saturated colors, anime skin tones, gradient hair colors',
+      forbidden: 'realistic shading, western cartoon, 3D render, photorealistic',
+      reference: 'popular anime series, manga illustrations, Japanese mobile game art'
+    },
+    {
+      style_id: 'pixel',
+      name: '像素風',
+      emoji: '👾',
+      description: '復古像素、8-bit 風格',
+      core_style: '(((8-BIT PIXEL ART STYLE))) - Retro gaming aesthetic, grid-based design',
+      lighting: 'pixel shading blocks, dithering effects, limited color gradients',
+      composition: '8-bit center framing, grid-aligned positioning (pixel-perfect)',
+      brushwork: 'pixel clusters, clean grid alignment, limited color dithering, no anti-aliasing',
+      mood: 'retro gaming charm, nostalgic 8-bit aesthetic, arcade game feel',
+      color_palette: 'limited 16-color palette, retro game colors, high contrast',
+      forbidden: 'smooth gradients, anti-aliasing, high resolution, detailed shading',
+      reference: 'NES/SNES games, Game Boy graphics, retro arcade games'
+    },
+    {
+      style_id: 'sketch',
+      name: '素描風',
+      emoji: '✏️',
+      description: '逼真鉛筆素描、藝術質感',
+      core_style: '(((HYPERREALISTIC PENCIL SKETCH))) - Fine art graphite drawing, museum quality',
+      lighting: 'single directional light source, strong tonal contrast, dramatic shadow mapping',
+      composition: 'portrait-focused framing, classical fine art composition, balanced negative space',
+      brushwork: 'precise graphite pencil strokes, cross-hatching for shadows, smooth gradient tones, visible pencil texture',
+      mood: 'fine art aesthetic, museum-quality portrait, timeless elegance, artistic mastery',
+      color_palette: 'monochromatic grayscale, deep blacks to subtle grays, paper white',
+      forbidden: 'colored, vibrant colors, digital art, cartoon, anime, flat shading',
+      reference: 'classical portrait drawings, fine art sketches, Renaissance drawings'
+    }
   ];
 
   try {
@@ -595,7 +664,7 @@ async function initializeStyles() {
 
     if (error) throw error;
 
-    alert('✅ 風格設定初始化成功！');
+    alert('✅ 風格設定初始化成功！已載入全部 9 種風格');
     loadStyles();
   } catch (error) {
     alert('初始化失敗: ' + error.message);
@@ -667,7 +736,66 @@ ABSOLUTELY FORBIDDEN:
 - Character smaller than 80% of frame`,
       character_focus: 'UPPER BODY waist up, character fills 85% of frame, MEDIUM head (25%), hands visible and gesturing'
     },
-    // 其他構圖...
+    {
+      framing_id: 'portrait',
+      name: '大頭',
+      emoji: '😊',
+      description: '頭部特寫，表情清晰',
+      head_size_percentage: 60,
+      prompt_addition: `(((HEAD AND SHOULDERS PORTRAIT)))
+
+CRITICAL MEASUREMENTS:
+- Head size: 60% of frame height (LARGE head)
+- Face fills 50% of total frame area
+- Shoulders visible (cut at mid-chest)
+- Neck fully visible
+- Character fills 85% of vertical space
+
+COMPOSITION RULES:
+- Head and shoulders only
+- Face is the main focus
+- Facial expression clearly readable
+- Shoulders provide context
+- Camera angle: Eye-level, straight on
+
+ABSOLUTELY FORBIDDEN:
+- Full body or half body visible
+- Extreme close-up (face only)
+- Profile or side view
+- Small head with too much space
+- Character smaller than 80% of frame`,
+      character_focus: 'HEAD AND SHOULDERS, character fills 85% of frame, LARGE head (60%), face is main focus'
+    },
+    {
+      framing_id: 'closeup',
+      name: '特寫',
+      emoji: '👁️',
+      description: '臉部特寫，表情超大',
+      head_size_percentage: 85,
+      prompt_addition: `(((EXTREME FACE CLOSE-UP)))
+
+CRITICAL MEASUREMENTS:
+- Face fills 85% of frame (HUGE face)
+- Eyes at center of frame
+- Forehead may be slightly cropped
+- Chin visible at bottom
+- Face nearly touches all edges
+
+COMPOSITION RULES:
+- Face only, no shoulders
+- Eyes are the focal point
+- Every facial detail visible
+- Intimate emotional connection
+- Camera angle: Straight on, direct eye contact
+
+ABSOLUTELY FORBIDDEN:
+- Shoulders or body visible
+- Full head with space around
+- Distant shot
+- Small face with empty space
+- Face smaller than 80% of frame`,
+      character_focus: 'EXTREME FACE CLOSE-UP, face fills 85% of frame, HUGE face nearly touching edges, eyes at center'
+    }
   ];
 
   try {
@@ -677,7 +805,7 @@ ABSOLUTELY FORBIDDEN:
 
     if (error) throw error;
 
-    alert('✅ 構圖設定初始化成功！');
+    alert('✅ 構圖設定初始化成功！已載入全部 4 種構圖');
     loadFraming();
   } catch (error) {
     alert('初始化失敗: ' + error.message);
@@ -707,7 +835,60 @@ async function initializeScenes() {
       decoration_elements: ['bold text bubbles', 'comic style effects', 'exclamation marks', 'star bursts'],
       pop_text_style: 'large bold POP text, colorful outline, comic book style, impactful typography'
     },
-    // 其他裝飾風格...
+    {
+      scene_id: 'kawaii',
+      name: '夢幻可愛',
+      emoji: '💖',
+      description: '粉嫩夢幻、愛心星星',
+      decoration_style: 'kawaii pastel style, dreamy soft colors',
+      decoration_elements: ['floating hearts', 'sparkling stars', 'cute flowers', 'rainbow sparkles', 'blush marks'],
+      pop_text_style: 'cute rounded text, pastel colors, soft bubble font'
+    },
+    {
+      scene_id: 'travel',
+      name: '旅遊打卡',
+      emoji: '✈️',
+      description: '旅遊景點、護照印章、相機',
+      decoration_style: 'travel themed decorations, vacation vibe, landmark silhouettes',
+      decoration_elements: ['passport stamps', 'airplane icons', 'camera icons', 'landmark silhouettes', 'luggage tags', 'world map elements'],
+      pop_text_style: 'postcard style text, travel journal font'
+    },
+    {
+      scene_id: 'office',
+      name: '辦公室',
+      emoji: '💼',
+      description: '上班族、咖啡杯、電腦',
+      decoration_style: 'office themed decorations, business casual vibe',
+      decoration_elements: ['coffee cup icons', 'laptop icons', 'document papers', 'clock icons', 'email icons', 'sticky notes'],
+      pop_text_style: 'professional clean text, business font'
+    },
+    {
+      scene_id: 'park',
+      name: '公園野餐',
+      emoji: '🌳',
+      description: '綠地草皮、野餐、戶外休閒',
+      decoration_style: 'outdoor park themed, nature elements, picnic vibe',
+      decoration_elements: ['green leaves', 'flowers', 'butterflies', 'sun rays', 'picnic basket', 'trees silhouettes'],
+      pop_text_style: 'natural organic text, friendly rounded font'
+    },
+    {
+      scene_id: 'colorful',
+      name: '繽紛彩色',
+      emoji: '🌈',
+      description: '彩色潑墨、七彩裝飾',
+      decoration_style: 'colorful splash style, rainbow palette, artistic paint effects',
+      decoration_elements: ['color splashes', 'paint splatters', 'rainbow confetti', 'watercolor spots', 'geometric shapes'],
+      pop_text_style: 'colorful gradient text, artistic typography'
+    },
+    {
+      scene_id: 'custom',
+      name: '自訂風格',
+      emoji: '✏️',
+      description: '自己描述想要的裝飾風格',
+      decoration_style: '',
+      decoration_elements: [],
+      pop_text_style: ''
+    }
   ];
 
   try {
@@ -717,7 +898,7 @@ async function initializeScenes() {
 
     if (error) throw error;
 
-    alert('✅ 裝飾風格設定初始化成功！');
+    alert('✅ 裝飾風格設定初始化成功！已載入全部 8 種裝飾風格');
     loadScenes();
   } catch (error) {
     alert('初始化失敗: ' + error.message);
