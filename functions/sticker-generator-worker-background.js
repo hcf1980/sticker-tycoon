@@ -8,7 +8,7 @@ const { getSupabaseClient, updateStickerSetStatus, getStickerSet, deductTokens, 
 const { generateStickerSet, generateStickerSetFromPhoto } = require('./ai-generator');
 const { generateStickersIntelligent } = require('./sticker-generator-enhanced');
 const { processStickerSet, generateMainImage, generateTabImage } = require('./image-processor');
-const { DefaultExpressions } = require('./sticker-styles');
+const { DefaultExpressions, loadStylesFromDatabase } = require('./sticker-styles');
 
 /**
  * 建立生成任務
@@ -123,6 +123,10 @@ async function executeGeneration(taskId, setId) {
 
   try {
     console.log(`🚀 開始執行生成任務：${taskId}`);
+
+    // 🆕 從資料庫載入最新的風格設定
+    console.log(`📥 載入資料庫風格設定...`);
+    await loadStylesFromDatabase();
 
     // 立即更新狀態為 processing（從 pending 變成 processing）
     await updateTaskProgress(taskId, 5, 'processing');

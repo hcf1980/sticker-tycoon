@@ -1078,6 +1078,118 @@ module.exports = {
   getFramingConfig,
   getExpressionEnhancement,
   getStyleEnhancement,
-  LineStickerSpecs
+  LineStickerSpecs,
+  loadStylesFromDatabase,
+  getStyleConfig
 };
+
+/**
+ * 從資料庫載入風格設定並動態更新 StickerStyles 和 StyleEnhancer
+ * 這個函數應該在生成貼圖前調用
+ */
+async function loadStylesFromDatabase() {
+  try {
+    // 動態引入 supabase-client 避免循環依賴
+    const { getSupabaseClient } = require('./supabase-client');
+    const supabase = getSupabaseClient();
+
+    const { data, error } = await supabase
+      .from('style_settings')
+      .select('*')
+      .eq('is_active', true);
+
+    if (error || !data || data.length === 0) {
+      console.log('⚠️ 無法從資料庫載入風格設定，使用預設值');
+      return false;
+    }
+
+    // 更新 StickerStyles 和 StyleEnhancer
+    data.forEach(style => {
+      const styleId = style.style_id;
+
+      // 更新 StickerStyles（基本資訊）
+      if (StickerStyles[styleId]) {
+        StickerStyles[styleId] = {
+          ...StickerStyles[styleId],
+          name: style.name,
+          emoji: style.emoji,
+          description: style.description
+        };
+      }
+
+      // 更新 StyleEnhancer（詳細 Prompt）
+      if (StyleEnhancer[styleId]) {
+        StyleEnhancer[styleId] = {
+          coreStyle: style.core_style || StyleEnhancer[styleId].coreStyle,
+          lighting: style.lighting || StyleEnhancer[styleId].lighting,
+          composition: style.composition || StyleEnhancer[styleId].composition,
+          brushwork: style.brushwork || StyleEnhancer[styleId].brushwork,
+          mood: style.mood || StyleEnhancer[styleId].mood,
+          colorPalette: style.color_palette || StyleEnhancer[styleId].colorPalette,
+          forbidden: style.forbidden || StyleEnhancer[styleId].forbidden,
+          reference: style.reference || StyleEnhancer[styleId].reference
+        };
+      }
+    });
+
+    console.log(`✅ 已從資料庫載入 ${data.length} 個風格設定`);
+    return true;
+  } catch (error) {
+    console.error('❌ 載入風格設定失敗:', error);
+    return false;
+  }
+}
+
+/**
+ * 取得風格配置（優先從資料庫，否則使用預設）
+ * @param {string} styleId - 風格 ID
+ * @returns {object} - 風格配置
+ */
+async function getStyleConfig(styleId) {
+  try {
+    const { getSupabaseClient } = require('./supabase-client');
+    const supabase = getSupabaseClient();
+
+    const { data, error } = await supabase
+      .from('style_settings')
+      .select('*')
+      .eq('style_id', styleId)
+      .eq('is_active', true)
+      .single();
+
+    if (error || !data) {
+      console.log(`⚠️ 風格 ${styleId} 從資料庫載入失敗，使用預設值`);
+      return {
+        style: StickerStyles[styleId] || StickerStyles.cute,
+        enhancer: StyleEnhancer[styleId] || StyleEnhancer.cute
+      };
+    }
+
+    // 組合資料庫設定和預設值
+    return {
+      style: {
+        id: data.style_id,
+        name: data.name,
+        emoji: data.emoji,
+        description: data.description
+      },
+      enhancer: {
+        coreStyle: data.core_style || StyleEnhancer[styleId]?.coreStyle || '',
+        lighting: data.lighting || StyleEnhancer[styleId]?.lighting || '',
+        composition: data.composition || StyleEnhancer[styleId]?.composition || '',
+        brushwork: data.brushwork || StyleEnhancer[styleId]?.brushwork || '',
+        mood: data.mood || StyleEnhancer[styleId]?.mood || '',
+        colorPalette: data.color_palette || StyleEnhancer[styleId]?.colorPalette || '',
+        forbidden: data.forbidden || StyleEnhancer[styleId]?.forbidden || '',
+        reference: data.reference || StyleEnhancer[styleId]?.reference || ''
+      }
+    };
+  } catch (error) {
+    console.error(`❌ 取得風格 ${styleId} 配置失敗:`, error);
+    return {
+      style: StickerStyles[styleId] || StickerStyles.cute,
+      enhancer: StyleEnhancer[styleId] || StyleEnhancer.cute
+    };
+  }
+}
 
