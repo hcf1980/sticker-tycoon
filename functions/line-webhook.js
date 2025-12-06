@@ -7,7 +7,7 @@ const line = require('@line/bot-sdk');
 const axios = require('axios');
 const { supabase, isReplyTokenUsed, recordReplyToken, getOrCreateUser, getUserStickerSets, getUserLatestTask, getUserPendingTasks, getStickerSet, getStickerImages, deleteStickerSet, addToUploadQueue, removeFromUploadQueue, getUploadQueue, clearUploadQueue, getUserTokenBalance, getTokenTransactions, getUserReferralInfo, applyReferralCode, deductTokens, addTokens } = require('./supabase-client');
 const { ConversationStage, getConversationState, updateConversationState, resetConversationState, isInCreationFlow } = require('./conversation-state');
-const { generateWelcomeFlexMessage } = require('./sticker-flex-message');
+const { generateWelcomeFlexMessage, generateTutorialPart1FlexMessage, generateTutorialPart2FlexMessage, shouldShowTutorial, markTutorialShown } = require('./sticker-flex-message');
 const { scheduleProfileUpdate } = require('./utils/profile-updater');
 const { globalMonitor } = require('./utils/performance-monitor');
 const { handleStartCreate, handleNaming, handleStyleSelection, handleFramingSelection, handleCharacterDescription, handleExpressionTemplate, handleSceneSelection, handleCustomScene, handleCountSelection, handlePhotoUpload } = require('./handlers/create-handler');
@@ -45,6 +45,11 @@ function getChannelSecret() {
 async function handleTextMessage(replyToken, userId, text) {
   try {
     console.log(`📝 處理訊息：${text} (User: ${userId})`);
+
+    // 非同步檢查是否需要顯示功能說明（不阻塞主流程）
+    checkAndSendTutorial(userId).catch(err =>
+      console.error('檢查功能說明失敗:', err)
+    );
 
     // 取得用戶對話狀態
     const state = await getConversationState(userId);
@@ -119,6 +124,16 @@ async function handleTextMessage(replyToken, userId, text) {
     // 示範圖集
     if (text === '示範圖集' || text === '範例' || text === '作品集') {
       return await handleDemoGallery(userId);
+    }
+
+    // 功能說明
+    if (text === '功能說明' || text === '使用說明' || text === '教學' || text === '說明') {
+      return await handleTutorial(replyToken, userId);
+    }
+
+    // 功能說明第2部分
+    if (text === '功能說明2') {
+      return getLineClient().replyMessage(replyToken, generateTutorialPart2FlexMessage());
     }
 
     // 代幣查詢
@@ -828,7 +843,7 @@ function generateStickerListFlexMessage(userId, sets, referralInfo = null, queue
       backgroundColor: queueCount >= 40 ? '#E8F5E9' : '#FFF3E0',
       paddingAll: 'lg',
       contents: [
-        { type: 'text', text: queueCount >= 40 ? '🎉' : '📤', size: '3xl', align: 'center' },
+        { type: 'text', text: queueCount >= 40 ? '🎉' : '🚧', size: '3xl', align: 'center' },
         { type: 'text', text: '上傳準備狀態', size: 'lg', weight: 'bold', align: 'center', color: '#333333', margin: 'md' },
         { type: 'text', text: progressText, size: 'md', align: 'center', color: progressColor, margin: 'md', weight: 'bold' },
         queueCount < 40
@@ -1843,6 +1858,52 @@ async function handleClearUploadQueue(replyToken, userId) {
       type: 'text',
       text: '❌ 系統錯誤，請稍後再試'
     });
+  }
+}
+
+/**
+ * 處理功能說明
+ */
+async function handleTutorial(replyToken, userId) {
+  try {
+    // 記錄教學已顯示
+    await markTutorialShown(userId);
+
+    // 發送第一部分
+    return getLineClient().replyMessage(replyToken, generateTutorialPart1FlexMessage());
+  } catch (error) {
+    console.error('發送功能說明失敗:', error);
+    return getLineClient().replyMessage(replyToken, {
+      type: 'text',
+      text: '❌ 系統錯誤，請稍後再試'
+    });
+  }
+}
+
+/**
+ * 檢查並自動發送功能說明（新用戶或很久沒上線）
+ */
+async function checkAndSendTutorial(userId) {
+  try {
+    const shouldShow = await shouldShowTutorial(userId);
+
+    if (shouldShow) {
+      console.log(`📖 自動發送功能說明給用戶: ${userId}`);
+
+      // 記錄教學已顯示
+      await markTutorialShown(userId);
+
+      // 使用 pushMessage 發送（不需要 replyToken）
+      await getLineClient().pushMessage(userId, [
+        {
+          type: 'text',
+          text: '👋 歡迎回來！為您準備了完整功能說明，幫助您快速上手 ✨'
+        },
+        generateTutorialPart1FlexMessage()
+      ]);
+    }
+  } catch (error) {
+    console.error('自動發送功能說明失敗:', error);
   }
 }
 

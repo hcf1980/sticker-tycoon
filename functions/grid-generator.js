@@ -384,10 +384,14 @@ async function removeCheckerboardBackground(imageBuffer) {
     const lightGray = { r: 204, g: 204, b: 204 }; // #CCCCCC
     const darkGray = { r: 153, g: 153, b: 153 };   // #999999
     const white = { r: 255, g: 255, b: 255 };
-    const tolerance = 30;
+    const tolerance = 5; // ✅ v3: 從 30 降低到 5，避免誤刪膚色/衣服
 
     // 檢測是否是棋盤格顏色
     const isCheckerColor = (r, g, b) => {
+      // ⚠️ 排除膚色範圍（避免誤刪）
+      const isSkinTone = r > g && g > b && r >= 180 && r <= 255 && g >= 140 && g <= 220 && b >= 120 && b <= 200;
+      if (isSkinTone) return false;
+
       const isLight = Math.abs(r - lightGray.r) < tolerance &&
                       Math.abs(g - lightGray.g) < tolerance &&
                       Math.abs(b - lightGray.b) < tolerance;
@@ -416,8 +420,9 @@ async function removeCheckerboardBackground(imageBuffer) {
     const checkerRatio = checkerPixels / totalPixels;
     console.log(`    🔍 棋盤格背景檢測：${(checkerRatio * 100).toFixed(1)}% 疑似背景像素`);
 
-    // 如果超過 15% 是棋盤格顏色，進行移除
-    if (checkerRatio > 0.15) {
+    // ✅ v3: 提高閾值從 15% 到 30%，避免誤刪有灰色調的圖片
+    // 只有當圖片中有大量棋盤格顏色時才執行去背
+    if (checkerRatio > 0.30) {
       console.log(`    🧹 移除棋盤格背景...`);
 
       for (let i = 0; i < pixels.length; i += channels) {
@@ -463,16 +468,22 @@ async function removeSimpleBackground(imageBuffer) {
     const { width, height, channels } = info;
     const pixels = new Uint8Array(data);
 
-    // ✅ v2: 更嚴格的背景顏色檢測（避免誤刪角色區域）
+    // ✅ v3: 更保守的背景顏色檢測（進一步避免誤刪角色區域）
     const isBackgroundColor = (r, g, b) => {
-      // ✅ 只移除純白背景（RGB 都 > 250）
+      // ✅ 只移除純白背景（RGB 都 >= 253）- 更嚴格的閾值
       // 這樣可以保留角色的眼白、牙齒、衣服等亮色區域
-      const isPureWhite = r > 250 && g > 250 && b > 250;
+      const isPureWhite = r >= 253 && g >= 253 && b >= 253;
 
-      // ✅ 只移除特定的棋盤格顏色（精確匹配）
+      // ✅ 只移除特定的棋盤格顏色（精確匹配，容差±2）
       // 避免誤刪膚色、頭髮等灰色調
-      const isCheckerboardLight = r === 204 && g === 204 && b === 204;  // #CCCCCC
-      const isCheckerboardDark = r === 153 && g === 153 && b === 153;   // #999999
+      const isCheckerboardLight = Math.abs(r - 204) <= 2 && Math.abs(g - 204) <= 2 && Math.abs(b - 204) <= 2;  // #CCCCCC ±2
+      const isCheckerboardDark = Math.abs(r - 153) <= 2 && Math.abs(g - 153) <= 2 && Math.abs(b - 153) <= 2;   // #999999 ±2
+
+      // ⚠️ 排除膚色範圍（避免誤刪）
+      // 膚色通常是 R > G > B，且 R 在 180-255 之間
+      const isSkinTone = r > g && g > b && r >= 180 && r <= 255 && g >= 140 && g <= 220 && b >= 120 && b <= 200;
+
+      if (isSkinTone) return false;
 
       return isPureWhite || isCheckerboardLight || isCheckerboardDark;
     };
@@ -503,14 +514,15 @@ async function removeSimpleBackground(imageBuffer) {
       edgeColors.push({ r: pixels[idx], g: pixels[idx+1], b: pixels[idx+2] });
     }
 
-    // ✅ v2: 提高觸發閾值（從 0.5 改為 0.8）
-    // 只有 80% 以上的邊緣點都是背景色，才執行去背
+    // ✅ v3: 進一步提高觸發閾值（從 0.8 改為 0.9）
+    // 只有 90% 以上的邊緣點都是背景色，才執行去背
+    // 這樣可以避免誤刪有複雜背景或人物靠近邊緣的圖片
     const bgEdgeCount = edgeColors.filter(c => isBackgroundColor(c.r, c.g, c.b)).length;
     const bgRatio = bgEdgeCount / edgeColors.length;
     console.log(`    🔍 邊緣背景檢測：${bgEdgeCount}/${edgeColors.length} 點為背景色（比例：${(bgRatio*100).toFixed(1)}%）`);
 
-    if (bgRatio < 0.8) {
-      console.log(`    ⏭️ 邊緣非背景色（< 80%），跳過去背`);
+    if (bgRatio < 0.9) {
+      console.log(`    ⏭️ 邊緣非背景色（< 90%），跳過去背`);
       return imageBuffer;
     }
 
