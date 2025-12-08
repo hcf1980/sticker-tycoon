@@ -65,26 +65,30 @@ async function processImage(input, type = 'sticker') {
     const imageBuffer = Buffer.isBuffer(input) ? input : await downloadImage(input);
     
     // 取得對應尺寸
-    let targetWidth, targetHeight;
+    let targetWidth, targetHeight, padding, contentWidth, contentHeight;
     switch (type) {
       case 'main':
         targetWidth = LineStickerSpecs.mainImage.width;
         targetHeight = LineStickerSpecs.mainImage.height;
+        padding = 0; // main 和 tab 不需要 padding
+        contentWidth = targetWidth;
+        contentHeight = targetHeight;
         break;
       case 'tab':
         targetWidth = LineStickerSpecs.tabImage.width;
         targetHeight = LineStickerSpecs.tabImage.height;
+        padding = 0; // main 和 tab 不需要 padding
+        contentWidth = targetWidth;
+        contentHeight = targetHeight;
         break;
       case 'sticker':
       default:
         targetWidth = LineStickerSpecs.stickerImage.maxWidth;
         targetHeight = LineStickerSpecs.stickerImage.maxHeight;
+        padding = LineStickerSpecs.padding; // 貼圖需要 10px padding
+        contentWidth = targetWidth - (padding * 2);
+        contentHeight = targetHeight - (padding * 2);
     }
-
-    // 預留邊距
-    const padding = LineStickerSpecs.padding;
-    const contentWidth = targetWidth - (padding * 2);
-    const contentHeight = targetHeight - (padding * 2);
 
     // 處理圖片
     let processedImage = sharp(imageBuffer);
@@ -107,15 +111,18 @@ async function processImage(input, type = 'sticker') {
       // 增加對比度（使用線性調整）
       .linear(1.15, -(128 * 0.15))  // 對比度 +15%
       // 確保透明背景
-      .ensureAlpha()
-      // 擴展到目標尺寸（加入透明邊距）
-      .extend({
+      .ensureAlpha();
+
+    // 只有貼圖需要加 padding（main 和 tab 不需要）
+    if (padding > 0) {
+      processedImage = processedImage.extend({
         top: padding,
         bottom: padding,
         left: padding,
         right: padding,
         background: { r: 0, g: 0, b: 0, alpha: 0 }
       });
+    }
 
     // 最終調整到精確尺寸（強制 370x320）
     processedImage = processedImage
