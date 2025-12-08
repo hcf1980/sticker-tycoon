@@ -1041,7 +1041,7 @@ const LineStickerSpecs = {
   fileNaming: {
     main: 'main.png',       // 主要圖片
     tab: 'tab.png',         // 標籤圖片
-    sticker: (index) => `${String(index).padStart(2, '0')}.png` // 01.png, 02.png, ...
+    sticker: (index) => `sticker_${String(index).padStart(2, '0')}.png` // sticker_01.png, sticker_02.png, ...
   }
 };
 
