@@ -342,7 +342,7 @@ async function scanAndCreateStickerRecords(setId) {
 
     for (let i = 0; i < stickerFiles.length; i++) {
       const file = stickerFiles[i];
-      const indexMatch = file.name.match(/sticker_(\d+)\.png/);
+      const indexMatch = file.name.match(/(\d+)\.png/);
       const indexNumber = indexMatch ? parseInt(indexMatch[1]) : i + 1;
 
       // 取得公開 URL

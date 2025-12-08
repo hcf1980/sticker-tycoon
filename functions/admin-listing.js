@@ -351,13 +351,13 @@ async function generateApplicationZip(application, stickers) {
 --------
 - main.png：主要圖片（240×240px）
 - tab.png：聊天室標籤圖片（96×74px）
-- sticker_01.png ~ sticker_XX.png：貼圖圖片（最大 370×320px）
+- 01.png ~ XX.png：貼圖圖片（最大 370×320px）
 
 上傳步驟
 --------
 1. 前往 LINE Creators Market：https://creator.line.me/
 2. 登入後點擊「新增貼圖」
-3. 依序上傳 main.png、tab.png 和所有 sticker_XX.png
+3. 依序上傳 main.png、tab.png 和所有 XX.png
 4. 填寫貼圖資訊並提交審核
 
 注意事項
