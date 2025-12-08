@@ -390,18 +390,6 @@ async function generateApplicationZip(application, stickers) {
         }
       }
 
-      // 添加封面圖片（可選）
-      if (application.cover_url) {
-        try {
-          console.log(`📥 下載封面圖片: ${application.cover_url}`);
-          const coverBuffer = await downloadImage(application.cover_url);
-          archive.append(coverBuffer, { name: 'cover.png' });
-          console.log('✅ 已加入封面圖片');
-        } catch (err) {
-          console.warn('⚠️ 無法下載封面圖片:', err.message);
-        }
-      }
-
       // 添加所有貼圖（限制最多 40 張以避免超時）
       let successCount = 0;
       let failCount = 0;
