@@ -7,6 +7,8 @@ const archiver = require('archiver');
 const https = require('https');
 const http = require('http');
 
+const supabase = getSupabaseClient();
+
 exports.handler = async function(event) {
   const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -159,19 +161,39 @@ exports.handler = async function(event) {
             throw new Error('沒有貼圖可下載');
           }
 
+          // 檢查是否已有緩存 ZIP
+          if (application.zip_cache_url) {
+            console.log(`✅ 使用緩存的 ZIP: ${application.zip_cache_url}`);
+            return {
+              statusCode: 200,
+              headers,
+              body: JSON.stringify({
+                success: true,
+                downloadUrl: application.zip_cache_url
+              })
+            };
+          }
+
           // 生成 ZIP 檔案
           const zipBuffer = await generateApplicationZip(application, stickers);
 
-          // 返回 base64 編碼的 ZIP 檔案供前端下載
+          // 上傳 ZIP 到 Storage 以實現快速下載
+          const zipUrl = await uploadZipToStorage(applicationId, zipBuffer);
+
+          // 更新資料庫，記錄 ZIP 快取
+          await supabase
+            .from('listing_applications')
+            .update({ zip_cache_url: zipUrl })
+            .eq('application_id', applicationId);
+
+          // 返回下載連結給前端
           return {
             statusCode: 200,
-            headers: {
-              ...headers,
-              'Content-Type': 'application/zip',
-              'Content-Disposition': `attachment; filename="${application.application_id}_stickers.zip"`
-            },
-            body: zipBuffer.toString('base64'),
-            isBase64Encoded: true
+            headers,
+            body: JSON.stringify({
+              success: true,
+              downloadUrl: zipUrl
+            })
           };
         } catch (err) {
           console.error('❌ 下載貼圖包失敗:', err);
@@ -199,6 +221,38 @@ exports.handler = async function(event) {
     };
   }
 };
+
+/**
+ * 上傳 ZIP 到 Supabase Storage
+ */
+async function uploadZipToStorage(applicationId, zipBuffer) {
+  const bucket = 'listing-zips';
+  const zipPath = `${applicationId}/${applicationId}_stickers.zip`;
+
+  try {
+    console.log(`📤 上傳 ZIP 到 Storage: ${zipPath}，大小: ${(zipBuffer.length / 1024).toFixed(2)} KB`);
+
+    const { error } = await supabase.storage
+      .from(bucket)
+      .upload(zipPath, zipBuffer, {
+        contentType: 'application/zip',
+        upsert: true
+      });
+
+    if (error) throw error;
+
+    // 取得公開下載連結
+    const { data } = supabase.storage
+      .from(bucket)
+      .getPublicUrl(zipPath);
+
+    console.log(`✅ ZIP 已上傳：${data.publicUrl}`);
+    return data.publicUrl;
+  } catch (error) {
+    console.error('❌ 上傳 ZIP 失敗:', error);
+    throw error;
+  }
+}
 
 /**
  * 下載圖片 Buffer（支援重定向和超時）
@@ -252,15 +306,10 @@ function downloadImage(url, maxRedirects = 5) {
 async function generateApplicationZip(application, stickers) {
   console.log(`📦 開始打包申請 ${application.application_id}，共 ${stickers.length} 張貼圖`);
 
-  // 設定 20 秒超時
-  const timeout = new Promise((_, reject) => {
-    setTimeout(() => reject(new Error('打包超時（20秒），請稍後再試')), 20000);
-  });
-
-  const zipPromise = new Promise(async (resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     const chunks = [];
-    // 降低壓縮等級以加快速度，避免超時
-    const archive = archiver('zip', { zlib: { level: 6 } });
+    // 使用壓縮等級 5：兼顧速度和大小
+    const archive = archiver('zip', { zlib: { level: 5 } });
 
     // 監聽錯誤
     archive.on('error', (err) => {
@@ -367,8 +416,5 @@ async function generateApplicationZip(application, stickers) {
       reject(err);
     }
   });
-
-  // 使用 Promise.race 實現超時
-  return Promise.race([zipPromise, timeout]);
 }
 

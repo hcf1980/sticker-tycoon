@@ -195,9 +195,12 @@
     function hideDetail() { document.getElementById('detailModal').classList.remove('show'); }
 
     async function downloadStickerPack(appId, event) {
+      let btn = null;
+      let originalText = '📥 下載貼圖壓縮包';
+
       try {
-        const btn = event?.target;
-        const originalText = btn?.textContent || '📥 下載貼圖壓縮包';
+        btn = event?.target;
+        originalText = btn?.textContent || originalText;
         if (btn) {
           btn.textContent = '⏳ 準備中...';
           btn.disabled = true;
@@ -230,44 +233,18 @@
           throw new Error(errorMsg);
         }
 
-        // 檢查回應是否為 ZIP
-        const contentType = res.headers.get('Content-Type');
-        if (!contentType || !contentType.includes('application/zip')) {
-          console.warn(`警告: Content-Type 不是 ZIP: ${contentType}`);
-          // 嘗試解析為 JSON 看是否有錯誤訊息
-          const text = await res.text();
-          try {
-            const json = JSON.parse(text);
-            if (json.error) {
-              throw new Error(json.error);
-            }
-          } catch (e) {
-            // 不是 JSON，繼續當作 ZIP 處理
-          }
+        // 解析回應，取得下載連結
+        const responseData = await res.json();
+        if (!responseData.success || !responseData.downloadUrl) {
+          throw new Error(responseData.error || '無法取得下載連結');
         }
 
-        // 取得 blob 並觸發下載
-        const blob = await res.blob();
-        console.log(`收到 blob，大小: ${(blob.size / 1024).toFixed(2)} KB`);
+        console.log(`📥 下載連結: ${responseData.downloadUrl}`);
 
-        if (blob.size === 0) {
-          throw new Error('下載的檔案為空');
-        }
+        // 直接開啟下載連結（Supabase Storage 會自動下載）
+        window.open(responseData.downloadUrl, '_blank');
 
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${appId}_stickers.zip`;
-        document.body.appendChild(a);
-        a.click();
-
-        // 延遲清理，確保下載開始
-        setTimeout(() => {
-          window.URL.revokeObjectURL(url);
-          document.body.removeChild(a);
-        }, 100);
-
-        alert('✅ 貼圖包已下載');
+        alert('✅ 貼圖包已開始下載');
         if (btn) {
           btn.textContent = originalText;
           btn.disabled = false;
