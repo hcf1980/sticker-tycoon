@@ -201,17 +201,48 @@ exports.handler = async function(event) {
 };
 
 /**
- * 下載圖片 Buffer
+ * 下載圖片 Buffer（支援重定向和超時）
  */
-function downloadImage(url) {
+function downloadImage(url, maxRedirects = 5) {
   return new Promise((resolve, reject) => {
     const protocol = url.startsWith('https') ? https : http;
-    protocol.get(url, (response) => {
+
+    const request = protocol.get(url, {
+      timeout: 30000 // 30 秒超時
+    }, (response) => {
+      // 處理重定向
+      if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
+        if (maxRedirects > 0) {
+          console.log(`🔄 重定向到: ${response.headers.location}`);
+          return downloadImage(response.headers.location, maxRedirects - 1)
+            .then(resolve)
+            .catch(reject);
+        } else {
+          return reject(new Error('重定向次數過多'));
+        }
+      }
+
+      // 檢查狀態碼
+      if (response.statusCode !== 200) {
+        return reject(new Error(`HTTP ${response.statusCode}: ${url}`));
+      }
+
       const chunks = [];
       response.on('data', chunk => chunks.push(chunk));
-      response.on('end', () => resolve(Buffer.concat(chunks)));
+      response.on('end', () => {
+        if (chunks.length === 0) {
+          return reject(new Error('下載的圖片為空'));
+        }
+        resolve(Buffer.concat(chunks));
+      });
       response.on('error', reject);
-    }).on('error', reject);
+    });
+
+    request.on('error', reject);
+    request.on('timeout', () => {
+      request.destroy();
+      reject(new Error('下載超時'));
+    });
   });
 }
 
@@ -219,13 +250,40 @@ function downloadImage(url) {
  * 生成申請貼圖的 ZIP 檔案
  */
 async function generateApplicationZip(application, stickers) {
-  const chunks = [];
-  const archive = archiver('zip', { zlib: { level: 9 } });
+  console.log(`📦 開始打包申請 ${application.application_id}，共 ${stickers.length} 張貼圖`);
 
-  archive.on('data', chunk => chunks.push(chunk));
+  return new Promise(async (resolve, reject) => {
+    const chunks = [];
+    const archive = archiver('zip', { zlib: { level: 9 } });
 
-  // 添加 README
-  const readme = `貼圖大亨 - 申請貼圖包
+    // 監聽錯誤
+    archive.on('error', (err) => {
+      console.error('❌ Archive 錯誤:', err);
+      reject(err);
+    });
+
+    // 監聽警告
+    archive.on('warning', (err) => {
+      if (err.code === 'ENOENT') {
+        console.warn('⚠️ Archive 警告:', err);
+      } else {
+        reject(err);
+      }
+    });
+
+    // 收集數據
+    archive.on('data', chunk => chunks.push(chunk));
+
+    // 完成時返回
+    archive.on('end', () => {
+      const zipBuffer = Buffer.concat(chunks);
+      console.log(`✅ ZIP 打包完成，大小: ${(zipBuffer.length / 1024).toFixed(2)} KB`);
+      resolve(zipBuffer);
+    });
+
+    try {
+      // 添加 README
+      const readme = `貼圖大亨 - 申請貼圖包
 ========================
 
 申請編號：${application.application_id}
@@ -250,33 +308,53 @@ async function generateApplicationZip(application, stickers) {
 
 感謝使用貼圖大亨！
 `;
-  archive.append(readme, { name: 'README.txt' });
+      archive.append(readme, { name: 'README.txt' });
 
-  // 添加封面圖片
-  if (application.cover_url) {
-    try {
-      const coverBuffer = await downloadImage(application.cover_url);
-      archive.append(coverBuffer, { name: 'cover.png' });
-      console.log('✅ 已加入封面圖片');
+      // 添加封面圖片
+      if (application.cover_url) {
+        try {
+          console.log(`📥 下載封面圖片: ${application.cover_url}`);
+          const coverBuffer = await downloadImage(application.cover_url);
+          archive.append(coverBuffer, { name: 'cover.png' });
+          console.log('✅ 已加入封面圖片');
+        } catch (err) {
+          console.warn('⚠️ 無法下載封面圖片:', err.message);
+        }
+      }
+
+      // 添加所有貼圖
+      let successCount = 0;
+      let failCount = 0;
+
+      for (let i = 0; i < stickers.length; i++) {
+        const sticker = stickers[i];
+        try {
+          console.log(`📥 下載貼圖 ${i + 1}/${stickers.length}: ${sticker.url}`);
+          const stickerBuffer = await downloadImage(sticker.url);
+          const filename = `sticker_${String(i + 1).padStart(2, '0')}.png`;
+          archive.append(stickerBuffer, { name: filename });
+          console.log(`✅ 已加入：${filename}`);
+          successCount++;
+        } catch (err) {
+          console.error(`❌ 無法下載貼圖 ${i + 1}:`, err.message);
+          failCount++;
+        }
+      }
+
+      console.log(`📊 下載統計: 成功 ${successCount}/${stickers.length}，失敗 ${failCount}`);
+
+      if (successCount === 0) {
+        throw new Error('所有貼圖下載失敗，無法生成壓縮包');
+      }
+
+      // 完成打包
+      await archive.finalize();
+      console.log('🔄 等待 ZIP 完成...');
+
     } catch (err) {
-      console.warn('⚠️ 無法下載封面圖片:', err.message);
+      console.error('❌ 打包過程錯誤:', err);
+      reject(err);
     }
-  }
-
-  // 添加所有貼圖
-  for (let i = 0; i < stickers.length; i++) {
-    const sticker = stickers[i];
-    try {
-      const stickerBuffer = await downloadImage(sticker.url);
-      const filename = `sticker_${String(i + 1).padStart(2, '0')}.png`;
-      archive.append(stickerBuffer, { name: filename });
-      console.log(`✅ 已加入：${filename}`);
-    } catch (err) {
-      console.warn(`⚠️ 無法下載貼圖 ${i + 1}:`, err.message);
-    }
-  }
-
-  await archive.finalize();
-  return Buffer.concat(chunks);
+  });
 }
 

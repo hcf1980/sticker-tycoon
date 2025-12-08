@@ -201,32 +201,75 @@
         btn.textContent = '⏳ 準備中...';
         btn.disabled = true;
 
+        console.log(`開始下載申請 ${appId} 的貼圖包...`);
+
         const res = await fetch(`${API_BASE}/admin-listing`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'downloadPack', applicationId: appId })
         });
 
+        console.log(`回應狀態: ${res.status} ${res.statusText}`);
+        console.log(`Content-Type: ${res.headers.get('Content-Type')}`);
+
         if (!res.ok) {
-          const error = await res.json();
-          throw new Error(error.error || '下載失敗');
+          // 嘗試解析錯誤訊息
+          const contentType = res.headers.get('Content-Type');
+          let errorMsg = '下載失敗';
+
+          if (contentType && contentType.includes('application/json')) {
+            const error = await res.json();
+            errorMsg = error.error || error.message || errorMsg;
+          } else {
+            const text = await res.text();
+            errorMsg = text || errorMsg;
+          }
+
+          throw new Error(errorMsg);
+        }
+
+        // 檢查回應是否為 ZIP
+        const contentType = res.headers.get('Content-Type');
+        if (!contentType || !contentType.includes('application/zip')) {
+          console.warn(`警告: Content-Type 不是 ZIP: ${contentType}`);
+          // 嘗試解析為 JSON 看是否有錯誤訊息
+          const text = await res.text();
+          try {
+            const json = JSON.parse(text);
+            if (json.error) {
+              throw new Error(json.error);
+            }
+          } catch (e) {
+            // 不是 JSON，繼續當作 ZIP 處理
+          }
         }
 
         // 取得 blob 並觸發下載
         const blob = await res.blob();
+        console.log(`收到 blob，大小: ${(blob.size / 1024).toFixed(2)} KB`);
+
+        if (blob.size === 0) {
+          throw new Error('下載的檔案為空');
+        }
+
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = `${appId}_stickers.zip`;
         document.body.appendChild(a);
         a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
+
+        // 延遲清理，確保下載開始
+        setTimeout(() => {
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+        }, 100);
 
         alert('✅ 貼圖包已下載');
         btn.textContent = originalText;
         btn.disabled = false;
       } catch (e) {
+        console.error('下載錯誤:', e);
         alert('❌ 下載失敗：' + e.message);
         if (event.target) {
           event.target.textContent = '📥 下載貼圖壓縮包';
