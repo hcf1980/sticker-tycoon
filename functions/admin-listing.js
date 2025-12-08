@@ -3,6 +3,7 @@
  */
 
 const { getSupabaseClient } = require('./supabase-client');
+const { generateMainImage, generateTabImage } = require('./image-processor');
 const archiver = require('archiver');
 const https = require('https');
 const http = require('http');
@@ -170,13 +171,7 @@ exports.handler = async function(event) {
 
           console.log(`📊 申請 ${applicationId} 包含 ${stickers.length} 張貼圖`);
 
-          // 檢查是否已有緩存 ZIP（但不使用快取，每次都重新生成確保內容正確）
-          // if (application.zip_cache_url) {
-          //   console.log(`✅ 使用緩存的 ZIP: ${application.zip_cache_url}`);
-          //   return { ... };
-          // }
-
-          // 生成 ZIP 檔案
+          // 生成 ZIP 檔案（包含 main, tab, cover 和所有貼圖）
           const zipBuffer = await generateApplicationZip(application, stickers);
 
           // 上傳 ZIP 到 Storage 以實現快速下載
@@ -354,20 +349,48 @@ async function generateApplicationZip(application, stickers) {
 
 檔案說明
 --------
-- cover.png：封面圖片
-- sticker_01.png ~ sticker_XX.png：貼圖圖片
+- main.png：主要圖片（240×240px）
+- tab.png：聊天室標籤圖片（96×74px）
+- sticker_01.png ~ sticker_XX.png：貼圖圖片（最大 370×320px）
+
+上傳步驟
+--------
+1. 前往 LINE Creators Market：https://creator.line.me/
+2. 登入後點擊「新增貼圖」
+3. 依序上傳 main.png、tab.png 和所有 sticker_XX.png
+4. 填寫貼圖資訊並提交審核
 
 注意事項
 --------
-- 所有貼圖已由用戶提交
-- 請檢查貼圖品質和內容合規性
-- 審核通過後可提交至 LINE Creators Market
+- 所有圖片已符合 LINE 官方規格
+- 審核通過後即可販售或私人使用
+- 如需修改，請與管理員聯繫
 
 感謝使用貼圖大亨！
 `;
       archive.append(readme, { name: 'README.txt' });
 
-      // 添加封面圖片
+      // 生成並添加 main 和 tab 圖片（使用第一張貼圖）
+      if (stickers.length > 0) {
+        try {
+          console.log(`📐 使用第一張貼圖生成 main 和 tab 圖片: ${stickers[0]}`);
+          const firstImageBuffer = await downloadImage(stickers[0]);
+
+          // 生成 main 圖片
+          const mainImageBuffer = await generateMainImage(stickers[0]);
+          archive.append(mainImageBuffer, { name: 'main.png' });
+          console.log('✅ 已加入 main.png');
+
+          // 生成 tab 圖片
+          const tabImageBuffer = await generateTabImage(stickers[0]);
+          archive.append(tabImageBuffer, { name: 'tab.png' });
+          console.log('✅ 已加入 tab.png');
+        } catch (err) {
+          console.warn('⚠️ 無法生成 main/tab 圖片:', err.message);
+        }
+      }
+
+      // 添加封面圖片（可選）
       if (application.cover_url) {
         try {
           console.log(`📥 下載封面圖片: ${application.cover_url}`);
