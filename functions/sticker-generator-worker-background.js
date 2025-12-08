@@ -369,7 +369,7 @@ async function uploadImagesToStorage(setId, processedImages, mainImageBuffer, ta
     for (const img of processedImages) {
       if (img.status !== 'completed' || !img.buffer) continue;
 
-      const stickerPath = `${setId}/sticker_${String(img.index).padStart(2, '0')}.png`;
+      const stickerPath = `${setId}/${String(img.index).padStart(2, '0')}.png`;
       const { error } = await supabase.storage.from(bucket).upload(stickerPath, img.buffer, {
         contentType: 'image/png', upsert: true
       });

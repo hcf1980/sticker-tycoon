@@ -404,7 +404,7 @@ async function generateApplicationZip(application, stickers) {
         try {
           console.log(`📥 下載貼圖 ${i + 1}/${maxStickers}: ${stickerUrl}`);
           const stickerBuffer = await downloadImage(stickerUrl);
-          const filename = `sticker_${String(i + 1).padStart(2, '0')}.png`;
+          const filename = `${String(i + 1).padStart(2, '0')}.png`;
           archive.append(stickerBuffer, { name: filename });
           console.log(`✅ 已加入：${filename}`);
           successCount++;
