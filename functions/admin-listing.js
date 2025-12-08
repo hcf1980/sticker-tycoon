@@ -156,23 +156,25 @@ exports.handler = async function(event) {
           }
 
           // 解析貼圖 URLs
-          const stickers = JSON.parse(application.sticker_urls || '[]');
+          let stickers = JSON.parse(application.sticker_urls || '[]');
           if (stickers.length === 0) {
             throw new Error('沒有貼圖可下載');
           }
 
-          // 檢查是否已有緩存 ZIP
-          if (application.zip_cache_url) {
-            console.log(`✅ 使用緩存的 ZIP: ${application.zip_cache_url}`);
-            return {
-              statusCode: 200,
-              headers,
-              body: JSON.stringify({
-                success: true,
-                downloadUrl: application.zip_cache_url
-              })
-            };
+          // 確保 stickers 是 URL 字符串陣列，不是 object 陣列
+          // 因為申請表可能存的是 [{index, url, expression}, ...] 的格式
+          if (stickers.length > 0 && typeof stickers[0] === 'object' && stickers[0].url) {
+            console.log('📝 檢測到 stickers 是 object 陣列，轉換為 URL 陣列');
+            stickers = stickers.map(s => s.url || s);
           }
+
+          console.log(`📊 申請 ${applicationId} 包含 ${stickers.length} 張貼圖`);
+
+          // 檢查是否已有緩存 ZIP（但不使用快取，每次都重新生成確保內容正確）
+          // if (application.zip_cache_url) {
+          //   console.log(`✅ 使用緩存的 ZIP: ${application.zip_cache_url}`);
+          //   return { ... };
+          // }
 
           // 生成 ZIP 檔案
           const zipBuffer = await generateApplicationZip(application, stickers);
@@ -387,10 +389,10 @@ async function generateApplicationZip(application, stickers) {
       }
 
       for (let i = 0; i < maxStickers; i++) {
-        const sticker = stickers[i];
+        const stickerUrl = stickers[i];
         try {
-          console.log(`📥 下載貼圖 ${i + 1}/${maxStickers}: ${sticker.url}`);
-          const stickerBuffer = await downloadImage(sticker.url);
+          console.log(`📥 下載貼圖 ${i + 1}/${maxStickers}: ${stickerUrl}`);
+          const stickerBuffer = await downloadImage(stickerUrl);
           const filename = `sticker_${String(i + 1).padStart(2, '0')}.png`;
           archive.append(stickerBuffer, { name: filename });
           console.log(`✅ 已加入：${filename}`);
