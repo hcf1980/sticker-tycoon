@@ -175,7 +175,7 @@
         </div>
         <div class="border-t pt-4 mb-4">
           <div class="text-gray-500 mb-2">下載貼圖包：</div>
-          <button onclick="downloadStickerPack('${a.application_id}')" class="px-4 py-2 rounded bg-blue-500 text-white hover:bg-blue-600 flex items-center gap-2">
+          <button onclick="downloadStickerPack('${a.application_id}', event)" class="px-4 py-2 rounded bg-blue-500 text-white hover:bg-blue-600 flex items-center gap-2">
             📥 下載貼圖壓縮包
           </button>
         </div>
@@ -194,12 +194,14 @@
 
     function hideDetail() { document.getElementById('detailModal').classList.remove('show'); }
 
-    async function downloadStickerPack(appId) {
+    async function downloadStickerPack(appId, event) {
       try {
-        const btn = event.target;
-        const originalText = btn.textContent;
-        btn.textContent = '⏳ 準備中...';
-        btn.disabled = true;
+        const btn = event?.target;
+        const originalText = btn?.textContent || '📥 下載貼圖壓縮包';
+        if (btn) {
+          btn.textContent = '⏳ 準備中...';
+          btn.disabled = true;
+        }
 
         console.log(`開始下載申請 ${appId} 的貼圖包...`);
 
@@ -266,14 +268,16 @@
         }, 100);
 
         alert('✅ 貼圖包已下載');
-        btn.textContent = originalText;
-        btn.disabled = false;
+        if (btn) {
+          btn.textContent = originalText;
+          btn.disabled = false;
+        }
       } catch (e) {
         console.error('下載錯誤:', e);
         alert('❌ 下載失敗：' + e.message);
-        if (event.target) {
-          event.target.textContent = '📥 下載貼圖壓縮包';
-          event.target.disabled = false;
+        if (btn) {
+          btn.textContent = originalText;
+          btn.disabled = false;
         }
       }
     }

@@ -252,9 +252,15 @@ function downloadImage(url, maxRedirects = 5) {
 async function generateApplicationZip(application, stickers) {
   console.log(`📦 開始打包申請 ${application.application_id}，共 ${stickers.length} 張貼圖`);
 
-  return new Promise(async (resolve, reject) => {
+  // 設定 20 秒超時
+  const timeout = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error('打包超時（20秒），請稍後再試')), 20000);
+  });
+
+  const zipPromise = new Promise(async (resolve, reject) => {
     const chunks = [];
-    const archive = archiver('zip', { zlib: { level: 9 } });
+    // 降低壓縮等級以加快速度，避免超時
+    const archive = archiver('zip', { zlib: { level: 6 } });
 
     // 監聽錯誤
     archive.on('error', (err) => {
@@ -322,14 +328,19 @@ async function generateApplicationZip(application, stickers) {
         }
       }
 
-      // 添加所有貼圖
+      // 添加所有貼圖（限制最多 40 張以避免超時）
       let successCount = 0;
       let failCount = 0;
+      const maxStickers = Math.min(stickers.length, 40);
 
-      for (let i = 0; i < stickers.length; i++) {
+      if (stickers.length > 40) {
+        console.warn(`⚠️ 貼圖數量過多 (${stickers.length})，僅處理前 40 張`);
+      }
+
+      for (let i = 0; i < maxStickers; i++) {
         const sticker = stickers[i];
         try {
-          console.log(`📥 下載貼圖 ${i + 1}/${stickers.length}: ${sticker.url}`);
+          console.log(`📥 下載貼圖 ${i + 1}/${maxStickers}: ${sticker.url}`);
           const stickerBuffer = await downloadImage(sticker.url);
           const filename = `sticker_${String(i + 1).padStart(2, '0')}.png`;
           archive.append(stickerBuffer, { name: filename });
@@ -341,7 +352,7 @@ async function generateApplicationZip(application, stickers) {
         }
       }
 
-      console.log(`📊 下載統計: 成功 ${successCount}/${stickers.length}，失敗 ${failCount}`);
+      console.log(`📊 下載統計: 成功 ${successCount}/${maxStickers}，失敗 ${failCount}`);
 
       if (successCount === 0) {
         throw new Error('所有貼圖下載失敗，無法生成壓縮包');
@@ -356,5 +367,8 @@ async function generateApplicationZip(application, stickers) {
       reject(err);
     }
   });
+
+  // 使用 Promise.race 實現超時
+  return Promise.race([zipPromise, timeout]);
 }
 
