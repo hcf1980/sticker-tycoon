@@ -226,8 +226,8 @@ exports.handler = async function(event) {
  * 上傳 ZIP 到 Supabase Storage
  */
 async function uploadZipToStorage(applicationId, zipBuffer) {
-  const bucket = 'listing-zips';
-  const zipPath = `${applicationId}/${applicationId}_stickers.zip`;
+  const bucket = 'sticker-images';
+  const zipPath = `listings/${applicationId}/${applicationId}_stickers.zip`;
 
   try {
     console.log(`📤 上傳 ZIP 到 Storage: ${zipPath}，大小: ${(zipBuffer.length / 1024).toFixed(2)} KB`);
