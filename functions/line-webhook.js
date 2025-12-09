@@ -146,6 +146,11 @@ async function handleTextMessage(replyToken, userId, text) {
       return await handlePurchaseInfo(replyToken);
     }
 
+    // 購買說明
+    if (text === '購買說明' || text === '代幣說明' || text === '使用說明' || text === '說明') {
+      return await handlePurchaseGuide(replyToken);
+    }
+
     // 分享給好友
     if (text === '分享給好友' || text === '推薦好友' || text === '我的推薦碼' || text === '推薦碼' || text === '邀請好友') {
       return await handleReferralInfo(replyToken, userId);
@@ -2375,6 +2380,201 @@ async function handlePurchaseInfo(replyToken) {
   };
 
   return getLineClient().replyMessage(replyToken, [planCarousel, paymentInfo, qrMessage]);
+}
+
+/**
+ * 處理購買說明 - 提供完整的購買和使用說明
+ */
+async function handlePurchaseGuide(replyToken) {
+  const guideUrl = `${process.env.URL}/token-guide-mobile.html`;
+
+  const message = {
+    type: 'flex',
+    altText: '📖 購買說明',
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#667eea',
+        paddingAll: 'lg',
+        contents: [
+          {
+            type: 'text',
+            text: '📖 購買說明',
+            size: 'xl',
+            weight: 'bold',
+            color: '#FFFFFF',
+            align: 'center'
+          },
+          {
+            type: 'text',
+            text: '代幣購買與使用完整指南',
+            size: 'xs',
+            color: '#FFFFFFCC',
+            align: 'center',
+            margin: 'sm'
+          }
+        ]
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'lg',
+        contents: [
+          {
+            type: 'text',
+            text: '📋 本說明包含',
+            size: 'md',
+            weight: 'bold',
+            color: '#333333',
+            margin: 'none'
+          },
+          {
+            type: 'separator',
+            margin: 'md'
+          },
+          {
+            type: 'box',
+            layout: 'vertical',
+            margin: 'lg',
+            spacing: 'md',
+            contents: [
+              {
+                type: 'box',
+                layout: 'horizontal',
+                contents: [
+                  { type: 'text', text: '💳', size: 'lg', flex: 0, margin: 'none' },
+                  {
+                    type: 'text',
+                    text: 'LINE Pay 購買流程',
+                    size: 'sm',
+                    color: '#555555',
+                    margin: 'md',
+                    wrap: true
+                  }
+                ]
+              },
+              {
+                type: 'box',
+                layout: 'horizontal',
+                contents: [
+                  { type: 'text', text: '⏰', size: 'lg', flex: 0, margin: 'none' },
+                  {
+                    type: 'text',
+                    text: '代幣有效期（365天）',
+                    size: 'sm',
+                    color: '#555555',
+                    margin: 'md',
+                    wrap: true
+                  }
+                ]
+              },
+              {
+                type: 'box',
+                layout: 'horizontal',
+                contents: [
+                  { type: 'text', text: '🔄', size: 'lg', flex: 0, margin: 'none' },
+                  {
+                    type: 'text',
+                    text: 'FIFO 智慧扣款機制',
+                    size: 'sm',
+                    color: '#555555',
+                    margin: 'md',
+                    wrap: true
+                  }
+                ]
+              },
+              {
+                type: 'box',
+                layout: 'horizontal',
+                contents: [
+                  { type: 'text', text: '💎', size: 'lg', flex: 0, margin: 'none' },
+                  {
+                    type: 'text',
+                    text: '代幣方案與用途',
+                    size: 'sm',
+                    color: '#555555',
+                    margin: 'md',
+                    wrap: true
+                  }
+                ]
+              },
+              {
+                type: 'box',
+                layout: 'horizontal',
+                contents: [
+                  { type: 'text', text: '❓', size: 'lg', flex: 0, margin: 'none' },
+                  {
+                    type: 'text',
+                    text: '常見問題 FAQ',
+                    size: 'sm',
+                    color: '#555555',
+                    margin: 'md',
+                    wrap: true
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#d1ecf1',
+            cornerRadius: 'lg',
+            paddingAll: 'md',
+            margin: 'lg',
+            contents: [
+              {
+                type: 'text',
+                text: '🎁 新用戶福利',
+                size: 'sm',
+                weight: 'bold',
+                color: '#0c5460'
+              },
+              {
+                type: 'text',
+                text: '註冊即贈 40 代幣',
+                size: 'xs',
+                color: '#0c5460',
+                margin: 'xs'
+              }
+            ]
+          }
+        ]
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'md',
+        spacing: 'sm',
+        contents: [
+          {
+            type: 'button',
+            action: {
+              type: 'uri',
+              label: '📖 查看完整說明',
+              uri: guideUrl
+            },
+            style: 'primary',
+            color: '#667eea'
+          },
+          {
+            type: 'button',
+            action: {
+              type: 'message',
+              label: '🛒 購買代幣',
+              text: '購買代幣'
+            },
+            style: 'secondary'
+          }
+        ]
+      }
+    }
+  };
+
+  return getLineClient().replyMessage(replyToken, message);
 }
 
 /**

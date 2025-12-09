@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>代幣購買說明 - 貼圖大亨</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.8;
+      color: #333;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+
+    h1 {
+      color: #667eea;
+      font-size: 32px;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #999;
+      margin-bottom: 40px;
+      font-size: 14px;
+    }
+
+    h2 {
+      color: #333;
+      font-size: 24px;
+      margin-top: 40px;
+      margin-bottom: 20px;
+      padding-left: 15px;
+      border-left: 5px solid #667eea;
+    }
+
+    h3 {
+      color: #555;
+      font-size: 18px;
+      margin-top: 25px;
+      margin-bottom: 15px;
+    }
+
+    p {
+      margin-bottom: 15px;
+      color: #555;
+    }
+
+    .highlight-box {
+      background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+      border-left: 4px solid #667eea;
+      padding: 20px;
+      margin: 25px 0;
+      border-radius: 10px;
+    }
+
+    .highlight-box strong {
+      color: #667eea;
+      font-size: 18px;
+    }
+
+    .process-flow {
+      background: #f8f9fa;
+      padding: 25px;
+      border-radius: 15px;
+      margin: 25px 0;
+    }
+
+    .step {
+      display: flex;
+      align-items: center;
+      margin: 15px 0;
+      padding: 15px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .step-number {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 18px;
+      flex-shrink: 0;
+      margin-right: 15px;
+    }
+
+    .step-content {
+      flex: 1;
+    }
+
+    .step-title {
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 5px;
+    }
+
+    .step-desc {
+      font-size: 14px;
+      color: #666;
+    }
+
+    .pricing-table {
+      margin: 30px 0;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    }
+
+    th {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 15px;
+      text-align: left;
+      font-weight: 600;
+    }
+
+    td {
+      padding: 15px;
+      border-bottom: 1px solid #eee;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover {
+      background: #f8f9fa;
+    }
+
+    .price {
+      font-size: 20px;
+      font-weight: bold;
+      color: #667eea;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-left: 8px;
+    }
+
+    .badge-hot {
+      background: #ff9800;
+      color: white;
+    }
+
+    .badge-new {
+      background: #4CAF50;
+      color: white;
+    }
+
+    ul {
+      margin: 15px 0;
+      padding-left: 25px;
+    }
+
+    li {
+      margin: 10px 0;
+      color: #555;
+    }
+
+    .icon {
+      margin-right: 8px;
+    }
+
+    .warning-box {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 20px;
+      margin: 25px 0;
+      border-radius: 10px;
+    }
+
+    .warning-box strong {
+      color: #856404;
+    }
+
+    .info-box {
+      background: #d1ecf1;
+      border-left: 4px solid #17a2b8;
+      padding: 20px;
+      margin: 25px 0;
+      border-radius: 10px;
+    }
+
+    .info-box strong {
+      color: #0c5460;
+    }
+
+    .benefit-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin: 25px 0;
+    }
+
+    .benefit-card {
+      background: white;
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+      text-align: center;
+    }
+
+    .benefit-icon {
+      font-size: 40px;
+      margin-bottom: 15px;
+    }
+
+    .benefit-title {
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    .benefit-desc {
+      font-size: 14px;
+      color: #666;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 20px;
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+
+      h2 {
+        font-size: 20px;
+      }
+
+      .step {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .step-number {
+        margin-right: 0;
+        margin-bottom: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎫 代幣購買說明</h1>
+    <p class="subtitle">貼圖大亨 - 讓你輕鬆創作專屬貼圖</p>
+
+    <!-- 問題 1：交易流程 -->
+    <h2>💳 1. LINE Pay 購買流程</h2>
+    
+    <div class="highlight-box">
+      <strong>📌 是的，您需要購買代幣才能使用服務</strong>
+      <p style="margin-top: 10px;">貼圖大亨採用「代幣制」，購買代幣後即可使用各項功能。這樣做的好處是：</p>
+    </div>
+
+    <div class="benefit-list">
+      <div class="benefit-card">
+        <div class="benefit-icon">💰</div>
+        <div class="benefit-title">降低交易成本</div>
+        <div class="benefit-desc">減少小額付款的手續費</div>
+      </div>
+      <div class="benefit-card">
+        <div class="benefit-icon">🎁</div>
+        <div class="benefit-title">優惠方案</div>
+        <div class="benefit-desc">買越多，單價越便宜</div>
+      </div>
+      <div class="benefit-card">
+        <div class="benefit-icon">⚡</div>
+        <div class="benefit-title">即買即用</div>
+        <div class="benefit-desc">代幣立即到帳，隨時使用</div>
+      </div>
+    </div>
+
+    <h3>📋 完整購買流程</h3>
+    <div class="process-flow">
+      <div class="step">
+        <div class="step-number">1</div>
+        <div class="step-content">
+          <div class="step-title">選擇方案</div>
+          <div class="step-desc">在 LINE Bot 中點擊「購買代幣」，選擇適合的方案</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">2</div>
+        <div class="step-content">
+          <div class="step-title">跳轉付款</div>
+          <div class="step-desc">系統會自動跳轉到 LINE Pay 付款頁面</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">3</div>
+        <div class="step-content">
+          <div class="step-title">完成付款</div>
+          <div class="step-desc">使用信用卡或 LINE Pay 餘額完成付款</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">4</div>
+        <div class="step-content">
+          <div class="step-title">代幣到帳</div>
+          <div class="step-desc">付款成功後，代幣會立即匯入您的帳戶</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">5</div>
+        <div class="step-content">
+          <div class="step-title">開始使用</div>
+          <div class="step-desc">使用代幣創作您的專屬貼圖</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 代幣方案 -->
+    <h2>💎 代幣方案</h2>
+    <div class="pricing-table">
+      <table>
+        <thead>
+          <tr>
+            <th>方案</th>
+            <th>代幣數量</th>
+            <th>售價</th>
+            <th>平均單價</th>
+            <th>推薦</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>基礎包</strong></td>
+            <td>70 代幣</td>
+            <td class="price">NT$ 300</td>
+            <td>$4.3/枚</td>
+            <td>-</td>
+          </tr>
+          <tr>
+            <td><strong>超值包</strong></td>
+            <td>130 代幣</td>
+            <td class="price">NT$ 500</td>
+            <td>$3.8/枚</td>
+            <td><span class="badge badge-hot">熱門</span></td>
+          </tr>
+          <tr>
+            <td><strong>熱門包</strong></td>
+            <td>300 代幣</td>
+            <td class="price">NT$ 1,000</td>
+            <td>$3.3/枚</td>
+            <td><span class="badge badge-hot">最划算</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="info-box">
+      <strong>🎁 新用戶福利</strong>
+      <p style="margin-top: 10px;">首次註冊即贈送 <strong>40 代幣</strong>，讓您免費體驗服務！</p>
+    </div>
+
+    <!-- 問題 2：使用期限 -->
+    <h2>⏰ 2. 代幣使用期限</h2>
+
+    <div class="highlight-box">
+      <strong>📅 所有代幣有效期為 365 天（1 年）</strong>
+      <p style="margin-top: 15px; font-size: 16px; line-height: 1.8;">
+        從您購買或獲得代幣的當天起算，<strong style="color: #667eea;">365 天內有效</strong>。<br>
+        包括：購買的代幣、新用戶贈送的 40 代幣、推薦獎勵代幣，都享有相同的有效期。
+      </p>
+    </div>
+
+    <h3>📊 有效期說明</h3>
+    <ul>
+      <li><span class="icon">✅</span><strong>購買代幣：</strong>購買日起 365 天有效</li>
+      <li><span class="icon">✅</span><strong>新用戶贈送：</strong>註冊日起 365 天有效</li>
+      <li><span class="icon">✅</span><strong>推薦獎勵：</strong>獲得日起 365 天有效</li>
+      <li><span class="icon">✅</span><strong>管理員調整：</strong>調整日起 365 天有效</li>
+    </ul>
+
+    <h3>🔄 智慧扣款機制（FIFO）</h3>
+    <p>為了讓您的代幣物盡其用，我們採用「先進先出」（FIFO）扣款方式：</p>
+    
+    <div class="info-box">
+      <strong>📝 扣款範例</strong>
+      <p style="margin-top: 15px; line-height: 1.8;">
+        假設您有以下代幣：<br>
+        • 2024年6月1日購買：20 代幣（2025/06/01 到期）<br>
+        • 2024年12月1日購買：30 代幣（2025/12/01 到期）<br><br>
+        
+        當您使用 25 代幣時，系統會：<br>
+        1️⃣ 先扣 2024/06/01 購買的 20 代幣（全部用完）<br>
+        2️⃣ 再扣 2024/12/01 購買的 5 代幣（剩餘 25）<br><br>
+        
+        <strong style="color: #0c5460;">✨ 這樣可以確保最早到期的代幣優先使用，避免浪費！</strong>
+      </p>
+    </div>
+
+    <h3>🔔 到期提醒</h3>
+    <ul>
+      <li><span class="icon">📬</span><strong>到期前 30 天：</strong>系統會主動提醒您有代幣即將到期</li>
+      <li><span class="icon">⏰</span><strong>到期當天：</strong>過期代幣將自動失效，無法再使用</li>
+      <li><span class="icon">🔒</span><strong>其他代幣：</strong>過期代幣不影響其他尚未到期的代幣</li>
+    </ul>
+
+    <div class="warning-box">
+      <strong>⚠️ 重要提醒</strong>
+      <p style="margin-top: 10px;">
+        • 代幣一旦過期即無法使用，且<strong>無法退款</strong><br>
+        • 請在有效期內使用完畢<br>
+        • 建議依照使用頻率選擇適合的方案<br>
+        • 可隨時在 LINE Bot 中查詢代幣餘額和到期時間
+      </p>
+    </div>
+
+    <!-- 代幣使用說明 -->
+    <h2>🎨 代幣使用方式</h2>
+    <div class="pricing-table">
+      <table>
+        <thead>
+          <tr>
+            <th>服務項目</th>
+            <th>所需代幣</th>
+            <th>說明</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>生成 6 張貼圖</td>
+            <td><strong style="color: #667eea;">3 代幣</strong></td>
+            <td>使用 AI 生成 6 張貼圖</td>
+          </tr>
+          <tr>
+            <td>生成 12 張貼圖</td>
+            <td><strong style="color: #667eea;">6 代幣</strong></td>
+            <td>使用 AI 生成 12 張貼圖</td>
+          </tr>
+          <tr>
+            <td>生成 18 張貼圖</td>
+            <td><strong style="color: #667eea;">9 代幣</strong></td>
+            <td>使用 AI 生成 18 張貼圖</td>
+          </tr>
+          <tr>
+            <td>下載 LINE 貼圖包</td>
+            <td><strong style="color: #667eea;">40 代幣</strong></td>
+            <td>下載完整的 LINE 貼圖包</td>
+          </tr>
+          <tr>
+            <td>代上架服務</td>
+            <td><strong style="color: #667eea;">100 代幣</strong></td>
+            <td>協助將貼圖上架到 LINE Store</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 常見問題 -->
+    <h2>❓ 常見問題</h2>
+    
+    <h3>Q1: 代幣可以退款嗎？</h3>
+    <p>原則上代幣一經購買即無法退款。但如遇系統故障導致無法使用，請聯繫客服處理。</p>
+
+    <h3>Q2: 可以轉讓代幣給朋友嗎？</h3>
+    <p>目前尚未開放代幣轉讓功能。但您可以使用推薦碼邀請朋友，雙方各得 10 代幣獎勵！</p>
+
+    <h3>Q3: 如何查詢代幣餘額和到期時間？</h3>
+    <p>在 LINE Bot 中輸入「代幣查詢」或「my tokens」，即可查看詳細資訊。</p>
+
+    <h3>Q4: 付款後代幣多久會到帳？</h3>
+    <p>付款成功後，代幣會<strong>立即到帳</strong>，通常不超過 1 分鐘。</p>
+
+    <h3>Q5: 支援哪些付款方式？</h3>
+    <p>目前支援 LINE Pay，可使用信用卡或 LINE Pay 餘額付款。</p>
+
+    <!-- 聯絡資訊 -->
+    <div class="info-box" style="margin-top: 40px;">
+      <strong>💬 需要協助？</strong>
+      <p style="margin-top: 10px;">
+        如有任何問題，歡迎在 LINE Bot 中聯繫我們的客服團隊<br>
+        或發送郵件至：support@sticker-tycoon.com
+      </p>
+    </div>
+
+    <p style="text-align: center; margin-top: 40px; color: #999; font-size: 14px;">
+      © 2024 貼圖大亨 Sticker Tycoon. All rights reserved.
+    </p>
+  </div>
+</body>
+</html>
+

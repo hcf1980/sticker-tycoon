@@ -44,12 +44,12 @@ async function handleMyStickers(userId) {
  */
 async function handleTokenQuery(userId) {
   logger.info('處理代幣查詢命令', { userId });
-  
+
   const balance = await getUserTokenBalance(userId);
   const transactions = await getTokenTransactions(userId, 5); // 最近 5 筆交易
-  
+
   let text = `💰 您的代幣餘額：${balance} 代幣\n\n`;
-  
+
   if (transactions && transactions.length > 0) {
     text += '📊 最近交易記錄：\n';
     transactions.forEach(tx => {
@@ -59,9 +59,10 @@ async function handleTokenQuery(userId) {
       text += `\n${date} ${type} ${amount} 代幣`;
     });
   }
-  
+
   text += '\n\n💡 輸入「購買代幣」查看儲值方案';
-  
+  text += '\n📖 輸入「購買說明」查看詳細說明';
+
   return {
     type: 'text',
     text,
