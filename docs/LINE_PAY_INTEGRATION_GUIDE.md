@@ -66,12 +66,13 @@
 
 ### 2.1 儲值方案設計（含有效期 365 天）
 
-| 方案 | 代幣數量 | 售價（台幣） | 贈送 | 實際獲得 | 平均單價 | 推薦 |
-|------|---------|------------|------|---------|---------|------|
-| 入門包 | 30 | $99 | - | 30 | $3.3/枚 | - |
-| 超值包 | 100 | $299 | +10 | 110 | $2.7/枚 | ⭐ |
-| 熱門包 | 300 | $799 | +50 | 350 | $2.3/枚 | ⭐⭐ |
-| 豪華包 | 500 | $1,199 | +100 | 600 | $2.0/枚 | ⭐⭐⭐ |
+| 方案 | 代幣數量 | 售價（台幣） | 平均單價 | 推薦 |
+|------|---------|------------|---------|------|
+| 基礎包 | 70 | $300 | $4.3/枚 | - |
+| 超值包 | 130 | $500 | $3.8/枚 | ⭐ |
+| 熱門包 | 300 | $1,000 | $3.3/枚 | ⭐⭐ |
+
+**🎁 新用戶福利：註冊即贈 40 代幣！**
 
 ### 2.2 代幣使用規則
 
@@ -306,10 +307,9 @@ const LINE_PAY_CONFIG = {
 
 // 代幣方案配置
 const TOKEN_PACKAGES = {
-  starter: { name: '入門包', tokens: 30, bonus: 0, price: 99 },
-  value: { name: '超值包', tokens: 100, bonus: 10, price: 299 },
-  popular: { name: '熱門包', tokens: 300, bonus: 50, price: 799 },
-  deluxe: { name: '豪華包', tokens: 500, bonus: 100, price: 1199 }
+  basic: { name: '基礎包', tokens: 70, price: 300 },
+  value: { name: '超值包', tokens: 130, price: 500 },
+  popular: { name: '熱門包', tokens: 300, price: 1000 }
 };
 
 /**
@@ -367,7 +367,7 @@ exports.handler = async function(event) {
 
     const supabase = getSupabaseClient();
     const orderId = generateOrderId();
-    const totalTokens = package.tokens + package.bonus;
+    const totalTokens = package.tokens;
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15分鐘後過期
 
     // 1. 建立訂單記錄
@@ -379,7 +379,7 @@ exports.handler = async function(event) {
         package_id: packageId,
         package_name: package.name,
         token_amount: package.tokens,
-        bonus_tokens: package.bonus,
+        bonus_tokens: 0,
         total_tokens: totalTokens,
         amount: package.price,
         currency: 'TWD',

@@ -163,14 +163,42 @@ async function adjustTokens(db, body) {
 
   if (updateError) throw updateError;
 
+  // 如果是增加代幣，同步更新 token_ledger（含有效期 365 天）
+  if (txAmount > 0) {
+    const now = new Date();
+    const expiresAt = new Date(now);
+    expiresAt.setDate(expiresAt.getDate() + 365); // 365 天後過期
+
+    await db.from('token_ledger').insert([{
+      user_id: lineUserId,
+      tokens: txAmount,
+      remaining_tokens: txAmount,
+      source_type: 'admin',
+      source_order_id: null,
+      source_description: `管理員調整：${note || '手動增加'}`,
+      acquired_at: now.toISOString(),
+      expires_at: expiresAt.toISOString(),
+      is_expired: false
+    }]);
+  }
+
+  // 如果是扣除代幣，使用 FIFO 邏輯從 token_ledger 扣除
+  if (txAmount < 0) {
+    await deductFromLedger(db, lineUserId, Math.abs(txAmount));
+  }
+
   // 記錄交易
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + 365);
+
   await db.from('token_transactions').insert([{
     user_id: lineUserId,
     amount: txAmount,
     balance_after: newBalance,
     transaction_type: 'admin_adjust',
     description: `管理員調整：${type === 'add' ? '增加' : type === 'deduct' ? '扣除' : '設定'} ${amount}`,
-    admin_note: note || null
+    admin_note: note || null,
+    expires_at: txAmount > 0 ? expiresAt.toISOString() : null
   }]);
 
   return {
@@ -178,6 +206,54 @@ async function adjustTokens(db, body) {
     headers,
     body: JSON.stringify({ success: true, newBalance })
   };
+}
+
+/**
+ * 從 token_ledger 使用 FIFO 扣除代幣
+ */
+async function deductFromLedger(db, userId, amount) {
+  // 查詢所有可用代幣（未過期且有剩餘），按到期時間排序
+  const { data: ledgers, error } = await db
+    .from('token_ledger')
+    .select('*')
+    .eq('user_id', userId)
+    .gt('remaining_tokens', 0)
+    .eq('is_expired', false)
+    .order('expires_at', { ascending: true }); // FIFO: 最早到期的優先
+
+  if (error) {
+    console.error('查詢 token_ledger 失敗:', error);
+    return;
+  }
+
+  if (!ledgers || ledgers.length === 0) {
+    console.warn(`用戶 ${userId} 沒有可用代幣記錄，跳過 ledger 扣除`);
+    return;
+  }
+
+  // 從最早到期的代幣開始扣除
+  let remaining = amount;
+
+  for (const ledger of ledgers) {
+    if (remaining <= 0) break;
+
+    const deduct = Math.min(ledger.remaining_tokens, remaining);
+    const newRemaining = ledger.remaining_tokens - deduct;
+
+    await db
+      .from('token_ledger')
+      .update({
+        remaining_tokens: newRemaining,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', ledger.id);
+
+    remaining -= deduct;
+  }
+
+  if (remaining > 0) {
+    console.warn(`用戶 ${userId} 代幣不足，還需扣除 ${remaining} 代幣`);
+  }
 }
 
 async function updateUserInfo(db, body) {

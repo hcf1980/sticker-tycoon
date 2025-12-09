@@ -142,10 +142,32 @@ async function getOrCreateUser(lineUserId, displayName = null, pictureUrl = null
 
     if (insertError) throw insertError;
 
-    // 非同步記錄初始代幣交易（不阻塞回應）
+    // 非同步記錄初始代幣交易和代幣帳本（不阻塞回應）
     if (newUser) {
-      recordTokenTransaction(lineUserId, 40, 40, 'initial', '新用戶贈送 40 代幣')
-        .catch(err => console.error('記錄初始代幣失敗:', err));
+      const now = new Date();
+      const expiresAt = new Date(now);
+      expiresAt.setDate(expiresAt.getDate() + 365); // 365 天後過期
+
+      // 記錄到 token_transactions
+      recordTokenTransaction(lineUserId, 40, 40, 'initial', '新用戶贈送 40 代幣', null, null, expiresAt.toISOString())
+        .catch(err => console.error('記錄初始代幣交易失敗:', err));
+
+      // 記錄到 token_ledger（用於有效期追蹤和 FIFO 扣款）
+      getSupabaseClient()
+        .from('token_ledger')
+        .insert([{
+          user_id: lineUserId,
+          tokens: 40,
+          remaining_tokens: 40,
+          source_type: 'initial',
+          source_order_id: null,
+          source_description: '新用戶註冊贈送',
+          acquired_at: now.toISOString(),
+          expires_at: expiresAt.toISOString(),
+          is_expired: false
+        }])
+        .then(() => console.log(`✅ 新用戶 ${lineUserId} 的代幣帳本已建立`))
+        .catch(err => console.error('記錄初始代幣帳本失敗:', err));
 
       // 快取新用戶
       globalCache.set(cacheKey, newUser, 600000);
@@ -710,19 +732,26 @@ async function isInUploadQueue(userId, stickerId) {
 /**
  * 記錄代幣交易
  */
-async function recordTokenTransaction(userId, amount, balanceAfter, type, description, referenceId = null, adminNote = null) {
+async function recordTokenTransaction(userId, amount, balanceAfter, type, description, referenceId = null, adminNote = null, expiresAt = null) {
   try {
+    const transactionData = {
+      user_id: userId,
+      amount,
+      balance_after: balanceAfter,
+      transaction_type: type,
+      description,
+      reference_id: referenceId,
+      admin_note: adminNote
+    };
+
+    // 如果有提供 expiresAt，加入記錄
+    if (expiresAt) {
+      transactionData.expires_at = expiresAt;
+    }
+
     const { error } = await getSupabaseClient()
       .from('token_transactions')
-      .insert([{
-        user_id: userId,
-        amount,
-        balance_after: balanceAfter,
-        transaction_type: type,
-        description,
-        reference_id: referenceId,
-        admin_note: adminNote
-      }]);
+      .insert([transactionData]);
 
     if (error) throw error;
     return true;
@@ -761,7 +790,7 @@ async function getUserTokenBalance(lineUserId) {
 }
 
 /**
- * 檢查並扣除代幣（優化版：更新快取）
+ * 檢查並扣除代幣（FIFO：優先扣除最早到期的代幣）
  * @param {string} lineUserId - LINE 用戶 ID
  * @param {number} amount - 要扣除的數量
  * @param {string} description - 描述
@@ -772,29 +801,62 @@ async function deductTokens(lineUserId, amount, description, referenceId = null)
   try {
     const supabase = getSupabaseClient();
 
-    // 取得當前餘額
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('sticker_credits')
-      .eq('line_user_id', lineUserId)
-      .single();
+    // 1. 查詢所有可用代幣（未過期且有剩餘），按到期時間排序（FIFO）
+    const { data: availableLedgers, error: ledgerError } = await supabase
+      .from('token_ledger')
+      .select('*')
+      .eq('user_id', lineUserId)
+      .gt('remaining_tokens', 0)
+      .eq('is_expired', false)
+      .order('expires_at', { ascending: true });  // 最早到期的優先
 
-    if (userError) throw userError;
+    if (ledgerError) throw ledgerError;
 
-    const currentBalance = user?.sticker_credits || 0;
+    // 計算總可用代幣
+    const totalAvailable = availableLedgers?.reduce(
+      (sum, l) => sum + l.remaining_tokens, 0
+    ) || 0;
 
     // 檢查是否足夠
-    if (currentBalance < amount) {
+    if (totalAvailable < amount) {
       return {
         success: false,
-        balance: currentBalance,
-        error: `代幣不足！目前餘額 ${currentBalance}，需要 ${amount} 代幣`
+        balance: totalAvailable,
+        error: `代幣不足！目前餘額 ${totalAvailable}，需要 ${amount} 代幣`
       };
     }
 
-    const newBalance = currentBalance - amount;
+    // 2. 從最早到期的代幣開始扣除（FIFO）
+    let remaining = amount;
+    const updates = [];
 
-    // 扣除代幣
+    for (const ledger of availableLedgers) {
+      if (remaining <= 0) break;
+
+      const deduct = Math.min(ledger.remaining_tokens, remaining);
+      const newRemaining = ledger.remaining_tokens - deduct;
+
+      updates.push({
+        id: ledger.id,
+        remaining_tokens: newRemaining
+      });
+
+      remaining -= deduct;
+    }
+
+    // 3. 批次更新代幣帳本
+    for (const update of updates) {
+      await supabase
+        .from('token_ledger')
+        .update({
+          remaining_tokens: update.remaining_tokens,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', update.id);
+    }
+
+    // 4. 更新用戶總餘額
+    const newBalance = totalAvailable - amount;
     const { error: updateError } = await supabase
       .from('users')
       .update({ sticker_credits: newBalance, updated_at: new Date().toISOString() })
@@ -802,7 +864,7 @@ async function deductTokens(lineUserId, amount, description, referenceId = null)
 
     if (updateError) throw updateError;
 
-    // 更新快取
+    // 5. 更新快取
     const cacheKey = globalCache.generateKey('user', lineUserId);
     const cachedUser = globalCache.get(cacheKey);
     if (cachedUser) {
@@ -810,7 +872,7 @@ async function deductTokens(lineUserId, amount, description, referenceId = null)
       globalCache.set(cacheKey, cachedUser, 600000);
     }
 
-    // 非同步記錄交易（不阻塞回應）
+    // 6. 非同步記錄交易（不阻塞回應）
     recordTokenTransaction(lineUserId, -amount, newBalance, 'generate', description, referenceId)
       .catch(err => console.error('記錄代幣交易失敗:', err));
 
@@ -822,7 +884,7 @@ async function deductTokens(lineUserId, amount, description, referenceId = null)
 }
 
 /**
- * 增加代幣（優化版：更新快取，購買/管理員調整用）
+ * 增加代幣（含有效期追蹤，購買/管理員調整用）
  */
 async function addTokens(lineUserId, amount, type, description, adminNote = null) {
   try {
@@ -848,6 +910,26 @@ async function addTokens(lineUserId, amount, type, description, adminNote = null
 
     if (updateError) throw updateError;
 
+    // 計算到期時間（365 天後）
+    const now = new Date();
+    const expiresAt = new Date(now);
+    expiresAt.setDate(expiresAt.getDate() + 365);
+
+    // 同步更新 token_ledger（用於有效期追蹤和 FIFO 扣款）
+    await supabase
+      .from('token_ledger')
+      .insert([{
+        user_id: lineUserId,
+        tokens: amount,
+        remaining_tokens: amount,
+        source_type: type,
+        source_order_id: null,
+        source_description: description,
+        acquired_at: now.toISOString(),
+        expires_at: expiresAt.toISOString(),
+        is_expired: false
+      }]);
+
     // 更新快取
     const cacheKey = globalCache.generateKey('user', lineUserId);
     const cachedUser = globalCache.get(cacheKey);
@@ -857,7 +939,7 @@ async function addTokens(lineUserId, amount, type, description, adminNote = null
     }
 
     // 非同步記錄交易（不阻塞回應）
-    recordTokenTransaction(lineUserId, amount, newBalance, type, description, null, adminNote)
+    recordTokenTransaction(lineUserId, amount, newBalance, type, description, null, adminNote, expiresAt.toISOString())
       .catch(err => console.error('記錄代幣交易失敗:', err));
 
     return { success: true, balance: newBalance };
@@ -1002,24 +1084,37 @@ async function applyReferralCode(refereeUserId, referralCode) {
     // 6. 開始發放獎勵
     const REFERRAL_TOKENS = 10;
 
-    // 6.1 更新被推薦者
-    const newRefereeBalance = (referee.sticker_credits || 0) + REFERRAL_TOKENS;
+    // 6.1 更新被推薦者（使用 addTokens 統一處理，含 token_ledger）
+    await addTokens(
+      refereeUserId,
+      REFERRAL_TOKENS,
+      'referral_bonus',
+      `使用推薦碼 ${referralCode} 獲得獎勵`
+    );
+
+    // 同時更新 referred_by 欄位
     await getSupabaseClient()
       .from('users')
       .update({
-        sticker_credits: newRefereeBalance,
         referred_by: referrer.line_user_id,
         updated_at: new Date().toISOString()
       })
       .eq('line_user_id', refereeUserId);
 
-    // 6.2 更新推薦人
-    const newReferrerBalance = (referrer.sticker_credits || 0) + REFERRAL_TOKENS;
+    // 6.2 更新推薦人（使用 addTokens 統一處理，含 token_ledger）
     const newReferralCount = (referrer.referral_count || 0) + 1;
+
+    await addTokens(
+      referrer.line_user_id,
+      REFERRAL_TOKENS,
+      'referral_bonus',
+      `好友使用推薦碼加入獲得獎勵`
+    );
+
+    // 同時更新推薦次數
     await getSupabaseClient()
       .from('users')
       .update({
-        sticker_credits: newReferrerBalance,
         referral_count: newReferralCount,
         updated_at: new Date().toISOString()
       })
@@ -1034,23 +1129,6 @@ async function applyReferralCode(refereeUserId, referralCode) {
         referrer_tokens: REFERRAL_TOKENS,
         referee_tokens: REFERRAL_TOKENS
       }]);
-
-    // 6.4 記錄代幣交易
-    await recordTokenTransaction(
-      refereeUserId,
-      REFERRAL_TOKENS,
-      newRefereeBalance,
-      'referral_bonus',
-      `使用推薦碼 ${referralCode} 獲得獎勵`
-    );
-
-    await recordTokenTransaction(
-      referrer.line_user_id,
-      REFERRAL_TOKENS,
-      newReferrerBalance,
-      'referral_bonus',
-      `好友使用推薦碼加入獲得獎勵`
-    );
 
     return {
       success: true,
