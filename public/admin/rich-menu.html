@@ -297,7 +297,16 @@
         formData.append('image', blob, 'rich-menu.jpg');
 
         const res = await fetch('/api/admin/update-rich-menu', { method: 'POST', body: formData });
+
+        // 檢查 HTTP 狀態碼
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error('❌ HTTP 錯誤:', res.status, errorText);
+          throw new Error(`HTTP ${res.status}: ${errorText}`);
+        }
+
         const result = await res.json();
+        console.log('📦 API 響應:', result);
 
         if (result.success) {
           // 更新成功，直接用 canvas 內容更新顯示（不 reload）
@@ -314,7 +323,9 @@
           // 顯示成功訊息
           alert('✅ Rich Menu 更新成功！新用戶將看到更新後的選單。');
         } else {
-          alert('❌ 更新失敗：' + result.error);
+          const errorMsg = result.error || result.message || JSON.stringify(result);
+          console.error('❌ 更新失敗:', errorMsg);
+          alert('❌ 更新失敗：' + errorMsg);
         }
       } catch (err) {
         alert('❌ 錯誤：' + err.message);

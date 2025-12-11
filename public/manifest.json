@@ -1,0 +1,28 @@
+{
+  "name": "貼圖大亨 Sticker Tycoon",
+  "short_name": "貼圖大亨",
+  "description": "輕鬆創建專屬 LINE 貼圖，AI 智能創作，免費代上架服務",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#FF6B6B",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/logo-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "entertainment", "utilities"],
+  "lang": "zh-TW",
+  "dir": "ltr"
+}
+

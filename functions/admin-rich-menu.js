@@ -53,10 +53,14 @@ exports.handler = async (event, context) => {
 
     // POST /api/admin/update-rich-menu - 更新 Rich Menu 圖片
     if (event.httpMethod === 'POST' && path.includes('update-rich-menu')) {
+      console.log('🔧 開始處理 Rich Menu 更新請求...');
+
       // 解析 multipart form data
       const contentType = event.headers['content-type'] || event.headers['Content-Type'];
-      
+      console.log('📋 Content-Type:', contentType);
+
       if (!contentType || !contentType.includes('multipart/form-data')) {
+        console.error('❌ 錯誤的 Content-Type');
         return {
           statusCode: 400,
           headers,
@@ -66,12 +70,27 @@ exports.handler = async (event, context) => {
 
       // 解析 boundary
       const boundary = contentType.split('boundary=')[1];
-      const body = event.isBase64Encoded 
-        ? Buffer.from(event.body, 'base64') 
+      if (!boundary) {
+        console.error('❌ 無法解析 boundary');
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ success: false, error: '無法解析 multipart boundary' })
+        };
+      }
+
+      console.log('📦 Boundary:', boundary);
+
+      const body = event.isBase64Encoded
+        ? Buffer.from(event.body, 'base64')
         : Buffer.from(event.body);
+
+      console.log('📏 Body 大小:', body.length, 'bytes');
 
       // 簡易解析 multipart（實際應用建議用 busboy 等庫）
       const parts = body.toString('binary').split('--' + boundary);
+      console.log('📦 Parts 數量:', parts.length);
+
       let imageBuffer = null;
 
       for (const part of parts) {
@@ -80,11 +99,13 @@ exports.handler = async (event, context) => {
           if (headerEnd !== -1) {
             const imageData = part.slice(headerEnd + 4, part.lastIndexOf('\r\n'));
             imageBuffer = Buffer.from(imageData, 'binary');
+            console.log('✅ 找到圖片，大小:', imageBuffer.length, 'bytes');
           }
         }
       }
 
       if (!imageBuffer) {
+        console.error('❌ 未找到圖片檔案');
         return {
           statusCode: 400,
           headers,
@@ -93,24 +114,37 @@ exports.handler = async (event, context) => {
       }
 
       // 步驟 1: 取得現有 Rich Menu
+      console.log('📋 步驟 1: 取得現有 Rich Menu...');
       const menus = await listRichMenus();
       const oldMenu = menus.find(m => m.name === '貼圖大亨主選單');
+      console.log(`✅ 找到 ${menus.length} 個 Rich Menu${oldMenu ? '，包含舊選單' : ''}`);
 
       // 步驟 2: 創建新的 Rich Menu
+      console.log('📋 步驟 2: 創建新的 Rich Menu...');
       const newMenuId = await createRichMenu();
+      console.log(`✅ 新 Rich Menu ID: ${newMenuId}`);
 
       // 步驟 3: 上傳新圖片到 LINE
+      console.log('📋 步驟 3: 上傳圖片到 LINE...');
       await uploadRichMenuImage(newMenuId, imageBuffer);
+      console.log('✅ 圖片上傳完成');
 
       // 步驟 4: 設為預設
+      console.log('📋 步驟 4: 設為預設 Rich Menu...');
       await setDefaultRichMenu(newMenuId);
+      console.log('✅ 已設為預設');
 
       // 步驟 5: 刪除舊的 Rich Menu
       if (oldMenu) {
+        console.log(`📋 步驟 5: 刪除舊 Rich Menu (${oldMenu.richMenuId})...`);
         await deleteRichMenu(oldMenu.richMenuId);
+        console.log('✅ 舊選單已刪除');
+      } else {
+        console.log('ℹ️ 步驟 5: 沒有舊選單需要刪除');
       }
 
       // 步驟 6: 備份圖片到 Supabase Storage（供後台顯示）
+      console.log('📋 步驟 6: 備份圖片到 Supabase...');
       try {
         await supabase.storage
           .from('stickers')
@@ -122,6 +156,8 @@ exports.handler = async (event, context) => {
       } catch (uploadErr) {
         console.warn('⚠️ 備份圖片失敗（不影響主要功能）:', uploadErr.message);
       }
+
+      console.log('🎉 Rich Menu 更新流程完成！');
 
       return {
         statusCode: 200,
@@ -143,10 +179,30 @@ exports.handler = async (event, context) => {
 
   } catch (error) {
     console.error('❌ Admin Rich Menu API 錯誤:', error);
+
+    // 提取詳細錯誤訊息
+    let errorMessage = error.message || '未知錯誤';
+
+    // 如果是 axios 錯誤，提取更多資訊
+    if (error.response) {
+      const lineError = error.response.data;
+      if (lineError && lineError.message) {
+        errorMessage = `LINE API 錯誤: ${lineError.message}`;
+      } else {
+        errorMessage = `HTTP ${error.response.status}: ${JSON.stringify(lineError)}`;
+      }
+    }
+
+    console.error('📋 詳細錯誤:', errorMessage);
+
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ success: false, error: error.message })
+      body: JSON.stringify({
+        success: false,
+        error: errorMessage,
+        details: error.response?.data || null
+      })
     };
   }
 };

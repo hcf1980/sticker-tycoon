@@ -72,6 +72,15 @@ async function createRichMenu() {
 async function uploadRichMenuImage(richMenuId, imageBuffer) {
   try {
     console.log(`🖼️ 上傳 Rich Menu 圖片：${richMenuId}`);
+    console.log(`📏 圖片大小: ${(imageBuffer.length / 1024).toFixed(1)} KB`);
+
+    // LINE Rich Menu 支援 PNG 和 JPEG 格式
+    // 根據圖片內容自動判斷格式
+    const contentType = imageBuffer[0] === 0xFF && imageBuffer[1] === 0xD8
+      ? 'image/jpeg'
+      : 'image/png';
+
+    console.log(`📋 圖片格式: ${contentType}`);
 
     await axios.post(
       `https://api-data.line.me/v2/bot/richmenu/${richMenuId}/content`,
@@ -79,8 +88,10 @@ async function uploadRichMenuImage(richMenuId, imageBuffer) {
       {
         headers: {
           'Authorization': `Bearer ${config.channelAccessToken}`,
-          'Content-Type': 'image/png'
-        }
+          'Content-Type': contentType
+        },
+        maxBodyLength: Infinity,
+        maxContentLength: Infinity
       }
     );
 

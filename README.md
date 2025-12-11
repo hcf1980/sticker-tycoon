@@ -5,7 +5,7 @@
 
 > 輕鬆三步驟，創建專屬 LINE 貼圖 - AI 驅動的 LINE Bot 貼圖生成系統
 
-[立即使用](https://line.me/R/ti/p/@276vcfne) | [功能特色](#功能特色) | [技術架構](#技術架構) | [部署指南](#部署指南)
+[立即使用](https://line.me/R/ti/p/@276vcfne) | [功能特色](#功能特色) | [技術架構](#技術架構) | [部署指南](#部署指南) | [Logo 設置](#-logo-設置)
 
 ---
 
@@ -363,12 +363,68 @@ npm run test:coverage    # 測試覆蓋率報告
 
 ---
 
+## 🎨 Logo 設置
+
+### 快速開始
+
+網站已經配置好所有圖標引用，只需要準備以下圖標文件：
+
+```bash
+public/
+├── favicon.ico          # 16x16, 32x32, 48x48
+├── logo-192.png         # 192x192 像素
+├── logo-512.png         # 512x512 像素
+├── apple-touch-icon.png # 180x180 像素
+└── manifest.json        # ✅ 已創建
+```
+
+### 檢查設置狀態
+
+```bash
+# 運行自動檢查腳本
+./scripts/check-logo-setup.sh
+```
+
+### 創建圖標文件
+
+**方法 1: 使用線上工具 (推薦)**
+1. 訪問 [Favicon Generator](https://realfavicongenerator.net/)
+2. 上傳 STICKER TYCOON 原始圖片
+3. 下載生成的文件並放置到 `public/` 目錄
+
+**方法 2: 使用 ImageMagick**
+```bash
+cd public
+convert original.png -resize 192x192 logo-192.png
+convert original.png -resize 512x512 logo-512.png
+convert original.png -resize 180x180 apple-touch-icon.png
+# 創建 favicon.ico...
+```
+
+### 詳細文檔
+
+- 📖 [完整設置指南](public/LOGO_SETUP_GUIDE.md)
+- 📋 [更新總結](LOGO_UPDATE_SUMMARY.md)
+
+### 已更新的頁面
+
+所有主要頁面已配置圖標引用：
+- ✅ 首頁 (index.html) - 包含 header/footer logo 顯示
+- ✅ 示範圖集 (demo-gallery.html)
+- ✅ 代幣購買說明 (token-guide.html)
+- ✅ YouTuber 推廣計畫 (youtuber-promotion.html)
+- ✅ 管理後台 (admin/index.html)
+- ✅ 其他功能頁面
+
+---
+
 ## 📞 聯絡方式
 
 - LINE 官方帳號: [@276vcfne](https://line.me/R/ti/p/@276vcfne)
 - 問題回報: [GitHub Issues](https://github.com/YOUR_USERNAME/sticker-tycoon/issues)
+- Email: johnyarcher2100@yahoo.com.tw
 
 ---
 
-**Made with ❤️ by Sticker Tycoon Team**
+**Made with ❤️ by Sticker Tycoon Team | 恩瑋數位科技**
 
