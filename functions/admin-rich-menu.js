@@ -6,12 +6,6 @@
 const { createRichMenu, uploadRichMenuImage, setDefaultRichMenu, deleteRichMenu, listRichMenus } = require('./rich-menu-manager');
 const { createClient } = require('@supabase/supabase-js');
 
-// Supabase 客戶端
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
-
 exports.handler = async (event, context) => {
   const headers = {
     'Content-Type': 'application/json',
@@ -33,10 +27,22 @@ exports.handler = async (event, context) => {
       const menus = await listRichMenus();
       const currentMenu = menus.find(m => m.name === '貼圖大亨主選單');
 
-      // 取得儲存在 Supabase 的 Rich Menu 圖片 URL
-      const { data: publicUrl } = supabase.storage
-        .from('stickers')
-        .getPublicUrl('rich-menu/current.jpg');
+      // 取得儲存在 Supabase 的 Rich Menu 圖片 URL（可選功能）
+      let imageUrl = null;
+      try {
+        if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
+          const supabase = createClient(
+            process.env.SUPABASE_URL,
+            process.env.SUPABASE_SERVICE_KEY
+          );
+          const { data: publicUrl } = supabase.storage
+            .from('stickers')
+            .getPublicUrl('rich-menu/current.jpg');
+          imageUrl = publicUrl?.publicUrl || null;
+        }
+      } catch (supabaseErr) {
+        console.warn('⚠️ 無法取得 Supabase 圖片 URL:', supabaseErr.message);
+      }
 
       return {
         statusCode: 200,
@@ -46,7 +52,7 @@ exports.handler = async (event, context) => {
           richMenuId: currentMenu?.richMenuId || null,
           menuName: currentMenu?.name || null,
           totalMenus: menus.length,
-          imageUrl: publicUrl?.publicUrl || null
+          imageUrl: imageUrl
         })
       };
     }
@@ -143,18 +149,26 @@ exports.handler = async (event, context) => {
         console.log('ℹ️ 步驟 5: 沒有舊選單需要刪除');
       }
 
-      // 步驟 6: 備份圖片到 Supabase Storage（供後台顯示）
+      // 步驟 6: 備份圖片到 Supabase Storage（供後台顯示，可選功能）
       console.log('📋 步驟 6: 備份圖片到 Supabase...');
-      try {
-        await supabase.storage
-          .from('stickers')
-          .upload('rich-menu/current.jpg', imageBuffer, {
-            contentType: 'image/jpeg',
-            upsert: true
-          });
-        console.log('✅ Rich Menu 圖片已備份到 Supabase');
-      } catch (uploadErr) {
-        console.warn('⚠️ 備份圖片失敗（不影響主要功能）:', uploadErr.message);
+      if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
+        try {
+          const supabase = createClient(
+            process.env.SUPABASE_URL,
+            process.env.SUPABASE_SERVICE_KEY
+          );
+          await supabase.storage
+            .from('stickers')
+            .upload('rich-menu/current.jpg', imageBuffer, {
+              contentType: 'image/jpeg',
+              upsert: true
+            });
+          console.log('✅ Rich Menu 圖片已備份到 Supabase');
+        } catch (uploadErr) {
+          console.warn('⚠️ 備份圖片失敗（不影響主要功能）:', uploadErr.message);
+        }
+      } else {
+        console.log('ℹ️ 跳過 Supabase 備份（環境變數未設置）');
       }
 
       console.log('🎉 Rich Menu 更新流程完成！');
