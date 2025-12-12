@@ -1,6 +1,6 @@
 /**
  * AI 風格圖片分析 API - 貼圖大亨
- * 使用 OpenAI Vision API 分析圖片並提取風格參數
+ * 使用你設定的 AI Vision API 分析圖片並提取風格參數
  */
 
 const axios = require('axios');
@@ -37,13 +37,24 @@ exports.handler = async (event, context) => {
       };
     }
 
-    console.log('🎨 開始分析圖片風格...');
+    // 使用 Netlify 環境變數中的 AI API 設定
+    const AI_API_KEY = process.env.AI_IMAGE_API_KEY;
+    const AI_API_URL = process.env.AI_IMAGE_API_URL || 'https://newapi.pockgo.com';
+    const AI_MODEL = process.env.AI_MODEL || 'gemini-2.0-flash-exp';
 
-    // 呼叫 OpenAI Vision API
-    const openaiResponse = await axios.post(
-      'https://api.openai.com/v1/chat/completions',
+    if (!AI_API_KEY) {
+      throw new Error('AI_IMAGE_API_KEY 環境變數未設定');
+    }
+
+    console.log('🎨 開始分析圖片風格...');
+    console.log(`🔧 使用 API: ${AI_API_URL}`);
+    console.log(`🤖 使用模型: ${AI_MODEL}`);
+
+    // 呼叫 AI Vision API
+    const aiResponse = await axios.post(
+      `${AI_API_URL}/v1/chat/completions`,
       {
-        model: 'gpt-4o',
+        model: AI_MODEL,
         messages: [
           {
             role: 'system',
@@ -83,15 +94,16 @@ Be specific and use terminology suitable for Stable Diffusion prompts. Focus on 
       },
       {
         headers: {
-          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+          'Authorization': `Bearer ${AI_API_KEY}`,
           'Content-Type': 'application/json'
-        }
+        },
+        timeout: 60000
       }
     );
 
-    console.log('✅ OpenAI 回應接收');
+    console.log('✅ AI 回應接收');
 
-    const content = openaiResponse.data.choices[0].message.content.trim();
+    const content = aiResponse.data.choices[0].message.content.trim();
     console.log('📝 回應內容:', content);
 
     // 解析 JSON（移除可能的 markdown 代碼塊）
@@ -116,7 +128,7 @@ Be specific and use terminology suitable for Stable Diffusion prompts. Focus on 
       body: JSON.stringify({
         success: true,
         analysis: analysis,
-        usage: openaiResponse.data.usage
+        usage: aiResponse.data.usage
       })
     };
 
@@ -128,7 +140,7 @@ Be specific and use terminology suitable for Stable Diffusion prompts. Focus on 
     if (error.response) {
       const apiError = error.response.data;
       if (apiError && apiError.error) {
-        errorMessage = `OpenAI API 錯誤: ${apiError.error.message || JSON.stringify(apiError.error)}`;
+        errorMessage = `AI API 錯誤: ${apiError.error.message || JSON.stringify(apiError.error)}`;
       } else {
         errorMessage = `HTTP ${error.response.status}: ${JSON.stringify(apiError)}`;
       }
