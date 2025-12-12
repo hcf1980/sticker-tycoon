@@ -246,29 +246,61 @@ function generateStyleSelectionFlexMessage(styles = null) {
 }
 
 /**
- * 表情選擇 Flex Message
+ * 表情選擇 Flex Message（從資料庫動態載入）
+ * @param {Array} templates - 從資料庫讀取的表情模板陣列
  */
-function generateExpressionSelectionFlexMessage() {
-  const templates = Object.values(DefaultExpressions);
+async function generateExpressionSelectionFlexMessage(templates = null) {
+  // 如果沒有提供模板，從資料庫載入
+  let templateList = templates;
 
-  const templateButtons = templates.map(template => ({
+  if (!templateList) {
+    try {
+      const { getSupabaseClient } = require('./supabase-client');
+      const supabase = getSupabaseClient();
+
+      const { data, error } = await supabase
+        .from('expression_template_settings')
+        .select('*')
+        .eq('is_active', true)
+        .order('template_id');
+
+      if (error) throw error;
+
+      // 轉換格式：template_id -> id, 保持相容性
+      templateList = (data || []).map(t => ({
+        id: t.template_id,
+        name: t.name,
+        emoji: t.emoji,
+        expressions: t.expressions
+      }));
+
+      console.log(`✅ 從資料庫載入 ${templateList.length} 個表情模板`);
+    } catch (error) {
+      console.error('❌ 從資料庫載入表情模板失敗，使用預設值:', error);
+      // 降級到硬編碼的 DefaultExpressions
+      const { DefaultExpressions } = require('./sticker-styles');
+      templateList = Object.values(DefaultExpressions);
+    }
+  }
+
+  const templateButtons = templateList.map(template => ({
     type: 'button',
     style: 'secondary',
     height: 'sm',
     action: {
       type: 'message',
-      label: template.name,
+      label: `${template.emoji || '😀'} ${template.name}`,
       text: `表情模板:${template.id}`
     },
     margin: 'sm'
   }));
 
   // Quick Reply 項目
-  const quickReplyItems = templates.map(template => ({
+  const quickReplyItems = templateList.map(template => ({
     type: 'action',
     action: {
       type: 'message',
-      label: template.name,
+      label: `${template.emoji || '😀'} ${template.name}`,
       text: `表情模板:${template.id}`
     }
   }));

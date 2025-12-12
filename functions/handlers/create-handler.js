@@ -250,11 +250,14 @@ async function handleFramingSelection(userId, framingId) {
   // 進入表情選擇階段
   await updateConversationState(userId, ConversationStage.EXPRESSIONS, tempData);
 
+  // 生成表情選擇訊息（需要 await）
+  const flexMessage = await generateExpressionSelectionFlexMessage();
+
   return {
     type: 'flex',
     altText: '選擇表情模板',
-    contents: generateExpressionSelectionFlexMessage().contents,
-    quickReply: generateExpressionSelectionFlexMessage().quickReply
+    contents: flexMessage.contents,
+    quickReply: flexMessage.quickReply
   };
 }
 
@@ -282,11 +285,12 @@ async function handleCharacterDescription(userId, description) {
   // 取得當前暫存資料
   const state = await getConversationState(userId);
   const tempData = { ...state.temp_data, character: description };
-  
+
   // 更新到表情選擇階段
   await updateConversationState(userId, ConversationStage.EXPRESSIONS, tempData);
-  
-  return generateExpressionSelectionFlexMessage();
+
+  // 生成表情選擇訊息（需要 await）
+  return await generateExpressionSelectionFlexMessage();
 }
 
 /**
@@ -302,13 +306,40 @@ function shuffleArray(array) {
 }
 
 /**
- * 處理表情模板選擇
+ * 處理表情模板選擇（從資料庫動態載入）
  * 從模板的 24 個表情中隨機選取指定數量
  */
 async function handleExpressionTemplate(userId, templateId) {
   console.log(`😀 用戶 ${userId} 選擇表情模板：${templateId}`);
 
-  const template = DefaultExpressions[templateId];
+  // 先從資料庫讀取
+  let template = null;
+  try {
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase
+      .from('expression_template_settings')
+      .select('*')
+      .eq('template_id', templateId)
+      .eq('is_active', true)
+      .single();
+
+    if (error) throw error;
+
+    if (data) {
+      template = {
+        id: data.template_id,
+        name: data.name,
+        emoji: data.emoji,
+        expressions: data.expressions
+      };
+      console.log(`✅ 從資料庫載入表情模板: ${template.name} (${template.expressions.length}個表情)`);
+    }
+  } catch (error) {
+    console.log(`⚠️ 從資料庫載入表情模板失敗，嘗試使用預設值: ${error.message}`);
+    // 降級到硬編碼的 DefaultExpressions
+    template = DefaultExpressions[templateId];
+  }
+
   if (!template) {
     return {
       type: 'text',
