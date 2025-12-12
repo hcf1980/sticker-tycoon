@@ -561,6 +561,33 @@ async function saveChanges() {
         .eq('scene_id', currentEditingStyle.scene_id);
 
       if (error) throw error;
+
+    } else if (currentEditingType === 'expression') {
+      const expressionsText = document.getElementById('edit-expressions').value;
+      const expressionsArray = expressionsText
+        .split('\n')
+        .map(e => e.trim())
+        .filter(e => e.length > 0);
+
+      if (expressionsArray.length === 0) {
+        alert('請至少輸入一個表情');
+        return;
+      }
+
+      updateData = {
+        name: document.getElementById('edit-name').value,
+        emoji: document.getElementById('edit-emoji').value,
+        description: document.getElementById('edit-description').value,
+        expressions: expressionsArray,
+        updated_at: new Date().toISOString()
+      };
+
+      const { error } = await supabase
+        .from('expression_template_settings')
+        .update(updateData)
+        .eq('template_id', currentEditingStyle.template_id);
+
+      if (error) throw error;
     }
 
     alert('✅ 儲存成功！');
@@ -570,6 +597,7 @@ async function saveChanges() {
     if (currentEditingType === 'style') loadStyles();
     else if (currentEditingType === 'framing') loadFraming();
     else if (currentEditingType === 'scene') loadScenes();
+    else if (currentEditingType === 'expression') loadExpressions();
 
   } catch (error) {
     alert('儲存失敗: ' + error.message);
@@ -1292,5 +1320,221 @@ async function analyzeSceneImage() {
   } finally {
     analyzeBtn.disabled = false;
     analyzeBtn.textContent = '✨ 分析風格';
+  }
+}
+
+// ============================================
+// 😊 表情模板管理功能
+// ============================================
+
+// 載入表情模板設定
+async function loadExpressions() {
+  const container = document.getElementById('expressions-list');
+  container.innerHTML = '<div class="text-center text-gray-500 py-8">載入中...</div>';
+
+  try {
+    const { data, error } = await supabase
+      .from('expression_template_settings')
+      .select('*')
+      .order('template_id');
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      container.innerHTML = `
+        <div class="text-center py-8">
+          <p class="text-gray-500 mb-4">尚未初始化表情模板設定</p>
+          <button onclick="initializeExpressions()" class="bg-pink-500 text-white px-6 py-3 rounded-lg hover:bg-pink-600">
+            😊 初始化表情模板設定
+          </button>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = data.map(template => {
+      const expressionCount = Array.isArray(template.expressions) ? template.expressions.length : 0;
+      const expressionPreview = Array.isArray(template.expressions)
+        ? template.expressions.slice(0, 8).join('、') + (expressionCount > 8 ? '...' : '')
+        : '';
+
+      return `
+      <div class="border rounded-lg p-4 hover:shadow-md transition-shadow">
+        <div class="flex items-center justify-between">
+          <div class="flex-1">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="text-3xl">${template.emoji || '😊'}</span>
+              <div>
+                <h3 class="font-bold text-lg">${template.name}</h3>
+                <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">${template.template_id}</span>
+              </div>
+            </div>
+            <p class="text-gray-600 text-sm mb-2">${template.description || ''}</p>
+            <div class="bg-gray-50 p-2 rounded text-sm">
+              <span class="font-bold text-gray-700">表情數量：</span>
+              <span class="text-pink-600 font-bold">${expressionCount} 個</span>
+            </div>
+            <div class="mt-2 text-xs text-gray-600">
+              <span class="font-bold">預覽：</span>${expressionPreview}
+            </div>
+          </div>
+          <button onclick="editExpression('${template.template_id}')" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 ml-4">
+            ✏️ 編輯
+          </button>
+        </div>
+      </div>
+    `}).join('');
+
+  } catch (error) {
+    console.error('載入表情模板失敗:', error);
+    container.innerHTML = `<div class="text-center text-red-500 py-8">載入失敗: ${error.message}</div>`;
+  }
+}
+
+// 編輯表情模板
+async function editExpression(templateId) {
+  try {
+    const { data, error } = await supabase
+      .from('expression_template_settings')
+      .select('*')
+      .eq('template_id', templateId)
+      .single();
+
+    if (error) throw error;
+
+    currentEditingStyle = data;
+    currentEditingType = 'expression';
+
+    document.getElementById('modal-title').textContent = `編輯表情模板: ${data.name}`;
+    document.getElementById('modal-content').innerHTML = generateExpressionEditForm(data);
+    document.getElementById('edit-modal').classList.remove('hidden');
+    document.getElementById('edit-modal').classList.add('flex');
+  } catch (error) {
+    alert('載入表情模板失敗: ' + error.message);
+  }
+}
+
+// 生成表情模板編輯表單
+function generateExpressionEditForm(template) {
+  const expressionsText = Array.isArray(template.expressions)
+    ? template.expressions.join('\n')
+    : '';
+
+  return `
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm font-bold mb-2">模板 ID</label>
+        <input type="text" value="${template.template_id}" disabled class="w-full p-2 border rounded bg-gray-100">
+      </div>
+
+      <div>
+        <label class="block text-sm font-bold mb-2">名稱</label>
+        <input type="text" id="edit-name" value="${template.name}" class="w-full p-2 border rounded">
+      </div>
+
+      <div>
+        <label class="block text-sm font-bold mb-2">Emoji</label>
+        <input type="text" id="edit-emoji" value="${template.emoji || ''}" class="w-full p-2 border rounded" maxlength="2">
+      </div>
+
+      <div>
+        <label class="block text-sm font-bold mb-2">描述</label>
+        <textarea id="edit-description" class="w-full p-2 border rounded" rows="2">${template.description || ''}</textarea>
+      </div>
+
+      <div>
+        <label class="block text-sm font-bold mb-2">表情列表（每行一個，共 24 個）</label>
+        <textarea id="edit-expressions" class="w-full p-2 border rounded font-mono text-sm" rows="12">${expressionsText}</textarea>
+        <p class="text-xs text-gray-500 mt-1">每行輸入一個表情，建議 24 個（系統會隨機選用）</p>
+        <p class="text-xs text-gray-400">範例：早安、Hi、OK、讚讚...</p>
+      </div>
+    </div>
+  `;
+}
+
+// 初始化表情模板設定
+async function initializeExpressions() {
+  if (!confirm('確定要初始化表情模板設定嗎？')) return;
+
+  const defaultExpressions = [
+    {
+      template_id: 'basic',
+      name: '基本日常',
+      emoji: '😊',
+      description: '日常打招呼、常用表情',
+      expressions: [
+        '早安', 'Hi', 'OK', '讚讚', '加油', '謝謝', '晚安', 'Yes',
+        '你好', '掰掰', '了解', '收到', '沒問題', '辛苦了', '午安', '好的',
+        '好棒', '太好了', '明天見', '晚點說', '我來了', '等我', '出發', '到了'
+      ]
+    },
+    {
+      template_id: 'cute',
+      name: '可愛撒嬌',
+      emoji: '🥺',
+      description: '撒嬌賣萌、可愛互動',
+      expressions: [
+        '撒嬌', '害羞', '噓', '啾啾', '嘿嘿嘿', '抱抱', '好想吃', '哭哭',
+        '求求你', '人家', '討厭啦', '好可愛', '委屈', '賣萌', '心心', '愛你',
+        '羞羞', '嘟嘴', '眨眼', '偷笑', '飛吻', '撒花', '轉圈', '比心'
+      ]
+    },
+    {
+      template_id: 'office',
+      name: '辦公室',
+      emoji: '💼',
+      description: '工作日常、職場對話',
+      expressions: [
+        'OK', '讚讚', '加班中', '累累', '我想想', 'Sorry', '等等', '放假',
+        '開會中', '忙碌', '下班', '收到', '處理中', '已完成', '請假', '補班',
+        '喝咖啡', '趕報告', '老闆叫', '午休', '打卡', '週五了', '禮拜一', '衝業績'
+      ]
+    },
+    {
+      template_id: 'social',
+      name: '社交常用',
+      emoji: '💬',
+      description: '社交對話、常用回覆',
+      expressions: [
+        'Hi', '謝謝', 'Sorry', 'OK', 'Yes', 'No', '再見', '等等',
+        '好久不見', '恭喜', '沒關係', '不客氣', '隨時', '改天', '下次', '約嗎',
+        '在哪', '出來玩', '聚一下', '回覆晚', '剛看到', '好喔', '看你', '都可以'
+      ]
+    },
+    {
+      template_id: 'emotion',
+      name: '情緒表達',
+      emoji: '🎭',
+      description: '豐富情緒、心情寫照',
+      expressions: [
+        '開心', '大笑', '哭哭', '生氣', '驚訝', '傻眼', '害羞', '累累',
+        '超爽', '崩潰', '無奈', '感動', '緊張', '期待', '難過', '煩躁',
+        '興奮', '困惑', '心碎', '陶醉', '不爽', '爆炸', '放空', '翻白眼'
+      ]
+    },
+    {
+      template_id: 'special',
+      name: '特殊場合',
+      emoji: '🎉',
+      description: '節日祝賀、特別活動',
+      expressions: [
+        '生日快樂', '恭喜', '感謝', '加油', 'Yes', '開心', '啾啾', '抱抱',
+        '新年快樂', '聖誕快樂', '情人節', '中秋快樂', '母親節', '父親節', '畢業', '升遷',
+        '結婚快樂', '喬遷', '考試加油', '面試成功', '發大財', '身體健康', '萬事如意', '心想事成'
+      ]
+    }
+  ];
+
+  try {
+    const { error } = await supabase
+      .from('expression_template_settings')
+      .upsert(defaultExpressions, { onConflict: 'template_id' });
+
+    if (error) throw error;
+
+    alert('✅ 表情模板設定初始化成功！已載入全部 6 種模板');
+    loadExpressions();
+  } catch (error) {
+    alert('初始化失敗: ' + error.message);
   }
 }
