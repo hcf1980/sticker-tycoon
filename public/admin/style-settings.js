@@ -1007,7 +1007,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }, 100);
 });
 
-// 分析圖片風格（異步模式）
+// 分析圖片風格（同步模式 - 直接等待結果）
 async function analyzeStyleImage() {
   const input = document.getElementById('style-image-input');
   const file = input.files[0];
@@ -1023,53 +1023,38 @@ async function analyzeStyleImage() {
   try {
     // 顯示載入狀態
     statusDiv.className = 'mt-2 text-sm text-blue-600 font-medium';
-    statusDiv.textContent = '🔄 正在提交分析任務...';
+    statusDiv.textContent = '🔄 AI 分析中，請稍候（約 10-20 秒）...';
     statusDiv.classList.remove('hidden');
     analyzeBtn.disabled = true;
-    analyzeBtn.textContent = '⏳ 提交中...';
+    analyzeBtn.textContent = '⏳ 分析中...';
 
-    // 轉換圖片為 base64
-    const base64 = await fileToBase64(file);
+    // 壓縮圖片（降低大小，加速上傳和分析）
+    const compressedBase64 = await compressImage(file, 800, 0.7);
+    console.log('📸 圖片已壓縮，大小:', Math.round(compressedBase64.length / 1024), 'KB');
 
-    // 步驟 1：創建分析任務
-    const createResponse = await fetch('/.netlify/functions/analyze-style-image', {
+    // 呼叫 API 分析圖片
+    const response = await fetch('/.netlify/functions/analyze-style-image', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ image: base64 })
+      body: JSON.stringify({ image: compressedBase64 })
     });
 
-    if (!createResponse.ok) {
-      throw new Error(`HTTP ${createResponse.status}: ${await createResponse.text()}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
     }
 
-    const createResult = await createResponse.json();
-
-    if (!createResult.success || !createResult.taskId) {
-      throw new Error(createResult.error || '創建任務失敗');
-    }
-
-    const taskId = createResult.taskId;
-    console.log('✅ 任務已創建:', taskId);
-
-    // 步驟 2：輪詢查詢任務狀態
-    statusDiv.textContent = '🤖 AI 分析中，請稍候（預計 30-60 秒）...';
-    analyzeBtn.textContent = '⏳ 分析中...';
-
-    const result = await pollTaskStatus(taskId, (progress, status) => {
-      // 更新進度顯示
-      if (status === 'processing') {
-        statusDiv.textContent = `🤖 AI 分析中... ${progress}%`;
-      }
-    });
+    const result = await response.json();
 
     if (!result.success) {
       throw new Error(result.error || '分析失敗');
     }
 
-    // 步驟 3：填入分析結果
+    // 填入分析結果
     const analysis = result.analysis;
+    console.log('✅ 分析結果:', analysis);
 
     if (analysis.coreStyle) {
       document.getElementById('edit-core-style').value = analysis.coreStyle;
@@ -1097,7 +1082,7 @@ async function analyzeStyleImage() {
     statusDiv.className = 'mt-2 text-sm text-green-600 font-medium';
     statusDiv.textContent = '✅ 分析完成！風格參數已自動填入，請檢查並調整';
 
-    // 3秒後隱藏訊息
+    // 5秒後隱藏訊息
     setTimeout(() => {
       statusDiv.classList.add('hidden');
     }, 5000);
@@ -1113,76 +1098,47 @@ async function analyzeStyleImage() {
 }
 
 /**
- * 輪詢查詢任務狀態
- * @param {string} taskId - 任務 ID
- * @param {function} onProgress - 進度回調函數 (progress, status)
- * @returns {Promise<object>} 任務結果
+ * 壓縮圖片
+ * @param {File} file - 圖片文件
+ * @param {number} maxWidth - 最大寬度
+ * @param {number} quality - 品質 (0-1)
+ * @returns {Promise<string>} Base64 字串
  */
-async function pollTaskStatus(taskId, onProgress) {
-  const maxAttempts = 60; // 最多輪詢 60 次（約 2 分鐘）
-  const interval = 2000; // 每 2 秒輪詢一次
+async function compressImage(file, maxWidth = 800, quality = 0.7) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
 
-  console.log(`🔄 開始輪詢任務: ${taskId}`);
+        // 如果寬度超過最大值，等比例縮小
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
 
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    try {
-      console.log(`📡 輪詢嘗試 ${attempt + 1}/${maxAttempts}`);
+        canvas.width = width;
+        canvas.height = height;
 
-      const response = await fetch(`/.netlify/functions/analyze-style-image?taskId=${taskId}`, {
-        method: 'GET'
-      });
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
 
-      if (!response.ok) {
-        console.error(`❌ HTTP 錯誤: ${response.status}`);
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      const result = await response.json();
-      console.log(`📊 任務狀態:`, { status: result.status, progress: result.progress });
-
-      if (!result.success) {
-        throw new Error(result.error || '查詢失敗');
-      }
-
-      const { status, progress, result: analysisResult, error } = result;
-
-      // 更新進度
-      if (onProgress) {
-        onProgress(progress || 0, status);
-      }
-
-      // 任務完成
-      if (status === 'completed' && analysisResult) {
-        console.log('✅ 任務完成！');
-        return { success: true, analysis: analysisResult };
-      }
-
-      // 任務失敗
-      if (status === 'failed') {
-        console.error('❌ 任務失敗:', error);
-        throw new Error(error || '分析失敗');
-      }
-
-      // 等待後繼續輪詢
-      await new Promise(resolve => setTimeout(resolve, interval));
-
-    } catch (error) {
-      console.error(`❌ 輪詢失敗 (嘗試 ${attempt + 1}):`, error);
-
-      // 如果是最後一次嘗試，拋出錯誤
-      if (attempt === maxAttempts - 1) {
-        throw new Error('輪詢超時，請稍後再試');
-      }
-
-      // 否則繼續等待
-      await new Promise(resolve => setTimeout(resolve, interval));
-    }
-  }
-
-  throw new Error('分析超時，請稍後再試');
+        // 轉換為 base64
+        const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+        resolve(compressedBase64);
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
-// 將檔案轉換為 base64
+// 將檔案轉換為 base64（保留給其他功能使用）
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

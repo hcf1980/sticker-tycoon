@@ -34,6 +34,10 @@
 [functions."pack-for-line"]
   timeout = 26
 
+# AI 風格分析（需要較長時間）
+[functions."analyze-style-image"]
+  timeout = 26
+
 # API 路由重定向
 [[redirects]]
   from = "/api/admin/rich-menu-info"
