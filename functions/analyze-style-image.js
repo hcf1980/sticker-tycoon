@@ -4,6 +4,7 @@
  */
 
 const { v4: uuidv4 } = require('uuid');
+const axios = require('axios');
 const { getSupabaseClient } = require('./supabase-client');
 
 exports.handler = async (event, context) => {
@@ -103,18 +104,22 @@ exports.handler = async (event, context) => {
 
       if (insertError) throw insertError;
 
-      // 觸發 Background Worker
+      // 觸發 Background Worker（使用 axios 確保兼容性）
       const workerUrl = `${process.env.URL || 'https://sticker-tycoon.netlify.app'}/.netlify/functions/analyze-style-image-background`;
       console.log(`🚀 觸發 Background Worker: ${workerUrl}`);
 
-      fetch(workerUrl, {
-        method: 'POST',
+      // 使用 axios 異步調用，不等待結果
+      axios.post(workerUrl, {
+        taskId,
+        imageData: image
+      }, {
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ taskId, imageData: image })
+        timeout: 5000 // 5 秒超時（只是觸發，不等待完成）
       }).then(res => {
         console.log(`📡 Worker 回應狀態: ${res.status}`);
       }).catch(err => {
         console.error('❌ Worker 調用失敗:', err.message);
+        // 即使調用失敗，任務也已創建，用戶可以稍後重試
       });
 
       // 立即返回任務 ID

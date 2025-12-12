@@ -1122,17 +1122,23 @@ async function pollTaskStatus(taskId, onProgress) {
   const maxAttempts = 60; // 最多輪詢 60 次（約 2 分鐘）
   const interval = 2000; // 每 2 秒輪詢一次
 
+  console.log(`🔄 開始輪詢任務: ${taskId}`);
+
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
+      console.log(`📡 輪詢嘗試 ${attempt + 1}/${maxAttempts}`);
+
       const response = await fetch(`/.netlify/functions/analyze-style-image?taskId=${taskId}`, {
         method: 'GET'
       });
 
       if (!response.ok) {
+        console.error(`❌ HTTP 錯誤: ${response.status}`);
         throw new Error(`HTTP ${response.status}`);
       }
 
       const result = await response.json();
+      console.log(`📊 任務狀態:`, { status: result.status, progress: result.progress });
 
       if (!result.success) {
         throw new Error(result.error || '查詢失敗');
@@ -1147,11 +1153,13 @@ async function pollTaskStatus(taskId, onProgress) {
 
       // 任務完成
       if (status === 'completed' && analysisResult) {
+        console.log('✅ 任務完成！');
         return { success: true, analysis: analysisResult };
       }
 
       // 任務失敗
       if (status === 'failed') {
+        console.error('❌ 任務失敗:', error);
         throw new Error(error || '分析失敗');
       }
 
@@ -1159,7 +1167,7 @@ async function pollTaskStatus(taskId, onProgress) {
       await new Promise(resolve => setTimeout(resolve, interval));
 
     } catch (error) {
-      console.error(`輪詢失敗 (嘗試 ${attempt + 1}):`, error);
+      console.error(`❌ 輪詢失敗 (嘗試 ${attempt + 1}):`, error);
 
       // 如果是最後一次嘗試，拋出錯誤
       if (attempt === maxAttempts - 1) {
