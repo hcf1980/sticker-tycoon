@@ -63,6 +63,75 @@ exports.handler = async function(event) {
           body: JSON.stringify({ success: true, stats })
         };
       }
+
+      // 檢查 ZIP 是否已經生成好了
+      if (action === 'checkZip') {
+        const applicationId = event.queryStringParameters?.applicationId;
+        if (!applicationId) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({ success: false, error: '缺少申請編號' })
+          };
+        }
+
+        try {
+          const { data: application, error: appError } = await supabase
+            .from('listing_applications')
+            .select('zip_cache_url, zip_generating')
+            .eq('application_id', applicationId)
+            .single();
+
+          if (appError || !application) {
+            throw new Error('找不到申請記錄');
+          }
+
+          // 如果有 ZIP URL，表示已經完成
+          if (application.zip_cache_url) {
+            return {
+              statusCode: 200,
+              headers,
+              body: JSON.stringify({
+                success: true,
+                ready: true,
+                downloadUrl: application.zip_cache_url
+              })
+            };
+          }
+
+          // 如果正在生成中
+          if (application.zip_generating) {
+            return {
+              statusCode: 200,
+              headers,
+              body: JSON.stringify({
+                success: true,
+                ready: false,
+                generating: true,
+                message: '正在生成中...'
+              })
+            };
+          }
+
+          // 還未開始生成
+          return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({
+              success: true,
+              ready: false,
+              generating: false
+            })
+          };
+        } catch (err) {
+          console.error('❌ 檢查 ZIP 狀態失敗:', err);
+          return {
+            statusCode: 500,
+            headers,
+            body: JSON.stringify({ success: false, error: err.message })
+          };
+        }
+      }
     }
 
     // POST 請求 - 更新狀態
@@ -133,74 +202,6 @@ exports.handler = async function(event) {
           headers,
           body: JSON.stringify({ success: true, message: '已刪除' })
         };
-      }
-
-      // 檢查 ZIP 是否已經生成好了
-      if (action === 'checkZip') {
-        if (!applicationId) {
-          return {
-            statusCode: 400,
-            headers,
-            body: JSON.stringify({ success: false, error: '缺少申請編號' })
-          };
-        }
-
-        try {
-          const { data: application, error: appError } = await supabase
-            .from('listing_applications')
-            .select('zip_cache_url, zip_generating')
-            .eq('application_id', applicationId)
-            .single();
-
-          if (appError || !application) {
-            throw new Error('找不到申請記錄');
-          }
-
-          // 如果有 ZIP URL，表示已經完成
-          if (application.zip_cache_url) {
-            return {
-              statusCode: 200,
-              headers,
-              body: JSON.stringify({
-                success: true,
-                ready: true,
-                downloadUrl: application.zip_cache_url
-              })
-            };
-          }
-
-          // 如果正在生成中
-          if (application.zip_generating) {
-            return {
-              statusCode: 200,
-              headers,
-              body: JSON.stringify({
-                success: true,
-                ready: false,
-                generating: true,
-                message: '正在生成中...'
-              })
-            };
-          }
-
-          // 還未開始生成
-          return {
-            statusCode: 200,
-            headers,
-            body: JSON.stringify({
-              success: true,
-              ready: false,
-              generating: false
-            })
-          };
-        } catch (err) {
-          console.error('❌ 檢查 ZIP 狀態失敗:', err);
-          return {
-            statusCode: 500,
-            headers,
-            body: JSON.stringify({ success: false, error: err.message })
-          };
-        }
       }
 
       // 啟動 ZIP 生成（立即返回）
