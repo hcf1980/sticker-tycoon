@@ -1,15 +1,16 @@
 /**
  * AI 風格圖片分析 API - 貼圖大亨
- * 使用你設定的 AI Vision API 分析圖片並提取風格參數
+ * 快速返回任務 ID，並觸發 Background Worker 異步處理
  */
 
-const axios = require('axios');
+const { v4: uuidv4 } = require('uuid');
+const { getSupabaseClient } = require('./supabase-client');
 
 exports.handler = async (event, context) => {
   const headers = {
     'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type'
   };
 
@@ -18,145 +19,132 @@ exports.handler = async (event, context) => {
     return { statusCode: 200, headers, body: '' };
   }
 
-  if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      headers,
-      body: JSON.stringify({ success: false, error: 'Method not allowed' })
-    };
-  }
+  // GET 請求：查詢任務狀態
+  if (event.httpMethod === 'GET') {
+    try {
+      const taskId = event.queryStringParameters?.taskId;
 
-  try {
-    const { image } = JSON.parse(event.body);
+      if (!taskId) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ success: false, error: '缺少 taskId 參數' })
+        };
+      }
 
-    if (!image) {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase
+        .from('style_analysis_tasks')
+        .select('*')
+        .eq('task_id', taskId)
+        .single();
+
+      if (error) throw error;
+
+      if (!data) {
+        return {
+          statusCode: 404,
+          headers,
+          body: JSON.stringify({ success: false, error: '任務不存在' })
+        };
+      }
+
       return {
-        statusCode: 400,
+        statusCode: 200,
         headers,
-        body: JSON.stringify({ success: false, error: '請提供圖片' })
+        body: JSON.stringify({
+          success: true,
+          taskId: data.task_id,
+          status: data.status,
+          progress: data.progress || 0,
+          result: data.result || null,
+          error: data.error_message || null
+        })
+      };
+
+    } catch (error) {
+      console.error('❌ 查詢任務失敗:', error);
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ success: false, error: error.message })
       };
     }
-
-    // 使用 Netlify 環境變數中的 AI API 設定
-    const AI_API_KEY = process.env.AI_IMAGE_API_KEY;
-    const AI_API_URL = process.env.AI_IMAGE_API_URL || 'https://newapi.pockgo.com';
-    const AI_MODEL = process.env.AI_MODEL || 'gemini-2.0-flash-exp';
-
-    if (!AI_API_KEY) {
-      throw new Error('AI_IMAGE_API_KEY 環境變數未設定');
-    }
-
-    console.log('🎨 開始分析圖片風格...');
-    console.log(`🔧 使用 API: ${AI_API_URL}`);
-    console.log(`🤖 使用模型: ${AI_MODEL}`);
-
-    // 呼叫 AI Vision API
-    const aiResponse = await axios.post(
-      `${AI_API_URL}/v1/chat/completions`,
-      {
-        model: AI_MODEL,
-        messages: [
-          {
-            role: 'system',
-            content: `You are a professional art style analyzer. Analyze the provided image and extract detailed style parameters in English for AI image generation prompts.
-
-Return ONLY a valid JSON object with these exact keys (no markdown, no code blocks):
-{
-  "coreStyle": "Main artistic style description (e.g., ANIME STYLE, WATERCOLOR PAINTING, etc.)",
-  "lighting": "Lighting description (e.g., soft diffused lighting, dramatic shadows)",
-  "composition": "Composition and framing details",
-  "brushwork": "Brush technique or texture details",
-  "mood": "Overall mood and atmosphere",
-  "colorPalette": "Color scheme (comma-separated, e.g., pastel pink, mint green, soft yellow)",
-  "description": "Brief 1-2 sentence Chinese description of the style"
-}
-
-Be specific and use terminology suitable for Stable Diffusion prompts. Focus on visual characteristics that can be replicated.`
-          },
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: 'Please analyze this image and extract its artistic style parameters in the JSON format specified.'
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: image
-                }
-              }
-            ]
-          }
-        ],
-        max_tokens: 1000,
-        temperature: 0.7
-      },
-      {
-        headers: {
-          'Authorization': `Bearer ${AI_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        timeout: 60000
-      }
-    );
-
-    console.log('✅ AI 回應接收');
-
-    const content = aiResponse.data.choices[0].message.content.trim();
-    console.log('📝 回應內容:', content);
-
-    // 解析 JSON（移除可能的 markdown 代碼塊）
-    let analysis;
-    try {
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        analysis = JSON.parse(jsonMatch[0]);
-      } else {
-        analysis = JSON.parse(content);
-      }
-    } catch (parseError) {
-      console.error('JSON 解析錯誤:', content);
-      throw new Error('AI 回應格式錯誤，請重試');
-    }
-
-    console.log('🎉 風格分析完成:', analysis);
-
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({
-        success: true,
-        analysis: analysis,
-        usage: aiResponse.data.usage
-      })
-    };
-
-  } catch (error) {
-    console.error('❌ 風格分析錯誤:', error);
-
-    let errorMessage = error.message || '未知錯誤';
-
-    if (error.response) {
-      const apiError = error.response.data;
-      if (apiError && apiError.error) {
-        errorMessage = `AI API 錯誤: ${apiError.error.message || JSON.stringify(apiError.error)}`;
-      } else {
-        errorMessage = `HTTP ${error.response.status}: ${JSON.stringify(apiError)}`;
-      }
-    }
-
-    console.error('📋 詳細錯誤:', errorMessage);
-
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({
-        success: false,
-        error: errorMessage,
-        details: error.response?.data || null
-      })
-    };
   }
+
+  // POST 請求：創建分析任務
+  if (event.httpMethod === 'POST') {
+    try {
+      const { image } = JSON.parse(event.body);
+
+      if (!image) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ success: false, error: '請提供圖片' })
+        };
+      }
+
+      // 創建任務
+      const taskId = uuidv4();
+      const supabase = getSupabaseClient();
+
+      console.log(`🆕 創建風格分析任務: ${taskId}`);
+
+      const { error: insertError } = await supabase
+        .from('style_analysis_tasks')
+        .insert({
+          task_id: taskId,
+          status: 'pending',
+          progress: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+
+      if (insertError) throw insertError;
+
+      // 觸發 Background Worker
+      const workerUrl = `${process.env.URL || 'https://sticker-tycoon.netlify.app'}/.netlify/functions/analyze-style-image-background`;
+      console.log(`🚀 觸發 Background Worker: ${workerUrl}`);
+
+      fetch(workerUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskId, imageData: image })
+      }).then(res => {
+        console.log(`📡 Worker 回應狀態: ${res.status}`);
+      }).catch(err => {
+        console.error('❌ Worker 調用失敗:', err.message);
+      });
+
+      // 立即返回任務 ID
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          success: true,
+          taskId: taskId,
+          message: '分析任務已創建，請輪詢查詢結果'
+        })
+      };
+
+    } catch (error) {
+      console.error('❌ 創建任務失敗:', error);
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({
+          success: false,
+          error: error.message
+        })
+      };
+    }
+  }
+
+  return {
+    statusCode: 405,
+    headers,
+    body: JSON.stringify({ success: false, error: 'Method not allowed' })
+  };
 };
 

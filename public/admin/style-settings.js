@@ -1007,7 +1007,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }, 100);
 });
 
-// 分析圖片風格
+// 分析圖片風格（異步模式）
 async function analyzeStyleImage() {
   const input = document.getElementById('style-image-input');
   const file = input.files[0];
@@ -1023,16 +1023,16 @@ async function analyzeStyleImage() {
   try {
     // 顯示載入狀態
     statusDiv.className = 'mt-2 text-sm text-blue-600 font-medium';
-    statusDiv.textContent = '🔄 AI 分析中，請稍候...';
+    statusDiv.textContent = '🔄 正在提交分析任務...';
     statusDiv.classList.remove('hidden');
     analyzeBtn.disabled = true;
-    analyzeBtn.textContent = '⏳ 分析中...';
+    analyzeBtn.textContent = '⏳ 提交中...';
 
     // 轉換圖片為 base64
     const base64 = await fileToBase64(file);
 
-    // 呼叫 API 分析圖片
-    const response = await fetch('/.netlify/functions/analyze-style-image', {
+    // 步驟 1：創建分析任務
+    const createResponse = await fetch('/.netlify/functions/analyze-style-image', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1040,17 +1040,35 @@ async function analyzeStyleImage() {
       body: JSON.stringify({ image: base64 })
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+    if (!createResponse.ok) {
+      throw new Error(`HTTP ${createResponse.status}: ${await createResponse.text()}`);
     }
 
-    const result = await response.json();
+    const createResult = await createResponse.json();
+
+    if (!createResult.success || !createResult.taskId) {
+      throw new Error(createResult.error || '創建任務失敗');
+    }
+
+    const taskId = createResult.taskId;
+    console.log('✅ 任務已創建:', taskId);
+
+    // 步驟 2：輪詢查詢任務狀態
+    statusDiv.textContent = '🤖 AI 分析中，請稍候（預計 30-60 秒）...';
+    analyzeBtn.textContent = '⏳ 分析中...';
+
+    const result = await pollTaskStatus(taskId, (progress, status) => {
+      // 更新進度顯示
+      if (status === 'processing') {
+        statusDiv.textContent = `🤖 AI 分析中... ${progress}%`;
+      }
+    });
 
     if (!result.success) {
       throw new Error(result.error || '分析失敗');
     }
 
-    // 填入分析結果
+    // 步驟 3：填入分析結果
     const analysis = result.analysis;
 
     if (analysis.coreStyle) {
@@ -1087,11 +1105,73 @@ async function analyzeStyleImage() {
   } catch (error) {
     console.error('分析錯誤:', error);
     statusDiv.className = 'mt-2 text-sm text-red-600 font-medium';
-    statusDiv.textContent = '❌ 分析失敗: ' + error.message;
+    statusDiv.textContent = `❌ 分析失敗: ${error.message}`;
   } finally {
     analyzeBtn.disabled = false;
     analyzeBtn.textContent = '✨ 分析風格';
   }
+}
+
+/**
+ * 輪詢查詢任務狀態
+ * @param {string} taskId - 任務 ID
+ * @param {function} onProgress - 進度回調函數 (progress, status)
+ * @returns {Promise<object>} 任務結果
+ */
+async function pollTaskStatus(taskId, onProgress) {
+  const maxAttempts = 60; // 最多輪詢 60 次（約 2 分鐘）
+  const interval = 2000; // 每 2 秒輪詢一次
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      const response = await fetch(`/.netlify/functions/analyze-style-image?taskId=${taskId}`, {
+        method: 'GET'
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || '查詢失敗');
+      }
+
+      const { status, progress, result: analysisResult, error } = result;
+
+      // 更新進度
+      if (onProgress) {
+        onProgress(progress || 0, status);
+      }
+
+      // 任務完成
+      if (status === 'completed' && analysisResult) {
+        return { success: true, analysis: analysisResult };
+      }
+
+      // 任務失敗
+      if (status === 'failed') {
+        throw new Error(error || '分析失敗');
+      }
+
+      // 等待後繼續輪詢
+      await new Promise(resolve => setTimeout(resolve, interval));
+
+    } catch (error) {
+      console.error(`輪詢失敗 (嘗試 ${attempt + 1}):`, error);
+
+      // 如果是最後一次嘗試，拋出錯誤
+      if (attempt === maxAttempts - 1) {
+        throw new Error('輪詢超時，請稍後再試');
+      }
+
+      // 否則繼續等待
+      await new Promise(resolve => setTimeout(resolve, interval));
+    }
+  }
+
+  throw new Error('分析超時，請稍後再試');
 }
 
 // 將檔案轉換為 base64
