@@ -31,6 +31,7 @@ function switchTab(tab) {
   if (tab === 'styles') loadStyles();
   else if (tab === 'framing') loadFraming();
   else if (tab === 'scenes') loadScenes();
+  else if (tab === 'expressions') loadExpressions();
 }
 
 // 載入風格設定
@@ -409,6 +410,36 @@ async function editScene(sceneId) {
 function generateSceneEditForm(scene) {
   return `
     <div class="space-y-4">
+      <!-- AI 圖片分析區塊 -->
+      <div class="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-lg p-4 mb-4">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <span class="text-2xl">🎨</span>
+            <div>
+              <h4 class="font-bold text-purple-900">AI 裝飾風格提取器</h4>
+              <p class="text-xs text-purple-600">上傳圖片，AI 自動分析並填入裝飾風格參數</p>
+            </div>
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <input type="file" id="scene-image-input" accept="image/*" class="hidden">
+          <button onclick="document.getElementById('scene-image-input').click()"
+                  class="flex-1 bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+            📸 選擇參考圖片
+          </button>
+          <button onclick="analyzeSceneImage()" id="analyze-scene-btn"
+                  class="flex-1 bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-lg font-medium transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  disabled>
+            ✨ 分析風格
+          </button>
+        </div>
+        <div id="scene-image-preview" class="mt-3 hidden">
+          <img id="scene-preview-img" class="w-full h-32 object-cover rounded border-2 border-purple-200">
+          <p class="text-xs text-gray-500 mt-1 text-center">圖片已選擇，點擊「分析風格」開始</p>
+        </div>
+        <div id="scene-analysis-status" class="mt-2 text-sm hidden"></div>
+      </div>
+
       <div>
         <label class="block text-sm font-bold mb-2">裝飾風格 ID</label>
         <input type="text" value="${scene.scene_id}" disabled class="w-full p-2 border rounded bg-gray-100">
@@ -1146,4 +1177,120 @@ function fileToBase64(file) {
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+}
+
+// ============================================
+// 🎨 裝飾風格圖片分析功能
+// ============================================
+
+let sceneImageFile = null;
+
+// 監聽裝飾風格圖片選擇
+document.addEventListener('DOMContentLoaded', () => {
+  // 延遲綁定，因為這個元素在 Modal 打開後才存在
+  document.addEventListener('change', (e) => {
+    if (e.target && e.target.id === 'scene-image-input') {
+      handleSceneImageSelect(e);
+    }
+  });
+});
+
+/**
+ * 處理裝飾風格圖片選擇
+ */
+function handleSceneImageSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  sceneImageFile = file;
+
+  // 顯示預覽
+  const preview = document.getElementById('scene-image-preview');
+  const img = document.getElementById('scene-preview-img');
+  const analyzeBtn = document.getElementById('analyze-scene-btn');
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    img.src = e.target.result;
+    preview.classList.remove('hidden');
+    analyzeBtn.disabled = false;
+  };
+  reader.readAsDataURL(file);
+}
+
+/**
+ * 分析裝飾風格圖片
+ */
+async function analyzeSceneImage() {
+  if (!sceneImageFile) {
+    alert('請先選擇圖片');
+    return;
+  }
+
+  const analyzeBtn = document.getElementById('analyze-scene-btn');
+  const statusDiv = document.getElementById('scene-analysis-status');
+
+  try {
+    analyzeBtn.disabled = true;
+    analyzeBtn.textContent = '🔄 分析中...';
+    statusDiv.classList.remove('hidden');
+    statusDiv.className = 'mt-2 text-sm text-blue-600 font-medium';
+    statusDiv.textContent = '🤖 AI 正在分析裝飾風格...';
+
+    // 壓縮圖片（降低 API 成本）
+    const compressedBase64 = await compressImage(sceneImageFile, 800, 0.7);
+    console.log('📸 圖片已壓縮，大小:', (compressedBase64.length / 1024).toFixed(0), 'KB');
+
+    // 呼叫 Netlify Function
+    const response = await fetch('/.netlify/functions/analyze-decoration-style', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: compressedBase64 })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(`HTTP ${response.status}: ${JSON.stringify(errorData)}`);
+    }
+
+    const result = await response.json();
+    console.log('✅ 分析結果:', result);
+
+    if (!result.success) {
+      throw new Error(result.error || '分析失敗');
+    }
+
+    const analysis = result.data;
+
+    // 自動填入表單
+    if (analysis.decorationStyle) {
+      document.getElementById('edit-decoration-style').value = analysis.decorationStyle;
+    }
+    if (analysis.decorationElements && Array.isArray(analysis.decorationElements)) {
+      document.getElementById('edit-decoration-elements').value = JSON.stringify(analysis.decorationElements, null, 2);
+    }
+    if (analysis.popTextStyle) {
+      document.getElementById('edit-pop-text-style').value = analysis.popTextStyle;
+    }
+    if (analysis.description) {
+      document.getElementById('edit-description').value = analysis.description;
+    }
+
+    // 顯示成功訊息
+    statusDiv.className = 'mt-2 text-sm text-green-600 font-medium';
+    statusDiv.textContent = '✅ 分析完成！裝飾風格參數已自動填入，請檢查並調整';
+
+    // 5秒後隱藏訊息
+    setTimeout(() => {
+      statusDiv.classList.add('hidden');
+    }, 5000);
+
+  } catch (error) {
+    console.error('分析錯誤:', error);
+    statusDiv.className = 'mt-2 text-sm text-red-600 font-medium';
+    statusDiv.textContent = `❌ 分析失敗: ${error.message}`;
+  } finally {
+    analyzeBtn.disabled = false;
+    analyzeBtn.textContent = '✨ 分析風格';
+  }
 }

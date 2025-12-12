@@ -48,6 +48,9 @@
       <button onclick="switchTab('scenes')" id="tab-scenes" class="px-6 py-3 font-bold text-gray-500 hover:text-pink-500">
         裝飾風格
       </button>
+      <button onclick="switchTab('expressions')" id="tab-expressions" class="px-6 py-3 font-bold text-gray-500 hover:text-pink-500">
+        表情模板
+      </button>
     </div>
 
     <!-- 風格設定內容 -->
@@ -102,6 +105,24 @@
           </button>
         </div>
         <div id="scenes-list" class="space-y-4">
+          <div class="text-center text-gray-500 py-8">載入中...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 表情模板內容 -->
+    <div id="content-expressions" class="tab-content hidden">
+      <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+        <h2 class="text-xl font-bold mb-4">😊 表情模板列表</h2>
+        <div class="mb-4">
+          <button onclick="loadExpressions()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+            🔄 重新載入
+          </button>
+          <button onclick="initializeExpressions()" class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 ml-2">
+            😊 初始化表情模板
+          </button>
+        </div>
+        <div id="expressions-list" class="space-y-4">
           <div class="text-center text-gray-500 py-8">載入中...</div>
         </div>
       </div>
