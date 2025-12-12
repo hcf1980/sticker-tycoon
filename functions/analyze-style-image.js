@@ -40,8 +40,8 @@ exports.handler = async (event, context) => {
     // 使用 Netlify 環境變數中的 AI API 設定
     const AI_API_KEY = process.env.AI_IMAGE_API_KEY;
     const AI_API_URL = process.env.AI_IMAGE_API_URL || 'https://newapi.pockgo.com';
-    // 使用純文字模型進行分析（更快）
-    const AI_MODEL = 'gemini-2.0-flash';
+    // 使用專門的圖片分析模型（AI_MODEL_2）
+    const AI_MODEL = process.env.AI_MODEL_2 || 'gpt-4o-mini';
 
     if (!AI_API_KEY) {
       throw new Error('AI_IMAGE_API_KEY 環境變數未設定');
@@ -49,11 +49,15 @@ exports.handler = async (event, context) => {
 
     console.log('🎨 開始分析圖片風格...');
     console.log(`🔧 使用 API: ${AI_API_URL}`);
+    console.log(`🤖 使用圖片分析模型: ${AI_MODEL} (來自 AI_MODEL_2)`);
+
+    console.log('🎨 開始分析圖片風格...');
+    console.log(`🔧 使用 API: ${AI_API_URL}`);
     console.log(`🤖 使用模型: ${AI_MODEL}`);
 
     // 精簡的 Prompt，加速回應
-    const systemPrompt = `Analyze image style. Return JSON only:
-{"coreStyle":"style name","lighting":"lighting desc","composition":"composition","brushwork":"texture","mood":"atmosphere","colorPalette":"colors","description":"中文描述"}`;
+    const systemPrompt = `Analyze this image's art style. Return only valid JSON:
+{"coreStyle":"main art style name","lighting":"lighting description","composition":"composition details","brushwork":"texture details","mood":"atmosphere","colorPalette":"color1, color2, color3","description":"簡短中文描述"}`;
 
     // 呼叫 AI Vision API
     const aiResponse = await axios.post(
@@ -71,8 +75,7 @@ exports.handler = async (event, context) => {
               {
                 type: 'image_url',
                 image_url: {
-                  url: image,
-                  detail: 'low' // 使用低解析度加速處理
+                  url: image
                 }
               }
             ]
