@@ -4,7 +4,15 @@
  */
 
 const { createRichMenu, uploadRichMenuImage, setDefaultRichMenu, deleteRichMenu, listRichMenus } = require('./rich-menu-manager');
-const { createClient } = require('@supabase/supabase-js');
+
+// 動態導入 Supabase（可選依賴）
+let createClient = null;
+try {
+  const supabaseModule = require('@supabase/supabase-js');
+  createClient = supabaseModule.createClient;
+} catch (err) {
+  console.warn('⚠️ Supabase 模塊未安裝，備份功能將被禁用');
+}
 
 exports.handler = async (event, context) => {
   const headers = {
@@ -29,8 +37,8 @@ exports.handler = async (event, context) => {
 
       // 取得儲存在 Supabase 的 Rich Menu 圖片 URL（可選功能）
       let imageUrl = null;
-      try {
-        if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
+      if (createClient && process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
+        try {
           const supabase = createClient(
             process.env.SUPABASE_URL,
             process.env.SUPABASE_SERVICE_KEY
@@ -39,9 +47,9 @@ exports.handler = async (event, context) => {
             .from('stickers')
             .getPublicUrl('rich-menu/current.jpg');
           imageUrl = publicUrl?.publicUrl || null;
+        } catch (supabaseErr) {
+          console.warn('⚠️ 無法取得 Supabase 圖片 URL:', supabaseErr.message);
         }
-      } catch (supabaseErr) {
-        console.warn('⚠️ 無法取得 Supabase 圖片 URL:', supabaseErr.message);
       }
 
       return {
@@ -151,7 +159,7 @@ exports.handler = async (event, context) => {
 
       // 步驟 6: 備份圖片到 Supabase Storage（供後台顯示，可選功能）
       console.log('📋 步驟 6: 備份圖片到 Supabase...');
-      if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
+      if (createClient && process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
         try {
           const supabase = createClient(
             process.env.SUPABASE_URL,
@@ -168,7 +176,7 @@ exports.handler = async (event, context) => {
           console.warn('⚠️ 備份圖片失敗（不影響主要功能）:', uploadErr.message);
         }
       } else {
-        console.log('ℹ️ 跳過 Supabase 備份（環境變數未設置）');
+        console.log('ℹ️ 跳過 Supabase 備份（模塊未載入或環境變數未設置）');
       }
 
       console.log('🎉 Rich Menu 更新流程完成！');

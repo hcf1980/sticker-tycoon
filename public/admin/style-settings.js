@@ -221,6 +221,36 @@ async function editStyle(styleId) {
 function generateStyleEditForm(style) {
   return `
     <div class="space-y-4">
+      <!-- AI 圖片分析區塊 -->
+      <div class="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-lg p-4 mb-4">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <span class="text-2xl">🎨</span>
+            <div>
+              <h4 class="font-bold text-purple-900">AI 風格提取器</h4>
+              <p class="text-xs text-purple-600">上傳圖片，AI 自動分析並填入風格參數</p>
+            </div>
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <input type="file" id="style-image-input" accept="image/*" class="hidden">
+          <button onclick="document.getElementById('style-image-input').click()"
+                  class="flex-1 bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+            📸 選擇參考圖片
+          </button>
+          <button onclick="analyzeStyleImage()" id="analyze-btn"
+                  class="flex-1 bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-lg font-medium transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  disabled>
+            ✨ 分析風格
+          </button>
+        </div>
+        <div id="image-preview" class="mt-3 hidden">
+          <img id="preview-img" class="w-full h-32 object-cover rounded border-2 border-purple-200">
+          <p class="text-xs text-gray-500 mt-1 text-center">圖片已選擇，點擊「分析風格」開始</p>
+        </div>
+        <div id="analysis-status" class="mt-2 text-sm hidden"></div>
+      </div>
+
       <div>
         <label class="block text-sm font-bold mb-2">風格 ID</label>
         <input type="text" value="${style.style_id}" disabled class="w-full p-2 border rounded bg-gray-100">
@@ -952,3 +982,124 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
   }, 100);
 });
+
+// ==================== AI 風格提取功能 ====================
+
+// 當選擇圖片時顯示預覽
+document.addEventListener('DOMContentLoaded', () => {
+  const checkInterval = setInterval(() => {
+    const input = document.getElementById('style-image-input');
+    if (input) {
+      clearInterval(checkInterval);
+      input.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            document.getElementById('preview-img').src = e.target.result;
+            document.getElementById('image-preview').classList.remove('hidden');
+            document.getElementById('analyze-btn').disabled = false;
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+    }
+  }, 100);
+});
+
+// 分析圖片風格
+async function analyzeStyleImage() {
+  const input = document.getElementById('style-image-input');
+  const file = input.files[0];
+
+  if (!file) {
+    alert('請先選擇圖片');
+    return;
+  }
+
+  const statusDiv = document.getElementById('analysis-status');
+  const analyzeBtn = document.getElementById('analyze-btn');
+
+  try {
+    // 顯示載入狀態
+    statusDiv.className = 'mt-2 text-sm text-blue-600 font-medium';
+    statusDiv.textContent = '🔄 AI 分析中，請稍候...';
+    statusDiv.classList.remove('hidden');
+    analyzeBtn.disabled = true;
+    analyzeBtn.textContent = '⏳ 分析中...';
+
+    // 轉換圖片為 base64
+    const base64 = await fileToBase64(file);
+
+    // 呼叫 API 分析圖片
+    const response = await fetch('/.netlify/functions/analyze-style-image', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ image: base64 })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+    }
+
+    const result = await response.json();
+
+    if (!result.success) {
+      throw new Error(result.error || '分析失敗');
+    }
+
+    // 填入分析結果
+    const analysis = result.analysis;
+
+    if (analysis.coreStyle) {
+      document.getElementById('edit-core-style').value = analysis.coreStyle;
+    }
+    if (analysis.lighting) {
+      document.getElementById('edit-lighting').value = analysis.lighting;
+    }
+    if (analysis.composition) {
+      document.getElementById('edit-composition').value = analysis.composition;
+    }
+    if (analysis.brushwork) {
+      document.getElementById('edit-brushwork').value = analysis.brushwork;
+    }
+    if (analysis.mood) {
+      document.getElementById('edit-mood').value = analysis.mood;
+    }
+    if (analysis.colorPalette) {
+      document.getElementById('edit-color-palette').value = analysis.colorPalette;
+    }
+    if (analysis.description) {
+      document.getElementById('edit-description').value = analysis.description;
+    }
+
+    // 顯示成功訊息
+    statusDiv.className = 'mt-2 text-sm text-green-600 font-medium';
+    statusDiv.textContent = '✅ 分析完成！風格參數已自動填入，請檢查並調整';
+
+    // 3秒後隱藏訊息
+    setTimeout(() => {
+      statusDiv.classList.add('hidden');
+    }, 5000);
+
+  } catch (error) {
+    console.error('分析錯誤:', error);
+    statusDiv.className = 'mt-2 text-sm text-red-600 font-medium';
+    statusDiv.textContent = '❌ 分析失敗: ' + error.message;
+  } finally {
+    analyzeBtn.disabled = false;
+    analyzeBtn.textContent = '✨ 分析風格';
+  }
+}
+
+// 將檔案轉換為 base64
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
