@@ -34,6 +34,8 @@ CREATE TABLE IF NOT EXISTS listing_applications (
   status TEXT DEFAULT 'pending',    -- pending, processing, submitted, approved, rejected
   line_sticker_id TEXT,             -- LINE 貼圖 ID（上架後填入）
   admin_notes TEXT,                 -- 管理員備註
+  zip_cache_url TEXT,               -- 下載包快取 URL
+  zip_generating BOOLEAN DEFAULT FALSE, -- 是否正在生成 ZIP
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   submitted_at TIMESTAMP WITH TIME ZONE,  -- 提交到 LINE 的時間

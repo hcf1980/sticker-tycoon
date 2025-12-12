@@ -208,6 +208,7 @@
 
         console.log(`開始下載申請 ${appId} 的貼圖包...`);
 
+        // 第一步：啟動生成任務
         const res = await fetch(`${API_BASE}/admin-listing`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -218,7 +219,6 @@
         console.log(`Content-Type: ${res.headers.get('Content-Type')}`);
 
         if (!res.ok) {
-          // 嘗試解析錯誤訊息
           const contentType = res.headers.get('Content-Type');
           let errorMsg = '下載失敗';
 
@@ -233,22 +233,60 @@
           throw new Error(errorMsg);
         }
 
-        // 解析回應，取得下載連結
         const responseData = await res.json();
-        if (!responseData.success || !responseData.downloadUrl) {
-          throw new Error(responseData.error || '無法取得下載連結');
+        console.log('✅ API 回應:', responseData);
+
+        if (!responseData.success) {
+          throw new Error(responseData.error || '未知錯誤');
         }
 
-        console.log(`📥 下載連結: ${responseData.downloadUrl}`);
+        // 如果已經準備好，直接下載
+        if (responseData.ready && responseData.downloadUrl) {
+          console.log(`📥 下載連結: ${responseData.downloadUrl}`);
+          window.open(responseData.downloadUrl, '_blank');
+          alert('✅ 貼圖包已開始下載');
+          if (btn) {
+            btn.textContent = originalText;
+            btn.disabled = false;
+          }
+          return;
+        }
 
-        // 直接開啟下載連結（Supabase Storage 會自動下載）
-        window.open(responseData.downloadUrl, '_blank');
-
-        alert('✅ 貼圖包已開始下載');
+        // 正在生成中，開始輪詢
         if (btn) {
-          btn.textContent = originalText;
-          btn.disabled = false;
+          btn.textContent = '🔄 生成中...';
         }
+
+        const startTime = Date.now();
+        const maxWaitTime = 5 * 60 * 1000; // 最多等 5 分鐘
+
+        while (Date.now() - startTime < maxWaitTime) {
+          // 等待 2 秒後再檢查
+          await new Promise(resolve => setTimeout(resolve, 2000));
+
+          const checkRes = await fetch(`${API_BASE}/admin-listing?action=checkZip&applicationId=${appId}`);
+          const checkData = await checkRes.json();
+
+          if (checkData.success && checkData.ready && checkData.downloadUrl) {
+            console.log(`✅ ZIP 已生成: ${checkData.downloadUrl}`);
+            window.open(checkData.downloadUrl, '_blank');
+            alert('✅ 貼圖包已開始下載');
+            if (btn) {
+              btn.textContent = originalText;
+              btn.disabled = false;
+            }
+            return;
+          }
+
+          console.log('⏳ 正在生成中，繼續等待...');
+          const elapsed = Math.floor((Date.now() - startTime) / 1000);
+          if (btn) {
+            btn.textContent = `🔄 生成中 (${elapsed}s)...`;
+          }
+        }
+
+        throw new Error('生成超時，請稍後重試');
+
       } catch (e) {
         console.error('下載錯誤:', e);
         alert('❌ 下載失敗：' + e.message);

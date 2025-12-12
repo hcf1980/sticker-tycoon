@@ -135,6 +135,75 @@ exports.handler = async function(event) {
         };
       }
 
+      // 檢查 ZIP 是否已經生成好了
+      if (action === 'checkZip') {
+        if (!applicationId) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({ success: false, error: '缺少申請編號' })
+          };
+        }
+
+        try {
+          const { data: application, error: appError } = await supabase
+            .from('listing_applications')
+            .select('zip_cache_url, zip_generating')
+            .eq('application_id', applicationId)
+            .single();
+
+          if (appError || !application) {
+            throw new Error('找不到申請記錄');
+          }
+
+          // 如果有 ZIP URL，表示已經完成
+          if (application.zip_cache_url) {
+            return {
+              statusCode: 200,
+              headers,
+              body: JSON.stringify({
+                success: true,
+                ready: true,
+                downloadUrl: application.zip_cache_url
+              })
+            };
+          }
+
+          // 如果正在生成中
+          if (application.zip_generating) {
+            return {
+              statusCode: 200,
+              headers,
+              body: JSON.stringify({
+                success: true,
+                ready: false,
+                generating: true,
+                message: '正在生成中...'
+              })
+            };
+          }
+
+          // 還未開始生成
+          return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({
+              success: true,
+              ready: false,
+              generating: false
+            })
+          };
+        } catch (err) {
+          console.error('❌ 檢查 ZIP 狀態失敗:', err);
+          return {
+            statusCode: 500,
+            headers,
+            body: JSON.stringify({ success: false, error: err.message })
+          };
+        }
+      }
+
+      // 啟動 ZIP 生成（立即返回）
       if (action === 'downloadPack') {
         if (!applicationId) {
           return {
@@ -156,14 +225,32 @@ exports.handler = async function(event) {
             throw new Error('找不到申請記錄');
           }
 
+          // 如果已經有 ZIP，直接返回
+          if (application.zip_cache_url) {
+            return {
+              statusCode: 200,
+              headers,
+              body: JSON.stringify({
+                success: true,
+                ready: true,
+                downloadUrl: application.zip_cache_url
+              })
+            };
+          }
+
+          // 標記為正在生成
+          await supabase
+            .from('listing_applications')
+            .update({ zip_generating: true })
+            .eq('application_id', applicationId);
+
           // 解析貼圖 URLs
           let stickers = JSON.parse(application.sticker_urls || '[]');
           if (stickers.length === 0) {
             throw new Error('沒有貼圖可下載');
           }
 
-          // 確保 stickers 是 URL 字符串陣列，不是 object 陣列
-          // 因為申請表可能存的是 [{index, url, expression}, ...] 的格式
+          // 確保 stickers 是 URL 字符串陣列
           if (stickers.length > 0 && typeof stickers[0] === 'object' && stickers[0].url) {
             console.log('📝 檢測到 stickers 是 object 陣列，轉換為 URL 陣列');
             stickers = stickers.map(s => s.url || s);
@@ -171,33 +258,28 @@ exports.handler = async function(event) {
 
           console.log(`📊 申請 ${applicationId} 包含 ${stickers.length} 張貼圖`);
 
-          // 生成 ZIP 檔案（包含 main, tab, cover 和所有貼圖）
-          const zipBuffer = await generateApplicationZip(application, stickers);
+          // 🎯 啟動背景任務（不等待完成）
+          generateAndUploadZipAsync(applicationId, application, stickers).catch(err => {
+            console.error('❌ 背景生成 ZIP 失敗:', err);
+          });
 
-          // 上傳 ZIP 到 Storage 以實現快速下載
-          const zipUrl = await uploadZipToStorage(applicationId, zipBuffer);
-
-          // 更新資料庫，記錄 ZIP 快取
-          await supabase
-            .from('listing_applications')
-            .update({ zip_cache_url: zipUrl })
-            .eq('application_id', applicationId);
-
-          // 返回下載連結給前端
+          // 立即返回，讓前端開始輪詢
           return {
             statusCode: 200,
             headers,
             body: JSON.stringify({
               success: true,
-              downloadUrl: zipUrl
+              ready: false,
+              generating: true,
+              message: '正在生成下載檔案，請稍候...'
             })
           };
         } catch (err) {
-          console.error('❌ 下載貼圖包失敗:', err);
+          console.error('❌ 啟動下載失敗:', err);
           return {
             statusCode: 500,
             headers,
-            body: JSON.stringify({ success: false, error: err.message || '生成下載檔案失敗' })
+            body: JSON.stringify({ success: false, error: err.message || '啟動下載失敗' })
           };
         }
       }
@@ -218,6 +300,42 @@ exports.handler = async function(event) {
     };
   }
 };
+
+/**
+ * 背景異步生成並上傳 ZIP（不阻塞主線程）
+ */
+async function generateAndUploadZipAsync(applicationId, application, stickers) {
+  try {
+    console.log(`🎬 開始背景生成 ZIP: ${applicationId}`);
+
+    // 生成 ZIP 檔案
+    const zipBuffer = await generateApplicationZip(application, stickers);
+
+    // 上傳到 Storage
+    const zipUrl = await uploadZipToStorage(applicationId, zipBuffer);
+
+    // 更新資料庫
+    await supabase
+      .from('listing_applications')
+      .update({
+        zip_cache_url: zipUrl,
+        zip_generating: false
+      })
+      .eq('application_id', applicationId);
+
+    console.log(`✅ 背景生成 ZIP 完成: ${applicationId}`);
+  } catch (error) {
+    console.error(`❌ 背景生成 ZIP 失敗 ${applicationId}:`, error);
+
+    // 清除生成中標記
+    await supabase
+      .from('listing_applications')
+      .update({ zip_generating: false })
+      .eq('application_id', applicationId);
+
+    throw error;
+  }
+}
 
 /**
  * 上傳 ZIP 到 Supabase Storage
