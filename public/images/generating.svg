@@ -1,0 +1,29 @@
+<svg width="400" height="400" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景 -->
+  <rect width="400" height="400" fill="#FFF8E1"/>
+  
+  <!-- 圓形背景 -->
+  <circle cx="200" cy="160" r="80" fill="#FFE0B2" opacity="0.5"/>
+  
+  <!-- 施工圖標 emoji 風格 -->
+  <text x="200" y="200" font-size="100" text-anchor="middle" dominant-baseline="middle">🚧</text>
+  
+  <!-- 文字 -->
+  <text x="200" y="280" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="#FF6B00" text-anchor="middle">
+    生成中
+  </text>
+  
+  <!-- 動畫點點 -->
+  <g>
+    <circle cx="170" cy="320" r="6" fill="#FF6B00">
+      <animate attributeName="opacity" values="0.3;1;0.3" dur="1.5s" repeatCount="indefinite" begin="0s"/>
+    </circle>
+    <circle cx="200" cy="320" r="6" fill="#FF6B00">
+      <animate attributeName="opacity" values="0.3;1;0.3" dur="1.5s" repeatCount="indefinite" begin="0.5s"/>
+    </circle>
+    <circle cx="230" cy="320" r="6" fill="#FF6B00">
+      <animate attributeName="opacity" values="0.3;1;0.3" dur="1.5s" repeatCount="indefinite" begin="1s"/>
+    </circle>
+  </g>
+</svg>
+

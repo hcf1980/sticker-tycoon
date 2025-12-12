@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>生成失敗</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      width: 400px;
+      height: 400px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #FFEBEE 0%, #FFCDD2 100%);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      overflow: hidden;
+    }
+    .container {
+      text-align: center;
+      animation: shake 0.5s ease-in;
+    }
+    .icon {
+      font-size: 120px;
+      margin-bottom: 20px;
+    }
+    .text {
+      font-size: 28px;
+      font-weight: bold;
+      color: #F44336;
+      margin-bottom: 10px;
+    }
+    .subtext {
+      font-size: 16px;
+      color: #C62828;
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-10px); }
+      75% { transform: translateX(10px); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">❌</div>
+    <div class="text">生成失敗</div>
+    <div class="subtext">請重新嘗試</div>
+  </div>
+</body>
+</html>
+

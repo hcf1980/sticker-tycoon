@@ -1,0 +1,20 @@
+<svg width="400" height="400" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景 -->
+  <rect width="400" height="400" fill="#FFEBEE"/>
+  
+  <!-- 圓形背景 -->
+  <circle cx="200" cy="160" r="80" fill="#FFCDD2" opacity="0.5"/>
+  
+  <!-- 錯誤圖標 emoji 風格 -->
+  <text x="200" y="200" font-size="100" text-anchor="middle" dominant-baseline="middle">❌</text>
+  
+  <!-- 文字 -->
+  <text x="200" y="280" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="#F44336" text-anchor="middle">
+    生成失敗
+  </text>
+  
+  <text x="200" y="320" font-family="Arial, sans-serif" font-size="18" fill="#C62828" text-anchor="middle">
+    請刪除後重新生成
+  </text>
+</svg>
+

@@ -924,6 +924,39 @@ function generateStickerListFlexMessage(userId, sets, referralInfo = null, queue
       { type: 'text', text: `📅 ${createdDate}`, size: 'xs', color: '#999999', margin: 'sm' }
     ];
 
+    // 🆕 如果是生成中狀態，加上明顯的提示
+    if (set.status === 'processing') {
+      contents.push({
+        type: 'text',
+        text: '⚡ 正在生成中...\n請稍候，完成後會通知你',
+        size: 'sm',
+        color: '#FF6B00',
+        weight: 'bold',
+        margin: 'lg',
+        wrap: true
+      });
+    } else if (set.status === 'pending') {
+      contents.push({
+        type: 'text',
+        text: '🕐 排隊等待中...\n系統將盡快開始生成',
+        size: 'sm',
+        color: '#FFA500',
+        weight: 'bold',
+        margin: 'lg',
+        wrap: true
+      });
+    } else if (set.status === 'failed') {
+      contents.push({
+        type: 'text',
+        text: '❌ 生成失敗\n建議刪除後重新生成',
+        size: 'sm',
+        color: '#FF0000',
+        weight: 'bold',
+        margin: 'lg',
+        wrap: true
+      });
+    }
+
     // 根據狀態決定按鈕
     const footerContents = [];
 
@@ -943,7 +976,11 @@ function generateStickerListFlexMessage(userId, sets, referralInfo = null, queue
       });
     }
 
-    // 所有貼圖組都可以刪除（使用 postback 避免顯示 ID）
+    // 所有貼圖組都可以刪除（根據狀態調整按鈕文字）
+    const deleteLabel = (set.status === 'processing' || set.status === 'pending')
+      ? '🚫 取消生成'
+      : '🗑️ 刪除';
+
     footerContents.push({
       type: 'button',
       style: set.status === 'completed' ? 'secondary' : 'primary',
@@ -951,23 +988,50 @@ function generateStickerListFlexMessage(userId, sets, referralInfo = null, queue
       height: 'sm',
       action: {
         type: 'postback',
-        label: '🗑️ 刪除',
+        label: deleteLabel,
         data: `action=delete&setId=${setId}`,
         displayText: `刪除「${set.name || '未命名'}」`
       }
     });
 
-    const bubble = {
-      type: 'bubble',
-      size: 'kilo',
-      hero: previewUrl ? {
+    // 🆕 根據狀態決定 hero 圖片（生成中顯示施工圖標）
+    let heroImage;
+    if (previewUrl) {
+      // 已完成：顯示預覽圖
+      heroImage = {
         type: 'image',
         url: previewUrl,
         size: 'full',
         aspectRatio: '1:1',
         aspectMode: 'fit',
         backgroundColor: '#FFFFFF'
-      } : undefined,
+      };
+    } else if (set.status === 'processing' || set.status === 'pending') {
+      // 生成中：顯示施工圖標
+      heroImage = {
+        type: 'image',
+        url: 'https://sticker-tycoon.netlify.app/images/generating.svg',
+        size: 'full',
+        aspectRatio: '1:1',
+        aspectMode: 'fit',
+        backgroundColor: '#FFF8E1'
+      };
+    } else if (set.status === 'failed') {
+      // 失敗：顯示錯誤圖標
+      heroImage = {
+        type: 'image',
+        url: 'https://sticker-tycoon.netlify.app/images/failed.svg',
+        size: 'full',
+        aspectRatio: '1:1',
+        aspectMode: 'fit',
+        backgroundColor: '#FFEBEE'
+      };
+    }
+
+    const bubble = {
+      type: 'bubble',
+      size: 'kilo',
+      hero: heroImage,
       body: {
         type: 'box',
         layout: 'vertical',
