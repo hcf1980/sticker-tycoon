@@ -34,14 +34,17 @@ async function generateStickersIntelligent(photoBase64, style, expressions, opti
     setId,
     useGridMode = 'auto',  // 'auto' | 'always' | 'never'
     sceneConfig = null,
-    framingId = 'halfbody'
+    framingId = 'halfbody',
+    characterID: providedCharacterID = null  // 🆕 允許傳入預先生成的 character ID
   } = options;
 
   const totalCount = expressions.length;
-  const characterID = generateCharacterID(photoBase64.slice(0, 1000) + style);
+  // 🆕 優先使用提供的 character ID，否則動態生成
+  const characterID = providedCharacterID || generateCharacterID(photoBase64.slice(0, 1000) + style);
 
   console.log(`🚀 智能貼圖生成器啟動`);
   console.log(`📊 總數：${totalCount} 張，模式：${useGridMode}`);
+  console.log(`🎭 角色 ID：${characterID}${providedCharacterID ? ' (使用保存的)' : ' (新生成)'}`);  // 🆕 記錄角色 ID 來源
   console.log(`🎀 裝飾風格：${sceneConfig?.name || '預設'}`);
   console.log(`📐 構圖：${framingId}`);
 

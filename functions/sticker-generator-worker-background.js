@@ -47,6 +47,14 @@ async function createGenerationTask(userId, setData) {
       console.log(`💰 代幣已在確認階段扣除（${tokenCost} 代幣）`);
     }
 
+    // 🆕 生成角色一致性 ID（確保同一組貼圖使用相同角色）
+    const { generateCharacterID } = require('./sticker-styles');
+    let characterId = null;
+    if (setData.photoBase64) {
+      characterId = generateCharacterID(setData.photoBase64.slice(0, 1000) + setData.style);
+      console.log(`🎭 生成角色 ID: ${characterId}`);
+    }
+
     // 建立貼圖組記錄（包含用戶選擇的表情和場景）
     const { error: setError } = await supabase
       .from('sticker_sets')
@@ -63,6 +71,7 @@ async function createGenerationTask(userId, setData) {
         expressions: JSON.stringify(setData.expressions || []), // 用戶選擇的表情列表
         scene: setData.scene || 'none',             // 場景 ID
         scene_config: setData.sceneConfig ? JSON.stringify(setData.sceneConfig) : null, // 場景配置
+        character_id: characterId,                  // 🆕 角色一致性 ID
         framing: setData.framing || 'halfbody',     // 構圖選擇（全身/半身/大頭/特寫）
         status: 'generating',
         tokens_used: stickerCount  // 記錄使用的代幣數
@@ -138,7 +147,18 @@ async function executeGeneration(taskId, setId) {
       throw new Error('找不到貼圖組資料');
     }
 
-    const { user_id: userId, style, character_prompt, sticker_count, photo_base64, expressions: expressionsJson, scene, scene_config: sceneConfigJson, framing } = stickerSet;
+    const {
+      user_id: userId,
+      style,
+      character_prompt,
+      sticker_count,
+      photo_base64,
+      expressions: expressionsJson,
+      scene,
+      scene_config: sceneConfigJson,
+      character_id: savedCharacterId,  // 🆕 讀取保存的角色 ID
+      framing
+    } = stickerSet;
 
     // 詳細日誌
     console.log(`📋 貼圖組資料：style=${style}, count=${sticker_count}`);
@@ -146,6 +166,7 @@ async function executeGeneration(taskId, setId) {
     console.log(`📋 character_prompt: ${character_prompt || '(無)'}`);
     console.log(`📋 expressions JSON: ${expressionsJson || '(無)'}`);
     console.log(`📋 scene: ${scene || 'none'}`);
+    console.log(`📋 character_id: ${savedCharacterId || '(無)'}`);  // 🆕 記錄角色 ID
     console.log(`📋 framing: ${framing || 'halfbody'}`);
 
     // 解析場景配置
@@ -205,7 +226,8 @@ async function executeGeneration(taskId, setId) {
         setId,
         useGridMode,      // 'auto' 或 'never'
         sceneConfig,
-        framingId: framing
+        framingId: framing,
+        characterID: savedCharacterId  // 🆕 傳入保存的角色 ID
       });
     } else {
       // 傳統流程：使用角色描述生成（不支持網格模式）
