@@ -1076,8 +1076,8 @@ async function applyReferralCode(refereeUserId, referralCode) {
       return { success: false, error: '不能使用自己的推薦碼' };
     }
 
-    // 5. 檢查推薦人是否已達上限（3次）
-    if (referrer.referral_count >= 3) {
+    // 5. 檢查推薦人是否已達上限（30次）
+    if (referrer.referral_count >= 30) {
       return { success: false, error: '此推薦碼已達使用上限' };
     }
 

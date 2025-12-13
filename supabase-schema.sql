@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS users (
   transfer_code TEXT,  -- 轉帳後五碼
   referral_code TEXT UNIQUE,  -- 用戶的推薦碼（6位）
   referred_by TEXT,  -- 被誰推薦（推薦人的 LINE user ID）
-  referral_count INTEGER DEFAULT 0,  -- 成功推薦次數（最多3次）
+  referral_count INTEGER DEFAULT 0,  -- 成功推薦次數（限時推廣，上限增至30次）
   last_tutorial_shown_at TIMESTAMP WITH TIME ZONE,  -- 最後一次顯示功能說明的時間
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()

@@ -93,12 +93,12 @@ async function handlePurchaseInfo() {
  */
 async function handleReferralInfo(userId) {
   logger.info('處理推薦好友命令', { userId });
-  
+
   const referralInfo = await getUserReferralInfo(userId);
   const { referral_code, referral_count } = referralInfo;
-  
-  const remainingCount = Math.max(0, 3 - referral_count);
-  
+
+  const remainingCount = Math.max(0, 30 - referral_count);
+
   let text = `🎁 推薦好友賺代幣\n\n`;
   text += `您的推薦碼：${referral_code}\n\n`;
   text += `✅ 已推薦：${referral_count} 位好友\n`;
@@ -106,11 +106,11 @@ async function handleReferralInfo(userId) {
   text += `💰 獎勵說明：\n`;
   text += `• 好友使用您的推薦碼\n`;
   text += `• 您和好友各得 10 代幣\n`;
-  text += `• 最多推薦 3 位好友\n\n`;
+  text += `• 限時推廣，上限增至30位\n\n`;
   text += `📢 分享方式：\n`;
   text += `告訴好友輸入：\n`;
   text += `「輸入推薦碼 ${referral_code}」`;
-  
+
   return {
     type: 'text',
     text,

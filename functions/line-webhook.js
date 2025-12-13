@@ -2652,7 +2652,7 @@ async function handleReferralInfo(replyToken, userId) {
     console.log(`📊 推薦資訊:`, JSON.stringify(info));
 
     const referralCode = info.referralCode || 'XXXXXX';
-    const remainingInvites = 3 - (info.referralCount || 0);
+    const remainingInvites = 30 - (info.referralCount || 0);
 
     // 縮短分享文字（避免 URI 過長導致 400 錯誤）
     const shareText = `🎨 推薦貼圖製作工具！
@@ -2668,6 +2668,8 @@ AI 幫你做專屬 LINE 貼圖 ✨
 
 你的推薦碼：${referralCode}
 還可邀請：${remainingInvites} 位好友
+
+限時推廣，上限增至30位，趕緊拉好友進來玩 🎉
 
 點擊下方按鈕即可分享給好友 👇`,
       quickReply: {
