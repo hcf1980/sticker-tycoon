@@ -122,7 +122,7 @@ async function handleStyleSelection(userId, styleId) {
   // 如果有照片，進入構圖選擇；否則進入角色描述
   if (tempData.photoUrl) {
     await updateConversationState(userId, ConversationStage.FRAMING, tempData);
-    return generateFramingSelectionMessage(style);
+    return await generateFramingSelectionMessage(style);
   } else {
     // 舊流程：沒有照片時要求描述角色
     await updateConversationState(userId, ConversationStage.CHARACTER, tempData);
@@ -147,10 +147,11 @@ async function handleStyleSelection(userId, styleId) {
 }
 
 /**
- * 生成構圖選擇訊息
+ * 生成構圖選擇訊息（從資料庫動態讀取）
  */
-function generateFramingSelectionMessage(style) {
-  const framingOptions = Object.values(FramingTemplates);
+async function generateFramingSelectionMessage(style) {
+  // 從資料庫讀取構圖設定
+  const framingOptions = await getActiveFramings();
 
   return {
     type: 'flex',
@@ -183,7 +184,7 @@ function generateFramingSelectionMessage(style) {
             backgroundColor: '#F8F8F8',
             cornerRadius: 'lg',
             margin: 'md',
-            action: { type: 'message', label: framing.name, text: `構圖:${framing.id}` },
+            action: { type: 'message', label: framing.name, text: `構圖:${framing.framing_id || framing.id}` },
             contents: [
               { type: 'text', text: framing.emoji, size: 'xxl', flex: 0 },
               {
@@ -192,7 +193,7 @@ function generateFramingSelectionMessage(style) {
                 paddingStart: 'lg',
                 contents: [
                   { type: 'text', text: framing.name, weight: 'bold', size: 'md', color: '#333333' },
-                  { type: 'text', text: framing.description, size: 'xs', color: '#888888', wrap: true }
+                  { type: 'text', text: framing.description || '', size: 'xs', color: '#888888', wrap: true }
                 ]
               }
             ]
@@ -215,7 +216,7 @@ function generateFramingSelectionMessage(style) {
       items: [
         ...framingOptions.map(framing => ({
           type: 'action',
-          action: { type: 'message', label: `${framing.emoji} ${framing.name}`, text: `構圖:${framing.id}` }
+          action: { type: 'message', label: `${framing.emoji} ${framing.name}`, text: `構圖:${framing.framing_id || framing.id}` }
         })),
         { type: 'action', action: { type: 'message', label: '❌ 取消', text: '取消' } }
       ]
@@ -224,20 +225,22 @@ function generateFramingSelectionMessage(style) {
 }
 
 /**
- * 處理構圖選擇
+ * 處理構圖選擇（從資料庫動態讀取）
  */
 async function handleFramingSelection(userId, framingId) {
   console.log(`🖼️ 用戶 ${userId} 選擇構圖：${framingId}`);
 
-  const framing = FramingTemplates[framingId];
+  // 從資料庫讀取構圖設定
+  const framing = await getFramingById(framingId);
   if (!framing) {
+    const framings = await getActiveFramings();
     return {
       type: 'text',
       text: '⚠️ 請選擇有效的構圖選項！',
       quickReply: {
-        items: Object.values(FramingTemplates).map(f => ({
+        items: framings.map(f => ({
           type: 'action',
-          action: { type: 'message', label: `${f.emoji} ${f.name}`, text: `構圖:${f.id}` }
+          action: { type: 'message', label: `${f.emoji} ${f.name}`, text: `構圖:${f.framing_id || f.id}` }
         }))
       }
     };
@@ -362,18 +365,18 @@ async function handleExpressionTemplate(userId, templateId) {
   // 更新到場景選擇階段
   await updateConversationState(userId, ConversationStage.SCENE_SELECT, tempData);
 
-  return generateSceneSelectionFlexMessage();
+  return await generateSceneSelectionFlexMessage();
 }
 
 /**
- * 生成裝飾風格選擇 Flex Message
+ * 生成裝飾風格選擇 Flex Message（從資料庫動態讀取）
  */
-function generateSceneSelectionFlexMessage() {
-  const scenes = Object.values(SceneTemplates);
+async function generateSceneSelectionFlexMessage() {
+  const scenes = await getActiveScenes();
 
   // 排除 custom，分開處理
-  const regularScenes = scenes.filter(s => s.id !== 'custom');
-  const customScene = scenes.find(s => s.id === 'custom');
+  const regularScenes = scenes.filter(s => (s.scene_id || s.id) !== 'custom');
+  const customScene = scenes.find(s => (s.scene_id || s.id) === 'custom');
 
   // 分成兩行顯示（不包含 custom）
   const row1 = regularScenes.slice(0, 4);
@@ -385,7 +388,7 @@ function generateSceneSelectionFlexMessage() {
     action: {
       type: 'message',
       label: `${scene.emoji} ${scene.name}`,
-      text: `場景:${scene.id}`
+      text: `場景:${scene.scene_id || scene.id}`
     }
   }));
   quickReplyItems.push({
@@ -419,7 +422,7 @@ function generateSceneSelectionFlexMessage() {
               action: {
                 type: 'message',
                 label: `${scene.emoji} ${scene.name}`,
-                text: `場景:${scene.id}`
+                text: `場景:${scene.scene_id || scene.id}`
               }
             }))
           },
@@ -435,23 +438,23 @@ function generateSceneSelectionFlexMessage() {
               action: {
                 type: 'message',
                 label: `${scene.emoji} ${scene.name}`,
-                text: `場景:${scene.id}`
+                text: `場景:${scene.scene_id || scene.id}`
               }
             }))
           },
           // 自訂風格（無限延伸）- 強調色
-          {
+          ...(customScene ? [{
             type: 'button',
             style: 'primary',
             height: 'sm',
             action: {
               type: 'message',
               label: `${customScene.emoji} ${customScene.name}（無限延伸）`,
-              text: `場景:${customScene.id}`
+              text: `場景:${customScene.scene_id || customScene.id}`
             },
             margin: 'lg',
             color: '#FF6B6B'
-          }
+          }] : [])
         ]
       }
     },
@@ -462,12 +465,12 @@ function generateSceneSelectionFlexMessage() {
 }
 
 /**
- * 處理裝飾風格選擇
+ * 處理裝飾風格選擇（從資料庫動態讀取）
  */
 async function handleSceneSelection(userId, sceneId) {
   console.log(`🎨 用戶 ${userId} 選擇裝飾風格：${sceneId}`);
 
-  const scene = SceneTemplates[sceneId];
+  const scene = await getSceneById(sceneId);
   if (!scene) {
     return { type: 'text', text: '⚠️ 請選擇有效的裝飾風格！' };
   }
@@ -830,6 +833,120 @@ async function getStyleById(styleId) {
   } catch (error) {
     console.error('讀取風格異常:', error);
     return StickerStyles[styleId];
+  }
+}
+
+/**
+ * 從資料庫讀取啟用的構圖設定
+ */
+async function getActiveFramings() {
+  try {
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase
+      .from('framing_settings')
+      .select('*')
+      .eq('is_active', true)
+      .order('framing_id');
+
+    if (error) {
+      console.error('讀取構圖設定失敗:', error);
+      // 如果資料庫讀取失敗，返回預設構圖
+      return Object.values(FramingTemplates);
+    }
+
+    // 如果沒有資料，返回預設構圖
+    if (!data || data.length === 0) {
+      console.log('資料庫無構圖設定，使用預設值');
+      return Object.values(FramingTemplates);
+    }
+
+    return data;
+  } catch (error) {
+    console.error('讀取構圖設定異常:', error);
+    return Object.values(FramingTemplates);
+  }
+}
+
+/**
+ * 根據 ID 從資料庫讀取單一構圖設定
+ */
+async function getFramingById(framingId) {
+  try {
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase
+      .from('framing_settings')
+      .select('*')
+      .eq('framing_id', framingId)
+      .eq('is_active', true)
+      .single();
+
+    if (error || !data) {
+      console.error('讀取構圖失敗，使用預設值:', error);
+      // 如果資料庫讀取失敗，返回預設構圖
+      return FramingTemplates[framingId];
+    }
+
+    return data;
+  } catch (error) {
+    console.error('讀取構圖異常:', error);
+    return FramingTemplates[framingId];
+  }
+}
+
+/**
+ * 從資料庫讀取啟用的裝飾風格設定
+ */
+async function getActiveScenes() {
+  try {
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase
+      .from('scene_settings')
+      .select('*')
+      .eq('is_active', true)
+      .order('scene_id');
+
+    if (error) {
+      console.error('讀取裝飾風格設定失敗:', error);
+      // 如果資料庫讀取失敗，返回預設場景
+      return Object.values(SceneTemplates);
+    }
+
+    // 如果沒有資料，返回預設場景
+    if (!data || data.length === 0) {
+      console.log('資料庫無裝飾風格設定，使用預設值');
+      return Object.values(SceneTemplates);
+    }
+
+    return data;
+  } catch (error) {
+    console.error('讀取裝飾風格設定異常:', error);
+    return Object.values(SceneTemplates);
+  }
+}
+
+/**
+ * 根據 ID 從資料庫讀取單一裝飾風格設定
+ */
+async function getSceneById(sceneId) {
+  try {
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase
+      .from('scene_settings')
+      .select('*')
+      .eq('scene_id', sceneId)
+      .eq('is_active', true)
+      .single();
+
+    if (error || !data) {
+      console.error('讀取裝飾風格失敗，使用預設值:', error);
+      // 如果資料庫讀取失敗，返回預設場景
+      return SceneTemplates[sceneId];
+    }
+
+    return data;
+  } catch (error) {
+    console.error('讀取裝飾風格異常:', error);
+    return SceneTemplates[sceneId];
   }
 }
 
