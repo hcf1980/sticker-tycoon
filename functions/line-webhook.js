@@ -12,7 +12,7 @@ const { scheduleProfileUpdate } = require('./utils/profile-updater');
 const { globalMonitor } = require('./utils/performance-monitor');
 const { handleStartCreate, handleNaming, handleStyleSelection, handleFramingSelection, handleCharacterDescription, handleExpressionTemplate, handleSceneSelection, handleCustomScene, handleCountSelection, handlePhotoUpload } = require('./handlers/create-handler');
 const { handleUserPhoto } = require('./photo-handler');
-const { createGenerationTask } = require('./background/sticker-generator-worker');
+const { createGenerationTask } = require('./sticker-generator-worker-background');
 const { StickerStyles, SceneTemplates, FramingTemplates } = require('./sticker-styles');
 
 // LINE Bot 設定 - 延遲初始化
@@ -490,7 +490,7 @@ async function handleConfirmGeneration(replyToken, userId, state) {
     console.log(`✅ 已建立生成任務: taskId=${taskId}, setId=${setId}`);
 
     // 觸發 Background Worker 執行生成
-    const workerUrl = `${process.env.URL || 'https://sticker-tycoon.netlify.app'}/.netlify/background-functions/sticker-generator-worker`;
+    const workerUrl = `${process.env.URL || 'https://sticker-tycoon.netlify.app'}/.netlify/functions/sticker-generator-worker-background`;
     console.log(`🚀 觸發 Background Worker: ${workerUrl}`);
 
     // 使用 fetch 非同步調用 Background Function
