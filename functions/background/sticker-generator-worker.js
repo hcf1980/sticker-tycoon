@@ -9,19 +9,19 @@ console.log('🚀 [WORKER] 模組載入開始...');
 const { v4: uuidv4 } = require('uuid');
 console.log('✅ [WORKER] uuid 載入成功');
 
-const { getSupabaseClient, updateStickerSetStatus, getStickerSet, deductTokens, getUserTokenBalance } = require('./supabase-client');
+const { getSupabaseClient, updateStickerSetStatus, getStickerSet, deductTokens, getUserTokenBalance } = require('../supabase-client');
 console.log('✅ [WORKER] supabase-client 載入成功');
 
-const { generateStickerSet, generateStickerSetFromPhoto } = require('./ai-generator');
+const { generateStickerSet, generateStickerSetFromPhoto } = require('../ai-generator');
 console.log('✅ [WORKER] ai-generator 載入成功');
 
-const { generateStickersIntelligent } = require('./sticker-generator-enhanced');
+const { generateStickersIntelligent } = require('../sticker-generator-enhanced');
 console.log('✅ [WORKER] sticker-generator-enhanced 載入成功');
 
-const { processStickerSet, generateMainImage, generateTabImage } = require('./image-processor');
+const { processStickerSet, generateMainImage, generateTabImage } = require('../image-processor');
 console.log('✅ [WORKER] image-processor 載入成功');
 
-const { DefaultExpressions, loadStylesFromDatabase } = require('./sticker-styles');
+const { DefaultExpressions, loadStylesFromDatabase } = require('../sticker-styles');
 console.log('✅ [WORKER] sticker-styles 載入成功');
 
 console.log('🎉 [WORKER] 所有模組載入完成！');
@@ -64,7 +64,7 @@ async function createGenerationTask(userId, setData) {
     }
 
     // 🆕 生成角色一致性 ID（確保同一組貼圖使用相同角色）
-    const { generateCharacterID } = require('./sticker-styles');
+    const { generateCharacterID } = require('../sticker-styles');
     let characterId = null;
     if (setData.photoBase64) {
       characterId = generateCharacterID(setData.photoBase64.slice(0, 1000) + setData.style);
