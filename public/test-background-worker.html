@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Background Worker 診斷測試</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      max-width: 1200px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      border-radius: 10px;
+      padding: 30px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+    }
+    button {
+      background: #06c755;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #05b34a;
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    #result {
+      margin-top: 20px;
+      padding: 20px;
+      background: #f9f9f9;
+      border-radius: 5px;
+      border-left: 4px solid #06c755;
+      white-space: pre-wrap;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+    .success {
+      color: #06c755;
+    }
+    .error {
+      color: #e74c3c;
+    }
+    .info {
+      color: #3498db;
+    }
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #06c755;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-left: 10px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔧 Background Worker 診斷測試</h1>
+    <p class="subtitle">檢測 Netlify Background Function 模組載入和執行狀態</p>
+    
+    <button onclick="runTest()" id="testBtn">🚀 執行診斷測試</button>
+    
+    <div id="result"></div>
+  </div>
+
+  <script>
+    async function runTest() {
+      const btn = document.getElementById('testBtn');
+      const result = document.getElementById('result');
+      
+      btn.disabled = true;
+      result.innerHTML = '<span class="info">⏳ 正在執行診斷測試...</span><div class="loading"></div>';
+      
+      try {
+        const response = await fetch('/.netlify/functions/test-background-worker', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ test: true })
+        });
+        
+        const data = await response.json();
+        
+        let html = '<strong class="success">✅ 診斷測試完成</strong>\n\n';
+        html += `<strong>時間:</strong> ${data.timestamp}\n`;
+        html += `<strong>Node 版本:</strong> ${data.nodeVersion}\n`;
+        html += `<strong>平台:</strong> ${data.platform} (${data.arch})\n\n`;
+        
+        html += '<strong>環境變數檢查:</strong>\n';
+        html += `  OpenAI API Key: ${data.env.hasOpenAI ? '✅' : '❌'}\n`;
+        html += `  Supabase: ${data.env.hasSupabase ? '✅' : '❌'}\n`;
+        html += `  LINE Token: ${data.env.hasLineToken ? '✅' : '❌'}\n\n`;
+        
+        html += '<strong>模組載入測試:</strong>\n';
+        for (const [moduleName, moduleInfo] of Object.entries(data.modules)) {
+          if (moduleInfo.success) {
+            html += `  <span class="success">✅ ${moduleName}</span>\n`;
+            if (moduleInfo.exports && moduleInfo.exports.length > 0) {
+              html += `     導出: ${moduleInfo.exports.join(', ')}\n`;
+            }
+          } else {
+            html += `  <span class="error">❌ ${moduleName}</span>\n`;
+            html += `     錯誤: ${moduleInfo.error}\n`;
+          }
+        }
+        
+        html += '\n<strong>Sharp 模組:</strong>\n';
+        if (data.sharp.success) {
+          html += `  <span class="success">✅ Sharp 載入成功</span>\n`;
+          html += `  版本: ${JSON.stringify(data.sharp.version)}\n`;
+        } else {
+          html += `  <span class="error">❌ Sharp 載入失敗</span>\n`;
+          html += `  錯誤: ${data.sharp.error}\n`;
+        }
+        
+        result.innerHTML = html;
+      } catch (error) {
+        result.innerHTML = `<span class="error">❌ 測試失敗: ${error.message}</span>`;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
+
