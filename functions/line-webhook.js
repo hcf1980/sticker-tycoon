@@ -1064,7 +1064,7 @@ function generateStickerListFlexMessage(userId, sets, referralInfo = null, queue
           type: 'action',
           action: {
             type: 'uri',
-            label: '🎬 YouTuber 推廣計畫',
+            label: '🎬 YouTuber推廣計畫',
             uri: `${process.env.URL || 'https://sticker-tycoon.netlify.app'}/youtuber-promotion.html`
           }
         },
@@ -1082,6 +1082,22 @@ function generateStickerListFlexMessage(userId, sets, referralInfo = null, queue
             type: 'message',
             label: '🎨 創建貼圖',
             text: '創建貼圖'
+          }
+        },
+        {
+          type: 'action',
+          action: {
+            type: 'message',
+            label: '💰 購買代幣',
+            text: '購買代幣'
+          }
+        },
+        {
+          type: 'action',
+          action: {
+            type: 'message',
+            label: '🎁 分享給好友',
+            text: '分享給好友'
           }
         }
       ]
