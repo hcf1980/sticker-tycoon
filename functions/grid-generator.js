@@ -116,7 +116,14 @@ function generateGridPrompt(photoBase64, style, expressions, characterID, option
     `${e.cell}. ${e.expression}${e.popText ? ` "${e.popText}"` : ''}`
   ).join(', ');
 
-  // 簡化版 Prompt v4 - 提高生成質量（移除 emoji 和複雜格式）
+  // 🎀 裝飾風格設定（使用用戶選擇的裝飾風格）
+  const decorationStyle = scene.decorationStyle || 'minimal decorations, clean design';
+  const decorationElements = scene.decorationElements?.length > 0
+    ? scene.decorationElements.join(', ')
+    : 'sparkles, small hearts';
+  const popTextStyle = scene.popTextStyle || 'simple clean text, small font';
+
+  // 簡化版 Prompt v5 - 提高生成質量（使用用戶選擇的裝飾風格）
   const prompt = `Create a 3x2 sticker grid (6 cells) from this photo.
 
 CRITICAL: Use the EXACT SAME PERSON in all 6 cells. Keep facial features identical.
@@ -135,8 +142,10 @@ REQUIREMENTS:
 - Black outline around character (2-3px)
 - No grid lines between cells
 - Clean artwork, no artifacts
-- Cute decorations (hearts, sparkles, stars)
-- Pop text in cute style
+
+DECORATION STYLE: ${decorationStyle}
+DECORATION ELEMENTS: ${decorationElements}
+POP TEXT STYLE: ${popTextStyle}
 
 OUTPUT: 3x2 grid with 6 stickers of the SAME PERSON with different expressions.`;
 

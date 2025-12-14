@@ -120,6 +120,10 @@ CREATE TABLE IF NOT EXISTS sticker_sets (
   photo_base64 TEXT,  -- 照片 Base64 編碼（用於 AI 生成）
   sticker_count INTEGER DEFAULT 8,  -- 4, 8, 12, 24
   framing TEXT DEFAULT 'halfbody',  -- 構圖：fullbody, halfbody, portrait, closeup
+  scene TEXT DEFAULT 'none',  -- 裝飾風格 ID：none, pop, kawaii, picnic 等
+  scene_config JSONB,  -- 裝飾風格完整配置
+  expressions JSONB,  -- 用戶選擇的表情列表
+  character_id TEXT,  -- 角色一致性 ID
   status TEXT DEFAULT 'draft',  -- draft, generating, completed, failed
   main_image_url TEXT,  -- 主要圖片 URL
   tab_image_url TEXT,  -- 聊天室標籤圖片 URL
