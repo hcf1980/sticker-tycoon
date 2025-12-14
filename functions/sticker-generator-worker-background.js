@@ -3,28 +3,12 @@
  * 異步執行貼圖生成任務
  */
 
-// 🔧 立即輸出啟動日誌（檢測模組載入問題）
-console.log('🚀 [WORKER] 模組載入開始...');
-
 const { v4: uuidv4 } = require('uuid');
-console.log('✅ [WORKER] uuid 載入成功');
-
 const { getSupabaseClient, updateStickerSetStatus, getStickerSet, deductTokens, getUserTokenBalance } = require('./supabase-client');
-console.log('✅ [WORKER] supabase-client 載入成功');
-
 const { generateStickerSet, generateStickerSetFromPhoto } = require('./ai-generator');
-console.log('✅ [WORKER] ai-generator 載入成功');
-
 const { generateStickersIntelligent } = require('./sticker-generator-enhanced');
-console.log('✅ [WORKER] sticker-generator-enhanced 載入成功');
-
 const { processStickerSet, generateMainImage, generateTabImage } = require('./image-processor');
-console.log('✅ [WORKER] image-processor 載入成功');
-
 const { DefaultExpressions, loadStylesFromDatabase } = require('./sticker-styles');
-console.log('✅ [WORKER] sticker-styles 載入成功');
-
-console.log('🎉 [WORKER] 所有模組載入完成！');
 
 /**
  * 建立生成任務
@@ -354,32 +338,12 @@ async function executeGeneration(taskId, setId) {
   } catch (error) {
     console.error(`❌ 生成任務失敗 (${taskId}):`, error);
 
-    // 構建更詳細的錯誤消息
-    let errorMessage = error.message || '未知錯誤';
-
-    // 增強錯誤信息（針對不同類型的失敗）
-    if (error.response?.status) {
-      if (error.response.status === 401) {
-        errorMessage = 'AI API 認證失敗 - 請檢查 API Key';
-      } else if (error.response.status === 429) {
-        errorMessage = 'API 請求過於頻繁 - 請稍後再試';
-      } else if (error.response.status === 500) {
-        errorMessage = 'AI 服務暫時故障 - 請稍後再試';
-      }
-    } else if (error.message?.includes('timeout')) {
-      errorMessage = '生成超時 - 請刪除後重試';
-    } else if (error.message?.includes('Cannot read property')) {
-      errorMessage = '回應格式錯誤 - API 返回無效數據';
-    }
-
-    console.error(`📝 詳細錯誤原因：${errorMessage}`);
-
-    // 標記任務失敗（包含詳細的錯誤信息）
+    // 標記任務失敗
     await supabase
       .from('generation_tasks')
       .update({
         status: 'failed',
-        error_message: errorMessage,
+        error_message: error.message,
         updated_at: new Date().toISOString()
       })
       .eq('task_id', taskId);
@@ -563,12 +527,6 @@ async function logGenerationResult(userId, success, setId, errorMessage = null) 
 exports.handler = async function(event, context) {
   console.log('🔔 ====== Sticker Generator Background Worker 開始執行 ======');
   console.log('📋 Event body:', event.body ? event.body.substring(0, 200) + '...' : 'null');
-  console.log('📋 Context:', JSON.stringify(context, null, 2));
-  console.log('📋 Environment check:', {
-    hasOpenAI: !!process.env.OPENAI_API_KEY,
-    hasSupabase: !!process.env.SUPABASE_URL,
-    nodeVersion: process.version
-  });
 
   try {
     const body = JSON.parse(event.body || '{}');
@@ -594,9 +552,7 @@ exports.handler = async function(event, context) {
 
   } catch (error) {
     console.error('❌ Background Worker 執行失敗:', error.message);
-    console.error('❌ 錯誤類型:', error.name);
     console.error('❌ 錯誤堆疊:', error.stack);
-    console.error('❌ 完整錯誤:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
 
     // 記錄失敗（不 Push 通知）
     try {
@@ -608,7 +564,7 @@ exports.handler = async function(event, context) {
       console.error('❌ 記錄失敗:', e.message);
     }
 
-    return { statusCode: 500, body: JSON.stringify({ error: error.message, stack: error.stack }) };
+    return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
   }
 };
 

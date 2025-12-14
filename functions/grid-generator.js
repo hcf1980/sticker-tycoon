@@ -343,40 +343,13 @@ async function generateGridImage(photoBase64, style, expressions, characterID, o
         console.error('API 回應狀態碼:', error.response.status);
         console.error('API 錯誤詳情:', JSON.stringify(error.response.data).substring(0, 500));
 
-        // 根據不同的 HTTP 狀態碼提供更詳細的錯誤信息
-        if (error.response.status === 400) {
-          console.error(`⚠️ 400 錯誤 - 請求格式錯誤或 API 回應為空，等待後重試`);
-          if (attempt < maxRetries) {
-            const waitTime = attempt * 3000; // 3秒、6秒、9秒
-            console.log(`⏳ 等待 ${waitTime / 1000} 秒後重試...`);
-            await new Promise(resolve => setTimeout(resolve, waitTime));
-            continue;
-          }
-        } else if (error.response.status === 401) {
-          console.error(`❌ 401 錯誤 - API Key 認證失敗`);
-          throw new Error('API Key 認證失敗 - 請檢查環境變數');
-        } else if (error.response.status === 429) {
-          console.error(`⚠️ 429 錯誤 - 請求過於頻繁，觸發速率限制`);
-          if (attempt < maxRetries) {
-            const waitTime = (attempt * 5) * 1000; // 5秒、10秒、15秒
-            console.log(`⏳ 等待 ${waitTime / 1000} 秒後重試...`);
-            await new Promise(resolve => setTimeout(resolve, waitTime));
-            continue;
-          }
-        } else if (error.response.status === 500 || error.response.status === 502 || error.response.status === 503) {
-          console.error(`⚠️ ${error.response.status} 錯誤 - 服務器錯誤，等待後重試`);
-          if (attempt < maxRetries) {
-            const waitTime = attempt * 5000; // 5秒、10秒、15秒
-            console.log(`⏳ 等待 ${waitTime / 1000} 秒後重試...`);
-            await new Promise(resolve => setTimeout(resolve, waitTime));
-            continue;
-          }
+        // 如果是 400 錯誤（Empty Response），等待後重試
+        if (error.response.status === 400 && attempt < maxRetries) {
+          const waitTime = attempt * 3000; // 3秒、6秒、9秒
+          console.log(`⏳ 等待 ${waitTime / 1000} 秒後重試...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+          continue;
         }
-      } else if (error.code === 'ECONNABORTED') {
-        console.error(`⚠️ 連接超時 - API 請求超過 120 秒`);
-      } else if (error.code === 'ENOTFOUND') {
-        console.error(`❌ DNS 解析失敗 - 無法連接到 API 伺服器`);
-        throw new Error('網絡連接失敗 - 無法連接到 AI 服務');
       }
 
       // 其他錯誤或最後一次嘗試，直接拋出

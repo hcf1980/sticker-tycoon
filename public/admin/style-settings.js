@@ -590,7 +590,18 @@ async function saveChanges() {
       if (error) throw error;
     }
 
-    alert('✅ 儲存成功！');
+    // 清除伺服器端快取，確保新設定立即生效
+    try {
+      await fetch('/.netlify/functions/clear-style-cache', {
+        method: 'POST'
+      });
+      console.log('✅ 伺服器快取已清除');
+    } catch (cacheError) {
+      console.warn('⚠️ 清除快取時發生錯誤:', cacheError);
+      // 不阻止儲存成功的流程
+    }
+
+    alert('✅ 儲存成功！設定已同步到 LINE Bot');
     closeModal();
 
     // 重新載入列表

@@ -37,6 +37,32 @@ ON CONFLICT (template_id) DO NOTHING;
 CREATE INDEX IF NOT EXISTS idx_expression_templates_active ON expression_template_settings(is_active);
 CREATE INDEX IF NOT EXISTS idx_expression_templates_template_id ON expression_template_settings(template_id);
 
+-- 啟用 RLS (Row Level Security)
+ALTER TABLE expression_template_settings ENABLE ROW LEVEL SECURITY;
+
+-- 刪除已存在的 policies（如果存在）
+DROP POLICY IF EXISTS "Allow public read access" ON expression_template_settings;
+DROP POLICY IF EXISTS "Allow public insert access" ON expression_template_settings;
+DROP POLICY IF EXISTS "Allow public update access" ON expression_template_settings;
+
+-- 允許所有人讀取
+CREATE POLICY "Allow public read access"
+  ON expression_template_settings
+  FOR SELECT
+  USING (true);
+
+-- 允許所有人新增
+CREATE POLICY "Allow public insert access"
+  ON expression_template_settings
+  FOR INSERT
+  WITH CHECK (true);
+
+-- 允許所有人更新
+CREATE POLICY "Allow public update access"
+  ON expression_template_settings
+  FOR UPDATE
+  USING (true);
+
 -- 註解
 COMMENT ON TABLE expression_template_settings IS '表情模板設定資料表';
 COMMENT ON COLUMN expression_template_settings.template_id IS '模板唯一識別碼';

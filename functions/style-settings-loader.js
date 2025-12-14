@@ -48,8 +48,8 @@ async function loadStyleSettings() {
       };
     });
 
-    // 快取 30 分鐘
-    globalCache.set(cacheKey, styleEnhancer, 1800000);
+    // 快取 5 分鐘（降低快取時間以確保設定更新能更快生效）
+    globalCache.set(cacheKey, styleEnhancer, 300000);
 
     return styleEnhancer;
 
@@ -98,7 +98,7 @@ async function loadFramingSettings() {
       };
     });
 
-    globalCache.set(cacheKey, framingTemplates, 1800000);
+    globalCache.set(cacheKey, framingTemplates, 300000);
 
     return framingTemplates;
 
@@ -148,12 +148,60 @@ async function loadSceneSettings() {
       };
     });
 
-    globalCache.set(cacheKey, sceneTemplates, 1800000);
+    globalCache.set(cacheKey, sceneTemplates, 300000);
 
     return sceneTemplates;
 
   } catch (error) {
     console.error('從資料庫載入裝飾風格設定失敗:', error);
+    return null;
+  }
+}
+
+/**
+ * 從資料庫載入表情模板設定
+ */
+async function loadExpressionTemplateSettings() {
+  const cacheKey = 'expression_template_settings:all';
+
+  const cached = globalCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  try {
+    const supabase = getSupabaseClient();
+
+    const { data, error } = await supabase
+      .from('expression_template_settings')
+      .select('*')
+      .eq('is_active', true)
+      .order('template_id');
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      return null;
+    }
+
+    // 轉換格式
+    const templates = {};
+    data.forEach(template => {
+      templates[template.template_id] = {
+        id: template.template_id,
+        name: template.name,
+        emoji: template.emoji,
+        description: template.description,
+        expressions: template.expressions || []
+      };
+    });
+
+    globalCache.set(cacheKey, templates, 300000);
+
+    return templates;
+
+  } catch (error) {
+    console.error('從資料庫載入表情模板設定失敗:', error);
     return null;
   }
 }
@@ -165,6 +213,7 @@ function clearStyleSettingsCache() {
   globalCache.delete('style_settings:all');
   globalCache.delete('framing_settings:all');
   globalCache.delete('scene_settings:all');
+  globalCache.delete('expression_template_settings:all');
   console.log('✅ 風格設定快取已清除');
 }
 
@@ -172,6 +221,7 @@ module.exports = {
   loadStyleSettings,
   loadFramingSettings,
   loadSceneSettings,
+  loadExpressionTemplateSettings,
   clearStyleSettingsCache
 };
 
