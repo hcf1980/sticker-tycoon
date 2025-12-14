@@ -545,17 +545,37 @@ async function handleCheckProgress(replyToken, userId) {
       };
 
       const setInfo = latestTask.sticker_set;
-      return getLineClient().replyMessage(replyToken, {
-        type: 'text',
-        text: `📋 最新任務狀態\n\n` +
-              `📛 名稱：${setInfo?.name || '未命名'}\n` +
-              `${statusEmoji[latestTask.status] || '❓'} 狀態：${latestTask.status}\n` +
-              `📊 進度：${latestTask.progress || 0}%\n\n` +
-              (latestTask.status === 'completed'
+      let message = `📋 最新任務狀態\n\n` +
+            `📛 名稱：${setInfo?.name || '未命名'}\n` +
+            `${statusEmoji[latestTask.status] || '❓'} 狀態：${latestTask.status}\n` +
+            `📊 進度：${latestTask.progress || 0}%\n`;
+
+      // 🆕 如果失敗，查詢並顯示錯誤原因
+      if (latestTask.status === 'failed') {
+        try {
+          const { data: task } = await supabase
+            .from('generation_tasks')
+            .select('error_message')
+            .eq('task_id', latestTask.task_id)
+            .single();
+
+          if (task?.error_message) {
+            message += `\n⚠️ 失敗原因：\n${task.error_message}\n`;
+          }
+        } catch (e) {
+          console.error('取得錯誤信息失敗:', e);
+        }
+      }
+
+      message += '\n' + (latestTask.status === 'completed'
                 ? '輸入「我的貼圖」查看結果'
                 : latestTask.status === 'failed'
-                  ? '輸入「創建貼圖」重試'
-                  : '請稍候...')
+                  ? '輸入「創建貼圖」重試\n💡 或輸入「客服」尋求協助'
+                  : '請稍候...');
+
+      return getLineClient().replyMessage(replyToken, {
+        type: 'text',
+        text: message
       });
     }
 
@@ -1138,6 +1158,23 @@ async function handleViewStickerSet(replyToken, userId, setId) {
     const sceneInfo = SceneTemplates[set.scene] || null;
     const sceneName = sceneInfo ? `${sceneInfo.emoji} ${sceneInfo.name}` : (set.scene === 'none' || !set.scene ? '✨ 簡約風' : set.scene);
 
+    // 🆕 如果生成失敗，先取得錯誤詳情
+    let errorMessage = null;
+    if (set.status === 'failed') {
+      const { data: failedTask } = await supabase
+        .from('generation_tasks')
+        .select('error_message, status, progress')
+        .eq('set_id', set.set_id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (failedTask?.error_message) {
+        errorMessage = failedTask.error_message;
+        console.log(`❌ 找到錯誤信息：${errorMessage}`);
+      }
+    }
+
     const flexMessage = {
       type: 'flex',
       altText: `📁 ${set.name}`,
@@ -1152,6 +1189,11 @@ async function handleViewStickerSet(replyToken, userId, setId) {
             { type: 'text', text: `📊 貼圖數量：${set.sticker_count || 0} 張`, size: 'sm', margin: 'sm' },
             { type: 'text', text: `🎨 風格：${styleName}`, size: 'sm', margin: 'sm' },
             { type: 'text', text: `🎭 裝飾：${sceneName}`, size: 'sm', margin: 'sm' },
+            ...(errorMessage ? [
+              { type: 'separator', margin: 'md' },
+              { type: 'text', text: '⚠️ 失敗原因', size: 'sm', weight: 'bold', color: '#FF0000', margin: 'md' },
+              { type: 'text', text: errorMessage, size: 'xs', color: '#FF0000', wrap: true, margin: 'sm' }
+            ] : []),
             { type: 'text', text: `📅 建立時間：${new Date(set.created_at).toLocaleString('zh-TW')}`, size: 'xs', color: '#999999', margin: 'lg' },
             { type: 'text', text: '（此貼圖組尚無已完成的貼圖）', size: 'xs', color: '#999999', margin: 'md' }
           ]

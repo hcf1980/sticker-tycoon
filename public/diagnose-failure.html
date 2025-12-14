@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔍 生成失敗診斷工具</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 16px;
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+        .result {
+            background: #f5f5f5;
+            border-radius: 6px;
+            padding: 20px;
+            margin-top: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            display: none;
+        }
+        .result.show {
+            display: block;
+        }
+        .error { color: #d32f2f; }
+        .warning { color: #f57c00; }
+        .success { color: #388e3c; }
+        .info { color: #1976d2; }
+        .loading {
+            text-align: center;
+            color: #667eea;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 生成失敗診斷</h1>
+        <p class="subtitle">幫助您快速找到問題所在並提供解決方案</p>
+
+        <div class="input-group">
+            <label>貼圖組 ID (Set ID):</label>
+            <input type="text" id="setId" placeholder="例: 550e8400-e29b-41d4-a716-446655440000">
+        </div>
+
+        <div class="button-group">
+            <button class="btn-primary" onclick="diagnoseSetId()">🔍 診斷貼圖組</button>
+            <button class="btn-primary" onclick="clearResults()">🗑️ 清除</button>
+        </div>
+
+        <div id="results" class="result"></div>
+    </div>
+
+    <script>
+        async function diagnoseSetId() {
+            const setId = document.getElementById('setId').value.trim();
+            const resultsDiv = document.getElementById('results');
+
+            if (!setId) {
+                resultsDiv.innerHTML = '<span class="error">❌ 請輸入貼圖組 ID</span>';
+                resultsDiv.classList.add('show');
+                return;
+            }
+
+            resultsDiv.innerHTML = '<span class="loading">🔄 診斷中，請稍候...</span>';
+            resultsDiv.classList.add('show');
+
+            try {
+                // 調用診斷 API
+                const response = await fetch('/.netlify/functions/diagnose-set-failure', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ setId })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayDiagnosis(data);
+                } else {
+                    resultsDiv.innerHTML = `<span class="error">❌ ${data.error || '診斷失敗'}</span>`;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<span class="error">❌ 網絡錯誤: ${error.message}</span>`;
+            }
+        }
+
+        function displayDiagnosis(diagnosis) {
+            const resultsDiv = document.getElementById('results');
+            let html = '';
+
+            html += `<span class="info">📋 貼圖組: ${diagnosis.setName}</span>\n`;
+            html += `<span class="info">狀態: ${diagnosis.status}</span>\n`;
+            html += `<span class="info">建立時間: ${new Date(diagnosis.createdAt).toLocaleString('zh-TW')}</span>\n\n`;
+
+            if (diagnosis.failures.length > 0) {
+                html += `<span class="error">❌ 失敗記錄 (${diagnosis.failures.length})</span>\n`;
+                diagnosis.failures.forEach(f => {
+                    html += `━━━━━━━━━━━━━━━━━━━━━━\n`;
+                    html += `Task ID: ${f.taskId}\n`;
+                    html += `時間: ${new Date(f.timestamp).toLocaleString('zh-TW')}\n`;
+                    html += `原因: ${f.errorMessage}\n`;
+                });
+                html += `\n`;
+            }
+
+            if (diagnosis.suggestions.length > 0) {
+                html += `<span class="warning">💡 建議</span>\n`;
+                diagnosis.suggestions.forEach(s => {
+                    html += `${s}\n`;
+                });
+            }
+
+            resultsDiv.innerHTML = html;
+            resultsDiv.classList.add('show');
+        }
+
+        function clearResults() {
+            document.getElementById('results').classList.remove('show');
+            document.getElementById('setId').value = '';
+        }
+    </script>
+</body>
+</html>
+
