@@ -2452,11 +2452,55 @@ async function handlePurchaseInfo(replyToken) {
     }
   };
 
-  // QR Code 圖片
+  // QR Code 圖片（添加 Quick Reply）
   const qrMessage = {
     type: 'image',
     originalContentUrl: 'https://sticker-tycoon.netlify.app/payment-qr.png',
-    previewImageUrl: 'https://sticker-tycoon.netlify.app/payment-qr.png'
+    previewImageUrl: 'https://sticker-tycoon.netlify.app/payment-qr.png',
+    quickReply: {
+      items: [
+        {
+          type: 'action',
+          action: {
+            type: 'uri',
+            label: '🎬 YouTuber推廣計畫',
+            uri: `${process.env.URL || 'https://sticker-tycoon.netlify.app'}/youtuber-promotion.html`
+          }
+        },
+        {
+          type: 'action',
+          action: {
+            type: 'message',
+            label: '📁 我的貼圖',
+            text: '我的貼圖'
+          }
+        },
+        {
+          type: 'action',
+          action: {
+            type: 'message',
+            label: '🎨 創建貼圖',
+            text: '創建貼圖'
+          }
+        },
+        {
+          type: 'action',
+          action: {
+            type: 'message',
+            label: '💰 購買代幣',
+            text: '購買代幣'
+          }
+        },
+        {
+          type: 'action',
+          action: {
+            type: 'message',
+            label: '🎁 分享給好友',
+            text: '分享給好友'
+          }
+        }
+      ]
+    }
   };
 
   return getLineClient().replyMessage(replyToken, [planCarousel, paymentInfo, qrMessage]);
