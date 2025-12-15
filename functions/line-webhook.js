@@ -14,6 +14,12 @@ const { handleStartCreate, handleNaming, handleStyleSelection, handleFramingSele
 const { handleUserPhoto } = require('./photo-handler');
 const { createGenerationTask } = require('./sticker-generator-worker-background');
 const { StickerStyles, SceneTemplates, FramingTemplates } = require('./sticker-styles');
+const {
+  checkAndHandleTimeout,
+  handleCancelCommand,
+  addCancelButton,
+  addCancelButtonToFlex
+} = require('./creation-flow-manager');
 
 // LINE Bot 設定 - 延遲初始化
 let client = null;
@@ -57,6 +63,12 @@ async function handleTextMessage(replyToken, userId, text) {
 
     // 詳細日誌
     console.log(`🔍 用戶狀態: stage=${currentStage}, temp_data=${JSON.stringify(state.temp_data)}`);
+
+    // ✅ 檢查創建流程是否超時（10分鐘無操作）
+    const timeoutMessage = await checkAndHandleTimeout(state, userId);
+    if (timeoutMessage) {
+      return getLineClient().replyMessage(replyToken, timeoutMessage);
+    }
 
     // 1. 檢查是否要取消
     if (text === '取消' || text === '取消創建') {
@@ -398,18 +410,13 @@ async function handleConfirmGeneration(replyToken, userId, state) {
   const apiCalls = Math.ceil(stickerCount / 6);  // 每次API調用生成6張
   const tokenCost = apiCalls * 3;  // 每次API調用消耗3枚代幣
 
-  // 💰 先扣除代幣（避免重複扣款）
-  const deductResult = await deductTokens(
-    userId,
-    tokenCost,
-    `生成貼圖組「${tempData.name}」(${stickerCount}張/${apiCalls}次API)`,
-    null  // setId 還沒產生
-  );
-
-  if (!deductResult.success) {
+  // ✅ 檢查代幣是否足夠（但不扣除！等生成成功後再扣）
+  const tokenBalance = await getUserTokenBalance(userId);
+  if (tokenBalance < tokenCost) {
     return getLineClient().replyMessage(replyToken, {
       type: 'text',
-      text: `❌ ${deductResult.error}\n\n` +
+      text: `❌ 代幣不足！\n\n` +
+            `需要 ${tokenCost} 代幣，目前餘額 ${tokenBalance} 代幣\n\n` +
             '💡 輸入「購買代幣」查看儲值方案'
     });
   }
@@ -421,11 +428,12 @@ async function handleConfirmGeneration(replyToken, userId, state) {
   const referralInfo = await getUserReferralInfo(userId);
   const showReferralReminder = referralInfo.referralCount < 3;
 
-  // 組合訊息文字（移除 API 調用與特價行）
+  // 組合訊息文字（✅ 改為「生成成功後扣除」）
   let messageText = '🎨 開始生成貼圖！\n\n' +
         `📛 名稱：${tempData.name}\n` +
         `📊 數量：${stickerCount} 張\n\n` +
-        `💰 已扣除 ${tokenCost} 代幣，剩餘 ${deductResult.balance} 代幣\n` +
+        `💰 生成成功後將扣除 ${tokenCost} 代幣\n` +
+        `💰 目前餘額：${tokenBalance} 代幣\n\n` +
         '⏳ 預計需要 2-5 分鐘';
 
   // 如果未達推薦上限，加入推薦碼提醒
@@ -484,7 +492,8 @@ async function handleConfirmGeneration(replyToken, userId, state) {
       sceneConfig: tempData.sceneConfig || null,
       customSceneDescription: tempData.customSceneDescription || null,
       framing: tempData.framing || 'halfbody',  // 構圖選擇（全身/半身/大頭/特寫）
-      tokensDeducted: true  // 標記已經扣過代幣
+      tokensDeducted: false,  // ✅ 標記為「未扣除」，在生成成功後才扣
+      tokenCost: tokenCost    // ✅ 傳遞要扣除的代幣數量
     });
 
     console.log(`✅ 已建立生成任務: taskId=${taskId}, setId=${setId}`);
@@ -509,7 +518,6 @@ async function handleConfirmGeneration(replyToken, userId, state) {
 
   } catch (error) {
     console.error('❌ 建立生成任務失敗:', error);
-    // 退還代幣（因為任務建立失敗）
     await addTokens(userId, tokenCost, 'refund', `任務建立失敗退款「${tempData.name}」`);
     console.log(`💰 已退還 ${tokenCost} 代幣`);
   }

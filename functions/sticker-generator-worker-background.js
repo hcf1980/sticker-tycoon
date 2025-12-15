@@ -22,30 +22,10 @@ async function createGenerationTask(userId, setData) {
     // 計算需要的代幣數量（6宮格批次生成：每6張只需3枚代幣）
     const stickerCount = setData.count || 6;
     const apiCalls = Math.ceil(stickerCount / 6);  // 每次API調用生成6張
-    const tokenCost = apiCalls * 3;  // 每次API調用消耗3枚代幣
+    const tokenCost = setData.tokenCost || (apiCalls * 3);  // ✅ 優先使用傳入的 tokenCost
 
-    // 💰 代幣扣除邏輯已移到 line-webhook.js 的 handleConfirmGeneration
-    // 如果沒有預先扣除，才在這裡扣除（向後兼容）
-    if (!setData.tokensDeducted) {
-      const deductResult = await deductTokens(
-        userId,
-        tokenCost,
-        `生成貼圖組「${setData.name}」(${stickerCount}張/${apiCalls}次API)`,
-        setId
-      );
-
-      if (!deductResult.success) {
-        console.log(`❌ 代幣不足: ${deductResult.error}`);
-        return {
-          error: deductResult.error || '代幣不足，無法生成貼圖',
-          tokenBalance: deductResult.balance
-        };
-      }
-
-      console.log(`💰 已扣除 ${tokenCost} 代幣，剩餘 ${deductResult.balance} 代幣`);
-    } else {
-      console.log(`💰 代幣已在確認階段扣除（${tokenCost} 代幣）`);
-    }
+    // ✅ 改為：暫不扣除代幣，等生成成功後再扣
+    console.log(`💰 待扣除 ${tokenCost} 代幣（生成成功後扣除）`);
 
     // 🆕 生成角色一致性 ID（確保同一組貼圖使用相同角色）
     const { generateCharacterID } = require('./sticker-styles');
@@ -325,7 +305,22 @@ async function executeGeneration(taskId, setId) {
       tab_image_url: uploadResults.tabImageUrl
     });
 
-    // 6. 完成任務
+    // 6. ✅ 生成成功後才扣除代幣
+    const deductResult = await deductTokens(
+      userId,
+      tokenCost,
+      `生成貼圖組「${setData.name}」(${uploadedCount}張貼圖)`,
+      setId
+    );
+
+    if (deductResult.success) {
+      console.log(`💰 生成成功，已扣除 ${tokenCost} 代幣，剩餘 ${deductResult.balance} 代幣`);
+    } else {
+      console.error(`⚠️ 代幣扣除失敗: ${deductResult.error}（但貼圖已生成）`);
+      // 即使扣除失敗，貼圖也已經生成，不影響流程
+    }
+
+    // 7. 完成任務
     await updateTaskProgress(taskId, 100, 'completed');
     console.log(`✅ 貼圖組 ${setId} 生成完成！共 ${uploadedCount} 張貼圖`);
 
@@ -349,6 +344,9 @@ async function executeGeneration(taskId, setId) {
       .eq('task_id', taskId);
 
     await updateStickerSetStatus(setId, 'failed');
+
+    // ✅ 生成失敗時，不扣除代幣
+    console.log(`💰 生成失敗，未扣除代幣`);
 
     throw error;
   }
