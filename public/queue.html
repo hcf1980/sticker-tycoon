@@ -36,6 +36,10 @@
     .sticker-info { padding: 8px; text-align: center; border-top: 1px solid #eee; }
     .sticker-name { font-size: 0.8rem; font-weight: 600; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .sticker-num { font-size: 0.7rem; color: #999; margin-top: 2px; }
+    .remove-btn { position: absolute; top: 6px; left: 6px; width: 28px; height: 28px; background: rgba(211,47,47,0.95); color: white; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; z-index: 10; transition: transform 0.2s, background 0.2s; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+    .remove-btn:hover { background: #d32f2f; transform: scale(1.1); }
+    .remove-btn:active { transform: scale(0.95); }
+    .sticker-img-wrapper { position: relative; }
     .actions { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
     .actions-inner { max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
     .btn-row { display: flex; gap: 10px; }
@@ -284,9 +288,12 @@
       html += '<div class="grid">';
       queue.forEach((item, i) => {
         const isSelected = i === selectedCoverIndex;
-        html += `<div class="sticker-card${isSelected ? ' selected' : ''}" onclick="selectCover(${i})">
-          <img class="sticker-img" src="${item.image_url}" alt="貼圖 ${i+1}">
-          <div class="sticker-info">
+        html += `<div class="sticker-card${isSelected ? ' selected' : ''}">
+          <div class="sticker-img-wrapper" onclick="selectCover(${i})">
+            <button class="remove-btn" onclick="event.stopPropagation(); removeStickerFromQueue('${item.sticker_id}', ${i})" title="移除">✕</button>
+            <img class="sticker-img" src="${item.image_url}" alt="貼圖 ${i+1}">
+          </div>
+          <div class="sticker-info" onclick="selectCover(${i})">
             <div class="sticker-name">${item.expression || '貼圖'}</div>
             <div class="sticker-num">#${String(i+1).padStart(2,'0')}</div>
           </div>
@@ -338,6 +345,41 @@
         if (data.success) { queue = []; selectedCoverIndex = 0; renderQueue(); showToast('已清空'); }
         else { showToast('清空失敗'); }
       } catch (e) { showToast('操作失敗'); }
+    }
+
+    async function removeStickerFromQueue(stickerId, index) {
+      if (!confirm('確定要移除這張貼圖嗎？')) return;
+
+      try {
+        const res = await fetch(`${API_BASE}/remove-from-queue`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, stickerId })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          // 從陣列移除
+          queue.splice(index, 1);
+
+          // 如果移除的是封面，重設為第一張
+          if (selectedCoverIndex === index) {
+            selectedCoverIndex = 0;
+          } else if (selectedCoverIndex > index) {
+            // 如果移除的在封面之前，封面索引需要減一
+            selectedCoverIndex--;
+          }
+
+          renderQueue();
+          showToast('✅ 已移除');
+        } else {
+          showToast('❌ 移除失敗：' + (data.error || '未知錯誤'));
+        }
+      } catch (e) {
+        console.error('移除失敗:', e);
+        showToast('❌ 操作失敗');
+      }
     }
 
     async function download() {

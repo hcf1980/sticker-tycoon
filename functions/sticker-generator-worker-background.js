@@ -179,6 +179,12 @@ async function executeGeneration(taskId, setId) {
     expressions = expressions.slice(0, sticker_count);
     console.log(`📋 最終表情列表 (${expressions.length} 個): ${expressions.join(', ')}`);
 
+    // 計算需要的代幣數量（與 createGenerationTask 一致）
+    const actualCount = expressions.length;
+    const apiCalls = Math.ceil(actualCount / 6);  // 每次API調用生成6張
+    const tokenCost = stickerSet.tokens_used || (apiCalls * 3);  // 優先使用資料庫記錄的值
+    console.log(`💰 本次生成需要 ${tokenCost} 代幣（${actualCount}張貼圖 = ${apiCalls}次API調用）`);
+
     // 更新進度：開始 AI 生成
     await updateTaskProgress(taskId, 10, 'processing');
 
