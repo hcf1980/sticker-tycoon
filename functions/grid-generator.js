@@ -102,11 +102,12 @@ function generateGridPrompt(photoBase64, style, expressions, characterID, option
         decorations: data.decorations
       };
     }
+    // 對於自訂表情，使用表情本身作為 popText（繁體中文）
     return {
       cell: idx + 1,
       expression: expr,
       action: expr,
-      popText: '',
+      popText: expr,  // 使用表情文字本身作為 POP 文字
       decorations: 'sparkles, hearts'
     };
   });
@@ -133,6 +134,12 @@ STYLE: ${styleConfig.name}
 6 EXPRESSIONS:
 ${cellDescriptions}
 
+⚠️ IMPORTANT - TEXT LANGUAGE:
+- ALL text in the stickers MUST be in Traditional Chinese (繁體中文)
+- DO NOT use English text
+- Use the exact Chinese text provided for each expression
+- Text should be: ${expressionDetails.map(e => `"${e.popText}"`).join(', ')}
+
 REQUIREMENTS:
 - Same person in all cells (identical face, eyes, nose, mouth)
 - ${framing.name} view
@@ -147,7 +154,8 @@ DECORATION STYLE: ${decorationStyle}
 DECORATION ELEMENTS: ${decorationElements}
 POP TEXT STYLE: ${popTextStyle}
 
-OUTPUT: 3x2 grid with 6 stickers of the SAME PERSON with different expressions.`;
+OUTPUT: 3x2 grid with 6 stickers of the SAME PERSON with different expressions.
+TEXT MUST BE IN TRADITIONAL CHINESE (繁體中文), NOT ENGLISH.`;
 
   const negativePrompt = `distorted face, warped features, deformed face, stretched face,
 wrong number of fingers, extra fingers, missing fingers,
