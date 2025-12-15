@@ -616,6 +616,8 @@ async function handleImageMessage(replyToken, userId, messageId) {
     if (!photoResult.success) {
       console.log('❌ 照片處理失敗');
       try {
+        // 延遲 1 秒後發送（避免 429 錯誤）
+        await new Promise(resolve => setTimeout(resolve, 1000));
         await getLineClient().pushMessage(userId, {
           type: 'text',
           text: '❌ 照片處理失敗，請重新上傳一張清晰的正面照片！'
@@ -632,10 +634,14 @@ async function handleImageMessage(replyToken, userId, messageId) {
     console.log('📤 發送風格選擇 Flex Message');
 
     try {
+      // 延遲 1.5 秒後發送（避免 LINE API 速率限制 429 錯誤）
+      await new Promise(resolve => setTimeout(resolve, 1500));
       await getLineClient().pushMessage(userId, message);
       console.log('✅ 風格選擇訊息發送成功');
     } catch (pushError) {
       console.error('❌ pushMessage 失敗:', pushError.message);
+      // 如果 pushMessage 失敗，記錄錯誤但不影響流程
+      // 用戶可以手動輸入「風格」來重新選擇
     }
 
   } catch (error) {
@@ -1458,7 +1464,35 @@ async function handleConfirmDeleteStickerSet(replyToken, userId, setId) {
 
     return getLineClient().replyMessage(replyToken, {
       type: 'text',
-      text: '✅ 貼圖組已成功刪除！\n\n輸入「我的貼圖」查看剩餘貼圖組'
+      text: '✅ 貼圖組已成功刪除！\n\n輸入「我的貼圖」查看剩餘貼圖組',
+      quickReply: {
+        items: [
+          {
+            type: 'action',
+            action: {
+              type: 'message',
+              label: '📁 我的貼圖',
+              text: '我的貼圖'
+            }
+          },
+          {
+            type: 'action',
+            action: {
+              type: 'message',
+              label: '🎨 創建貼圖',
+              text: '創建貼圖'
+            }
+          },
+          {
+            type: 'action',
+            action: {
+              type: 'message',
+              label: '🏠 主選單',
+              text: '選單'
+            }
+          }
+        ]
+      }
     });
 
   } catch (error) {
@@ -1491,7 +1525,7 @@ async function handleAddToUploadQueue(replyToken, userId, stickerId, setId, imag
     const selectUrl = `https://sticker-tycoon.netlify.app/select-stickers.html?userId=${encodeURIComponent(userId)}`;
     const queueUrl = `https://sticker-tycoon.netlify.app/queue.html?userId=${encodeURIComponent(userId)}`;
 
-    // 使用 Flex Message 帶連結
+    // 使用 Flex Message 帶連結和 Quick Reply
     return getLineClient().replyMessage(replyToken, {
       type: 'flex',
       altText: `已加入待上傳佇列 (${result.currentCount}/40)`,
@@ -1518,6 +1552,34 @@ async function handleAddToUploadQueue(replyToken, userId, stickerId, setId, imag
             { type: 'button', style: 'secondary', height: 'sm', flex: 1, action: { type: 'message', label: '佇列', text: '待上傳' } }
           ]
         }
+      },
+      quickReply: {
+        items: [
+          {
+            type: 'action',
+            action: {
+              type: 'uri',
+              label: '📌 選擇更多貼圖',
+              uri: selectUrl
+            }
+          },
+          {
+            type: 'action',
+            action: {
+              type: 'message',
+              label: '📁 我的貼圖',
+              text: '我的貼圖'
+            }
+          },
+          {
+            type: 'action',
+            action: {
+              type: 'message',
+              label: '🎨 創建貼圖',
+              text: '創建貼圖'
+            }
+          }
+        ]
       }
     });
 
