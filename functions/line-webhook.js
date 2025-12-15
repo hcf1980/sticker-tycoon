@@ -604,45 +604,27 @@ async function handleImageMessage(replyToken, userId, messageId) {
       return;
     }
 
-    // 顯示處理中訊息
-    await safeReply(replyToken, {
-      type: 'text',
-      text: '📥 正在處理你的照片...'
-    });
+    // 不發送處理中訊息，直接處理（節省時間和避免 429）
 
     // 處理照片
     const photoResult = await handleUserPhoto(messageId, userId);
 
     if (!photoResult.success) {
       console.log('❌ 照片處理失敗');
-      try {
-        // 延遲 1 秒後發送（避免 429 錯誤）
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        await getLineClient().pushMessage(userId, {
-          type: 'text',
-          text: '❌ 照片處理失敗，請重新上傳一張清晰的正面照片！'
-        });
-      } catch (e) {
-        console.error('pushMessage 失敗:', e.message);
-      }
+      await safeReply(replyToken, {
+        type: 'text',
+        text: '❌ 照片處理失敗，請重新上傳一張清晰的正面照片！'
+      });
       return;
     }
 
     // 調用 handler 處理下一步
     console.log('📤 準備發送風格選擇訊息');
     const message = await handlePhotoUpload(userId, photoResult);
-    console.log('📤 發送風格選擇 Flex Message');
 
-    try {
-      // 延遲 1.5 秒後發送（避免 LINE API 速率限制 429 錯誤）
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      await getLineClient().pushMessage(userId, message);
-      console.log('✅ 風格選擇訊息發送成功');
-    } catch (pushError) {
-      console.error('❌ pushMessage 失敗:', pushError.message);
-      // 如果 pushMessage 失敗，記錄錯誤但不影響流程
-      // 用戶可以手動輸入「風格」來重新選擇
-    }
+    // 直接用 replyMessage 發送（不用 pushMessage，避免 429）
+    console.log('📤 發送風格選擇 Flex Message');
+    await safeReply(replyToken, message);
 
   } catch (error) {
     console.error('❌ 處理圖片失敗:', error);
