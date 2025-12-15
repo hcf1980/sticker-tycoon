@@ -182,8 +182,8 @@ async function executeGeneration(taskId, setId) {
     // 計算需要的代幣數量（與 createGenerationTask 一致）
     const actualCount = expressions.length;
     const apiCalls = Math.ceil(actualCount / 6);  // 每次API調用生成6張
-    const tokenCost = stickerSet.tokens_used || (apiCalls * 3);  // 優先使用資料庫記錄的值
-    console.log(`💰 本次生成需要 ${tokenCost} 代幣（${actualCount}張貼圖 = ${apiCalls}次API調用）`);
+    const tokenCost = apiCalls * 3;  // ✅ 直接計算，確保正確（每6張=3代幣）
+    console.log(`💰 本次生成需要 ${tokenCost} 代幣（${actualCount}張貼圖 = ${apiCalls}次API調用 × 3代幣/次）`);
 
     // 更新進度：開始 AI 生成
     await updateTaskProgress(taskId, 10, 'processing');
