@@ -4,7 +4,6 @@
  */
 
 const { updateConversationState, ConversationStage } = require('./conversation-state');
-const { getLineClient } = require('./line-client');
 
 // 創建流程超時時間（10 分鐘）
 const CREATION_TIMEOUT_MS = 10 * 60 * 1000;
