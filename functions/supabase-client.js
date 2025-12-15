@@ -864,12 +864,16 @@ async function deductTokens(lineUserId, amount, description, referenceId = null)
 
     if (updateError) throw updateError;
 
-    // 5. 更新快取
+    // 5. 更新快取（確保快取與資料庫同步）
     const cacheKey = globalCache.generateKey('user', lineUserId);
     const cachedUser = globalCache.get(cacheKey);
     if (cachedUser) {
+      // 更新現有快取
       cachedUser.sticker_credits = newBalance;
       globalCache.set(cacheKey, cachedUser, 600000);
+    } else {
+      // 建立新快取（確保下次查詢時使用正確值）
+      globalCache.set(cacheKey, { line_user_id: lineUserId, sticker_credits: newBalance }, 600000);
     }
 
     // 6. 非同步記錄交易（不阻塞回應）
@@ -930,12 +934,16 @@ async function addTokens(lineUserId, amount, type, description, adminNote = null
         is_expired: false
       }]);
 
-    // 更新快取
+    // 更新快取（確保快取與資料庫同步）
     const cacheKey = globalCache.generateKey('user', lineUserId);
     const cachedUser = globalCache.get(cacheKey);
     if (cachedUser) {
+      // 更新現有快取
       cachedUser.sticker_credits = newBalance;
       globalCache.set(cacheKey, cachedUser, 600000);
+    } else {
+      // 建立新快取（確保下次查詢時使用正確值）
+      globalCache.set(cacheKey, { line_user_id: lineUserId, sticker_credits: newBalance }, 600000);
     }
 
     // 非同步記錄交易（不阻塞回應）
