@@ -309,7 +309,7 @@ async function executeGeneration(taskId, setId) {
     const deductResult = await deductTokens(
       userId,
       tokenCost,
-      `生成貼圖組「${setData.name}」(${uploadedCount}張貼圖)`,
+      `生成貼圖組「${stickerSet.name}」(${uploadedCount}張貼圖)`,
       setId
     );
 
