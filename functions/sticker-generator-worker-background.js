@@ -54,7 +54,7 @@ async function createGenerationTask(userId, setData) {
         character_id: characterId,                  // 🆕 角色一致性 ID
         framing: setData.framing || 'halfbody',     // 構圖選擇（全身/半身/大頭/特寫）
         status: 'generating',
-        tokens_used: stickerCount  // 記錄使用的代幣數
+        tokens_used: tokenCost  // ✅ 修正：記錄實際消耗的代幣數（而非貼圖數量）
       }]);
 
     if (setError) throw setError;
