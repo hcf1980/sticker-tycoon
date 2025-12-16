@@ -782,29 +782,8 @@ async function initializeFraming() {
       emoji: '🧍',
       description: '完整全身，適合動作表情',
       head_size_percentage: 15,
-      prompt_addition: `(((FULL BODY SHOT - HEAD TO TOE)))
-
-CRITICAL MEASUREMENTS:
-- Head size: 15% of frame height (SMALL head relative to body)
-- Body length: 80% of frame height
-- Feet MUST be visible at bottom edge
-- Top margin: 5%, Bottom margin: 5%
-- Character fills 90% of vertical space
-
-COMPOSITION RULES:
-- Standing, walking, jumping, or full-body action pose
-- Entire body from head to feet visible
-- Legs fully extended and visible
-- Feet touching or near bottom edge
-- Camera angle: Eye-level or slightly below
-
-ABSOLUTELY FORBIDDEN:
-- Cropped legs or cut-off feet
-- Close-up shots
-- Large head proportions
-- Character smaller than 80% of frame
-- Excessive empty space above or below`,
-      character_focus: 'FULL BODY visible head to toe, character fills 90% of frame height, SMALL head (15%), legs and feet visible'
+      prompt_addition: `full body shot, head to toe visible, small head (15% of height), character fills 90% of frame, feet visible at bottom`,
+      character_focus: 'FULL BODY visible head to toe, character fills 90% of frame, SMALL head (15%)'
     },
     {
       framing_id: 'halfbody',
@@ -812,29 +791,8 @@ ABSOLUTELY FORBIDDEN:
       emoji: '👤',
       description: '上半身，表情手勢兼顧',
       head_size_percentage: 25,
-      prompt_addition: `(((HALF BODY SHOT - WAIST UP)))
-
-CRITICAL MEASUREMENTS:
-- Head size: 25% of frame height (MEDIUM head)
-- Torso: 60% of frame height
-- Cut at waist level (belly button visible)
-- Hands and arms MUST be in frame
-- Character fills 85% of vertical space
-
-COMPOSITION RULES:
-- Upper body from waist up
-- Both arms visible and expressive
-- Hands doing gestures (waving, pointing, etc.)
-- Torso and chest clearly visible
-- Camera angle: Slightly below eye-level
-
-ABSOLUTELY FORBIDDEN:
-- Full body with legs visible
-- Head-only shots
-- Cut at chest level
-- Arms cropped out of frame
-- Character smaller than 80% of frame`,
-      character_focus: 'UPPER BODY waist up, character fills 85% of frame, MEDIUM head (25%), hands visible and gesturing'
+      prompt_addition: `half body shot waist up, medium head (25% of height), character fills 85% of frame, hands visible`,
+      character_focus: 'UPPER BODY waist up, character fills 85% of frame, MEDIUM head (25%)'
     },
     {
       framing_id: 'portrait',
@@ -842,29 +800,8 @@ ABSOLUTELY FORBIDDEN:
       emoji: '😊',
       description: '頭部特寫，表情清晰',
       head_size_percentage: 60,
-      prompt_addition: `(((HEAD AND SHOULDERS PORTRAIT)))
-
-CRITICAL MEASUREMENTS:
-- Head size: 60% of frame height (LARGE head)
-- Face fills 50% of total frame area
-- Shoulders visible (cut at mid-chest)
-- Neck fully visible
-- Character fills 85% of vertical space
-
-COMPOSITION RULES:
-- Head and shoulders only
-- Face is the main focus
-- Facial expression clearly readable
-- Shoulders provide context
-- Camera angle: Eye-level, straight on
-
-ABSOLUTELY FORBIDDEN:
-- Full body or half body visible
-- Extreme close-up (face only)
-- Profile or side view
-- Small head with too much space
-- Character smaller than 80% of frame`,
-      character_focus: 'HEAD AND SHOULDERS, character fills 85% of frame, LARGE head (60%), face is main focus'
+      prompt_addition: `head and shoulders portrait, large head (60% of height), character fills 85% of frame, face is main focus`,
+      character_focus: 'HEAD AND SHOULDERS, character fills 85% of frame, LARGE head (60%)'
     },
     {
       framing_id: 'closeup',
@@ -872,29 +809,8 @@ ABSOLUTELY FORBIDDEN:
       emoji: '👁️',
       description: '臉部特寫，表情超大',
       head_size_percentage: 85,
-      prompt_addition: `(((EXTREME FACE CLOSE-UP)))
-
-CRITICAL MEASUREMENTS:
-- Face fills 85% of frame (HUGE face)
-- Eyes at center of frame
-- Forehead may be slightly cropped
-- Chin visible at bottom
-- Face nearly touches all edges
-
-COMPOSITION RULES:
-- Face only, no shoulders
-- Eyes are the focal point
-- Every facial detail visible
-- Intimate emotional connection
-- Camera angle: Straight on, direct eye contact
-
-ABSOLUTELY FORBIDDEN:
-- Shoulders or body visible
-- Full head with space around
-- Distant shot
-- Small face with empty space
-- Face smaller than 80% of frame`,
-      character_focus: 'EXTREME FACE CLOSE-UP, face fills 85% of frame, HUGE face nearly touching edges, eyes at center'
+      prompt_addition: `extreme face close-up, huge face (85% of frame), eyes at center, face nearly touches edges`,
+      character_focus: 'EXTREME FACE CLOSE-UP, face fills 85% of frame, HUGE face'
     }
   ];
 
