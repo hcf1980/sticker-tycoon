@@ -445,34 +445,45 @@ async function deleteStickerSet(setId, userId) {
 
 /**
  * 取得用戶最新的生成任務（含貼圖組資訊）
+ * 🚀 優化：使用 JOIN 一次查詢，避免 N+1 問題
  */
 async function getUserLatestTask(userId) {
   try {
     const supabase = getSupabaseClient();
 
-    // 先查詢任務
-    const { data: task, error: taskError } = await supabase
+    // 🚀 優化：使用 JOIN 一次查詢任務和貼圖組
+    const { data: tasks, error } = await supabase
       .from('generation_tasks')
-      .select('task_id, set_id, status, progress, created_at')
+      .select(`
+        task_id,
+        set_id,
+        status,
+        progress,
+        created_at,
+        sticker_sets:set_id (
+          set_id,
+          name,
+          status,
+          sticker_count
+        )
+      `)
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
+      .limit(1);
 
-    if (taskError) {
-      if (taskError.code === 'PGRST116') return null; // 沒有記錄
-      throw taskError;
+    if (error) {
+      if (error.code === 'PGRST116') return null; // 沒有記錄
+      throw error;
     }
 
-    // 再查詢對應的貼圖組
-    if (task && task.set_id) {
-      const { data: stickerSet } = await supabase
-        .from('sticker_sets')
-        .select('set_id, name, status, sticker_count')
-        .eq('set_id', task.set_id)
-        .single();
+    if (!tasks || tasks.length === 0) return null;
 
-      task.sticker_set = stickerSet;
+    const task = tasks[0];
+
+    // 將 sticker_sets 陣列轉為單一物件（因為是 1:1 關係）
+    if (task.sticker_sets && Array.isArray(task.sticker_sets)) {
+      task.sticker_set = task.sticker_sets[0];
+      delete task.sticker_sets;
     }
 
     return task;

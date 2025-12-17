@@ -48,8 +48,8 @@ async function loadStyleSettings() {
       };
     });
 
-    // 快取 5 分鐘（降低快取時間以確保設定更新能更快生效）
-    globalCache.set(cacheKey, styleEnhancer, 300000);
+    // 快取 30 分鐘（風格設定不常變動，可延長快取時間以提升效能）
+    globalCache.set(cacheKey, styleEnhancer, 1800000);
 
     return styleEnhancer;
 
@@ -64,7 +64,7 @@ async function loadStyleSettings() {
  */
 async function loadFramingSettings() {
   const cacheKey = 'framing_settings:all';
-  
+
   const cached = globalCache.get(cacheKey);
   if (cached) {
     return cached;
@@ -72,7 +72,7 @@ async function loadFramingSettings() {
 
   try {
     const supabase = getSupabaseClient();
-    
+
     const { data, error } = await supabase
       .from('framing_settings')
       .select('*')
@@ -94,11 +94,13 @@ async function loadFramingSettings() {
         emoji: framing.emoji,
         description: framing.description,
         promptAddition: framing.prompt_addition,
-        characterFocus: framing.character_focus
+        characterFocus: framing.character_focus,
+        compactPrompt: framing.compact_prompt,  // 🆕 精簡版 Prompt
+        useCompact: framing.use_compact !== false  // 🆕 是否使用精簡版（預設 true）
       };
     });
 
-    globalCache.set(cacheKey, framingTemplates, 300000);
+    globalCache.set(cacheKey, framingTemplates, 1800000); // 30分鐘（構圖設定不常變動）
 
     return framingTemplates;
 
@@ -148,7 +150,7 @@ async function loadSceneSettings() {
       };
     });
 
-    globalCache.set(cacheKey, sceneTemplates, 300000);
+    globalCache.set(cacheKey, sceneTemplates, 1800000); // 30分鐘（場景設定不常變動）
 
     return sceneTemplates;
 
@@ -196,7 +198,7 @@ async function loadExpressionTemplateSettings() {
       };
     });
 
-    globalCache.set(cacheKey, templates, 300000);
+    globalCache.set(cacheKey, templates, 1800000); // 30分鐘（表情模板不常變動）
 
     return templates;
 

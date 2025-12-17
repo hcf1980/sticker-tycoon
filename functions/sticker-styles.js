@@ -776,12 +776,19 @@ function generateStickerPromptV2(style, characterDescription, expression) {
 }
 
 /**
- * 🎯 生成照片貼圖的增強 Prompt V5.0
+ * 🎯 生成照片貼圖的優化 Prompt V7.0（超精簡版）
  * - 透明背景
- * - 風格差異化（StyleEnhancer）
+ * - 風格差異化（簡化版）
  * - 角色一致性
  * - POP文字 + 裝飾元素支援
  * - 人物構圖選擇（全身/半身/大頭/特寫）
+ *
+ * ✨ 優化: 從 1300字 → 700字，提高 AI 效能
+ * 📊 精簡策略：
+ *   - 移除冗長說明文字
+ *   - 合併重複規則
+ *   - 只保留核心參數
+ *   - 使用更簡潔的表達
  */
 function generatePhotoStickerPromptV2(style, expression, characterID = null, sceneConfig = null, framingConfig = null) {
   const styleConfig = StickerStyles[style] || StickerStyles.cute;
@@ -793,160 +800,96 @@ function generatePhotoStickerPromptV2(style, expression, characterID = null, sce
   let actionDesc, popText, decorations;
 
   if (typeof expressionData === 'object' && expressionData !== null) {
-    // 新格式
     actionDesc = expressionData.action;
     popText = expressionData.popText;
     decorations = expressionData.decorations;
   } else {
-    // 舊格式或不存在
     actionDesc = expressionData || expression;
     popText = null;
-    decorations = 'sparkles, small hearts';
+    decorations = 'sparkles, hearts';
   }
 
-  // 裝飾風格配置（如果有）
+  // 裝飾風格配置（精簡版）
   const decoration = sceneConfig || SceneTemplates.none;
-  const decorationPrompt = decoration.decorationStyle
-    ? `\n- DECORATION STYLE: ${decoration.decorationStyle}`
-    : '';
-  const elementsPrompt = decoration.decorationElements?.length > 0
-    ? `\n- DECORATION ELEMENTS: ${decoration.decorationElements.join(', ')}`
-    : '';
-  const textStylePrompt = decoration.popTextStyle
-    ? `\n- TEXT STYLE: ${decoration.popTextStyle}`
-    : '';
 
-  // POP 文字指示
-  const popTextPrompt = popText
-    ? `\n\n=== 📝 POP TEXT (IMPORTANT) ===
-Add "${popText}" as decorative text element:
-- Large, bold, eye-catching typography
-- Placed near character (top, side, or as speech bubble)
-- ${decoration.popTextStyle || 'colorful and fun style'}
-- Text should complement the expression`
-    : '';
+  // 精簡的 POP 文字
+  const popTextPrompt = popText ? `\nPOP TEXT: "${popText}" (${decoration.popTextStyle || 'bold colorful'})` : '';
 
-  const prompt = `Transform this photo into a LINE sticker illustration with decorative elements.
+  // 精簡的構圖指示（根據資料庫設定自動選擇完整版或精簡版）
+  const framingPrompt = getFramingPrompt(framing);
 
-=== 🎨 PRIORITY 0: CORE ART STYLE (MOST IMPORTANT) ===
-${styleEnhance.coreStyle}
+  const prompt = `LINE sticker from photo: ${styleConfig.promptBase}
 
-STYLE IDENTITY:
-${styleConfig.promptBase}
+🎨 STYLE: ${styleEnhance.coreStyle}
+Lighting: ${styleEnhance.lighting} | ${styleEnhance.mood}
+Colors: ${styleEnhance.colorPalette}
+Avoid: ${styleEnhance.forbidden}
 
-STYLE EXECUTION:
-- Lighting: ${styleEnhance.lighting}
-- Composition: ${styleEnhance.composition}
-- Brushwork: ${styleEnhance.brushwork}
-- Mood: ${styleEnhance.mood}
-- Color Palette: ${styleEnhance.colorPalette}
-- Reference: ${styleEnhance.reference}
+😊 EXPRESSION: ${expression}
+${actionDesc}
+Clear pose, readable at small size${popTextPrompt}
 
-⚠️ ABSOLUTELY FORBIDDEN FOR THIS STYLE:
-${styleEnhance.forbidden}
+🎀 DECORATIONS: ${decorations || 'sparkles, hearts'}
+${decoration.decorationElements?.slice(0, 2).join(', ') || ''}
+${decoration.decorationStyle || 'minimal'}
+Dynamic layout, varied sizes
 
-=== 😊 EXPRESSION & ACTION: ${expression} ===
-ACTION: ${actionDesc}
-- Show emotion through CLEAR BODY POSE and HAND GESTURE
-- Expression must be dramatic and readable at small size
-- Hands and arms should be visible and expressive${decorationPrompt}${elementsPrompt}${textStylePrompt}${popTextPrompt}
+👤 CHARACTER (ID: ${characterID || 'default'}):
+- Copy exact face/hair from photo
+- Colorful casual outfit
+- Consistent across set
 
-=== 🎀 DECORATIONS (DYNAMIC LAYOUT) ===
-Add floating decorative elements with VARIED placement and sizes:
-- ${decorations || 'sparkles, hearts, stars'}
-- ${decoration.decorationElements?.slice(0, 3).join(', ') || 'colorful accents'}
-- DECORATION SIZES: Mix of large, medium, and small decorations for visual interest
-- PLACEMENT RULES (vary based on character's gaze direction):
-  * If character looks LEFT: place more decorations on the RIGHT side
-  * If character looks RIGHT: place more decorations on the LEFT side
-  * If character looks UP: decorations float ABOVE
-  * If character looks DOWN or CENTER: decorations scattered asymmetrically around
-- CHARACTER POSITION: Does NOT need to be centered!
-  * Can be slightly LEFT, RIGHT, or use rule-of-thirds composition
-  * Leave breathing room in the direction character is looking
-- Create visual FLOW and BALANCE, not rigid symmetry
-- Some decorations can OVERLAP edges of frame for dynamic feel
-- Layer decorations: some in front, some behind character
+🖼️ FRAMING: ${framing.name.toUpperCase()}
+${framingPrompt}
 
-=== 👤 CHARACTER (MUST BE CONSISTENT) ===
-Character ID: ${characterID || 'default'}
-- Copy EXACT face from photo: same face shape, eyes, nose, mouth
-- Copy EXACT hairstyle and hair color from photo
-- CLOTHING: Colorful casual outfit (can vary per sticker)
-- GAZE DIRECTION: Natural eye direction matching expression
+📐 SIZE: 370x320px LINE sticker
+- Character fills 85-90% of frame
+- 10px safe margin
+- Transparent background (alpha=0)
+- Thick outlines for small size
 
-=== 🖼️ PRIORITY 1: FRAMING / COMPOSITION (CRITICAL) ===
-FRAMING TYPE: ${framing.name} (${framing.id.toUpperCase()})
+OUTPUT: ${styleConfig.name} style, transparent BG, 370x320px`;
 
-${framing.promptAddition}
-
-CHARACTER FOCUS REQUIREMENT:
-${framing.characterFocus}
-
-⚠️ THIS FRAMING STYLE IS ABSOLUTELY CRITICAL:
-- Follow the measurements EXACTLY as specified
-- Do NOT mix with other framing styles
-- The head size percentage is NON-NEGOTIABLE
-- Forbidden items for this framing MUST be avoided
-
-=== 📐 PRIORITY 2: SIZE & FILL REQUIREMENTS ===
-LINE STICKER SPECS: 370px width × 320px height
-SAFE MARGIN: 10px on all sides (required by LINE)
-EFFECTIVE DRAWING AREA: 350px × 300px
-
-CHARACTER FILL REQUIREMENTS:
-- Character MUST fill 85-90% of effective area
-- Character should be LARGE and DOMINANT
-- MINIMAL empty space around character
-- Only ~10px padding from edges
-- Character nearly touches safe margins
-- NO tiny character with excessive whitespace
-- Sticker must look FULL and IMPACTFUL at small size
-
-=== ⚠️ TECHNICAL REQUIREMENTS (STRICT) ===
-1. BACKGROUND: 100% TRANSPARENT (alpha=0) - NO white, NO gray
-2. OUTLINES: Thick clean lines for visibility at small size
-3. COMPOSITION: Character FILLS 85-90% of frame, dynamic layout
-4. IMAGE SIZE: 370px width × 320px height
-5. FILL RATIO: Character + decorations should occupy most of the canvas
-
-=== 🚫 ABSOLUTELY FORBIDDEN ===
-- NO circular frame, NO round border, NO circle crop
-- NO avatar style, NO profile picture frame
-- NO tiny character with excessive empty space
-- NO character smaller than 80% of frame
-- Character must be FREE-FLOATING on transparent background
-
-=== 🎨 COLOR & CONSISTENCY ===
-- SKIN TONE: Warm healthy tone, consistent across ALL stickers
-- HAIR COLOR: Same exact color in ALL stickers
-- HIGH SATURATION: Vivid, vibrant colors
-- HIGH CONTRAST: Strong visual impact
-
-OUTPUT: ${styleConfig.name} LINE sticker with ${popText ? `"${popText}" text and ` : ''}decorations, 370x320px, character FILLING 85-90% of frame, TRANSPARENT background.`;
-
-  const negativePrompt = `
-    === STYLE-SPECIFIC FORBIDDEN (CRITICAL) ===
-    ${styleEnhance.forbidden},
-
-    === GENERAL FORBIDDEN ===
-    white background, gray background, colored background, solid background,
-    circular frame, round border, circle crop, avatar style, profile picture frame,
-    different face, inconsistent character, pale skin, gray skin,
-    realistic photo, 3D render, blurry, low quality,
-    tiny character, small figure, excessive whitespace, too much empty space,
-    character too small, miniature figure, distant shot, far away,
-
-    === FRAMING-SPECIFIC FORBIDDEN ===
-    ${framing.promptAddition.includes('FORBIDDEN') ?
-      framing.promptAddition.split('ABSOLUTELY FORBIDDEN:')[1]?.split('`,')[0] || '' :
-      'wrong framing, incorrect composition'}
-  `.replace(/\s+/g, ' ').trim();
+  const negativePrompt = `${styleEnhance.forbidden}, white/gray background, circular frame, tiny character, excessive whitespace, blurry, low quality, inconsistent face`;
 
   return {
     prompt,
     negativePrompt
   };
+}
+
+/**
+ * 🎯 精簡版構圖提示（原本 20+ 行 → 3 行）
+ * 優先從資料庫載入，否則使用預設精簡版
+ */
+function getCompactFramingPrompt(framing) {
+  // 如果資料庫有設定精簡版 prompt，優先使用
+  if (framing.compactPrompt) {
+    return framing.compactPrompt;
+  }
+
+  // 否則使用預設精簡版
+  const compactFraming = {
+    fullbody: 'Full body head-to-toe, 15% head, 90% vertical fill, feet visible',
+    halfbody: 'Waist up, 25% head, hands visible, 85% vertical fill',
+    portrait: 'Head & shoulders, 60% head, face focus, 85% vertical fill',
+    closeup: 'Face only, 85% face fill, eyes center, nearly touching edges'
+  };
+
+  return compactFraming[framing.id] || compactFraming.halfbody;
+}
+
+/**
+ * 🎯 取得構圖 Prompt（根據設定決定使用完整版或精簡版）
+ */
+function getFramingPrompt(framing) {
+  // 如果設定使用精簡版，使用精簡版
+  if (framing.useCompact !== false) {  // 預設使用精簡版
+    return getCompactFramingPrompt(framing);
+  }
+
+  // 否則使用完整版
+  return framing.promptAddition || getCompactFramingPrompt(framing);
 }
 
 /**

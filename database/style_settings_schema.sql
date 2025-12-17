@@ -28,6 +28,8 @@ CREATE TABLE IF NOT EXISTS framing_settings (
   head_size_percentage INTEGER,
   prompt_addition TEXT,
   character_focus TEXT,
+  compact_prompt TEXT,  -- 🆕 精簡版 Prompt（用於降低 token 使用）
+  use_compact BOOLEAN DEFAULT true,  -- 🆕 是否使用精簡版
   is_active BOOLEAN DEFAULT true,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
