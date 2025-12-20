@@ -105,7 +105,13 @@ async function handleTextMessage(replyToken, userId, text) {
           type: 'text',
           text: '⚠️ 你正在創建貼圖中\n\n' +
                 `目前階段：${getStageDescription(currentStage)}\n\n` +
-                '輸入「取消」可以重新開始'
+                '輸入「取消」可以重新開始',
+          quickReply: {
+            items: [
+              { type: 'action', action: { type: 'message', label: '❌ 取消重來', text: '取消' } },
+              { type: 'action', action: { type: 'message', label: '📋 查詢進度', text: '查詢進度' } }
+            ]
+          }
         });
       }
       return await handleCreationFlow(replyToken, userId, text, currentStage, state);
@@ -122,7 +128,14 @@ async function handleTextMessage(replyToken, userId, text) {
       if (sets.length === 0) {
         return getLineClient().replyMessage(replyToken, {
           type: 'text',
-          text: '📁 你還沒有創建任何貼圖組\n\n輸入「創建貼圖」開始創建你的第一組貼圖！'
+          text: '📁 你還沒有創建任何貼圖組\n\n輸入「創建貼圖」開始創建你的第一組貼圖！',
+          quickReply: {
+            items: [
+              { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
+              { type: 'action', action: { type: 'message', label: '✨ 示範圖集', text: '示範圖集' } },
+              { type: 'action', action: { type: 'message', label: '💰 我的代幣', text: '代幣' } }
+            ]
+          }
         });
       }
       // 生成貼圖列表 Flex Message（帶推薦好友資訊 + 待上傳數量）
@@ -273,7 +286,14 @@ async function handleTextMessage(replyToken, userId, text) {
     console.error('❌ 處理訊息失敗:', error);
     return getLineClient().replyMessage(replyToken, {
       type: 'text',
-      text: '❌ 系統發生錯誤，請稍後再試'
+      text: '❌ 系統發生錯誤，請稍後再試',
+      quickReply: {
+        items: [
+          { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
+          { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
+          { type: 'action', action: { type: 'message', label: '💰 我的代幣', text: '代幣' } }
+        ]
+      }
     });
   }
 }
@@ -313,7 +333,15 @@ async function handleCreationFlow(replyToken, userId, text, stage, state) {
         const styleId = text.replace('風格:', '');
         message = await handleStyleSelection(userId, styleId);
       } else {
-        message = { type: 'text', text: '⚠️ 請點擊上方按鈕選擇風格！' };
+        message = { 
+          type: 'text', 
+          text: '⚠️ 請點擊上方按鈕選擇風格！',
+          quickReply: {
+            items: [
+              { type: 'action', action: { type: 'message', label: '❌ 取消', text: '取消' } }
+            ]
+          }
+        };
       }
       break;
     case ConversationStage.FRAMING:
@@ -322,7 +350,15 @@ async function handleCreationFlow(replyToken, userId, text, stage, state) {
         const framingId = text.replace('構圖:', '');
         message = await handleFramingSelection(userId, framingId);
       } else {
-        message = { type: 'text', text: '⚠️ 請點擊上方按鈕選擇人物構圖！' };
+        message = { 
+          type: 'text', 
+          text: '⚠️ 請點擊上方按鈕選擇人物構圖！',
+          quickReply: {
+            items: [
+              { type: 'action', action: { type: 'message', label: '❌ 取消', text: '取消' } }
+            ]
+          }
+        };
       }
       break;
     case ConversationStage.EXPRESSIONS:
@@ -331,7 +367,15 @@ async function handleCreationFlow(replyToken, userId, text, stage, state) {
         const templateId = text.replace('表情模板:', '');
         message = await handleExpressionTemplate(userId, templateId);
       } else {
-        message = { type: 'text', text: '⚠️ 請點擊上方按鈕選擇表情模板！' };
+        message = { 
+          type: 'text', 
+          text: '⚠️ 請點擊上方按鈕選擇表情模板！',
+          quickReply: {
+            items: [
+              { type: 'action', action: { type: 'message', label: '❌ 取消', text: '取消' } }
+            ]
+          }
+        };
       }
       break;
     case ConversationStage.SCENE_SELECT:
@@ -340,7 +384,15 @@ async function handleCreationFlow(replyToken, userId, text, stage, state) {
         const sceneId = text.replace('場景:', '');
         message = await handleSceneSelection(userId, sceneId);
       } else {
-        message = { type: 'text', text: '⚠️ 請點擊上方按鈕選擇場景！' };
+        message = { 
+          type: 'text', 
+          text: '⚠️ 請點擊上方按鈕選擇場景！',
+          quickReply: {
+            items: [
+              { type: 'action', action: { type: 'message', label: '❌ 取消', text: '取消' } }
+            ]
+          }
+        };
       }
       break;
     case ConversationStage.CUSTOM_SCENE:
@@ -353,7 +405,18 @@ async function handleCreationFlow(replyToken, userId, text, stage, state) {
         const count = parseInt(text.replace('數量:', ''));
         message = await handleCountSelection(userId, count);
       } else {
-        message = { type: 'text', text: '⚠️ 請點擊上方按鈕選擇數量！' };
+        message = { 
+          type: 'text', 
+          text: '⚠️ 請點擊上方按鈕選擇數量！',
+          quickReply: {
+            items: [
+              { type: 'action', action: { type: 'message', label: '6張 (3代幣)', text: '數量:6' } },
+              { type: 'action', action: { type: 'message', label: '12張 (6代幣)', text: '數量:12' } },
+              { type: 'action', action: { type: 'message', label: '18張 (9代幣)', text: '數量:18' } },
+              { type: 'action', action: { type: 'message', label: '❌ 取消', text: '取消' } }
+            ]
+          }
+        };
       }
       break;
     case ConversationStage.CHARACTER:
@@ -364,11 +427,29 @@ async function handleCreationFlow(replyToken, userId, text, stage, state) {
       if (text === '確認生成') {
         return await handleConfirmGeneration(replyToken, userId, state);
       } else {
-        message = { type: 'text', text: '⚠️ 請點擊「開始生成」按鈕或輸入「取消」重新開始' };
+        message = { 
+          type: 'text', 
+          text: '⚠️ 請點擊「開始生成」按鈕或輸入「取消」重新開始',
+          quickReply: {
+            items: [
+              { type: 'action', action: { type: 'message', label: '✅ 確認生成', text: '確認生成' } },
+              { type: 'action', action: { type: 'message', label: '❌ 取消', text: '取消' } }
+            ]
+          }
+        };
       }
       break;
     default:
-      message = { type: 'text', text: '⚠️ 請按照提示操作或輸入「取消」重新開始' };
+      message = { 
+        type: 'text', 
+        text: '⚠️ 請按照提示操作或輸入「取消」重新開始',
+        quickReply: {
+          items: [
+            { type: 'action', action: { type: 'message', label: '❌ 取消', text: '取消' } },
+            { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } }
+          ]
+        }
+      };
   }
 
   return getLineClient().replyMessage(replyToken, message);
@@ -387,7 +468,14 @@ async function handleConfirmGeneration(replyToken, userId, state) {
   if (!tempData || !tempData.name || !tempData.style || (!hasPhoto && !hasCharacter)) {
     return getLineClient().replyMessage(replyToken, {
       type: 'text',
-      text: '⚠️ 創建資料不完整，請輸入「創建貼圖」重新開始'
+      text: '⚠️ 創建資料不完整，請輸入「創建貼圖」重新開始',
+      quickReply: {
+        items: [
+          { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
+          { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
+          { type: 'action', action: { type: 'message', label: '💰 我的代幣', text: '代幣' } }
+        ]
+      }
     });
   }
 
@@ -401,7 +489,14 @@ async function handleConfirmGeneration(replyToken, userId, state) {
             `📛 名稱：${task.sticker_set?.name || '處理中'}\n` +
             `📊 進度：${task.progress || 0}%\n\n` +
             '請等待目前的任務完成後再開始新任務。\n\n' +
-            '📋 輸入「查詢進度」查看生成進度'
+            '📋 輸入「查詢進度」查看生成進度',
+      quickReply: {
+        items: [
+          { type: 'action', action: { type: 'message', label: '📋 查詢進度', text: '查詢進度' } },
+          { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
+          { type: 'action', action: { type: 'message', label: '🎁 分享給好友', text: '分享給好友' } }
+        ]
+      }
     });
   }
 
@@ -417,7 +512,14 @@ async function handleConfirmGeneration(replyToken, userId, state) {
       type: 'text',
       text: `❌ 代幣不足！\n\n` +
             `需要 ${tokenCost} 代幣，目前餘額 ${tokenBalance} 代幣\n\n` +
-            '💡 輸入「購買代幣」查看儲值方案'
+            '💡 輸入「購買代幣」查看儲值方案',
+      quickReply: {
+        items: [
+          { type: 'action', action: { type: 'message', label: '💰 購買代幣', text: '購買代幣' } },
+          { type: 'action', action: { type: 'message', label: '🎁 分享賺代幣', text: '分享給好友' } },
+          { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } }
+        ]
+      }
     });
   }
 
@@ -540,7 +642,14 @@ async function handleCheckProgress(replyToken, userId) {
       if (!latestTask) {
         return getLineClient().replyMessage(replyToken, {
           type: 'text',
-          text: '📭 目前沒有任何生成任務\n\n輸入「創建貼圖」開始創建！'
+          text: '📭 目前沒有任何生成任務\n\n輸入「創建貼圖」開始創建！',
+          quickReply: {
+            items: [
+              { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
+              { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
+              { type: 'action', action: { type: 'message', label: '💰 我的代幣', text: '代幣' } }
+            ]
+          }
         });
       }
 
@@ -563,7 +672,25 @@ async function handleCheckProgress(replyToken, userId) {
                 ? '輸入「我的貼圖」查看結果'
                 : latestTask.status === 'failed'
                   ? '輸入「創建貼圖」重試'
-                  : '請稍候...')
+                  : '請稍候...'),
+        quickReply: {
+          items: latestTask.status === 'completed'
+            ? [
+                { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
+                { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
+                { type: 'action', action: { type: 'message', label: '🎁 分享給好友', text: '分享給好友' } }
+              ]
+            : latestTask.status === 'failed'
+              ? [
+                  { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
+                  { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
+                  { type: 'action', action: { type: 'message', label: '💰 我的代幣', text: '代幣' } }
+                ]
+              : [
+                  { type: 'action', action: { type: 'message', label: '🔄 查詢進度', text: '查詢進度' } },
+                  { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } }
+                ]
+        }
       });
     }
 
@@ -580,14 +707,28 @@ async function handleCheckProgress(replyToken, userId) {
 
     return getLineClient().replyMessage(replyToken, {
       type: 'text',
-      text: message
+      text: message,
+      quickReply: {
+        items: [
+          { type: 'action', action: { type: 'message', label: '🔄 查詢進度', text: '查詢進度' } },
+          { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
+          { type: 'action', action: { type: 'message', label: '🎁 分享給好友', text: '分享給好友' } }
+        ]
+      }
     });
 
   } catch (error) {
     console.error('❌ 查詢進度失敗:', error);
     return getLineClient().replyMessage(replyToken, {
       type: 'text',
-      text: '❌ 查詢失敗，請稍後再試'
+      text: '❌ 查詢失敗，請稍後再試',
+      quickReply: {
+        items: [
+          { type: 'action', action: { type: 'message', label: '🔄 重試', text: '查詢進度' } },
+          { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
+          { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } }
+        ]
+      }
     });
   }
 }
@@ -607,7 +748,14 @@ async function handleImageMessage(replyToken, userId, messageId) {
     if (currentStage !== ConversationStage.UPLOAD_PHOTO) {
       await safeReply(replyToken, {
         type: 'text',
-        text: '📷 如果想用照片製作貼圖，請先輸入「創建貼圖」開始！'
+        text: '📷 如果想用照片製作貼圖，請先輸入「創建貼圖」開始！',
+        quickReply: {
+          items: [
+            { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
+            { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
+            { type: 'action', action: { type: 'message', label: '✨ 示範圖集', text: '示範圖集' } }
+          ]
+        }
       });
       return;
     }
@@ -621,7 +769,14 @@ async function handleImageMessage(replyToken, userId, messageId) {
       console.log('❌ 照片處理失敗');
       await safeReply(replyToken, {
         type: 'text',
-        text: '❌ 照片處理失敗，請重新上傳一張清晰的正面照片！'
+        text: '❌ 照片處理失敗，請重新上傳一張清晰的正面照片！\n\n💡 建議：光線充足、正面、背景簡單的大頭照',
+        quickReply: {
+          items: [
+            { type: 'action', action: { type: 'cameraRoll', label: '📁 重新選擇照片' } },
+            { type: 'action', action: { type: 'camera', label: '📷 重新拍照' } },
+            { type: 'action', action: { type: 'message', label: '❌ 取消', text: '取消' } }
+          ]
+        }
       });
       return;
     }
@@ -1111,7 +1266,13 @@ async function handleViewStickerSet(replyToken, userId, setId) {
     if (!set) {
       return getLineClient().replyMessage(replyToken, {
         type: 'text',
-        text: '❌ 找不到此貼圖組'
+        text: '❌ 找不到此貼圖組',
+        quickReply: {
+          items: [
+            { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
+            { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } }
+          ]
+        }
       });
     }
 
@@ -1119,7 +1280,13 @@ async function handleViewStickerSet(replyToken, userId, setId) {
     if (set.user_id !== userId) {
       return getLineClient().replyMessage(replyToken, {
         type: 'text',
-        text: '❌ 你沒有權限查看此貼圖組'
+        text: '❌ 你沒有權限查看此貼圖組',
+        quickReply: {
+          items: [
+            { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
+            { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } }
+          ]
+        }
       });
     }
 
@@ -1168,6 +1335,13 @@ async function handleViewStickerSet(replyToken, userId, setId) {
             { type: 'text', text: '（此貼圖組尚無已完成的貼圖）', size: 'xs', color: '#999999', margin: 'md' }
           ]
         }
+      },
+      quickReply: {
+        items: [
+          { type: 'action', action: { type: 'message', label: '📋 查詢進度', text: '查詢進度' } },
+          { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
+          { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } }
+        ]
       }
     };
 
@@ -1177,7 +1351,13 @@ async function handleViewStickerSet(replyToken, userId, setId) {
     console.error('❌ 查看貼圖組失敗:', error);
     return getLineClient().replyMessage(replyToken, {
       type: 'text',
-      text: '❌ 系統錯誤，請稍後再試'
+      text: '❌ 系統錯誤，請稍後再試',
+      quickReply: {
+        items: [
+          { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
+          { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } }
+        ]
+      }
     });
   }
 }
@@ -1370,7 +1550,13 @@ async function handleDeleteStickerSet(replyToken, userId, setId) {
     if (!set) {
       return getLineClient().replyMessage(replyToken, {
         type: 'text',
-        text: '❌ 找不到此貼圖組'
+        text: '❌ 找不到此貼圖組',
+        quickReply: {
+          items: [
+            { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
+            { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } }
+          ]
+        }
       });
     }
 
@@ -1378,7 +1564,13 @@ async function handleDeleteStickerSet(replyToken, userId, setId) {
     if (set.user_id !== userId) {
       return getLineClient().replyMessage(replyToken, {
         type: 'text',
-        text: '❌ 你沒有權限刪除此貼圖組'
+        text: '❌ 你沒有權限刪除此貼圖組',
+        quickReply: {
+          items: [
+            { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
+            { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } }
+          ]
+        }
       });
     }
 
@@ -1433,7 +1625,13 @@ async function handleDeleteStickerSet(replyToken, userId, setId) {
     console.error('❌ 處理刪除請求失敗:', error);
     return getLineClient().replyMessage(replyToken, {
       type: 'text',
-      text: '❌ 系統錯誤，請稍後再試'
+      text: '❌ 系統錯誤，請稍後再試',
+      quickReply: {
+        items: [
+          { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
+          { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } }
+        ]
+      }
     });
   }
 }
@@ -1448,7 +1646,13 @@ async function handleConfirmDeleteStickerSet(replyToken, userId, setId) {
     if (!result.success) {
       return getLineClient().replyMessage(replyToken, {
         type: 'text',
-        text: `❌ 刪除失敗：${result.error}`
+        text: `❌ 刪除失敗：${result.error}`,
+        quickReply: {
+          items: [
+            { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
+            { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } }
+          ]
+        }
       });
     }
 
@@ -1489,7 +1693,13 @@ async function handleConfirmDeleteStickerSet(replyToken, userId, setId) {
     console.error('❌ 確認刪除失敗:', error);
     return getLineClient().replyMessage(replyToken, {
       type: 'text',
-      text: '❌ 系統錯誤，請稍後再試'
+      text: '❌ 系統錯誤，請稍後再試',
+      quickReply: {
+        items: [
+          { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
+          { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } }
+        ]
+      }
     });
   }
 }
@@ -1508,7 +1718,13 @@ async function handleAddToUploadQueue(replyToken, userId, stickerId, setId, imag
     if (!result.success) {
       return getLineClient().replyMessage(replyToken, {
         type: 'text',
-        text: `❌ ${result.error}`
+        text: `❌ ${result.error}`,
+        quickReply: {
+          items: [
+            { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
+            { type: 'action', action: { type: 'message', label: '📤 待上傳', text: '待上傳' } }
+          ]
+        }
       });
     }
 
@@ -1577,7 +1793,13 @@ async function handleAddToUploadQueue(replyToken, userId, stickerId, setId, imag
     console.error('❌ 加入上傳佇列失敗:', error);
     return getLineClient().replyMessage(replyToken, {
       type: 'text',
-      text: '❌ 系統錯誤，請稍後再試'
+      text: '❌ 系統錯誤，請稍後再試',
+      quickReply: {
+        items: [
+          { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
+          { type: 'action', action: { type: 'message', label: '📤 待上傳', text: '待上傳' } }
+        ]
+      }
     });
   }
 }
@@ -1592,7 +1814,13 @@ async function handleRemoveFromUploadQueue(replyToken, userId, stickerId) {
     if (!result.success) {
       return getLineClient().replyMessage(replyToken, {
         type: 'text',
-        text: `❌ 移除失敗：${result.error}`
+        text: `❌ 移除失敗：${result.error}`,
+        quickReply: {
+          items: [
+            { type: 'action', action: { type: 'message', label: '📤 待上傳', text: '待上傳' } },
+            { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } }
+          ]
+        }
       });
     }
 
@@ -1627,7 +1855,13 @@ async function handleRemoveFromUploadQueue(replyToken, userId, stickerId) {
     console.error('❌ 移除失敗:', error);
     return getLineClient().replyMessage(replyToken, {
       type: 'text',
-      text: '❌ 系統錯誤，請稍後再試'
+      text: '❌ 系統錯誤，請稍後再試',
+      quickReply: {
+        items: [
+          { type: 'action', action: { type: 'message', label: '📤 待上傳', text: '待上傳' } },
+          { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } }
+        ]
+      }
     });
   }
 }
@@ -1686,7 +1920,13 @@ async function handleViewUploadQueue(replyToken, userId, page = 1) {
     console.error('❌ 查看上傳佇列失敗:', error);
     return getLineClient().replyMessage(replyToken, {
       type: 'text',
-      text: '❌ 系統錯誤，請稍後再試'
+      text: '❌ 系統錯誤，請稍後再試',
+      quickReply: {
+        items: [
+          { type: 'action', action: { type: 'message', label: '📤 待上傳', text: '待上傳' } },
+          { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } }
+        ]
+      }
     });
   }
 }
@@ -1980,20 +2220,39 @@ async function handleClearUploadQueue(replyToken, userId) {
     if (!result.success) {
       return getLineClient().replyMessage(replyToken, {
         type: 'text',
-        text: `❌ 清空失敗：${result.error}`
+        text: `❌ 清空失敗：${result.error}`,
+        quickReply: {
+          items: [
+            { type: 'action', action: { type: 'message', label: '📤 待上傳', text: '待上傳' } },
+            { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } }
+          ]
+        }
       });
     }
 
     return getLineClient().replyMessage(replyToken, {
       type: 'text',
-      text: '✅ 待上傳佇列已清空\n\n輸入「我的貼圖」重新選擇貼圖'
+      text: '✅ 待上傳佇列已清空\n\n輸入「我的貼圖」重新選擇貼圖',
+      quickReply: {
+        items: [
+          { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
+          { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
+          { type: 'action', action: { type: 'message', label: '🎁 分享給好友', text: '分享給好友' } }
+        ]
+      }
     });
 
   } catch (error) {
     console.error('❌ 清空佇列失敗:', error);
     return getLineClient().replyMessage(replyToken, {
       type: 'text',
-      text: '❌ 系統錯誤，請稍後再試'
+      text: '❌ 系統錯誤，請稍後再試',
+      quickReply: {
+        items: [
+          { type: 'action', action: { type: 'message', label: '📤 待上傳', text: '待上傳' } },
+          { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } }
+        ]
+      }
     });
   }
 }
@@ -2012,7 +2271,13 @@ async function handleTutorial(replyToken, userId) {
     console.error('發送功能說明失敗:', error);
     return getLineClient().replyMessage(replyToken, {
       type: 'text',
-      text: '❌ 系統錯誤，請稍後再試'
+      text: '❌ 系統錯誤，請稍後再試',
+      quickReply: {
+        items: [
+          { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
+          { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } }
+        ]
+      }
     });
   }
 }
@@ -2062,7 +2327,13 @@ async function handleDemoGallery(userId) {
       // 數據庫讀取失敗，使用 pushMessage
       return getLineClient().pushMessage(userId, {
         type: 'text',
-        text: '❌ 示範圖集讀取失敗，請稍後再試\n\n如果問題持續發生，請聯繫客服。'
+        text: '❌ 示範圖集讀取失敗，請稍後再試\n\n如果問題持續發生，請聯繫客服。',
+        quickReply: {
+          items: [
+            { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
+            { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } }
+          ]
+        }
       });
     }
 
@@ -2071,7 +2342,14 @@ async function handleDemoGallery(userId) {
       console.log('⚠️ 示範圖集資料庫為空，需要在後台設定');
       return getLineClient().pushMessage(userId, {
         type: 'text',
-        text: '📭 目前尚無示範圖集\n\n請聯繫管理員在後台設定示範圖集，或直接輸入「創建貼圖」開始製作你的專屬貼圖！'
+        text: '📭 目前尚無示範圖集\n\n請聯繫管理員在後台設定示範圖集，或直接輸入「創建貼圖」開始製作你的專屬貼圖！',
+        quickReply: {
+          items: [
+            { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
+            { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
+            { type: 'action', action: { type: 'message', label: '💰 我的代幣', text: '代幣' } }
+          ]
+        }
       });
     }
 
@@ -2085,7 +2363,13 @@ async function handleDemoGallery(userId) {
     // 發生錯誤時使用 pushMessage
     return getLineClient().pushMessage(userId, {
       type: 'text',
-      text: '❌ 系統錯誤，請稍後再試\n\n如需協助，請輸入「客服」聯繫我們。'
+      text: '❌ 系統錯誤，請稍後再試\n\n如需協助，請輸入「客服」聯繫我們。',
+      quickReply: {
+        items: [
+          { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
+          { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } }
+        ]
+      }
     });
   }
 }
@@ -2869,7 +3153,14 @@ async function handleApplyReferralCode(replyToken, userId, code) {
   } else {
     return getLineClient().replyMessage(replyToken, {
       type: 'text',
-      text: `❌ ${result.error}\n\n💡 如果你有推薦碼，請輸入：\n輸入推薦碼 XXXXXX`
+      text: `❌ ${result.error}\n\n💡 如果你有推薦碼，請輸入：\n輸入推薦碼 XXXXXX`,
+      quickReply: {
+        items: [
+          { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
+          { type: 'action', action: { type: 'message', label: '💰 購買代幣', text: '購買代幣' } },
+          { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } }
+        ]
+      }
     });
   }
 }
@@ -2895,7 +3186,14 @@ async function handleShareReferralCode(replyToken, userId) {
 
   return getLineClient().replyMessage(replyToken, {
     type: 'text',
-    text: shareText
+    text: shareText,
+    quickReply: {
+      items: [
+        { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
+        { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
+        { type: 'action', action: { type: 'message', label: '💰 我的代幣', text: '代幣' } }
+      ]
+    }
   });
 }
 

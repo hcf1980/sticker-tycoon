@@ -158,6 +158,13 @@ function generateWelcomeFlexMessage() {
         ],
         flex: 0
       }
+    },
+    quickReply: {
+      items: [
+        { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
+        { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
+        { type: 'action', action: { type: 'message', label: '🎁 分享給好友', text: '分享給好友' } }
+      ]
     }
   };
 }
@@ -556,6 +563,13 @@ function generateTutorialPart1FlexMessage() {
         ],
         spacing: 'sm'
       }
+    },
+    quickReply: {
+      items: [
+        { type: 'action', action: { type: 'message', label: '👉 功能說明2', text: '功能說明2' } },
+        { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
+        { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } }
+      ]
     }
   };
 }
@@ -779,6 +793,13 @@ function generateTutorialPart2FlexMessage() {
         ],
         spacing: 'sm'
       }
+    },
+    quickReply: {
+      items: [
+        { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
+        { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
+        { type: 'action', action: { type: 'message', label: '🎁 分享給好友', text: '分享給好友' } }
+      ]
     }
   };
 }

@@ -127,7 +127,14 @@ async function handleNaming(userId, name) {
   if (!name || name.length > 40) {
     return {
       type: 'text',
-      text: '⚠️ 名稱請在 40 字以內，請重新輸入！'
+      text: '⚠️ 名稱請在 40 字以內，請重新輸入！',
+      quickReply: {
+        items: [
+          { type: 'action', action: { type: 'message', label: '我的日常', text: '我的日常' } },
+          { type: 'action', action: { type: 'message', label: '可愛貼圖', text: '可愛貼圖' } },
+          { type: 'action', action: { type: 'message', label: '❌ 取消', text: '取消' } }
+        ]
+      }
     };
   }
 
@@ -164,7 +171,12 @@ async function handleStyleSelection(userId, styleId) {
   if (!style) {
     return {
       type: 'text',
-      text: '⚠️ 請選擇有效的風格！'
+      text: '⚠️ 請選擇有效的風格！',
+      quickReply: {
+        items: [
+          { type: 'action', action: { type: 'message', label: '❌ 取消', text: '取消' } }
+        ]
+      }
     };
   }
 
@@ -402,7 +414,12 @@ async function handleExpressionTemplate(userId, templateId) {
   if (!template) {
     return {
       type: 'text',
-      text: '⚠️ 請選擇有效的表情模板！'
+      text: '⚠️ 請選擇有效的表情模板！',
+      quickReply: {
+        items: [
+          { type: 'action', action: { type: 'message', label: '❌ 取消', text: '取消' } }
+        ]
+      }
     };
   }
 
@@ -537,7 +554,15 @@ async function handleSceneSelection(userId, sceneId) {
   const scene = sceneTemplates[sceneId];
 
   if (!scene) {
-    return { type: 'text', text: '⚠️ 請選擇有效的裝飾風格！' };
+    return { 
+      type: 'text', 
+      text: '⚠️ 請選擇有效的裝飾風格！',
+      quickReply: {
+        items: [
+          { type: 'action', action: { type: 'message', label: '❌ 取消', text: '取消' } }
+        ]
+      }
+    };
   }
 
   const state = await getConversationState(userId);
@@ -780,7 +805,18 @@ async function handleCountSelection(userId, count) {
   console.log(`📊 用戶 ${userId} 選擇數量：${count}`);
   
   if (!LineStickerSpecs.validCounts.includes(count)) {
-    return { type: 'text', text: '⚠️ 請選擇有效的數量！' };
+    return { 
+      type: 'text', 
+      text: '⚠️ 請選擇有效的數量！',
+      quickReply: {
+        items: [
+          { type: 'action', action: { type: 'message', label: '6張 (3代幣)', text: '數量:6' } },
+          { type: 'action', action: { type: 'message', label: '12張 (6代幣)', text: '數量:12' } },
+          { type: 'action', action: { type: 'message', label: '18張 (9代幣)', text: '數量:18' } },
+          { type: 'action', action: { type: 'message', label: '❌ 取消', text: '取消' } }
+        ]
+      }
+    };
   }
   
   const state = await getConversationState(userId);
