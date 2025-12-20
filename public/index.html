@@ -3,24 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>貼圖大亨 Sticker Tycoon - 輕鬆創建專屬 LINE 貼圖</title>
+  <title>貼圖大亨 Sticker Tycoon - AI 智能創作 LINE 貼圖</title>
 
   <!-- SEO Meta Tags -->
   <meta name="description" content="貼圖大亨 Sticker Tycoon - 3分鐘快速生成專屬LINE貼圖，AI智能創作，免費代上架服務，新用戶贈送40代幣">
-  <meta name="keywords" content="LINE貼圖,貼圖製作,AI貼圖,貼圖大亨,Sticker Tycoon,貼圖創作,LINE Sticker">
+  <meta name="keywords" content="LINE貼圖,貼圖製作,AI貼圖,貼圖大亨,Sticker Tycoon,貼圖創作,LINE Sticker,AI生成">
   <meta name="author" content="貼圖大亨 Sticker Tycoon">
 
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://sticker-tycoon.netlify.app/">
-  <meta property="og:title" content="貼圖大亨 Sticker Tycoon - 輕鬆創建專屬 LINE 貼圖">
+  <meta property="og:title" content="貼圖大亨 Sticker Tycoon - AI 智能創作 LINE 貼圖">
   <meta property="og:description" content="3分鐘快速生成專屬LINE貼圖，AI智能創作，免費代上架服務，新用戶贈送40代幣">
   <meta property="og:image" content="https://sticker-tycoon.netlify.app/logo-512.png">
 
   <!-- Twitter -->
   <meta property="twitter:card" content="summary_large_image">
   <meta property="twitter:url" content="https://sticker-tycoon.netlify.app/">
-  <meta property="twitter:title" content="貼圖大亨 Sticker Tycoon - 輕鬆創建專屬 LINE 貼圖">
+  <meta property="twitter:title" content="貼圖大亨 Sticker Tycoon - AI 智能創作 LINE 貼圖">
   <meta property="twitter:description" content="3分鐘快速生成專屬LINE貼圖，AI智能創作，免費代上架服務">
   <meta property="twitter:image" content="https://sticker-tycoon.netlify.app/logo-512.png">
 
@@ -32,394 +32,314 @@
 
   <!-- Manifest -->
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#2D7D5C">
+  <meta name="theme-color" content="#0a0e1a">
 
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <link href="/green-theme.css" rel="stylesheet">
-  <style>
-    :root {
-      --primary-green: #2D7D5C;
-      --secondary-green: #4CAF50;
-      --light-green: #E8F5E9;
-    }
-
-    .gradient-bg {
-      background: linear-gradient(135deg, var(--primary-green) 0%, var(--secondary-green) 100%);
-    }
-
-    .card-shadow {
-      box-shadow: 0 10px 40px rgba(45, 125, 92, 0.15);
-    }
-
-    /* 導航欄下標指示器 */
-    .nav-item {
-      position: relative;
-      padding-bottom: 8px;
-      transition: all 0.3s ease;
-    }
-
-    .nav-item.active::after {
-      content: '';
-      position: absolute;
-      bottom: -8px;
-      left: 0;
-      right: 0;
-      height: 4px;
-      background-color: var(--secondary-green);
-      border-radius: 2px;
-    }
-
-    .nav-item:hover {
-      color: var(--secondary-green);
-    }
-  </style>
+  <link href="/tech-theme.css" rel="stylesheet">
 </head>
-<body class="bg-gray-50 min-h-screen">
-  <!-- Header / Navigation -->
-  <header class="bg-white border-b-2 border-gray-100 sticky top-0 z-50">
+<body class="tech-bg min-h-screen">
+  <!-- Navigation -->
+  <header class="nav-tech">
     <div class="container mx-auto px-4 py-4">
       <div class="flex items-center justify-between">
-        <!-- Logo & Brand -->
+        <!-- Logo -->
         <div class="flex items-center gap-3">
-          <img src="/logo-192.png" alt="貼圖大亨 Logo" class="w-12 h-12 rounded-lg">
+          <div class="relative">
+            <img src="/logo-192.png" alt="貼圖大亨 Logo" class="w-12 h-12 rounded-xl">
+            <div class="absolute -inset-1 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-xl blur opacity-30"></div>
+          </div>
           <div>
-            <h1 class="text-xl font-bold text-gray-800">貼圖大亨</h1>
-            <p class="text-xs text-gray-500">Sticker Tycoon</p>
+            <h1 class="text-xl font-bold text-white">貼圖大亨</h1>
+            <p class="text-xs text-cyan-400">Sticker Tycoon</p>
           </div>
         </div>
 
-        <!-- Navigation -->
-        <nav class="hidden md:flex gap-8 flex-1 justify-center">
-          <a href="#" class="nav-item active text-gray-700 font-medium hover:text-green-600">首頁</a>
-          <a href="#features" class="nav-item text-gray-700 font-medium hover:text-green-600">最新優惠</a>
-          <a href="#styles" class="nav-item text-gray-700 font-medium hover:text-green-600">方案價格</a>
-          <a href="#service" class="nav-item text-gray-700 font-medium hover:text-green-600">更多資源</a>
-          <a href="#" class="nav-item text-gray-700 font-medium hover:text-green-600">合作洽詢</a>
+        <!-- Navigation Links -->
+        <nav class="hidden md:flex items-center gap-2">
+          <a href="#features" class="nav-link">功能特色</a>
+          <a href="#gallery" class="nav-link">作品展示</a>
+          <a href="#styles" class="nav-link">風格選擇</a>
+          <a href="#pricing" class="nav-link">代幣方案</a>
         </nav>
 
-        <!-- CTA Button -->
-        <div class="flex items-center gap-3">
-          <a href="https://line.me/R/ti/p/@sticker-tycoon"
-             class="hidden sm:inline-block bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-full text-sm transition">
-            最新優惠
-          </a>
-        </div>
+        <!-- CTA -->
+        <a href="https://line.me/R/ti/p/@sticker-tycoon" class="btn-neon-solid text-sm">
+          <span>🚀 立即開始</span>
+        </a>
       </div>
     </div>
   </header>
 
   <!-- Hero Section -->
-  <section class="gradient-bg text-white py-20">
-    <div class="container mx-auto px-4">
-      <div class="grid md:grid-cols-2 gap-12 items-center">
-        <!-- 左側文字 -->
-        <div>
-          <span class="inline-block bg-white bg-opacity-20 text-white px-4 py-1 rounded-full text-sm font-bold mb-4">✨ 提升企業營運效率</span>
-          <h2 class="text-4xl md:text-5xl font-bold mb-4">輕鬆降低人事管理作業流程</h2>
-          <p class="text-lg opacity-90 mb-8">
-            最完整的人事管理系統、最簡單的 LINE 打卡系統、更輕鬆的計算薪資、更安心的符合最新法規
+  <section class="hero-glow relative py-20 md:py-32 overflow-hidden">
+    <div class="container mx-auto px-4 relative z-10">
+      <div class="grid lg:grid-cols-2 gap-12 items-center">
+        <!-- Left Content -->
+        <div class="text-center lg:text-left">
+          <div class="inline-flex items-center gap-2 tag-tech mb-6">
+            <span class="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></span>
+            <span>AI 智能創作 · 3 分鐘完成</span>
+          </div>
+          
+          <h2 class="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-6 leading-tight">
+            <span class="text-white">用 AI 創造</span><br>
+            <span class="title-gradient">專屬 LINE 貼圖</span>
+          </h2>
+          
+          <p class="text-lg md:text-xl text-gray-400 mb-8 max-w-lg mx-auto lg:mx-0">
+            上傳一張照片，AI 自動生成多種表情貼圖。<br class="hidden md:block">
+            8 種風格任選，免費代上架販售！
           </p>
-          <div class="flex flex-col sm:flex-row gap-4">
-            <a href="https://line.me/R/ti/p/@sticker-tycoon"
-               class="inline-block bg-white text-green-600 font-bold py-3 px-8 rounded-full text-lg hover:shadow-lg transition text-center">
-              🚀 立即開始
+          
+          <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+            <a href="https://line.me/R/ti/p/@sticker-tycoon" class="btn-neon-solid text-lg">
+              🎁 免費領取 40 代幣
             </a>
-            <a href="/token-guide.html"
-               class="inline-block bg-white bg-opacity-20 text-white font-bold py-3 px-8 rounded-full text-lg hover:bg-opacity-30 transition text-center">
-              📖 了解更多
+            <a href="#gallery" class="btn-neon-outline text-lg">
+              👀 看看作品
             </a>
           </div>
-        </div>
-
-        <!-- 右側圖片 -->
-        <div class="text-center">
-          <img src="/logo-192.png" alt="貼圖大亨 Sticker Tycoon Logo" class="w-48 h-48 md:w-64 md:h-64 rounded-2xl shadow-2xl mx-auto">
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- 功能亮點 - 標籤導航式 -->
-  <section class="py-16 bg-white" id="features">
-    <div class="container mx-auto px-4">
-      <!-- 標籤導航 -->
-      <div class="flex flex-wrap justify-center gap-2 mb-12 pb-8 border-b-4 border-green-600">
-        <button class="tab-btn active px-6 py-3 bg-green-600 text-white rounded-lg font-bold transition" data-tab="0">
-          出勤排班
-        </button>
-        <button class="tab-btn px-6 py-3 text-gray-700 font-bold hover:text-green-600 transition" data-tab="1">
-          請假簽核
-        </button>
-        <button class="tab-btn px-6 py-3 text-gray-700 font-bold hover:text-green-600 transition" data-tab="2">
-          薪資計算
-        </button>
-        <button class="tab-btn px-6 py-3 text-gray-700 font-bold hover:text-green-600 transition" data-tab="3">
-          LINE 打卡
-        </button>
-        <button class="tab-btn px-6 py-3 text-gray-700 font-bold hover:text-green-600 transition" data-tab="4">
-          公司公告
-        </button>
-        <button class="tab-btn px-6 py-3 text-gray-700 font-bold hover:text-green-600 transition" data-tab="5">
-          數位培訓
-        </button>
-      </div>
-
-      <!-- 標籤內容 -->
-      <div class="tab-content">
-        <!-- Tab 0: 出勤排班 -->
-        <div class="tab-pane active">
-          <div class="grid md:grid-cols-2 gap-12 items-center">
-            <div>
-              <span class="inline-block bg-green-50 text-green-600 px-4 py-1 rounded-full text-sm font-bold mb-4">培訓</span>
-              <h3 class="text-3xl font-bold text-gray-800 mb-4">企業永續發展的關鍵</h3>
-              <ul class="space-y-3 text-gray-600">
-                <li class="flex items-start gap-3">
-                  <span class="text-green-600 text-xl">✓</span>
-                  <span>人才的學習力，是永續發展的基石</span>
-                </li>
-                <li class="flex items-start gap-3">
-                  <span class="text-green-600 text-xl">✓</span>
-                  <span>不限時間地點學習，彈性最大化</span>
-                </li>
-                <li class="flex items-start gap-3">
-                  <span class="text-green-600 text-xl">✓</span>
-                  <span>數位培訓，經費最省、成效最好</span>
-                </li>
-                <li class="flex items-start gap-3">
-                  <span class="text-green-600 text-xl">✓</span>
-                  <span>更安心的符合最新法規</span>
-                </li>
-              </ul>
-              <a href="#" class="inline-block mt-6 text-green-600 font-bold hover:text-green-700 transition">
-                我想了解 ➜
-              </a>
+          
+          <div class="mt-8 flex items-center gap-6 justify-center lg:justify-start text-sm text-gray-500">
+            <div class="flex items-center gap-2">
+              <span class="text-cyan-400">✓</span> 免費開始
             </div>
-            <div class="bg-green-50 rounded-2xl p-8 text-center">
-              <div class="text-6xl mb-4">📱</div>
-              <p class="text-gray-600">應用程序截圖示意圖</p>
+            <div class="flex items-center gap-2">
+              <span class="text-purple-400">✓</span> 無需設計技能
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-green-400">✓</span> 免費代上架
             </div>
           </div>
         </div>
 
-        <!-- Tab 1-5: 其他標籤 -->
-        <div class="tab-pane hidden">
-          <div class="grid md:grid-cols-2 gap-12 items-center">
-            <div>
-              <h3 class="text-3xl font-bold text-gray-800 mb-4">請假簽核系統</h3>
-              <p class="text-gray-600 mb-4">簡化請假流程，快速完成簽核</p>
-              <a href="#" class="inline-block text-green-600 font-bold hover:text-green-700 transition">
-                我想了解 ➜
-              </a>
+        <!-- Right Visual -->
+        <div class="relative flex justify-center">
+          <div class="relative animate-float">
+            <!-- Main Image -->
+            <div class="glass-card p-6 rounded-3xl animate-pulse-glow">
+              <img src="/logo-512.png" alt="AI 貼圖示意" class="w-64 h-64 md:w-80 md:h-80 rounded-2xl">
             </div>
-            <div class="bg-green-50 rounded-2xl p-8 text-center">
-              <div class="text-6xl mb-4">📋</div>
-              <p class="text-gray-600">請假簽核</p>
+            
+            <!-- Floating Elements -->
+            <div class="absolute -top-4 -right-4 glass-card px-4 py-2 rounded-full">
+              <span class="text-2xl">🎨</span>
+              <span class="text-sm font-medium text-white ml-1">8 種風格</span>
             </div>
-          </div>
-        </div>
-
-        <div class="tab-pane hidden">
-          <div class="grid md:grid-cols-2 gap-12 items-center">
-            <div>
-              <h3 class="text-3xl font-bold text-gray-800 mb-4">薪資計算系統</h3>
-              <p class="text-gray-600 mb-4">自動計算，確保準確無誤</p>
-              <a href="#" class="inline-block text-green-600 font-bold hover:text-green-700 transition">
-                我想了解 ➜
-              </a>
-            </div>
-            <div class="bg-green-50 rounded-2xl p-8 text-center">
-              <div class="text-6xl mb-4">💰</div>
-              <p class="text-gray-600">薪資計算</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="tab-pane hidden">
-          <div class="grid md:grid-cols-2 gap-12 items-center">
-            <div>
-              <h3 class="text-3xl font-bold text-gray-800 mb-4">LINE 打卡系統</h3>
-              <p class="text-gray-600 mb-4">最簡單的打卡方式</p>
-              <a href="#" class="inline-block text-green-600 font-bold hover:text-green-700 transition">
-                我想了解 ➜
-              </a>
-            </div>
-            <div class="bg-green-50 rounded-2xl p-8 text-center">
-              <div class="text-6xl mb-4">⏰</div>
-              <p class="text-gray-600">LINE 打卡</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="tab-pane hidden">
-          <div class="grid md:grid-cols-2 gap-12 items-center">
-            <div>
-              <h3 class="text-3xl font-bold text-gray-800 mb-4">公司公告系統</h3>
-              <p class="text-gray-600 mb-4">統一發佈公司公告</p>
-              <a href="#" class="inline-block text-green-600 font-bold hover:text-green-700 transition">
-                我想了解 ➜
-              </a>
-            </div>
-            <div class="bg-green-50 rounded-2xl p-8 text-center">
-              <div class="text-6xl mb-4">📢</div>
-              <p class="text-gray-600">公司公告</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="tab-pane hidden">
-          <div class="grid md:grid-cols-2 gap-12 items-center">
-            <div>
-              <h3 class="text-3xl font-bold text-gray-800 mb-4">數位培訓系統</h3>
-              <p class="text-gray-600 mb-4">提供完整的線上培訓功能</p>
-              <a href="#" class="inline-block text-green-600 font-bold hover:text-green-700 transition">
-                我想了解 ➜
-              </a>
-            </div>
-            <div class="bg-green-50 rounded-2xl p-8 text-center">
-              <div class="text-6xl mb-4">🎓</div>
-              <p class="text-gray-600">數位培訓</p>
+            
+            <div class="absolute -bottom-4 -left-4 glass-card px-4 py-2 rounded-full">
+              <span class="text-2xl">⚡</span>
+              <span class="text-sm font-medium text-white ml-1">3 分鐘生成</span>
             </div>
           </div>
         </div>
       </div>
     </div>
+    
+    <!-- Background Grid -->
+    <div class="absolute inset-0 grid-bg opacity-50"></div>
   </section>
 
-  <!-- Gallery Showcase -->
-  <section class="py-16 bg-gradient-to-br from-green-50 to-blue-50">
+  <!-- Features Section -->
+  <section id="features" class="py-20 relative">
     <div class="container mx-auto px-4">
+      <div class="text-center mb-16">
+        <span class="tag-purple mb-4 inline-flex">✨ 為什麼選擇我們</span>
+        <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">
+          強大功能，<span class="title-gradient">超簡單操作</span>
+        </h2>
+        <p class="text-gray-400 max-w-2xl mx-auto">
+          結合最先進的 AI 技術，讓每個人都能輕鬆創作專業級 LINE 貼圖
+        </p>
+      </div>
+
+      <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Feature 1 -->
+        <div class="glass-card p-6 text-center">
+          <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-cyan-500/5 flex items-center justify-center">
+            <span class="text-4xl">📸</span>
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2">照片變貼圖</h3>
+          <p class="text-gray-400 text-sm">上傳任意照片，AI 自動提取特徵生成多種表情貼圖</p>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="glass-card p-6 text-center">
+          <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-purple-500/20 to-purple-500/5 flex items-center justify-center">
+            <span class="text-4xl">🎭</span>
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2">24 種表情</h3>
+          <p class="text-gray-400 text-sm">開心、難過、生氣、驚訝... 豐富表情一次滿足</p>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="glass-card p-6 text-center">
+          <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-green-500/20 to-green-500/5 flex items-center justify-center">
+            <span class="text-4xl">🚀</span>
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2">免費代上架</h3>
+          <p class="text-gray-400 text-sm">專業團隊幫你處理上架，1-3 天即可在 LINE 販售</p>
+        </div>
+
+        <!-- Feature 4 -->
+        <div class="glass-card p-6 text-center">
+          <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-pink-500/20 to-pink-500/5 flex items-center justify-center">
+            <span class="text-4xl">💰</span>
+          </div>
+          <h3 class="text-lg font-bold text-white mb-2">賺取收益</h3>
+          <p class="text-gray-400 text-sm">設定售價 NT$30-150，獲得 LINE 銷售分潤</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Gallery Section -->
+  <section id="gallery" class="py-20 relative overflow-hidden">
+    <div class="absolute inset-0 bg-gradient-to-b from-transparent via-purple-900/10 to-transparent"></div>
+    
+    <div class="container mx-auto px-4 relative z-10">
       <div class="text-center mb-12">
-        <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">✨ 精選作品展示</h2>
-        <p class="text-xl text-gray-600 mb-2">看看其他用戶創作的精彩貼圖！</p>
-        <p class="text-gray-500">這些都是使用貼圖大亨創作的真實作品</p>
+        <span class="tag-tech mb-4 inline-flex">🖼️ 精選作品</span>
+        <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">
+          看看大家的 <span class="title-gradient">創作成果</span>
+        </h2>
+        <p class="text-gray-400">這些都是使用貼圖大亨 AI 創作的真實作品</p>
       </div>
 
-      <div id="demoGallery" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
-        <!-- 載入中提示 -->
-        <div class="col-span-full text-center py-10">
-          <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
-          <p class="mt-4 text-gray-500">載入精選作品中...</p>
+      <div id="demoGallery" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-12">
+        <!-- Loading -->
+        <div class="col-span-full flex flex-col items-center justify-center py-16">
+          <div class="loader-tech mb-4"></div>
+          <p class="text-gray-400">載入精選作品中...</p>
         </div>
       </div>
 
       <div class="text-center">
-        <div class="bg-white rounded-2xl p-8 inline-block shadow-lg">
-          <p class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-blue-600 mb-4">
-            🎨 你也可以創作出這樣的作品！
-          </p>
-          <p class="text-gray-600 mb-6">只需 3 步驟，今天就開始創作專屬貼圖</p>
-          <a href="https://line.me/R/ti/p/@sticker-tycoon"
-             class="inline-block bg-gradient-to-r from-green-600 to-blue-600 text-white font-bold py-3 px-8 rounded-full text-lg hover:shadow-lg transition transform hover:scale-105">
+        <div class="glass-card inline-block p-8 rounded-3xl">
+          <p class="text-2xl font-bold text-white mb-2">🎨 你也可以創作這樣的作品！</p>
+          <p class="text-gray-400 mb-6">只需 3 步驟，今天就開始創作專屬貼圖</p>
+          <a href="https://line.me/R/ti/p/@sticker-tycoon" class="btn-neon-solid">
             🚀 立即免費開始
           </a>
-          <p class="text-sm text-gray-500 mt-3">✨ 新用戶贈送 40 代幣，免費體驗完整功能</p>
+          <p class="text-sm text-gray-500 mt-4">✨ 新用戶贈送 40 代幣，免費體驗完整功能</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- 風格選擇 - 整合版 -->
-  <section class="py-16 bg-gray-50" id="styles">
+  <!-- Styles Section -->
+  <section id="styles" class="py-20">
     <div class="container mx-auto px-4">
       <div class="text-center mb-12">
-        <h2 class="text-3xl font-bold text-gray-800 mb-4">🎨 豐富多樣的風格選擇</h2>
-        <p class="text-xl text-gray-600">預設 8 種經典風格，還能自訂任何你想要的風格</p>
+        <span class="tag-purple mb-4 inline-flex">🎨 風格選擇</span>
+        <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">
+          8 種預設 + <span class="title-gradient">無限自訂</span>
+        </h2>
+        <p class="text-gray-400">預設經典風格一鍵選擇，或用 AI 描述任何想要的風格</p>
       </div>
 
-      <!-- 預設風格 -->
+      <!-- Preset Styles -->
       <div class="mb-12">
-        <h3 class="text-xl font-bold text-center text-gray-700 mb-6">📱 預設風格（一鍵選擇）</h3>
+        <h3 class="text-center text-lg font-medium text-gray-400 mb-6">📱 預設風格（一鍵選擇）</h3>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
-          <div class="bg-white rounded-xl p-6 text-center border-2 border-green-200 hover:shadow-lg hover:border-green-600 transition">
-            <span class="text-4xl">📸</span>
-            <p class="mt-2 font-medium text-gray-800">美顏真實</p>
-            <p class="text-xs text-gray-500">推薦</p>
+          <div class="style-card">
+            <span class="emoji">📸</span>
+            <p class="font-bold text-white">美顏真實</p>
+            <span class="tag-green text-xs mt-2">推薦</span>
           </div>
-          <div class="bg-white rounded-xl p-6 text-center border-2 border-gray-200 hover:shadow-lg hover:border-green-600 transition">
-            <span class="text-4xl">🥰</span>
-            <p class="mt-2 font-medium text-gray-800">可愛風</p>
+          <div class="style-card">
+            <span class="emoji">🥰</span>
+            <p class="font-bold text-white">可愛風</p>
           </div>
-          <div class="bg-white rounded-xl p-6 text-center border-2 border-gray-200 hover:shadow-lg hover:border-green-600 transition">
-            <span class="text-4xl">😎</span>
-            <p class="mt-2 font-medium text-gray-800">酷炫風</p>
+          <div class="style-card">
+            <span class="emoji">😎</span>
+            <p class="font-bold text-white">酷炫風</p>
           </div>
-          <div class="bg-white rounded-xl p-6 text-center border-2 border-gray-200 hover:shadow-lg hover:border-green-600 transition">
-            <span class="text-4xl">🤣</span>
-            <p class="mt-2 font-medium text-gray-800">搞笑風</p>
+          <div class="style-card">
+            <span class="emoji">🤣</span>
+            <p class="font-bold text-white">搞笑風</p>
           </div>
-          <div class="bg-white rounded-xl p-6 text-center border-2 border-gray-200 hover:shadow-lg hover:border-green-600 transition">
-            <span class="text-4xl">✨</span>
-            <p class="mt-2 font-medium text-gray-800">簡約風</p>
+          <div class="style-card">
+            <span class="emoji">✨</span>
+            <p class="font-bold text-white">簡約風</p>
           </div>
-          <div class="bg-white rounded-xl p-6 text-center border-2 border-gray-200 hover:shadow-lg hover:border-green-600 transition">
-            <span class="text-4xl">🎌</span>
-            <p class="mt-2 font-medium text-gray-800">動漫風</p>
+          <div class="style-card">
+            <span class="emoji">🎌</span>
+            <p class="font-bold text-white">動漫風</p>
           </div>
-          <div class="bg-white rounded-xl p-6 text-center border-2 border-gray-200 hover:shadow-lg hover:border-green-600 transition">
-            <span class="text-4xl">👾</span>
-            <p class="mt-2 font-medium text-gray-800">像素風</p>
+          <div class="style-card">
+            <span class="emoji">👾</span>
+            <p class="font-bold text-white">像素風</p>
           </div>
-          <div class="bg-white rounded-xl p-6 text-center border-2 border-gray-200 hover:shadow-lg hover:border-green-600 transition">
-            <span class="text-4xl">✏️</span>
-            <p class="mt-2 font-medium text-gray-800">塗鴉風</p>
+          <div class="style-card">
+            <span class="emoji">✏️</span>
+            <p class="font-bold text-white">塗鴉風</p>
           </div>
         </div>
       </div>
 
-      <!-- 自訂風格 -->
-      <div class="bg-gradient-to-r from-green-600 to-green-700 rounded-3xl p-8 md:p-12 max-w-5xl mx-auto">
+      <!-- Custom Styles -->
+      <div class="glass-card p-8 md:p-12 rounded-3xl max-w-5xl mx-auto">
         <div class="text-center mb-8">
-          <span class="bg-white text-green-600 px-4 py-1 rounded-full text-sm font-bold">✨ 無限可能</span>
-          <h3 class="text-2xl md:text-3xl font-bold text-white mt-4 mb-2">✏️ 自訂風格（AI 智能理解）</h3>
-          <p class="text-lg text-white opacity-90">不受限於預設！用自然語言描述任何風格</p>
+          <span class="tag-tech mb-4 inline-flex">✨ 無限可能</span>
+          <h3 class="text-2xl md:text-3xl font-bold text-white mb-2">✏️ 自訂風格（AI 智能理解）</h3>
+          <p class="text-gray-400">不受限於預設！用自然語言描述任何風格</p>
         </div>
 
         <div class="grid md:grid-cols-2 gap-4 mb-6">
-          <div class="bg-white bg-opacity-20 backdrop-blur rounded-xl p-4 border border-white border-opacity-30">
-            <h4 class="text-white font-bold mb-2">🎨 宮崎駿吉卜力風</h4>
-            <p class="text-white text-sm opacity-80">「宮崎駿吉卜力水彩風格，溫暖柔和的色調」</p>
+          <div class="bg-white/5 rounded-xl p-4 border border-white/10 hover:border-cyan-400/50 transition">
+            <h4 class="text-white font-bold mb-1">🎨 宮崎駿吉卜力風</h4>
+            <p class="text-gray-400 text-sm">「宮崎駿吉卜力水彩風格，溫暖柔和的色調」</p>
           </div>
-          <div class="bg-white bg-opacity-20 backdrop-blur rounded-xl p-4 border border-white border-opacity-30">
-            <h4 class="text-white font-bold mb-2">🎀 Q版大頭公仔</h4>
-            <p class="text-white text-sm opacity-80">「Q版大頭公仔 chibi style，超可愛大眼睛」</p>
+          <div class="bg-white/5 rounded-xl p-4 border border-white/10 hover:border-purple-400/50 transition">
+            <h4 class="text-white font-bold mb-1">🎀 Q版大頭公仔</h4>
+            <p class="text-gray-400 text-sm">「Q版大頭公仔 chibi style，超可愛大眼睛」</p>
           </div>
-          <div class="bg-white bg-opacity-20 backdrop-blur rounded-xl p-4 border border-white border-opacity-30">
-            <h4 class="text-white font-bold mb-2">🍌 香蕉人風格</h4>
-            <p class="text-white text-sm opacity-80">「Nanana Banana 香蕉人風格，黃色系可愛」</p>
+          <div class="bg-white/5 rounded-xl p-4 border border-white/10 hover:border-yellow-400/50 transition">
+            <h4 class="text-white font-bold mb-1">🍌 香蕉人風格</h4>
+            <p class="text-gray-400 text-sm">「Nanana Banana 香蕉人風格，黃色系可愛」</p>
           </div>
-          <div class="bg-white bg-opacity-20 backdrop-blur rounded-xl p-4 border border-white border-opacity-30">
-            <h4 class="text-white font-bold mb-2">💜 賽博龐克霓虹</h4>
-            <p class="text-white text-sm opacity-80">「賽博龐克霓虹風，紫色藍色發光效果」</p>
+          <div class="bg-white/5 rounded-xl p-4 border border-white/10 hover:border-pink-400/50 transition">
+            <h4 class="text-white font-bold mb-1">💜 賽博龐克霓虹</h4>
+            <p class="text-gray-400 text-sm">「賽博龐克霓虹風，紫色藍色發光效果」</p>
           </div>
         </div>
 
-        <div class="text-center bg-white bg-opacity-90 rounded-xl p-6">
-          <p class="text-green-700 font-bold mb-2">💡 更多風格範例</p>
-          <p class="text-gray-700 text-sm">水墨風、油畫風、蒸氣波、手繪風、扁平風、立體風、復古風...</p>
-          <p class="text-green-600 text-sm mt-2 font-medium">只要你能描述，AI 就能幫你實現！</p>
+        <div class="text-center bg-white/5 rounded-xl p-6 border border-white/10">
+          <p class="text-cyan-400 font-bold mb-2">💡 更多風格範例</p>
+          <p class="text-gray-400 text-sm">水墨風、油畫風、蒸氣波、手繪風、扁平風、立體風、復古風...</p>
+          <p class="text-cyan-400 text-sm mt-2 font-medium">只要你能描述，AI 就能幫你實現！</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- 免費代上架服務 -->
-  <section class="py-16 bg-gradient-to-r from-green-500 to-green-600" id="service">
-    <div class="container mx-auto px-4">
-      <div class="bg-white rounded-3xl p-8 md:p-12 card-shadow max-w-5xl mx-auto">
-        <div class="text-center mb-8">
-          <span class="bg-green-500 text-white px-4 py-1 rounded-full text-sm font-bold inline-block mb-3">🔥 限時免費</span>
-          <h2 class="text-3xl md:text-4xl font-bold text-green-600 mb-3">🚀 免費代上架服務</h2>
-          <p class="text-xl text-gray-600">懶得自己上傳？專業團隊幫你搞定！</p>
+  <!-- Service Section -->
+  <section class="py-20 relative">
+    <div class="absolute inset-0 bg-gradient-to-r from-cyan-900/20 via-transparent to-purple-900/20"></div>
+    
+    <div class="container mx-auto px-4 relative z-10">
+      <div class="glass-card p-8 md:p-12 rounded-3xl max-w-5xl mx-auto">
+        <div class="text-center mb-10">
+          <span class="tag-green mb-4 inline-flex">🔥 限時免費</span>
+          <h2 class="text-3xl md:text-4xl font-bold text-white mb-3">🚀 免費代上架服務</h2>
+          <p class="text-gray-400">懶得自己上傳？專業團隊幫你搞定！</p>
         </div>
 
         <div class="grid md:grid-cols-2 gap-6 mb-8">
-          <!-- 自行上架 -->
-          <div class="bg-gray-50 rounded-2xl p-6 border-2 border-gray-200">
+          <!-- Self Upload -->
+          <div class="bg-white/5 rounded-2xl p-6 border border-white/10">
             <div class="flex items-center gap-2 mb-4">
               <span class="text-2xl">😓</span>
-              <h3 class="text-lg font-bold text-gray-700">自行上架</h3>
+              <h3 class="text-lg font-bold text-gray-400">自行上架</h3>
             </div>
-            <ul class="space-y-2 text-gray-600 text-sm">
+            <ul class="space-y-2 text-gray-500 text-sm">
               <li>❌ 需註冊 LINE Creators Market</li>
               <li>❌ 學習複雜的上傳流程</li>
               <li>❌ 可能因規格錯誤被退件</li>
@@ -427,347 +347,238 @@
             </ul>
           </div>
 
-          <!-- 免費代上架 -->
-          <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-6 border-2 border-green-400">
+          <!-- Free Service -->
+          <div class="bg-gradient-to-br from-cyan-500/10 to-purple-500/10 rounded-2xl p-6 border-2 border-cyan-400/50">
             <div class="flex items-center gap-2 mb-4">
               <span class="text-2xl">🎉</span>
-              <h3 class="text-lg font-bold text-green-700">免費代上架</h3>
-              <span class="bg-green-500 text-white text-xs px-2 py-1 rounded-full">推薦</span>
+              <h3 class="text-lg font-bold text-white">免費代上架</h3>
+              <span class="tag-tech text-xs">推薦</span>
             </div>
-            <ul class="space-y-2 text-green-700 text-sm font-medium">
+            <ul class="space-y-2 text-cyan-100 text-sm font-medium">
               <li>✅ 只需提供貼圖名稱</li>
               <li>✅ 專業團隊完成所有設定</li>
               <li>✅ 確保一次通過審核</li>
               <li>✅ 1-3 天即可上架販售</li>
             </ul>
-            <div class="mt-3 pt-3 border-t border-green-300">
-              <p class="text-xs text-green-600">（補註：收益將以代幣提供予用戶）</p>
-            </div>
           </div>
         </div>
 
-        <!-- 上架後收益 -->
-        <div class="bg-gradient-to-r from-green-50 to-green-100 rounded-2xl p-6 border border-green-200">
-          <div class="text-center">
-            <h3 class="text-lg font-bold text-green-700 mb-3">💰 上架後可賺取收益</h3>
-            <p class="text-gray-600 text-sm mb-4">您可自由設定貼圖售價，並獲得銷售分潤</p>
-            <div class="flex flex-wrap justify-center gap-2">
-              <span class="bg-white border border-green-300 text-green-700 px-3 py-1 rounded-full text-sm font-medium">NT$30</span>
-              <span class="bg-white border border-green-300 text-green-700 px-3 py-1 rounded-full text-sm font-medium">NT$60</span>
-              <span class="bg-white border border-green-300 text-green-700 px-3 py-1 rounded-full text-sm font-medium">NT$90</span>
-              <span class="bg-white border border-green-300 text-green-700 px-3 py-1 rounded-full text-sm font-medium">NT$120</span>
-              <span class="bg-white border border-green-300 text-green-700 px-3 py-1 rounded-full text-sm font-medium">NT$150</span>
-            </div>
-            <p class="text-xs text-gray-500 mt-3">＊ 銷售分潤依 LINE 官方規定計算</p>
+        <!-- Revenue Info -->
+        <div class="bg-white/5 rounded-2xl p-6 border border-white/10 text-center">
+          <h3 class="text-lg font-bold text-white mb-3">💰 上架後可賺取收益</h3>
+          <p class="text-gray-400 text-sm mb-4">您可自由設定貼圖售價，並獲得銷售分潤</p>
+          <div class="flex flex-wrap justify-center gap-2">
+            <span class="px-4 py-2 rounded-full bg-white/10 text-white font-medium">NT$30</span>
+            <span class="px-4 py-2 rounded-full bg-white/10 text-white font-medium">NT$60</span>
+            <span class="px-4 py-2 rounded-full bg-white/10 text-white font-medium">NT$90</span>
+            <span class="px-4 py-2 rounded-full bg-white/10 text-white font-medium">NT$120</span>
+            <span class="px-4 py-2 rounded-full bg-white/10 text-white font-medium">NT$150</span>
           </div>
+          <p class="text-xs text-gray-500 mt-3">＊ 銷售分潤依 LINE 官方規定計算</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- 代幣與定價說明 -->
-  <section class="py-16 bg-gradient-to-r from-green-400 to-green-500">
+  <!-- Pricing Section -->
+  <section id="pricing" class="py-20">
     <div class="container mx-auto px-4">
-      <div class="bg-white rounded-3xl p-8 md:p-12 card-shadow max-w-4xl mx-auto">
+      <div class="text-center mb-12">
+        <span class="tag-tech mb-4 inline-flex">💎 代幣方案</span>
+        <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">
+          新用戶免費送 <span class="title-gradient">40 代幣</span>
+        </h2>
+        <p class="text-gray-400">足夠創作 18-24 張專屬貼圖</p>
+      </div>
 
-        <!-- 主標題 -->
-        <div class="text-center mb-10">
-          <h2 class="text-3xl md:text-4xl font-bold text-green-600 mb-3">🎁 代幣方案與定價</h2>
-          <p class="text-xl text-gray-600">新用戶免費送 <span class="text-3xl font-bold text-green-500">40</span> 代幣</p>
-          <p class="text-gray-500 text-sm mt-2">足夠創作 18-24 張專屬貼圖</p>
+      <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto mb-12">
+        <!-- Token Usage -->
+        <div class="glass-card p-8 rounded-3xl">
+          <h3 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
+            <span class="text-2xl">💰</span> 代幣消耗（超划算！）
+          </h3>
+          <div class="space-y-4">
+            <div class="flex justify-between items-center py-3 border-b border-white/10">
+              <span class="text-gray-300">生成 6 張貼圖</span>
+              <span class="text-cyan-400 font-bold text-lg">3 代幣</span>
+            </div>
+            <div class="flex justify-between items-center py-3 border-b border-white/10">
+              <span class="text-gray-300">生成 12 張貼圖</span>
+              <span class="text-cyan-400 font-bold text-lg">6 代幣</span>
+            </div>
+            <div class="flex justify-between items-center py-3 border-b border-white/10">
+              <span class="text-gray-300">生成 18 張貼圖</span>
+              <span class="text-cyan-400 font-bold text-lg">9 代幣</span>
+            </div>
+            <div class="flex justify-between items-center py-3">
+              <span class="text-gray-300 font-medium">下載 / 代上架</span>
+              <span class="text-purple-400 font-bold text-lg">40 代幣</span>
+            </div>
+          </div>
+          <p class="text-xs text-gray-500 mt-4">＊ 新用戶可免費體驗</p>
         </div>
 
-        <div class="grid md:grid-cols-2 gap-8 mb-8">
-          <!-- 左側：代幣使用 -->
-          <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-6 border-2 border-green-200">
-            <h3 class="text-xl font-bold text-green-700 mb-4">💰 代幣消耗（超划算！）</h3>
-            <div class="space-y-3">
-              <div class="flex justify-between items-center">
-                <span class="text-gray-700">生成 6 張貼圖</span>
-                <span class="text-green-600 font-bold">3 代幣</span>
+        <!-- Purchase Options -->
+        <div class="glass-card p-8 rounded-3xl">
+          <h3 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
+            <span class="text-2xl">💳</span> 需要更多代幣？
+          </h3>
+          <div class="space-y-3">
+            <div class="flex justify-between items-center p-4 rounded-xl bg-white/5 border border-white/10">
+              <span class="font-medium text-gray-300">基礎包</span>
+              <div class="text-right">
+                <div class="text-cyan-400 font-bold">70 代幣</div>
+                <div class="text-xs text-gray-500">NT$ 300</div>
               </div>
-              <div class="flex justify-between items-center">
-                <span class="text-gray-700">生成 12 張貼圖</span>
-                <span class="text-green-600 font-bold">6 代幣</span>
+            </div>
+            <div class="flex justify-between items-center p-4 rounded-xl bg-gradient-to-r from-cyan-500/10 to-purple-500/10 border-2 border-cyan-400/50">
+              <div>
+                <span class="font-medium text-white">超值包</span>
+                <span class="ml-2 tag-green text-xs">熱門</span>
               </div>
-              <div class="flex justify-between items-center">
-                <span class="text-gray-700">生成 18 張貼圖</span>
-                <span class="text-green-600 font-bold">9 代幣</span>
+              <div class="text-right">
+                <div class="text-cyan-400 font-bold">130 代幣</div>
+                <div class="text-xs text-gray-400">NT$ 500</div>
               </div>
-              <div class="border-t-2 border-green-200 pt-3 mt-3">
-                <div class="flex justify-between items-center">
-                  <span class="text-gray-700 font-medium">下載 / 代上架</span>
-                  <span class="text-green-600 font-bold">40 代幣</span>
-                </div>
-                <p class="text-xs text-gray-500 mt-1">＊ 新用戶可免費體驗</p>
+            </div>
+            <div class="flex justify-between items-center p-4 rounded-xl bg-white/5 border border-white/10">
+              <span class="font-medium text-gray-300">豪華包</span>
+              <div class="text-right">
+                <div class="text-purple-400 font-bold">300 代幣</div>
+                <div class="text-xs text-gray-500">NT$ 1,000</div>
               </div>
             </div>
           </div>
-
-          <!-- 右側：購買方案 -->
-          <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 border-2 border-blue-200">
-            <h3 class="text-xl font-bold text-blue-700 mb-4">💳 需要更多代幣？</h3>
-            <div class="space-y-2 mb-4">
-              <div class="flex justify-between items-center bg-white rounded-lg p-3 border border-gray-200">
-                <span class="font-medium text-gray-700">基礎包</span>
-                <div class="text-right">
-                  <div class="text-blue-600 font-bold">70 代幣</div>
-                  <div class="text-xs text-gray-500">NT$ 300</div>
-                </div>
-              </div>
-              <div class="flex justify-between items-center bg-white rounded-lg p-3 border-2 border-green-400">
-                <span class="font-medium text-gray-700">超值包 <span class="text-xs text-green-500 font-bold">熱門</span></span>
-                <div class="text-right">
-                  <div class="text-green-600 font-bold">130 代幣</div>
-                  <div class="text-xs text-gray-500">NT$ 500</div>
-                </div>
-              </div>
-              <div class="flex justify-between items-center bg-white rounded-lg p-3 border border-gray-200">
-                <span class="font-medium text-gray-700">豪華包</span>
-                <div class="text-right">
-                  <div class="text-blue-600 font-bold">300 代幣</div>
-                  <div class="text-xs text-gray-500">NT$ 1,000</div>
-                </div>
-              </div>
-            </div>
-            <a href="/token-guide.html" class="block text-center bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition text-sm font-medium">
-              📖 查看完整購買說明
-            </a>
-          </div>
+          <a href="/token-guide.html" class="block mt-6 text-center btn-neon-outline text-sm py-3">
+            📖 查看完整購買說明
+          </a>
         </div>
+      </div>
 
-        <!-- 底部：推薦獎勵 -->
-        <div class="bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl p-6 text-center">
-          <h3 class="text-lg font-bold text-green-700 mb-2">🎁 推薦好友，雙方各得 10 代幣</h3>
-          <p class="text-gray-600 text-sm">限時推廣，上限增至30位，趕緊拉好友進來玩</p>
+      <!-- Referral -->
+      <div class="max-w-2xl mx-auto">
+        <div class="glass-card p-6 rounded-2xl text-center border border-purple-400/30">
+          <h3 class="text-lg font-bold text-white mb-2">🎁 推薦好友，雙方各得 10 代幣</h3>
+          <p class="text-gray-400 text-sm">限時推廣，上限增至 30 位，趕緊拉好友進來玩！</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- 立即開始 CTA -->
-  <section class="py-20 bg-gradient-to-r from-green-600 to-green-700">
-    <div class="container mx-auto px-4">
-      <div class="bg-white rounded-3xl p-8 md:p-12 card-shadow max-w-5xl mx-auto">
+  <!-- CTA Section -->
+  <section class="py-20 relative overflow-hidden">
+    <div class="absolute inset-0 bg-gradient-to-r from-cyan-600/20 via-purple-600/20 to-pink-600/20"></div>
+    <div class="absolute inset-0 grid-bg opacity-30"></div>
+    
+    <div class="container mx-auto px-4 relative z-10">
+      <div class="glass-card p-8 md:p-12 rounded-3xl max-w-5xl mx-auto text-center">
+        <h2 class="text-4xl md:text-5xl font-extrabold mb-4">
+          <span class="title-gradient">🎨 立即開始創作！</span>
+        </h2>
+        <p class="text-xl text-gray-300 mb-2">看到上面的精選作品了嗎？</p>
+        <p class="text-lg text-gray-400 mb-8">你也可以做到！而且<span class="text-cyan-400 font-bold">完全免費</span>開始</p>
 
-        <!-- 主標題 -->
-        <div class="text-center mb-10">
-          <h2 class="text-4xl md:text-5xl font-bold mb-4">
-            <span class="text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-blue-600">
-              🎨 立即開始創作！
-            </span>
-          </h2>
-          <p class="text-2xl font-bold text-gray-800 mb-2">看到上面的精選作品了嗎？</p>
-          <p class="text-xl text-gray-600">你也可以做到！而且<span class="text-green-600 font-bold">完全免費</span>開始</p>
-        </div>
-
-        <!-- LINE 加入區 -->
-        <div class="flex flex-col md:flex-row items-center justify-center gap-8 bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl p-8">
-          <!-- 左側文字 -->
-          <div class="text-center md:text-left flex-1">
-            <h3 class="text-2xl font-bold text-gray-800 mb-4">📱 加入 LINE 官方帳號</h3>
-            <ul class="text-left space-y-3 mb-6 inline-block">
-              <li class="flex items-center text-gray-700">
-                <span class="text-green-500 mr-2 text-xl">✅</span>
-                <span>立即獲得 <strong class="text-green-600">40 免費代幣</strong></span>
+        <div class="flex flex-col lg:flex-row items-center justify-center gap-8 bg-white/5 rounded-2xl p-8 border border-white/10">
+          <!-- Left: Info -->
+          <div class="text-center lg:text-left flex-1">
+            <h3 class="text-2xl font-bold text-white mb-4">📱 加入 LINE 官方帳號</h3>
+            <ul class="space-y-3 mb-6">
+              <li class="flex items-center gap-3 text-gray-300">
+                <span class="text-cyan-400 text-xl">✅</span>
+                <span>立即獲得 <strong class="text-cyan-400">40 免費代幣</strong></span>
               </li>
-              <li class="flex items-center text-gray-700">
-                <span class="text-green-500 mr-2 text-xl">✅</span>
-                <span>可創作 <strong class="text-blue-600">完整貼圖組</strong></span>
+              <li class="flex items-center gap-3 text-gray-300">
+                <span class="text-purple-400 text-xl">✅</span>
+                <span>可創作 <strong class="text-purple-400">完整貼圖組</strong></span>
               </li>
-              <li class="flex items-center text-gray-700">
-                <span class="text-green-500 mr-2 text-xl">✅</span>
-                <span><strong class="text-green-600">免費代上架</strong>服務</span>
+              <li class="flex items-center gap-3 text-gray-300">
+                <span class="text-green-400 text-xl">✅</span>
+                <span><strong class="text-green-400">免費代上架</strong>服務</span>
               </li>
             </ul>
-            <div class="bg-green-100 rounded-xl p-4 inline-block mb-5">
-              <p class="text-xl font-bold text-green-700">@sticker-tycoon</p>
+            <div class="glass-card inline-block px-6 py-3 rounded-xl mb-6">
+              <p class="text-xl font-bold text-cyan-400">@sticker-tycoon</p>
               <p class="text-xs text-gray-500">LINE 官方帳號 ID</p>
             </div>
             <div>
-              <a href="https://line.me/R/ti/p/@sticker-tycoon"
-                 class="inline-flex items-center bg-gradient-to-r from-green-600 to-blue-600 text-white font-bold py-4 px-10 rounded-full text-lg hover:shadow-2xl transition-all transform hover:scale-105">
+              <a href="https://line.me/R/ti/p/@sticker-tycoon" class="btn-neon-solid text-lg inline-flex">
                 <svg class="w-6 h-6 mr-2" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
                 </svg>
                 🎁 免費領取 40 代幣
               </a>
-              <p class="text-xs text-gray-500 mt-3 text-center md:text-left">👆 30 秒完成，立即開始創作</p>
+              <p class="text-xs text-gray-500 mt-3">👆 30 秒完成，立即開始創作</p>
             </div>
           </div>
 
-          <!-- 右側 QR Code -->
+          <!-- Right: QR Code -->
           <div class="flex-shrink-0">
-            <div class="bg-white p-4 rounded-2xl shadow-xl border-4 border-green-500">
-              <img src="line-qr.png"
-                   alt="LINE QR Code"
-                   class="w-48 h-48 md:w-56 md:h-56">
-              <p class="text-center text-sm text-gray-700 font-bold mt-2">📱 掃描立即加入</p>
+            <div class="glass-card p-4 rounded-2xl border-2 border-cyan-400/50 animate-pulse-glow">
+              <img src="line-qr.png" alt="LINE QR Code" class="w-48 h-48 md:w-56 md:h-56 rounded-xl">
+              <p class="text-center text-sm text-white font-bold mt-2">📱 掃描立即加入</p>
             </div>
           </div>
         </div>
 
-        <!-- 社會證明 -->
-        <div class="mt-8 text-center">
+        <div class="mt-8">
           <p class="text-gray-500 text-sm">
-            ✨ 已有超過 <strong class="text-green-600">1,000+</strong> 位創作者加入
+            ✨ 已有超過 <strong class="text-cyan-400">1,000+</strong> 位創作者加入
           </p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- JavaScript -->
-  <script>
-    // 標籤切換功能
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.addEventListener('click', function() {
-        const tabIndex = this.getAttribute('data-tab');
-
-        // 移除所有 active 類
-        document.querySelectorAll('.tab-btn').forEach(b => {
-          b.classList.remove('active', 'bg-green-600', 'text-white');
-          b.classList.add('text-gray-700');
-        });
-
-        // 隱藏所有 tab pane
-        document.querySelectorAll('.tab-pane').forEach(pane => {
-          pane.classList.add('hidden');
-        });
-
-        // 添加 active 類到當前按鈕
-        this.classList.add('active', 'bg-green-600', 'text-white');
-        this.classList.remove('text-gray-700');
-
-        // 顯示對應的 tab pane
-        const panes = document.querySelectorAll('.tab-pane');
-        if (panes[tabIndex]) {
-          panes[tabIndex].classList.remove('hidden');
-        }
-      });
-    });
-
-    // 載入示範圖集
-    async function loadDemoGallery() {
-      try {
-        const response = await fetch('/.netlify/functions/demo-gallery');
-        if (!response.ok) throw new Error('載入失敗');
-
-        const data = await response.json();
-        const items = data.items || [];
-
-        // 只顯示前 12 張
-        const displayItems = items.slice(0, 12);
-
-        const container = document.getElementById('demoGallery');
-
-        if (displayItems.length === 0) {
-          container.innerHTML = `
-            <div class="col-span-full text-center py-10">
-              <p class="text-gray-500">精選作品即將上線，敬請期待！</p>
-            </div>
-          `;
-          return;
-        }
-
-        container.innerHTML = displayItems.map((item, idx) => `
-          <div class="group relative bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all transform hover:scale-105 cursor-pointer">
-            <!-- 圖片容器 -->
-            <div class="aspect-square relative" style="background: linear-gradient(135deg, #f0fdf4 0%, #f0f9ff 100%);">
-              <img src="${item.url}"
-                   alt="${item.styleName || '貼圖'} ${idx + 1}"
-                   class="w-full h-full object-contain p-2"
-                   loading="lazy">
-
-              <!-- Hover 覆蓋層 -->
-              <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-60 transition-all flex items-center justify-center">
-                <div class="opacity-0 group-hover:opacity-100 transition-all text-white text-center p-4">
-                  <p class="text-sm font-bold mb-1">${item.styleName || '精選風格'}</p>
-                  ${item.expression ? `<p class="text-xs">${truncateText(item.expression, 30)}</p>` : ''}
-                </div>
-              </div>
-            </div>
-
-            <!-- 風格標籤 -->
-            <div class="absolute top-2 left-2">
-              <span class="bg-gradient-to-r from-green-500 to-green-600 text-white text-xs px-2 py-1 rounded-full font-bold shadow">
-                ${item.styleName || '精選'}
-              </span>
-            </div>
-          </div>
-        `).join('');
-
-      } catch (error) {
-        console.error('載入示範圖集失敗:', error);
-        document.getElementById('demoGallery').innerHTML = `
-          <div class="col-span-full text-center py-10">
-            <p class="text-gray-500">載入失敗，請重新整理頁面</p>
-          </div>
-        `;
-      }
-    }
-
-    // 文字截斷函數
-    function truncateText(text, maxLength) {
-      if (!text) return '';
-      return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
-    }
-
-    // 頁面載入時執行
-    document.addEventListener('DOMContentLoaded', loadDemoGallery);
-  </script>
-
   <!-- Footer -->
-  <footer class="bg-gray-800 text-gray-400 py-12">
+  <footer class="footer-tech py-12">
     <div class="container mx-auto px-4">
       <div class="max-w-4xl mx-auto">
-        <!-- 主要內容 -->
         <div class="grid md:grid-cols-3 gap-8 mb-8">
-          <!-- 關於我們 -->
+          <!-- About -->
           <div>
             <div class="flex items-center gap-3 mb-4">
-              <img src="/logo-192.png" alt="貼圖大亨 Logo" class="w-12 h-12 rounded-lg">
+              <img src="/logo-192.png" alt="貼圖大亨 Logo" class="w-12 h-12 rounded-xl">
               <div>
                 <h3 class="text-white text-lg font-bold">貼圖大亨</h3>
-                <p class="text-xs text-gray-400">STICKER TYCOON</p>
+                <p class="text-xs text-cyan-400">STICKER TYCOON</p>
               </div>
             </div>
             <p class="text-sm text-gray-400 leading-relaxed">
-              輕鬆創建專屬 LINE 貼圖<br>
+              用 AI 輕鬆創建專屬 LINE 貼圖<br>
               讓每個人都能成為貼圖創作者
             </p>
           </div>
 
-          <!-- 快速連結 -->
+          <!-- Links -->
           <div>
             <h3 class="text-white text-lg font-bold mb-4">📖 快速連結</h3>
             <ul class="space-y-2 text-sm">
               <li>
-                <a href="https://line.me/R/ti/p/@sticker-tycoon" class="hover:text-green-400 transition">
+                <a href="https://line.me/R/ti/p/@sticker-tycoon" class="text-gray-400 hover:text-cyan-400 transition">
                   🚀 立即開始使用
                 </a>
               </li>
               <li>
-                <a href="/token-guide.html" class="hover:text-green-400 transition">
+                <a href="/token-guide.html" class="text-gray-400 hover:text-cyan-400 transition">
                   💳 購買說明
                 </a>
               </li>
               <li>
-                <a href="/youtuber-promotion.html" class="hover:text-green-400 transition">
+                <a href="/youtuber-promotion.html" class="text-gray-400 hover:text-cyan-400 transition">
                   🎬 YouTuber 推廣計畫
                 </a>
               </li>
             </ul>
           </div>
 
-          <!-- 聯絡我們 -->
+          <!-- Contact -->
           <div>
             <h3 class="text-white text-lg font-bold mb-4">💬 需要協助？</h3>
-            <div class="text-sm space-y-2">
+            <div class="text-sm text-gray-400 space-y-2">
               <p>如有任何問題，歡迎在 LINE Bot 中聯繫我們的客服團隊</p>
               <p>
                 或發送郵件至：<br>
-                <a href="mailto:johnyarcher2100@yahoo.com.tw" class="text-green-400 hover:text-green-300 transition">
+                <a href="mailto:johnyarcher2100@yahoo.com.tw" class="text-cyan-400 hover:text-cyan-300 transition">
                   johnyarcher2100@yahoo.com.tw
                 </a>
               </p>
@@ -775,14 +586,95 @@
           </div>
         </div>
 
-        <!-- 版權聲明 -->
-        <div class="border-t border-gray-700 pt-6 text-center text-sm">
-          <p>© 2025 貼圖大亨 Sticker Tycoon. All rights reserved.</p>
-          <p class="text-gray-500 mt-2">恩瑋數位科技</p>
+        <div class="border-t border-white/10 pt-6 text-center text-sm">
+          <p class="text-gray-500">© 2025 貼圖大亨 Sticker Tycoon. All rights reserved.</p>
+          <p class="text-gray-600 mt-2">恩瑋數位科技</p>
         </div>
       </div>
     </div>
   </footer>
+
+  <!-- Scripts -->
+  <script>
+    // Load Demo Gallery
+    async function loadDemoGallery() {
+      try {
+        const response = await fetch('/.netlify/functions/demo-gallery');
+        if (!response.ok) throw new Error('載入失敗');
+
+        const data = await response.json();
+        const items = data.items || [];
+        const displayItems = items.slice(0, 12);
+        const container = document.getElementById('demoGallery');
+
+        if (displayItems.length === 0) {
+          container.innerHTML = `
+            <div class="col-span-full text-center py-16">
+              <p class="text-gray-500">精選作品即將上線，敬請期待！</p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = displayItems.map((item, idx) => `
+          <div class="gallery-item group">
+            <img src="${item.url}" alt="${item.styleName || '貼圖'} ${idx + 1}" loading="lazy">
+            <div class="overlay">
+              <div class="text-white">
+                <p class="font-bold text-sm">${item.styleName || '精選風格'}</p>
+                ${item.expression ? `<p class="text-xs text-gray-300">${truncateText(item.expression, 30)}</p>` : ''}
+              </div>
+            </div>
+            <div class="absolute top-2 left-2">
+              <span class="tag-tech text-xs">${item.styleName || '精選'}</span>
+            </div>
+          </div>
+        `).join('');
+
+      } catch (error) {
+        console.error('載入示範圖集失敗:', error);
+        document.getElementById('demoGallery').innerHTML = `
+          <div class="col-span-full text-center py-16">
+            <p class="text-gray-500">載入失敗，請重新整理頁面</p>
+          </div>
+        `;
+      }
+    }
+
+    function truncateText(text, maxLength) {
+      if (!text) return '';
+      return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+    }
+
+    // Scroll Animation
+    function initScrollAnimations() {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+          }
+        });
+      }, { threshold: 0.1 });
+
+      document.querySelectorAll('.fade-in-up').forEach(el => observer.observe(el));
+    }
+
+    // Smooth Scroll
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function(e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+
+    // Init
+    document.addEventListener('DOMContentLoaded', () => {
+      loadDemoGallery();
+      initScrollAnimations();
+    });
+  </script>
 </body>
 </html>
-

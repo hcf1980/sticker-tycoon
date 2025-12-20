@@ -10,7 +10,14 @@
   <link rel="icon" type="image/png" sizes="192x192" href="/logo-192.png">
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="/tech-theme.css" rel="stylesheet">
+  
   <!-- Supabase 配置 -->
   <script type="application/json" id="supabase-config">
   {
@@ -19,116 +26,152 @@
   }
   </script>
 </head>
-<body class="bg-gray-100 min-h-screen">
-  <nav class="bg-gradient-to-r from-pink-500 to-orange-400 text-white p-4">
-    <div class="container mx-auto flex justify-between items-center">
-      <div class="flex items-center gap-3">
-        <img src="/logo-192.png" alt="貼圖大亨 Logo" class="w-10 h-10 rounded-lg">
-        <div>
-          <h1 class="text-2xl font-bold">貼圖大亨 - 管理後台</h1>
-          <p class="text-xs opacity-80">STICKER TYCOON ADMIN</p>
+<body class="tech-bg min-h-screen">
+  <!-- Navigation -->
+  <nav class="admin-nav">
+    <div class="container mx-auto px-4 py-4">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center gap-3">
+          <div class="relative">
+            <img src="/logo-192.png" alt="貼圖大亨 Logo" class="w-10 h-10 rounded-lg">
+            <div class="absolute -inset-1 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-lg blur opacity-30"></div>
+          </div>
+          <div>
+            <h1 class="text-xl font-bold text-white">貼圖大亨</h1>
+            <p class="text-xs text-cyan-400">管理後台</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-4">
+          <a href="/" class="text-gray-400 hover:text-cyan-400 transition text-sm">← 返回首頁</a>
+          <button id="logoutBtn" class="text-gray-400 hover:text-red-400 transition text-sm">登出</button>
         </div>
       </div>
-      <a href="/" class="text-white hover:underline">← 返回首頁</a>
     </div>
   </nav>
 
   <div class="container mx-auto p-6">
-    <h2 class="text-2xl font-bold text-gray-800 mb-6">📋 管理功能</h2>
+    <!-- Header -->
+    <div class="mb-8">
+      <h2 class="text-2xl font-bold text-white mb-2">📋 管理功能</h2>
+      <p class="text-gray-400">選擇要管理的功能模組</p>
+    </div>
     
-    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <!-- Admin Cards Grid -->
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
       <!-- 貼圖管理 -->
-      <a href="/admin/sticker-manager.html" class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition block">
-        <div class="text-5xl mb-4 text-center">🎨</div>
-        <h3 class="text-xl font-bold text-gray-800 text-center mb-2">貼圖管理</h3>
-        <p class="text-gray-600 text-center text-sm">查看所有貼圖組、下載打包、管理狀態</p>
+      <a href="/admin/sticker-manager.html" class="admin-card group">
+        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-500/5 flex items-center justify-center mb-4 group-hover:scale-110 transition">
+          <span class="text-3xl">🎨</span>
+        </div>
+        <h3 class="text-lg font-bold text-white mb-2">貼圖管理</h3>
+        <p class="text-gray-400 text-sm">查看所有貼圖組、下載打包、管理狀態</p>
       </a>
 
       <!-- Rich Menu 管理 -->
-      <a href="/admin/rich-menu.html" class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition block">
-        <div class="text-5xl mb-4 text-center">📱</div>
-        <h3 class="text-xl font-bold text-gray-800 text-center mb-2">Rich Menu 管理</h3>
-        <p class="text-gray-600 text-center text-sm">上傳更新 LINE 選單圖片、設定選單</p>
+      <a href="/admin/rich-menu.html" class="admin-card group">
+        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-500/5 flex items-center justify-center mb-4 group-hover:scale-110 transition">
+          <span class="text-3xl">📱</span>
+        </div>
+        <h3 class="text-lg font-bold text-white mb-2">Rich Menu 管理</h3>
+        <p class="text-gray-400 text-sm">上傳更新 LINE 選單圖片、設定選單</p>
       </a>
 
       <!-- 示範圖集管理 -->
-      <a href="/admin/demo-gallery.html" class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition block">
-        <div class="text-5xl mb-4 text-center">✨</div>
-        <h3 class="text-xl font-bold text-gray-800 text-center mb-2">示範圖集</h3>
-        <p class="text-gray-600 text-center text-sm">管理展示用的精選貼圖範例</p>
+      <a href="/admin/demo-gallery.html" class="admin-card group">
+        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-pink-500/20 to-pink-500/5 flex items-center justify-center mb-4 group-hover:scale-110 transition">
+          <span class="text-3xl">✨</span>
+        </div>
+        <h3 class="text-lg font-bold text-white mb-2">示範圖集</h3>
+        <p class="text-gray-400 text-sm">管理展示用的精選貼圖範例</p>
       </a>
 
       <!-- 代幣管理 -->
-      <a href="/admin/token-manager.html" class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition block">
-        <div class="text-5xl mb-4 text-center">💰</div>
-        <h3 class="text-xl font-bold text-gray-800 text-center mb-2">代幣管理</h3>
-        <p class="text-gray-600 text-center text-sm">查看和調整用戶代幣</p>
+      <a href="/admin/token-manager.html" class="admin-card group">
+        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-yellow-500/20 to-yellow-500/5 flex items-center justify-center mb-4 group-hover:scale-110 transition">
+          <span class="text-3xl">💰</span>
+        </div>
+        <h3 class="text-lg font-bold text-white mb-2">代幣管理</h3>
+        <p class="text-gray-400 text-sm">查看和調整用戶代幣</p>
       </a>
 
       <!-- 上架申請管理 -->
-      <a href="/admin/listing-manager.html" class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition block border-2 border-green-400">
-        <div class="text-5xl mb-4 text-center">🚀</div>
-        <h3 class="text-xl font-bold text-gray-800 text-center mb-2">上架申請管理</h3>
-        <p class="text-gray-600 text-center text-sm">處理用戶的免費代上架申請</p>
-        <div class="mt-2 text-center">
-          <span class="bg-green-100 text-green-600 text-xs px-2 py-1 rounded-full" id="pending-count">載入中...</span>
+      <a href="/admin/listing-manager.html" class="admin-card group border-green-500/30">
+        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-green-500/20 to-green-500/5 flex items-center justify-center mb-4 group-hover:scale-110 transition">
+          <span class="text-3xl">🚀</span>
+        </div>
+        <h3 class="text-lg font-bold text-white mb-2">上架申請管理</h3>
+        <p class="text-gray-400 text-sm">處理用戶的免費代上架申請</p>
+        <div class="mt-3">
+          <span class="tag-green text-xs" id="pending-count">載入中...</span>
         </div>
       </a>
 
       <!-- YouTuber 推廣管理 -->
-      <a href="/admin/youtuber-applications.html" class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition block border-2 border-purple-400">
-        <div class="text-5xl mb-4 text-center">🎬</div>
-        <h3 class="text-xl font-bold text-gray-800 text-center mb-2">YouTuber 推廣管理</h3>
-        <p class="text-gray-600 text-center text-sm">審核 YouTuber 申請、發放代幣獎勵</p>
-        <div class="mt-2 text-center">
-          <span class="bg-purple-100 text-purple-600 text-xs px-2 py-1 rounded-full" id="youtuber-pending-count">載入中...</span>
+      <a href="/admin/youtuber-applications.html" class="admin-card group border-purple-500/30">
+        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-500/5 flex items-center justify-center mb-4 group-hover:scale-110 transition">
+          <span class="text-3xl">🎬</span>
+        </div>
+        <h3 class="text-lg font-bold text-white mb-2">YouTuber 推廣管理</h3>
+        <p class="text-gray-400 text-sm">審核 YouTuber 申請、發放代幣獎勵</p>
+        <div class="mt-3">
+          <span class="tag-purple text-xs" id="youtuber-pending-count">載入中...</span>
         </div>
       </a>
 
       <!-- 風格設定 -->
-      <a href="/admin/style-settings.html" class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition block border-2 border-blue-400">
-        <div class="text-5xl mb-4 text-center">🎭</div>
-        <h3 class="text-xl font-bold text-gray-800 text-center mb-2">風格設定</h3>
-        <p class="text-gray-600 text-center text-sm">管理風格、構圖、裝飾設定</p>
-        <div class="mt-2 text-center">
-          <span class="bg-blue-100 text-blue-600 text-xs px-2 py-1 rounded-full">✨ 新功能</span>
+      <a href="/admin/style-settings.html" class="admin-card group border-cyan-500/30">
+        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-500/5 flex items-center justify-center mb-4 group-hover:scale-110 transition">
+          <span class="text-3xl">🎭</span>
+        </div>
+        <h3 class="text-lg font-bold text-white mb-2">風格設定</h3>
+        <p class="text-gray-400 text-sm">管理風格、構圖、裝飾設定</p>
+        <div class="mt-3">
+          <span class="tag-tech text-xs">✨ 新功能</span>
         </div>
       </a>
 
       <!-- 密碼變更 -->
-      <a href="/admin/change-password.html" class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition block">
-        <div class="text-5xl mb-4 text-center">🔐</div>
-        <h3 class="text-xl font-bold text-gray-800 text-center mb-2">變更密碼</h3>
-        <p class="text-gray-600 text-center text-sm">變更管理員登入密碼</p>
+      <a href="/admin/change-password.html" class="admin-card group">
+        <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-red-500/20 to-red-500/5 flex items-center justify-center mb-4 group-hover:scale-110 transition">
+          <span class="text-3xl">🔐</span>
+        </div>
+        <h3 class="text-lg font-bold text-white mb-2">變更密碼</h3>
+        <p class="text-gray-400 text-sm">變更管理員登入密碼</p>
       </a>
     </div>
 
-    <!-- 快速統計 -->
-    <div class="mt-10">
-      <h3 class="text-xl font-bold text-gray-800 mb-4">📈 快速統計</h3>
+    <!-- Stats Section -->
+    <div class="mb-8">
+      <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+        <span>📈</span> 快速統計
+      </h3>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="bg-white rounded-lg shadow p-4 text-center">
-          <div class="text-3xl font-bold text-pink-500" id="stat-total">-</div>
-          <div class="text-gray-500 text-sm">總貼圖組</div>
+        <div class="stat-card">
+          <div class="value" id="stat-total">-</div>
+          <div class="text-gray-400 text-sm mt-1">總貼圖組</div>
         </div>
-        <div class="bg-white rounded-lg shadow p-4 text-center">
-          <div class="text-3xl font-bold text-green-500" id="stat-completed">-</div>
-          <div class="text-gray-500 text-sm">已完成</div>
+        <div class="stat-card">
+          <div class="value" id="stat-completed">-</div>
+          <div class="text-gray-400 text-sm mt-1">已完成</div>
         </div>
-        <div class="bg-white rounded-lg shadow p-4 text-center">
-          <div class="text-3xl font-bold text-blue-500" id="stat-users">-</div>
-          <div class="text-gray-500 text-sm">活躍用戶</div>
+        <div class="stat-card">
+          <div class="value" id="stat-users">-</div>
+          <div class="text-gray-400 text-sm mt-1">活躍用戶</div>
         </div>
-        <div class="bg-white rounded-lg shadow p-4 text-center">
-          <div class="text-3xl font-bold text-orange-500" id="stat-today">-</div>
-          <div class="text-gray-500 text-sm">今日創建</div>
+        <div class="stat-card">
+          <div class="value" id="stat-today">-</div>
+          <div class="text-gray-400 text-sm mt-1">今日創建</div>
         </div>
       </div>
     </div>
   </div>
 
-  <footer class="mt-10 py-4 text-center text-gray-500 text-sm">
-    貼圖大亨 Admin © 2024 | <a href="#" id="logoutBtn" class="hover:text-pink-500">登出</a>
+  <!-- Footer -->
+  <footer class="py-6 text-center border-t border-white/10">
+    <p class="text-gray-500 text-sm">
+      貼圖大亨 Admin © 2025 | 
+      <a href="#" id="logoutBtn2" class="hover:text-cyan-400 transition">登出</a>
+    </p>
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.38.0/dist/umd/supabase.js"></script>
@@ -136,11 +179,24 @@
   <script>
     // 頁面載入時檢查
     if (!checkAdminAuth()) {
-      document.body.innerHTML = '<div class="text-center p-10">正在跳轉到登入頁面...</div>';
+      document.body.innerHTML = `
+        <div class="tech-bg min-h-screen flex items-center justify-center">
+          <div class="text-center">
+            <div class="loader-tech mx-auto mb-4"></div>
+            <p class="text-gray-400">正在跳轉到登入頁面...</p>
+          </div>
+        </div>
+      `;
     }
 
     // 登出功能
     document.getElementById('logoutBtn')?.addEventListener('click', function(e) {
+      e.preventDefault();
+      clearAdminAuthStatus();
+      window.location.href = '/admin/login.html';
+    });
+
+    document.getElementById('logoutBtn2')?.addEventListener('click', function(e) {
       e.preventDefault();
       clearAdminAuthStatus();
       window.location.href = '/admin/login.html';
@@ -187,9 +243,60 @@
     }
 
     // 載入統計數據
+    async function loadStats() {
+      try {
+        const supabaseConfig = JSON.parse(document.getElementById('supabase-config').textContent);
+        const supabase = window.supabase.createClient(supabaseConfig.url, supabaseConfig.anonKey);
+
+        // 總貼圖組
+        const { count: totalCount } = await supabase
+          .from('sticker_sets')
+          .select('*', { count: 'exact', head: true });
+        
+        if (totalCount !== null) {
+          document.getElementById('stat-total').textContent = totalCount;
+        }
+
+        // 已完成
+        const { count: completedCount } = await supabase
+          .from('sticker_sets')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'completed');
+        
+        if (completedCount !== null) {
+          document.getElementById('stat-completed').textContent = completedCount;
+        }
+
+        // 活躍用戶
+        const { count: userCount } = await supabase
+          .from('users')
+          .select('*', { count: 'exact', head: true });
+        
+        if (userCount !== null) {
+          document.getElementById('stat-users').textContent = userCount;
+        }
+
+        // 今日創建
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const { count: todayCount } = await supabase
+          .from('sticker_sets')
+          .select('*', { count: 'exact', head: true })
+          .gte('created_at', today.toISOString());
+        
+        if (todayCount !== null) {
+          document.getElementById('stat-today').textContent = todayCount;
+        }
+
+      } catch (error) {
+        console.error('載入統計數據失敗:', error);
+      }
+    }
+
+    // 頁面載入時執行
     loadPendingCount();
     loadYoutuberPendingCount();
+    loadStats();
   </script>
 </body>
 </html>
-

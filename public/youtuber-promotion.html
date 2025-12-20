@@ -13,177 +13,172 @@
   <link rel="icon" type="image/png" sizes="192x192" href="/logo-192.png">
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="/tech-theme.css" rel="stylesheet">
+  
   <style>
-    .card-shadow { box-shadow: 0 10px 40px rgba(255, 107, 107, 0.2); }
-    .youtuber-gradient { background: linear-gradient(135deg, #FF0000 0%, #FF6B6B 100%); }
-    .pulse-animation { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+    .youtube-gradient {
+      background: linear-gradient(135deg, #FF0000 0%, #CC0000 100%);
+    }
   </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
-  <!-- Header -->
-  <header class="youtuber-gradient text-white py-20">
-    <div class="container mx-auto px-4 text-center">
-      <div class="inline-block bg-white text-red-500 px-6 py-2 rounded-full font-bold mb-4 pulse-animation">
-        🎬 YouTuber 專屬推廣計畫
+<body class="tech-bg min-h-screen">
+  <!-- Navigation -->
+  <header class="nav-tech">
+    <div class="container mx-auto px-4 py-4">
+      <div class="flex items-center justify-between">
+        <a href="/" class="flex items-center gap-3">
+          <img src="/logo-192.png" alt="貼圖大亨 Logo" class="w-10 h-10 rounded-lg">
+          <div>
+            <h1 class="text-lg font-bold text-white">貼圖大亨</h1>
+            <p class="text-xs text-cyan-400">Sticker Tycoon</p>
+          </div>
+        </a>
+        <a href="/" class="text-gray-400 hover:text-cyan-400 transition">← 返回首頁</a>
       </div>
-      <h1 class="text-5xl font-bold mb-4">🚀 邊推廣邊賺代幣</h1>
-      <p class="text-xl opacity-90 mb-8">1000+ 訂閱的 YouTuber 都能參加！<br>推廣貼圖大亨，獲得專屬代幣獎勵</p>
-      <a href="#apply-form" class="inline-block bg-white text-red-500 font-bold py-3 px-8 rounded-full text-lg hover:shadow-lg transition">📝 立即申請</a>
     </div>
   </header>
 
-  <!-- 活動介紹（橫向一排版） -->
-  <section class="py-16 bg-white">
+  <!-- Hero -->
+  <section class="py-20 relative overflow-hidden">
+    <div class="absolute inset-0 bg-gradient-to-br from-red-900/30 via-transparent to-purple-900/20"></div>
+    <div class="container mx-auto px-4 relative z-10 text-center">
+      <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-500/20 border border-red-400 text-red-400 font-medium mb-6">
+        <span class="w-2 h-2 bg-red-400 rounded-full animate-pulse"></span>
+        🎬 YouTuber 專屬推廣計畫
+      </span>
+      <h1 class="text-4xl md:text-6xl font-extrabold text-white mb-4">🚀 邊推廣邊賺代幣</h1>
+      <p class="text-xl text-gray-400 mb-8 max-w-2xl mx-auto">
+        1000+ 訂閱的 YouTuber 都能參加！<br>
+        推廣貼圖大亨，獲得專屬代幣獎勵
+      </p>
+      <a href="#apply-form" class="btn-neon-solid text-lg youtube-gradient border-0">
+        📝 立即申請
+      </a>
+    </div>
+  </section>
+
+  <!-- 活動介紹 -->
+  <section class="py-16">
     <div class="container mx-auto px-4">
-      <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">✨ 活動介紹</h2>
-      <div class="max-w-6xl mx-auto">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <!-- 活動目標 -->
-          <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 card-shadow">
-            <div class="text-4xl mb-3">🎯</div>
-            <h3 class="text-lg font-bold text-blue-700 mb-3">活動目標</h3>
-            <p class="text-sm text-gray-700 leading-relaxed">邀請 1000+ 訂閱的 YouTuber 拍攝推廣影片，讓更多人認識貼圖大亨</p>
-          </div>
-          <!-- 參加條件 -->
-          <div class="bg-gradient-to-br from-red-50 to-red-100 rounded-2xl p-6 card-shadow">
-            <div class="text-4xl mb-3">✅</div>
-            <h3 class="text-lg font-bold text-red-700 mb-3">參加條件</h3>
-            <ul class="text-sm text-gray-700 space-y-1">
-              <li>• 訂閱數 1000+</li>
-              <li>• 願意拍攝影片</li>
-              <li>• 輸入「推廣」申請</li>
-              <li>• 提供聯絡方式</li>
-            </ul>
-          </div>
-          <!-- 獲得獎勵 -->
-          <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-2xl p-6 card-shadow">
-            <div class="text-4xl mb-3">🎁</div>
-            <h3 class="text-lg font-bold text-yellow-700 mb-3">獲得獎勵</h3>
-            <p class="text-sm text-gray-700 mb-2"><strong>50 代幣</strong>（前期拍片）<br><strong>250 代幣</strong>（影片完成）</p>
-            <p class="text-xs text-yellow-600 font-bold">= 300 代幣</p>
-          </div>
-          <!-- 代幣用途 -->
-          <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-6 card-shadow">
-            <div class="text-4xl mb-3">💰</div>
-            <h3 class="text-lg font-bold text-green-700 mb-3">代幣用途</h3>
-            <ul class="text-sm text-gray-700 space-y-1">
-              <li>• 生成貼圖</li>
-              <li>• 免費代上架</li>
-              <li>• 1-3 天上架</li>
-              <li>• 開始販售</li>
-            </ul>
-          </div>
+      <h2 class="text-3xl font-bold text-center text-white mb-12">✨ 活動介紹</h2>
+      
+      <div class="grid md:grid-cols-4 gap-4 max-w-6xl mx-auto">
+        <!-- 活動目標 -->
+        <div class="glass-card p-6 text-center">
+          <div class="text-4xl mb-4">🎯</div>
+          <h3 class="text-lg font-bold text-cyan-400 mb-3">活動目標</h3>
+          <p class="text-sm text-gray-400">邀請 1000+ 訂閱的 YouTuber 拍攝推廣影片，讓更多人認識貼圖大亨</p>
         </div>
-        <!-- 提示 -->
-        <div class="mt-8 bg-gradient-to-r from-red-50 to-pink-50 rounded-xl p-4 border-l-4 border-red-500 text-center">
-          <p class="text-sm text-gray-700"><strong>💡 提示：</strong>優秀的推廣影片將展示在我們的官方網頁上，獲得更多曝光機會！</p>
+        
+        <!-- 參加條件 -->
+        <div class="glass-card p-6 text-center">
+          <div class="text-4xl mb-4">📋</div>
+          <h3 class="text-lg font-bold text-red-400 mb-3">參加條件</h3>
+          <p class="text-sm text-gray-400">YouTube 訂閱數 ≥ 1000 即可申請參加本計畫</p>
+        </div>
+        
+        <!-- 影片要求 -->
+        <div class="glass-card p-6 text-center">
+          <div class="text-4xl mb-4">🎬</div>
+          <h3 class="text-lg font-bold text-purple-400 mb-3">影片要求</h3>
+          <p class="text-sm text-gray-400">時長 ≥ 3 分鐘，內容包含實際操作示範</p>
+        </div>
+        
+        <!-- 獎勵說明 -->
+        <div class="glass-card p-6 text-center">
+          <div class="text-4xl mb-4">🎁</div>
+          <h3 class="text-lg font-bold text-green-400 mb-3">獎勵說明</h3>
+          <p class="text-sm text-gray-400">審核通過可獲 50 代幣，發布影片再得 100 代幣</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- 獎勵方案 -->
-  <section class="py-16 bg-gradient-to-r from-red-500 to-pink-500">
-    <div class="container mx-auto px-4">
-      <h2 class="text-3xl font-bold text-center text-white mb-12">🎁 獎勵方案</h2>
-      <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-        <!-- 前期代幣 -->
-        <div class="bg-white rounded-2xl p-8 card-shadow text-center">
+  <!-- 獎勵詳情 -->
+  <section class="py-16 relative">
+    <div class="absolute inset-0 bg-gradient-to-r from-purple-900/20 via-transparent to-cyan-900/20"></div>
+    <div class="container mx-auto px-4 relative z-10">
+      <h2 class="text-3xl font-bold text-center text-white mb-12">🏆 獎勵詳情</h2>
+      
+      <div class="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+        <!-- 審核通過獎勵 -->
+        <div class="glass-card p-8 text-center border border-purple-400/30">
+          <div class="text-5xl mb-4">✅</div>
+          <h3 class="text-xl font-bold text-white mb-2">審核通過獎勵</h3>
+          <div class="text-4xl font-extrabold text-purple-400 mb-2">+50 代幣</div>
+          <p class="text-gray-400 text-sm">申請審核通過後立即發放</p>
+        </div>
+        
+        <!-- 影片發布獎勵 -->
+        <div class="glass-card p-8 text-center border border-cyan-400/30">
           <div class="text-5xl mb-4">🎬</div>
-          <h3 class="text-2xl font-bold text-red-600 mb-2">前期拍片</h3>
-          <div class="text-4xl font-bold text-red-500 mb-2">50</div>
-          <p class="text-gray-600 mb-4">代幣</p>
-          <p class="text-sm text-gray-500">申請通過後立即獲得，用於前期拍片製作</p>
-        </div>
-        <!-- 加號 -->
-        <div class="flex items-center justify-center">
-          <div class="text-4xl text-white font-bold">+</div>
-        </div>
-        <!-- 完成獎勵 -->
-        <div class="bg-white rounded-2xl p-8 card-shadow text-center border-4 border-yellow-400 relative">
-          <div class="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-yellow-400 text-white px-4 py-1 rounded-full text-sm font-bold">🏆 完成獎勵</div>
-          <div class="text-5[object Object]</div>
-          <h3 class="text-2xl font-bold text-red-600 mb-2">影片完成</h3>
-          <div class="text-4xl font-bold text-red-500 mb-2">250</div>
-          <p class="text-gray-600 mb-4">代幣</p>
-          <p class="text-sm text-gray-500">影片上傳並通過審核後獲得</p>
+          <h3 class="text-xl font-bold text-white mb-2">影片發布獎勵</h3>
+          <div class="text-4xl font-extrabold text-cyan-400 mb-2">+100 代幣</div>
+          <p class="text-gray-400 text-sm">符合規定的影片上線後發放</p>
         </div>
       </div>
-      <!-- 總計 -->
-      <div class="text-center mt-8">
-        <div class="inline-block bg-white rounded-2xl px-8 py-4 card-shadow">
-          <p class="text-gray-600 mb-2">總計可獲得</p>
-          <div class="text-5xl font-bold text-red-600">300 代幣</div>
-          <p class="text-sm text-gray-500 mt-2">相當於 3 次完整貼圖生成！</p>
+      
+      <div class="max-w-4xl mx-auto mt-8">
+        <div class="glass-card p-6 text-center border border-green-400/30">
+          <h3 class="text-xl font-bold text-white mb-2">🎉 總計可獲得</h3>
+          <div class="text-5xl font-extrabold title-gradient">150 代幣</div>
+          <p class="text-gray-400 text-sm mt-2">價值約 NT$ 600！</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- 代幣用途 -->
-  <section class="py-16 bg-white">
+  <!-- 影片要求 -->
+  <section class="py-16">
     <div class="container mx-auto px-4">
-      <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">💰 代幣用途</h2>
-      <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-        <div class="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-8 border-2 border-blue-300">
-          <h3 class="text-xl font-bold text-blue-700 mb-4">🎨 生成貼圖</h3>
-          <p class="text-gray-700 mb-4">使用代幣生成 6-40 張專屬 LINE 貼圖，支援多種風格選擇</p>
-          <div class="bg-white rounded-lg p-3 text-sm text-gray-600">
-            <p>• 6 張貼圖 = 3 代幣</p>
-            <p>• 12 張貼圖 = 6 代幣</p>
-            <p>• 18 張貼圖 = 9 代幣</p>
+      <h2 class="text-3xl font-bold text-center text-white mb-12">📝 影片要求</h2>
+      
+      <div class="glass-card p-8 rounded-3xl max-w-3xl mx-auto">
+        <div class="space-y-6">
+          <div class="flex gap-4 items-start">
+            <div class="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center flex-shrink-0">
+              <span class="text-cyan-400 font-bold">1</span>
+            </div>
+            <div>
+              <h3 class="text-white font-bold mb-1">影片時長 ≥ 3 分鐘</h3>
+              <p class="text-gray-400 text-sm">確保有足夠時間展示功能</p>
+            </div>
           </div>
-        </div>
-        <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-8 border-2 border-green-300">
-          <h3 class="text-xl font-bold text-green-700 mb-4">📤 代上架服務</h3>
-          <p class="text-gray-700 mb-4">使用代幣享受免費代上架服務，我們幫你搞定所有 LINE 上架流程</p>
-          <div class="bg-white rounded-lg p-3 text-sm text-gray-600">
-            <p>• 代上架 = 40 代幣</p>
-            <p>• 省時省力，一次通過</p>
-            <p>• 1-3 天即可上架販售</p>
-            <p>• 收益將以代幣提供予用戶</p>
+          
+          <div class="flex gap-4 items-start">
+            <div class="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center flex-shrink-0">
+              <span class="text-purple-400 font-bold">2</span>
+            </div>
+            <div>
+              <h3 class="text-white font-bold mb-1">實際操作示範</h3>
+              <p class="text-gray-400 text-sm">需展示實際使用貼圖大亨創作貼圖的過程</p>
+            </div>
           </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- 申請流程 -->
-  <section class="py-16 bg-gray-50">
-    <div class="container mx-auto px-4">
-      <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">🛠 申請流程</h2>
-      <div class="max-w-4xl mx-auto">
-        <div class="grid md:grid-cols-4 gap-4 mb-8">
-          <div class="text-center">
-            <div class="w-16 h-16 bg-red-500 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">1</div>
-            <h3 class="font-bold text-gray-800 mb-2">訂閱確認</h3>
-            <p class="text-sm text-gray-600">確認頻道訂閱數 1000+</p>
+          
+          <div class="flex gap-4 items-start">
+            <div class="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
+              <span class="text-green-400 font-bold">3</span>
+            </div>
+            <div>
+              <h3 class="text-white font-bold mb-1">功能介紹</h3>
+              <p class="text-gray-400 text-sm">介紹主要功能：AI 生成、風格選擇、代上架服務等</p>
+            </div>
           </div>
-          <div class="flex items-center justify-center">
-            <div class="text-3xl text-red-500">→</div>
-          </div>
-          <div class="text-center">
-            <div class="w-16 h-16 bg-red-500 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">2</div>
-            <h3 class="font-bold text-gray-800 mb-2">填寫申請</h3>
-            <p class="text-sm text-gray-600">在貼圖大亨輸入「推廣」</p>
-          </div>
-          <div class="flex items-center justify-center">
-            <div class="text-3xl text-red-500">→</div>
-          </div>
-          <div class="text-center">
-            <div class="w-16 h-16 bg-red-500 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">3</div>
-            <h3 class="font-bold text-gray-800 mb-2">審核通過</h3>
-            <p class="text-sm text-gray-600">獲得 50 代幣</p>
-          </div>
-          <div class="flex items-center justify-center">
-            <div class="text-3xl text-red-500">→</div>
-          </div>
-          <div class="text-center">
-            <div class="w-16 h-16 bg-red-500 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">4</div>
-            <h3 class="font-bold text-gray-800 mb-2">拍片上傳</h3>
-            <p class="text-sm text-gray-600">完成後獲得 250 代幣</p>
+          
+          <div class="flex gap-4 items-start">
+            <div class="w-10 h-10 rounded-full bg-pink-500/20 flex items-center justify-center flex-shrink-0">
+              <span class="text-pink-400 font-bold">4</span>
+            </div>
+            <div>
+              <h3 class="text-white font-bold mb-1">放置連結</h3>
+              <p class="text-gray-400 text-sm">影片說明欄需放置貼圖大亨 LINE Bot 連結</p>
+            </div>
           </div>
         </div>
       </div>
@@ -191,165 +186,131 @@
   </section>
 
   <!-- 申請表單 -->
-  <section class="py-16 bg-gradient-to-r from-red-500 to-pink-500" id="apply-form">
-    <div class="container mx-auto px-4">
-      <h2 class="text-3xl font-bold text-center text-white mb-12">📝 申請表單</h2>
-      <div class="max-w-2xl mx-auto bg-white rounded-2xl p-8 card-shadow">
-        <form id="youtuberForm" class="space-y-6">
+  <section id="apply-form" class="py-16 relative">
+    <div class="absolute inset-0 bg-gradient-to-b from-transparent via-red-900/10 to-transparent"></div>
+    <div class="container mx-auto px-4 relative z-10">
+      <h2 class="text-3xl font-bold text-center text-white mb-4">📝 立即申請</h2>
+      <p class="text-center text-gray-400 mb-12">填寫以下表單，我們會盡快審核您的申請</p>
+      
+      <div class="glass-card p-8 rounded-3xl max-w-2xl mx-auto">
+        <form id="applicationForm" class="space-y-6">
+          <!-- 頻道名稱 -->
           <div>
-            <label class="block text-gray-800 font-bold mb-2">📺 YouTube 頻道名稱 <span class="text-red-500">*</span></label>
-            <input type="text" name="channelName" placeholder="例：科技頻道 Tech Channel" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-red-500" required>
+            <label class="block text-gray-300 font-medium mb-2">YouTube 頻道名稱 *</label>
+            <input type="text" name="channelName" required class="input-tech" placeholder="請輸入頻道名稱">
           </div>
+          
+          <!-- 頻道連結 -->
           <div>
-            <label class="block text-gray-800 font-bold mb-2">🔗 YouTube 頻道連結 <span class="text-red-500">*</span></label>
-            <input type="url" name="channelUrl" placeholder="https://www.youtube.com/@yourChannel" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-red-500" required>
+            <label class="block text-gray-300 font-medium mb-2">頻道連結 *</label>
+            <input type="url" name="channelUrl" required class="input-tech" placeholder="https://www.youtube.com/@your-channel">
           </div>
+          
+          <!-- 訂閱數 -->
           <div>
-            <label class="block text-gray-800 font-bold mb-2">👥 頻道訂閱數 <span class="text-red-500">*</span></label>
-            <input type="number" name="subscriberCount" placeholder="例：5000" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-red-500" required min="1000">
-            <p class="text-xs text-gray-500 mt-1">需要 1000+ 訂閱</p>
+            <label class="block text-gray-300 font-medium mb-2">訂閱數 *</label>
+            <input type="number" name="subscriberCount" required class="input-tech" placeholder="請輸入訂閱數" min="1000">
           </div>
+          
+          <!-- Email -->
           <div>
-            <label class="block text-gray-800 font-bold mb-2">📞 聯絡方式 <span class="text-red-500">*</span></label>
-            <div class="grid md:grid-cols-2 gap-4">
-              <input type="email" name="email" placeholder="Email" class="px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-red-500" required>
-              <input type="tel" name="phone" placeholder="電話號碼" class="px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-red-500">
-            </div>
+            <label class="block text-gray-300 font-medium mb-2">聯絡 Email *</label>
+            <input type="email" name="email" required class="input-tech" placeholder="your@email.com">
           </div>
+          
+          <!-- 電話 -->
           <div>
-            <label class="block text-gray-800 font-bold mb-2">💬 LINE ID <span class="text-red-500">*</span></label>
-            <input type="text" name="lineId" placeholder="例：@abc123" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-red-500" required>
-            <p class="text-xs text-gray-500 mt-1">我們會透過 LINE 聯絡你</p>
+            <label class="block text-gray-300 font-medium mb-2">聯絡電話</label>
+            <input type="tel" name="phone" class="input-tech" placeholder="0912-345-678">
           </div>
+          
+          <!-- LINE ID -->
           <div>
-            <label class="block text-gray-800 font-bold mb-2">🎬 頻道類型 <span class="text-red-500">*</span></label>
-            <select name="channelType" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-red-500" required>
-              <option value="">-- 請選擇 --</option>
-              <option value="tech">科技</option>
-              <option value="lifestyle">生活風格</option>
+            <label class="block text-gray-300 font-medium mb-2">LINE ID *</label>
+            <input type="text" name="lineId" required class="input-tech" placeholder="請輸入 LINE ID">
+          </div>
+          
+          <!-- 頻道類型 -->
+          <div>
+            <label class="block text-gray-300 font-medium mb-2">頻道類型 *</label>
+            <select name="channelType" required class="input-tech">
+              <option value="">請選擇</option>
+              <option value="tech">科技 / 3C</option>
+              <option value="lifestyle">生活 / Vlog</option>
+              <option value="creative">創作 / 設計</option>
               <option value="gaming">遊戲</option>
-              <option value="beauty">美妝</option>
-              <option value="education">教育</option>
-              <option value="entertainment">娛樂</option>
+              <option value="education">教育 / 教學</option>
               <option value="other">其他</option>
             </select>
           </div>
+          
+          <!-- 頻道簡介 -->
           <div>
-            <label class="block text-gray-800 font-bold mb-2">✍️ 頻道介紹 <span class="text-red-500">*</span></label>
-            <textarea name="channelDescription" placeholder="簡單介紹你的頻道內容和特色..." rows="4" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-red-500" required></textarea>
+            <label class="block text-gray-300 font-medium mb-2">頻道簡介 *</label>
+            <textarea name="channelDescription" required class="input-tech h-24 resize-none" placeholder="簡單介紹您的頻道內容和風格"></textarea>
           </div>
+          
+          <!-- 預計拍攝內容 -->
           <div>
-            <label class="block text-gray-800 font-bold mb-2">🎥 拍片計畫 <span class="text-red-500">*</span></label>
-            <textarea name="filmingPlan" placeholder="說明你計畫如何推廣貼圖大亨，預計拍片內容..." rows="4" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-red-500" required></textarea>
+            <label class="block text-gray-300 font-medium mb-2">預計拍攝內容 *</label>
+            <textarea name="filmingPlan" required class="input-tech h-24 resize-none" placeholder="描述您預計如何介紹貼圖大亨"></textarea>
           </div>
-          <div class="bg-gray-50 rounded-lg p-4">
-            <label class="flex items-start cursor-pointer">
-              <input type="checkbox" name="agreeTerms" class="mt-1 w-4 h-4 text-red-500" required>
-              <span class="ml-3 text-sm text-gray-700">我同意參加 YouTuber 推廣計畫，並同意貼圖大亨使用我的頻道資訊進行推廣</span>
-            </label>
-          </div>
-          <button type="submit" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-lg transition">🚀 提交申請</button>
-          <p class="text-xs text-gray-500 text-center">提交申請後，我們會在 1-3 個工作天內審核並透過 LINE 聯絡你</p>
+          
+          <!-- 提交按鈕 -->
+          <div id="formMessage" class="text-center hidden"></div>
+          
+          <button type="submit" id="submitBtn" class="w-full btn-neon-solid youtube-gradient border-0 py-4">
+            <span>📤 提交申請</span>
+          </button>
         </form>
       </div>
     </div>
   </section>
 
-  <!-- FAQ -->
-  <section class="py-16 bg-white">
-    <div class="container mx-auto px-4">
-      <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">❓ 常見問題</h2>
-      <div class="max-w-3xl mx-auto space-y-4">
-        <details class="bg-gray-50 rounded-lg p-6 cursor-pointer group">
-          <summary class="font-bold text-gray-800 flex items-center">
-            <span class="text-red-500 mr-3">Q:</span>
-            <span>我的頻道訂閱數不到 1000，可以申請嗎？</span>
-            <span class="ml-auto text-gray-400 group-open:rotate-180 transition">▼</span>
-          </summary>
-          <p class="text-gray-600 mt-4 ml-8">很遺憾，目前只開放 1000+ 訂閱的頻道申請。不過，如果你的頻道成長到 1000 訂閱，歡迎隨時重新申請！</p>
-        </details>
-        <details class="bg-gray-50 rounded-lg p-6 cursor-pointer group">
-          <summary class="font-bold text-gray-800 flex items-center">
-            <span class="text-red-500 mr-3">Q:</span>
-            <span>代幣可以轉讓或出售嗎？</span>
-            <span class="ml-auto text-gray-400 group-open:rotate-180 transition">▼</span>
-          </summary>
-          <p class="text-gray-600 mt-4 ml-8">不可以。代幣只能用於生成貼圖或代上架服務，不能轉讓或出售。</p>
-        </details>
-        <details class="bg-gray-50 rounded-lg p-6 cursor-pointer group">
-          <summary class="font-bold text-gray-800 flex items-center">
-            <span class="text-red-500 mr-3">Q:</span>
-            <span>影片需要達到多少觀看次數才能通過審核？</span>
-            <span class="ml-auto text-gray-400 group-open:rotate-180 transition">▼</span>
-          </summary>
-          <p class="text-gray-600 mt-4 ml-8">我們主要評估影片品質、內容清晰度和推廣效果，不設定最低觀看次數要求。只要影片能清楚展示貼圖大亨的功能即可。</p>
-        </details>
-        <details class="bg-gray-50 rounded-lg p-6 cursor-pointer group">
-          <summary class="font-bold text-gray-800 flex items-center">
-            <span class="text-red-500 mr-3">Q:</span>
-            <span>如果影片沒通過審核怎麼辦？</span>
-            <span class="ml-auto text-gray-400 group-open:rotate-180 transition">▼</span>
-          </summary>
-          <p class="text-gray-600 mt-4 ml-8">我們會提供具體的改進建議，你可以修改後重新提交。我們希望看到你成功！</p>
-        </details>
-        <details class="bg-gray-50 rounded-lg p-6 cursor-pointer group">
-          <summary class="font-bold text-gray-800 flex items-center">
-            <span class="text-red-500 mr-3">Q:</span>
-            <span>購買代幣的支付方式有哪些？</span>
-            <span class="ml-auto text-gray-400 group-open:rotate-180 transition">▼</span>
-          </summary>
-          <p class="text-gray-600 mt-4 ml-8">目前支援基本支付方式。我們正在建置街口、LINE Pay 等常見支付方式，敬請期待！</p>
-        </details>
-        <details class="bg-gray-50 rounded-lg p-6 cursor-pointer group">
-          <summary class="font-bold text-gray-800 flex items-center">
-            <span class="text-red-500 mr-3">Q:</span>
-            <span>優秀影片展示在網頁上會有什麼好處？</span>
-            <span class="ml-auto text-gray-400 group-open:rotate-180 transition">▼</span>
-          </summary>
-          <p class="text-gray-600 mt-4 ml-8">你的影片會被展示在貼圖大亨官網，增加你的頻道曝光。同時，我們也會在社群媒體分享優秀作品，幫助你吸引更多觀眾！</p>
-        </details>
-      </div>
-    </div>
-  </section>
-
-  <!-- CTA -->
-  <section class="py-16 bg-gradient-to-r from-red-500 to-pink-500">
-    <div class="container mx-auto px-4 text-center">
-      <h2 class="text-3xl font-bold text-white mb-4">🎬 準備好了嗎？</h2>
-      <p class="text-xl text-white opacity-90 mb-8">邊推廣邊賺代幣，還能獲得專屬 LINE 貼圖的好機會！</p>
-      <a href="#apply-form" class="inline-block bg-white text-red-500 font-bold py-3 px-8 rounded-full text-lg hover:shadow-lg transition">📝 立即申請</a>
-    </div>
-  </section>
-
   <!-- Footer -->
-  <footer class="bg-gray-800 text-white py-8">
+  <footer class="footer-tech py-8">
     <div class="container mx-auto px-4 text-center">
-      <p class="mb-2">© 2024 貼圖大亨 - YouTuber 推廣計畫</p>
-      <p class="text-sm text-gray-400">有任何問題？請透過 LINE 官方帳號聯絡我們</p>
+      <p class="text-gray-500 text-sm">© 2025 貼圖大亨 Sticker Tycoon. All rights reserved.</p>
     </div>
   </footer>
 
   <script>
-    document.getElementById('youtuberForm').addEventListener('submit', async (e) => {
+    document.getElementById('applicationForm').addEventListener('submit', async function(e) {
       e.preventDefault();
-      const formData = new FormData(e.target);
-      const data = Object.fromEntries(formData);
+      
+      const submitBtn = document.getElementById('submitBtn');
+      const formMessage = document.getElementById('formMessage');
+      
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<div class="flex items-center justify-center gap-2"><div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> 提交中...</div>';
+      
+      const formData = new FormData(this);
+      const data = Object.fromEntries(formData.entries());
+      
       try {
-        const response = await fetch('/api/youtuber-promotion/apply', {
+        const response = await fetch('/.netlify/functions/youtuber-promotion-apply', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data)
         });
+        
         const result = await response.json();
-        if (response.ok) {
-          alert('✅ 申請成功！我們會在 1-3 個工作天內審核你的申請，敬請期待！');
-          e.target.reset();
+        
+        if (result.success) {
+          formMessage.className = 'text-center text-green-400 py-4';
+          formMessage.innerHTML = '✅ 申請已提交！我們會盡快審核並與您聯繫。';
+          formMessage.classList.remove('hidden');
+          this.reset();
         } else {
-          alert('❌ 申請失敗：' + (result.message || '請稍後重試'));
+          throw new Error(result.error || '提交失敗');
         }
       } catch (error) {
-        alert('❌ 發生錯誤，請稍後重試');
-        console.error(error);
+        formMessage.className = 'text-center text-red-400 py-4';
+        formMessage.innerHTML = `❌ ${error.message}`;
+        formMessage.classList.remove('hidden');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span>📤 提交申請</span>';
       }
     });
   </script>
