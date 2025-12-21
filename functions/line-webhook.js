@@ -2317,6 +2317,8 @@ async function handleDemoGallery(userId) {
   try {
     // 從數據庫讀取示範圖集（限制 10 張）
     // 按 display_order 升序排列（最前面的 display_order=0 是最新加入的）
+    console.log(`📖 開始讀取示範圖集，userId: ${userId}`);
+    
     const { data: demoItems, error } = await supabase
       .from('demo_gallery')
       .select('*')
@@ -2326,7 +2328,7 @@ async function handleDemoGallery(userId) {
     if (error) {
       console.error('讀取示範圖集失敗:', error);
       // 數據庫讀取失敗，使用 pushMessage
-      return getLineClient().pushMessage(userId, {
+      await getLineClient().pushMessage(userId, {
         type: 'text',
         text: '❌ 示範圖集讀取失敗，請稍後再試\n\n如果問題持續發生，請聯繫客服。',
         quickReply: {
@@ -2336,12 +2338,13 @@ async function handleDemoGallery(userId) {
           ]
         }
       });
+      return;
     }
 
     // 如果數據庫沒有資料，提示需要在後台設定
     if (!demoItems || demoItems.length === 0) {
       console.log('⚠️ 示範圖集資料庫為空，需要在後台設定');
-      return getLineClient().pushMessage(userId, {
+      await getLineClient().pushMessage(userId, {
         type: 'text',
         text: '📭 目前尚無示範圖集\n\n請聯繫管理員在後台設定示範圖集，或直接輸入「創建貼圖」開始製作你的專屬貼圖！',
         quickReply: {
@@ -2352,26 +2355,55 @@ async function handleDemoGallery(userId) {
           ]
         }
       });
+      return;
     }
 
     // 生成從資料庫讀取的示範圖集
-    console.log(`✨ 成功讀取 ${demoItems.length} 個示範圖集項目，使用 pushMessage 發送`);
-    const message = generateDemoGalleryFromDB(demoItems);
-    return getLineClient().pushMessage(userId, message);
+    console.log(`✨ 成功讀取 ${demoItems.length} 個示範圖集項目`);
+    
+    // 驗證數據格式
+    const validItems = demoItems.filter(item => item.url && item.url.startsWith('http'));
+    if (validItems.length === 0) {
+      console.error('❌ 示範圖集中沒有有效的圖片 URL');
+      await getLineClient().pushMessage(userId, {
+        type: 'text',
+        text: '📭 示範圖集資料有誤\n\n請聯繫管理員檢查後台設定。',
+        quickReply: {
+          items: [
+            { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
+            { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } }
+          ]
+        }
+      });
+      return;
+    }
+    
+    console.log(`📤 使用 ${validItems.length} 個有效項目生成 Flex Message`);
+    const message = generateDemoGalleryFromDB(validItems);
+    
+    console.log('📤 發送示範圖集 pushMessage...');
+    await getLineClient().pushMessage(userId, message);
+    console.log('✅ 示範圖集發送成功');
 
   } catch (error) {
-    console.error('示範圖集處理失敗:', error);
+    console.error('❌ 示範圖集處理失敗:', error.message);
+    console.error('   詳細錯誤:', JSON.stringify(error, null, 2));
+    
     // 發生錯誤時使用 pushMessage
-    return getLineClient().pushMessage(userId, {
-      type: 'text',
-      text: '❌ 系統錯誤，請稍後再試\n\n如需協助，請輸入「客服」聯繫我們。',
-      quickReply: {
-        items: [
-          { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
-          { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } }
-        ]
-      }
-    });
+    try {
+      await getLineClient().pushMessage(userId, {
+        type: 'text',
+        text: '❌ 示範圖集載入失敗，請稍後再試\n\n如需協助，請輸入「客服」聯繫我們。',
+        quickReply: {
+          items: [
+            { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
+            { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } }
+          ]
+        }
+      });
+    } catch (pushError) {
+      console.error('❌ 發送錯誤訊息也失敗:', pushError.message);
+    }
   }
 }
 
