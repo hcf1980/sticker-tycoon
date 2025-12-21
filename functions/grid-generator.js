@@ -17,11 +17,13 @@
 const sharp = require('sharp');
 const axios = require('axios');
 const { generatePhotoStickerPromptV2 } = require('./sticker-styles');
+const { generateImageFromPhoto, getAIConfig } = require('./utils/ai-api-client');
 
-// AI API 設定
+// AI API 設定（保留供日誌使用）
 const AI_API_KEY = process.env.AI_IMAGE_API_KEY;
 const AI_API_URL = process.env.AI_IMAGE_API_URL || 'https://newapi.pockgo.com';
 const AI_MODEL = process.env.AI_MODEL || 'gemini-2.5-flash-image';
+const AI_MODEL_3 = process.env.AI_MODEL_3 || 'gemini-2.0-flash-exp-image-generation';
 
 // 6宮格設定（3列×2行）
 const GRID_CONFIG = {
@@ -282,101 +284,50 @@ function extractUrlFromText(text) {
 }
 
 /**
- * 🎯 生成 9宮格貼圖（單次 API 調用）
+ * 🎯 生成 6宮格貼圖（單次 API 調用，支援 Fallback）
  *
  * @param {string} photoBase64 - 照片 base64
  * @param {string} style - 風格
- * @param {Array<string>} expressions - 9 個表情
+ * @param {Array<string>} expressions - 6 個表情
  * @param {string} characterID - 角色一致性 ID
  * @param {object} options - 額外選項 { sceneConfig, framingId }
- * @returns {string} - 1024×1024 圖片的 URL 或 base64
+ * @returns {string} - 圖片的 URL 或 base64
  */
 async function generateGridImage(photoBase64, style, expressions, characterID, options = {}) {
   if (!AI_API_KEY) {
     throw new Error('AI_IMAGE_API_KEY 未設定');
   }
 
+  // 獲取 AI 設定資訊
+  const aiConfig = getAIConfig();
+
   console.log(`🎨 開始生成 6宮格貼圖（${style}風格）`);
   console.log(`📝 表情列表：${expressions.join(', ')}`);
-  console.log(`🔑 使用 API: ${AI_API_URL}, 模型: ${AI_MODEL}`);
+  console.log(`🔑 API URL: ${aiConfig.apiUrl}`);
+  console.log(`🤖 主要模型: ${aiConfig.primaryModel}`);
+  console.log(`🔄 備用模型: ${aiConfig.fallbackModel}`);
   console.log(`🎀 裝飾風格: ${options.sceneConfig?.name || '夢幻可愛'}`);
   console.log(`📐 構圖: ${options.framingId || 'halfbody'}`);
 
   const { prompt, negativePrompt } = generateGridPrompt(photoBase64, style, expressions, characterID, options);
   console.log(`📝 Prompt 長度: ${prompt.length} 字元`);
 
-  // 🆕 重試機制：最多嘗試 3 次
-  const maxRetries = 3;
-  let lastError = null;
+  try {
+    // 🆕 使用帶 Fallback 的 API 調用
+    console.log(`🚀 使用 AI API Client with Fallback...`);
+    
+    const imageUrl = await generateImageFromPhoto(photoBase64, prompt, {
+      maxRetries: 2,  // 每個模型嘗試 2 次
+      timeout: 120000
+    });
 
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      console.log(`🔄 嘗試第 ${attempt}/${maxRetries} 次...`);
+    console.log(`✅ 6宮格生成成功！圖片類型: ${imageUrl.startsWith('data:') ? 'base64' : 'URL'}`);
+    return imageUrl;
 
-      const response = await axios.post(
-        `${AI_API_URL}/v1/chat/completions`,
-        {
-          model: AI_MODEL,
-          messages: [
-            {
-              role: 'user',
-              content: [
-                {
-                  type: 'text',
-                  text: prompt
-                },
-                {
-                  type: 'image_url',
-                  image_url: {
-                    url: photoBase64.startsWith('data:') ? photoBase64 : `data:image/jpeg;base64,${photoBase64}`
-                  }
-                }
-              ]
-            }
-          ],
-          max_tokens: 4096
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${AI_API_KEY}`,
-            'Content-Type': 'application/json'
-          },
-          timeout: 120000
-        }
-      );
-
-      console.log(`📡 API 回應狀態: ${response.status}`);
-      console.log(`📡 API 回應結構: choices=${response.data?.choices?.length || 0}`);
-
-      const imageUrl = extractImageFromResponse(response);
-      console.log(`✅ 6宮格生成成功！圖片類型: ${imageUrl.startsWith('data:') ? 'base64' : 'URL'}`);
-      return imageUrl;
-
-    } catch (error) {
-      lastError = error;
-      console.error(`❌ 第 ${attempt} 次嘗試失敗:`, error.message);
-
-      if (error.response) {
-        console.error('API 回應狀態碼:', error.response.status);
-        console.error('API 錯誤詳情:', JSON.stringify(error.response.data).substring(0, 500));
-
-        // 如果是 400 錯誤（Empty Response），等待後重試
-        if (error.response.status === 400 && attempt < maxRetries) {
-          const waitTime = attempt * 3000; // 3秒、6秒、9秒
-          console.log(`⏳ 等待 ${waitTime / 1000} 秒後重試...`);
-          await new Promise(resolve => setTimeout(resolve, waitTime));
-          continue;
-        }
-      }
-
-      // 其他錯誤或最後一次嘗試，直接拋出
-      if (attempt === maxRetries) {
-        throw error;
-      }
-    }
+  } catch (error) {
+    console.error(`❌ 6宮格生成失敗（主備模型都失敗）:`, error.message);
+    throw error;
   }
-
-  throw lastError || new Error('生成失敗：未知錯誤');
 }
 
 /**

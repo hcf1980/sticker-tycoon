@@ -24,20 +24,29 @@ const {
   enhanceExpressions,
   buildEnhancedPrompt
 } = require('./deepseek-enhancer');
+const {
+  callAIWithFallback,
+  generateImage,
+  generateImageFromPhoto,
+  extractImageFromResponse: extractImageFromResponseV2,
+  getAIConfig,
+  delay
+} = require('./utils/ai-api-client');
 
-// AI 圖片生成 API 設定
+// AI 圖片生成 API 設定（保留供向後兼容）
 const AI_API_KEY = process.env.AI_IMAGE_API_KEY;
 const AI_API_URL = process.env.AI_IMAGE_API_URL || 'https://newapi.pockgo.com';
 const AI_MODEL = process.env.AI_MODEL || 'gemini-2.5-flash-image';
+const AI_MODEL_3 = process.env.AI_MODEL_3 || 'gemini-2.0-flash-exp-image-generation';
 
 // Retry 設定
 const MAX_RETRIES = 3;
 const INITIAL_RETRY_DELAY = 2000;
 
 /**
- * 延遲函數
+ * 延遲函數（已遷移到 ai-api-client.js，保留供向後兼容）
  */
-function delay(ms) {
+function localDelay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
@@ -257,7 +266,7 @@ async function generateStickerImage(style, characterDescription, expression) {
 
         if (attempt < MAX_RETRIES) {
           const delayMs = INITIAL_RETRY_DELAY * Math.pow(2, attempt - 1);
-          await delay(delayMs);
+          await localDelay(delayMs);
         }
       }
     }
@@ -308,7 +317,7 @@ async function generateStickerSet(style, characterDescription, expressions) {
 
     // 每張圖片之間稍微延遲，避免 API 限流
     if (i < expressions.length - 1) {
-      await delay(1000);
+      await localDelay(1000);
     }
   }
 
@@ -410,7 +419,7 @@ async function generateStickerSetFromPhoto(photoBase64, style, expressions, scen
 
     // 每張圖片之間稍微延遲，避免 API 限流
     if (i < expressions.length - 1) {
-      await delay(2000);
+      await localDelay(2000);
     }
   }
 
@@ -423,10 +432,12 @@ async function generateStickerSetFromPhoto(photoBase64, style, expressions, scen
 }
 
 /**
- * 🎨 使用 DeepSeek 優化的照片貼圖生成（V2.3 含場景+構圖支援）
+ * 🎨 使用 DeepSeek 優化的照片貼圖生成（V2.4 含場景+構圖支援+Fallback）
  */
 async function generateStickerFromPhotoEnhanced(photoBase64, style, expression, characterID, enhancedData, sceneConfig = null, framingConfig = null) {
+  const aiConfig = getAIConfig();
   console.log(`🎨 生成照片貼圖：${expression} (${style}風格, ${framingConfig?.name || '半身'}構圖)`);
+  console.log(`   🤖 主要模型: ${aiConfig.primaryModel}, 備用: ${aiConfig.fallbackModel}`);
 
   // 取得基礎 prompt（含場景配置和構圖設定）
   const { prompt: basePrompt, negativePrompt } = generatePhotoStickerPromptV2(style, expression, characterID, sceneConfig, framingConfig);
@@ -474,63 +485,22 @@ Generate the ${style} style ${framingName} sticker NOW.`;
 
   finalPrompt += absoluteRequirements;
 
-  // 建立帶有圖片的請求內容
-  const content = [
-    {
-      type: 'text',
-      text: finalPrompt
-    },
-    {
-      type: 'image_url',
-      image_url: {
-        url: photoBase64.startsWith('data:') ? photoBase64 : `data:image/jpeg;base64,${photoBase64}`
-      }
-    }
-  ];
+  try {
+    // 🆕 使用帶 Fallback 的 API 調用
+    console.log(`   🚀 使用 AI API Client with Fallback...`);
+    
+    const imageUrl = await generateImageFromPhoto(photoBase64, finalPrompt, {
+      maxRetries: 2,  // 每個模型嘗試 2 次
+      timeout: 120000
+    });
 
-  let lastError;
-  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-    try {
-      console.log(`   📤 API 請求 (嘗試 ${attempt}/${MAX_RETRIES})...`);
+    console.log(`   ✅ 生成成功！`);
+    return imageUrl;
 
-      const response = await axios.post(`${AI_API_URL}/v1/chat/completions`, {
-        model: AI_MODEL,
-        messages: [
-          {
-            role: 'user',
-            content: content
-          }
-        ],
-        max_tokens: 4096
-      }, {
-        headers: {
-          'Authorization': `Bearer ${AI_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        timeout: 120000
-      });
-
-      const imageUrl = extractImageFromResponse(response);
-      console.log(`   ✅ 生成成功！`);
-      return imageUrl;
-
-    } catch (error) {
-      lastError = error;
-      console.error(`   ❌ 嘗試 ${attempt} 失敗: ${error.message}`);
-
-      if (error.response) {
-        console.error(`   API 錯誤詳情: ${JSON.stringify(error.response.data).substring(0, 200)}`);
-      }
-
-      if (attempt < MAX_RETRIES) {
-        const waitTime = INITIAL_RETRY_DELAY * Math.pow(2, attempt - 1);
-        console.log(`   ⏳ 等待 ${waitTime}ms 後重試...`);
-        await delay(waitTime);
-      }
-    }
+  } catch (error) {
+    console.error(`   ❌ 生成失敗（主備模型都失敗）: ${error.message}`);
+    throw new Error(`生成失敗: ${error.message}`);
   }
-
-  throw new Error(`生成失敗（已重試 ${MAX_RETRIES} 次）: ${lastError.message}`);
 }
 
 module.exports = {
