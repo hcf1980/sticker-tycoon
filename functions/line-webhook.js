@@ -2316,6 +2316,7 @@ async function checkAndSendTutorial(userId) {
 async function handleDemoGallery(userId) {
   try {
     // 從數據庫讀取示範圖集（限制 10 張）
+    // 按 display_order 升序排列（最前面的 display_order=0 是最新加入的）
     const { data: demoItems, error } = await supabase
       .from('demo_gallery')
       .select('*')

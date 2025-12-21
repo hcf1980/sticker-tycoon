@@ -297,8 +297,9 @@
         return;
       }
 
-      demoGallery.push(demoItem);
-      alert('已加入示範圖集！');
+      // 新加入的項目放在最前面（最新優先）
+      demoGallery.unshift(demoItem);
+      alert('已加入示範圖集！（最新的會顯示在最前面）');
 
       // 自動切換到示範圖集分頁
       document.querySelectorAll('.tab-btn').forEach(b => {

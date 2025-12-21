@@ -23,6 +23,7 @@ exports.handler = async (event, context) => {
 
     // GET - 獲取當前示範圖集
     if (method === 'GET') {
+      // 按 display_order 升序排列（最前面的 display_order=0 是最新加入的）
       const { data, error } = await supabase
         .from('demo_gallery')
         .select('*')
