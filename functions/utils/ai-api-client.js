@@ -15,7 +15,7 @@ const axios = require('axios');
 const AI_API_KEY = process.env.AI_IMAGE_API_KEY;
 const AI_API_URL = process.env.AI_IMAGE_API_URL || 'https://newapi.pockgo.com';
 const AI_MODEL_PRIMARY = process.env.AI_MODEL || 'gemini-2.5-flash-image';
-const AI_MODEL_FALLBACK = process.env.AI_MODEL_3 || 'gemini-2.0-flash-exp-image-generation';
+const AI_MODEL_FALLBACK = process.env.AI_MODEL_3 || 'gemini-3-pro-image-preview-2k';
 
 // 預設設定
 const DEFAULT_TIMEOUT = 120000; // 2 分鐘

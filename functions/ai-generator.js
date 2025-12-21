@@ -37,7 +37,7 @@ const {
 const AI_API_KEY = process.env.AI_IMAGE_API_KEY;
 const AI_API_URL = process.env.AI_IMAGE_API_URL || 'https://newapi.pockgo.com';
 const AI_MODEL = process.env.AI_MODEL || 'gemini-2.5-flash-image';
-const AI_MODEL_3 = process.env.AI_MODEL_3 || 'gemini-2.0-flash-exp-image-generation';
+const AI_MODEL_3 = process.env.AI_MODEL_3 || 'gemini-3-pro-image-preview-2k';
 
 // Retry 設定
 const MAX_RETRIES = 3;
