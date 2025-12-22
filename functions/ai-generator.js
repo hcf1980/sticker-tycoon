@@ -356,8 +356,9 @@ async function generateStickerSetFromPhoto(photoBase64, style, expressions, scen
   }
 
   // 🧠 使用 DeepSeek 動態優化表情描述（含場景）
+  // 可透過環境變數 ENABLE_DEEPSEEK=false 關閉以節省 Prompt 長度
   let enhancedData = null;
-  const USE_DEEPSEEK = true;
+  const USE_DEEPSEEK = process.env.ENABLE_DEEPSEEK !== 'false';
 
   if (USE_DEEPSEEK && isDeepSeekAvailable()) {
     try {
@@ -458,32 +459,15 @@ Expression detail: ${enhancedExpression}`;
     }
   }
 
-  // 取得構圖相關的最終指示
-  const framingName = framingConfig?.name || '半身';
-  const framingFocus = framingConfig?.characterFocus || 'upper body, waist up';
-
-  // 🔒 極簡最終要求（放在最後）- 加入禁止圓框和構圖指示
+  // [object Object]8.0 極簡最終要求（移除重複，只保留關鍵提醒）
   const absoluteRequirements = `
 
-=== 🔒 FINAL OUTPUT REQUIREMENTS ===
-1. BACKGROUND: 100% TRANSPARENT (alpha=0) - NO white, NO gray, NO color
-2. T-SHIRT: Solid pure white (#FFFFFF) - NO patterns, NO stripes
-3. CHARACTER: Same as photo, ID: ${characterID}
-4. STYLE: Apply ${style} style distinctly
-5. OUTLINES: Thick black (2-3px)
-6. FRAMING: ${framingName}構圖 - ${framingFocus}
-7. TEXT: NONE
-8. NO FRAMES: NO circular frame, NO border, NO avatar style, NO vignette
-
-CRITICAL:
-- Background MUST be transparent (PNG cutout style)
-- Character must be FREE-FLOATING, NO circular frames
-- STRICTLY follow ${framingName} framing: ${framingFocus}
-- Skin tone MUST be warm peachy-beige, consistent across all stickers
-
-Generate the ${style} style ${framingName} sticker NOW.`;
+CRITICAL: Transparent BG (alpha=0), NO white/gray, NO circular frames, Character ID:${characterID} same face, warm peachy skin tone consistent`;
 
   finalPrompt += absoluteRequirements;
+
+  // 📊 記錄實際 Prompt 長度
+  console.log(`   📏 Prompt 長度: ${finalPrompt.length} 字元`);
 
   try {
     // 🆕 使用帶 Fallback 的 API 調用

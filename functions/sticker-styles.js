@@ -41,14 +41,14 @@ const StyleEnhancer = {
     reference: "beauty influencer selfie, professional portrait photography, high-end beauty ads"
   },
   cute: {
-    coreStyle: "(((KAWAII CHIBI ILLUSTRATION STYLE))) - Sanrio/Line Friends character design, super deformed proportions",
-    lighting: "soft ambient lighting, gentle bounce light, warm glow, no harsh shadows",
-    composition: "round composition, oversized head (head:body = 1:1 ratio), huge sparkling eyes (40% of face), centered, thick outline",
-    brushwork: "smooth soft shading, glossy highlights, clean edges, rounded everything",
-    mood: "warm cozy atmosphere, heartwarming feeling, adorable charm",
-    colorPalette: "pastel pink, baby blue, mint green, lavender, soft yellows",
-    forbidden: "realistic, detailed anatomy, sharp edges, dark colors, gritty textures",
-    reference: "Pusheen, Molang, Rilakkuma, Line Friends, Sanrio characters"
+    coreStyle: "Kawaii chibi style, Sanrio/Line Friends design",
+    lighting: "soft ambient, warm glow",
+    composition: "oversized head 1:1, big eyes 40% face, centered",
+    brushwork: "smooth shading, glossy, rounded",
+    mood: "warm cozy, adorable",
+    colorPalette: "pastel pink, baby blue, mint, lavender",
+    forbidden: "realistic, sharp edges, dark colors",
+    reference: "Pusheen, Molang, Sanrio"
   },
   cool: {
     coreStyle: "(((URBAN STREET STYLE ILLUSTRATION))) - Cyberpunk neon aesthetic, edgy modern design",
@@ -276,17 +276,8 @@ const StickerStyles = {
     name: '美顏真實',
     emoji: '📸',
     description: '美顏相機風、細緻柔膚、自然美感',
-    promptBase: `
-      beauty camera style portrait, soft airbrushed skin texture,
-      natural beauty enhancement, flawless complexion, youthful glow,
-      soft diffused lighting, gentle skin smoothing, refined facial features,
-      warm healthy skin tone, subtle makeup look, naturally beautiful
-    `,
-    negativePrompt: `
-      cartoon, anime, chibi, pixel art, doodle,
-      harsh shadows, rough skin texture, exaggerated features,
-      blurry, low quality, distorted proportions
-    `
+    promptBase: `beauty camera portrait, soft airbrushed skin, natural enhancement, flawless, youthful glow`,
+    negativePrompt: `cartoon, anime, chibi, harsh shadows, rough skin, blurry, low quality`
   },
 
   cute: {
@@ -294,15 +285,8 @@ const StickerStyles = {
     name: '可愛風',
     emoji: '🥰',
     description: '圓潤可愛、大眼睛、療癒系',
-    promptBase: `
-      cute kawaii chibi style, rounded shapes, oversized sparkling eyes,
-      soft pastel palette, glossy highlights, warm ambient lighting,
-      thick clean outline, high charm factor, simplified sticker-friendly composition
-    `,
-    negativePrompt: `
-      realistic, scary, dark, horror, violent,
-      cluttered background, detailed scenery, text, watermark
-    `
+    promptBase: `kawaii chibi, rounded, big sparkling eyes, pastel colors, glossy, thick outline`,
+    negativePrompt: `realistic, scary, dark, horror, violent, cluttered background, text, watermark`
   },
 
   cool: {
@@ -310,15 +294,8 @@ const StickerStyles = {
     name: '酷炫風',
     emoji: '😎',
     description: '帥氣、動感、潮流感',
-    promptBase: `
-      cool stylish character, bold neon colors, dramatic rim light,
-      dynamic action pose, street-fashion vibes,
-      sharp outline, high contrast shading, energetic composition
-    `,
-    negativePrompt: `
-      cute, childish, boring, static pose,
-      realism, dull colors, low contrast
-    `
+    promptBase: `cool stylish, bold neon colors, dramatic rim light, dynamic pose, street-fashion, sharp outline`,
+    negativePrompt: `cute, childish, boring, static, dull colors, low contrast`
   },
 
   funny: {
@@ -326,16 +303,8 @@ const StickerStyles = {
     name: '搞笑風',
     emoji: '🤣',
     description: '誇張表情、幽默感、搞怪',
-    promptBase: `
-      funny cartoon style, exaggerated facial expressions (not distorted face),
-      comedic timing pose, playful proportions, meme-style humor,
-      bold lines, bright punchy colors, high emotional clarity
-    `,
-    negativePrompt: `
-      serious, realistic anatomy, elegant style,
-      low energy, subtle expression,
-      distorted face, warped features, deformed proportions
-    `
+    promptBase: `funny cartoon, exaggerated expressions, comedic pose, playful, meme-style, bold lines, bright colors`,
+    negativePrompt: `serious, realistic anatomy, elegant, low energy, distorted face, warped, deformed`
   },
 
   simple: {
@@ -343,15 +312,8 @@ const StickerStyles = {
     name: '簡約風',
     emoji: '✨',
     description: '線條簡潔、極簡設計、清新',
-    promptBase: `
-      minimalist flat line art style, soft clean lines,
-      super simple shapes, limited calm color palette,
-      modern graphic-design look, high readability sticker design
-    `,
-    negativePrompt: `
-      detailed, textured, realistic shading,
-      busy composition, gradients
-    `
+    promptBase: `minimalist flat line art, soft clean lines, simple shapes, limited colors, modern graphic design`,
+    negativePrompt: `detailed, textured, realistic shading, busy, gradients`
   },
 
   anime: {
@@ -359,15 +321,8 @@ const StickerStyles = {
     name: '動漫風',
     emoji: '🎌',
     description: '日系動漫、漫畫風格',
-    promptBase: `
-      anime manga style, vivid cel shading, expressive anime eyes,
-      clean dynamic outlines, saturated colors, high energy pose,
-      iconic anime highlight, polished character silhouette
-    `,
-    negativePrompt: `
-      3D render, western cartoon, realism,
-      grainy shading, muddy colors
-    `
+    promptBase: `anime manga, vivid cel shading, expressive anime eyes, dynamic outlines, saturated colors, anime highlight`,
+    negativePrompt: `3D render, western cartoon, realism, grainy, muddy colors`
   },
 
   pixel: {
@@ -375,15 +330,8 @@ const StickerStyles = {
     name: '像素風',
     emoji: '👾',
     description: '復古像素、8-bit 風格',
-    promptBase: `
-      pixel art 8-bit retro style, clean pixel clusters,
-      nostalgic game palette, center simple shape,
-      clear silhouette, limited color blocks, crisp pixel edges
-    `,
-    negativePrompt: `
-      smooth gradient, high resolution shading,
-      anti-aliased edges, realistic textures
-    `
+    promptBase: `pixel art 8-bit retro, clean pixel clusters, nostalgic game palette, simple shape, crisp edges`,
+    negativePrompt: `smooth gradient, high resolution, anti-aliased, realistic textures`
   },
 
   sketch: {
@@ -391,26 +339,8 @@ const StickerStyles = {
     name: '素描風',
     emoji: '✏️',
     description: '逼真鉛筆素描、藝術質感',
-    promptBase: `
-      hyperrealistic graphite pencil portrait drawing,
-      fine art museum quality pencil sketch,
-      detailed cross-hatching and smooth gradient shading,
-      visible pencil strokes and texture on paper grain,
-      masterful tonal values from deep black to subtle gray,
-      professional artist hand-drawn portrait,
-      precise anatomical features with artistic interpretation,
-      single directional dramatic lighting creating depth,
-      elegant monochromatic grayscale palette,
-      high contrast shadow mapping,
-      soft edges blending into paper texture,
-      classical portrait composition
-    `,
-    negativePrompt: `
-      colored, vibrant colors, digital art, cartoon, anime,
-      watercolor, oil painting, 3D render, photograph,
-      blurry, smudged, messy, childish doodle,
-      flat shading, cel shading, vector art
-    `
+    promptBase: `hyperrealistic graphite pencil portrait, fine art sketch, cross-hatching, smooth gradient shading, visible pencil strokes, paper texture, deep black to subtle gray, dramatic lighting, monochromatic grayscale`,
+    negativePrompt: `colored, vibrant, digital art, cartoon, anime, watercolor, oil painting, 3D, blurry, messy`
   }
 };
 
@@ -746,13 +676,11 @@ function generateStickerPromptV2(style, characterDescription, expression) {
     LARGE dominant figure with minimal empty space,
     Character should nearly touch the safe margins,
     NO tiny character - must be IMPACTFUL at small display size,
-
     high-charm factor, expressive pose,
     LINE-sticker optimized clarity,
     transparent background,
     sticker illustration, high readability,
     thick clean outline, vector-friendly quality,
-    visually iconic mascot design,
     single character only
   `.replace(/\s+/g, ' ').trim();
 
@@ -764,8 +692,8 @@ function generateStickerPromptV2(style, characterDescription, expression) {
     inconsistent character features, deformed, bad anatomy,
     low-resolution, blurry, pixelated, jpeg artifacts,
     border, frame, logo, words, letters, caption,
-    tiny character, small figure, excessive whitespace, too much empty space,
-    character too small, miniature figure, distant shot
+    tiny character, excessive whitespace, too much empty space,
+    distant shot
   `.replace(/\s+/g, ' ').trim();
 
   return {
@@ -776,19 +704,25 @@ function generateStickerPromptV2(style, characterDescription, expression) {
 }
 
 /**
- * 🎯 生成照片貼圖的優化 Prompt V7.0（超精簡版）
+ * 🎯 生成照片貼圖的優化 Prompt V8.0（真・超精簡版）
  * - 透明背景
  * - 風格差異化（簡化版）
  * - 角色一致性
  * - POP文字 + 裝飾元素支援
  * - 人物構圖選擇（全身/半身/大頭/特寫）
  *
- * ✨ 優化: 從 1300字 → 700字，提高 AI 效能
+ * ✨ 優化: 實際控制在 ~600-700 字元（含 DeepSeek 增強後 ~900 字元）
  * 📊 精簡策略：
- *   - 移除冗長說明文字
- *   - 合併重複規則
- *   - 只保留核心參數
- *   - 使用更簡潔的表達
+ *   - 移除所有 emoji 標題（節省 ~50 字元）
+ *   - 移除重複說明（節省 ~200 字元）
+ *   - 使用縮寫和簡潔表達（節省 ~300 字元）
+ *   - 合併相似規則（節省 ~100 字元）
+ *   - 精簡 absoluteRequirements（節省 ~700 字元）
+ *
+ * 📏 實測長度：
+ *   - 基礎 Prompt: ~600-700 字元
+ *   - + DeepSeek: ~900 字元
+ *   - + absoluteRequirements: ~1,000 字元（總計）
  */
 function generatePhotoStickerPromptV2(style, expression, characterID = null, sceneConfig = null, framingConfig = null) {
   const styleConfig = StickerStyles[style] || StickerStyles.cute;
@@ -812,43 +746,26 @@ function generatePhotoStickerPromptV2(style, expression, characterID = null, sce
   // 裝飾風格配置（精簡版）
   const decoration = sceneConfig || SceneTemplates.none;
 
-  // 精簡的 POP 文字
-  const popTextPrompt = popText ? `\nPOP TEXT: "${popText}" (${decoration.popTextStyle || 'bold colorful'})` : '';
-
-  // 精簡的構圖指示（根據資料庫設定自動選擇完整版或精簡版）
+  // 精簡的構圖指示
   const framingPrompt = getFramingPrompt(framing);
 
-  const prompt = `LINE sticker from photo: ${styleConfig.promptBase}
+  // [object Object]極簡 Prompt（移除所有冗餘）
+  const prompt = `LINE sticker 370x320px: ${styleConfig.promptBase}
 
-🎨 STYLE: ${styleEnhance.coreStyle}
-Lighting: ${styleEnhance.lighting} | ${styleEnhance.mood}
+${styleEnhance.coreStyle}
+Light: ${styleEnhance.lighting}
 Colors: ${styleEnhance.colorPalette}
 Avoid: ${styleEnhance.forbidden}
 
-😊 EXPRESSION: ${expression}
-${actionDesc}
-Clear pose, readable at small size${popTextPrompt}
+${expression}: ${actionDesc}${popText ? ` "${popText}"` : ''}
+Deco: ${decorations}${decoration.decorationElements?.length > 0 ? ', ' + decoration.decorationElements.slice(0, 2).join(', ') : ''}
 
-🎀 DECORATIONS: ${decorations || 'sparkles, hearts'}
-${decoration.decorationElements?.slice(0, 2).join(', ') || ''}
-${decoration.decorationStyle || 'minimal'}
-Dynamic layout, varied sizes
-
-👤 CHARACTER (ID: ${characterID || 'default'}):
-- Copy exact face/hair from photo
-- Colorful casual outfit
-- Consistent across set
-
-🖼️ FRAMING: ${framing.name.toUpperCase()}
+ID:${characterID || 'default'} - Same face from photo
 ${framingPrompt}
 
-📐 SIZE: 370x320px LINE sticker
-- Character fills 85-90% of frame
-- 10px safe margin
-- Transparent background (alpha=0)
-- Thick outlines for small size
+Transparent BG, 85-90% fill, thick outlines`;
 
-OUTPUT: ${styleConfig.name} style, transparent BG, 370x320px`;
+  console.log(`📏 Prompt 長度: ${prompt.length} 字元`);
 
   const negativePrompt = `${styleEnhance.forbidden}, white/gray background, circular frame, tiny character, excessive whitespace, blurry, low quality, inconsistent face`;
 
