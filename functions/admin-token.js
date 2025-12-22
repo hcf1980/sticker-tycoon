@@ -163,11 +163,11 @@ async function adjustTokens(db, body) {
 
   if (updateError) throw updateError;
 
-  // 如果是增加代幣，同步更新 token_ledger（含有效期 365 天）
+  // 如果是增加代幣，同步更新 token_ledger（含有效期 30 天）
   if (txAmount > 0) {
     const now = new Date();
     const expiresAt = new Date(now);
-    expiresAt.setDate(expiresAt.getDate() + 365); // 365 天後過期
+    expiresAt.setDate(expiresAt.getDate() + 30); // 30 天後過期
 
     await db.from('token_ledger').insert([{
       user_id: lineUserId,
@@ -189,7 +189,7 @@ async function adjustTokens(db, body) {
 
   // 記錄交易
   const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + 365);
+  expiresAt.setDate(expiresAt.getDate() + 30);
 
   await db.from('token_transactions').insert([{
     user_id: lineUserId,

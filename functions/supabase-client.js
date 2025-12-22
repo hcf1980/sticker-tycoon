@@ -146,7 +146,7 @@ async function getOrCreateUser(lineUserId, displayName = null, pictureUrl = null
     if (newUser) {
       const now = new Date();
       const expiresAt = new Date(now);
-      expiresAt.setDate(expiresAt.getDate() + 365); // 365 天後過期
+      expiresAt.setDate(expiresAt.getDate() + 30); // 30 天後過期
 
       // 記錄到 token_transactions
       recordTokenTransaction(lineUserId, 40, 40, 'initial', '新用戶贈送 40 代幣', null, null, expiresAt.toISOString())
@@ -925,10 +925,10 @@ async function addTokens(lineUserId, amount, type, description, adminNote = null
 
     if (updateError) throw updateError;
 
-    // 計算到期時間（365 天後）
+    // 計算到期時間（30 天後）
     const now = new Date();
     const expiresAt = new Date(now);
-    expiresAt.setDate(expiresAt.getDate() + 365);
+    expiresAt.setDate(expiresAt.getDate() + 30);
 
     // 同步更新 token_ledger（用於有效期追蹤和 FIFO 扣款）
     await supabase

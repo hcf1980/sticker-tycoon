@@ -2695,7 +2695,7 @@ async function handlePurchaseInfo(replyToken) {
     };
   };
 
-  // 方案輪播
+  // 方案輪播（只保留 300 元和 500 元兩個方案）
   const planCarousel = {
     type: 'flex',
     altText: '🛒 購買代幣方案',
@@ -2703,8 +2703,7 @@ async function handlePurchaseInfo(replyToken) {
       type: 'carousel',
       contents: [
         createPlanBubble(300, 70, 10, false),
-        createPlanBubble(500, 130, 30, true),
-        createPlanBubble(1000, 300, 100, false)
+        createPlanBubble(500, 130, 30, true)
       ]
     }
   };
@@ -2946,7 +2945,7 @@ async function handlePurchaseGuide(replyToken) {
                   { type: 'text', text: '⏰', size: 'lg', flex: 0, margin: 'none' },
                   {
                     type: 'text',
-                    text: '代幣有效期（365天）',
+                    text: '代幣有效期（30天）',
                     size: 'sm',
                     color: '#555555',
                     margin: 'md',
