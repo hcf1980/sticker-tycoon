@@ -5,8 +5,10 @@
  * 環境變數設定（Netlify）：
  * - AI_IMAGE_API_KEY: API 金鑰
  * - AI_IMAGE_API_URL: API 基礎 URL
- * - AI_MODEL: 主要模型（例如 gemini-2.5-flash-image）
- * - AI_MODEL_3: 備用模型（例如 gemini-2.0-flash-exp-image-generation）
+ * - AI_MODEL_3: 主要模型（優先使用，例如 gemini-3-pro-image-preview-2k）
+ * - AI_MODEL: 備用模型（AI_MODEL_3 失敗時使用，例如 gemini-2.5-flash-image）
+ * 
+ * 調用順序：AI_MODEL_3 → AI_MODEL
  */
 
 const axios = require('axios');
@@ -14,8 +16,9 @@ const axios = require('axios');
 // 從環境變數讀取設定
 const AI_API_KEY = process.env.AI_IMAGE_API_KEY;
 const AI_API_URL = process.env.AI_IMAGE_API_URL || 'https://newapi.pockgo.com';
-const AI_MODEL_PRIMARY = process.env.AI_MODEL || 'gemini-2.5-flash-image';
-const AI_MODEL_FALLBACK = process.env.AI_MODEL_3 || 'gemini-3-pro-image-preview-2k';
+// 🔄 調用順序：AI_MODEL_3 優先，AI_MODEL 備用
+const AI_MODEL_PRIMARY = process.env.AI_MODEL_3 || 'gemini-3-pro-image-preview-2k';
+const AI_MODEL_FALLBACK = process.env.AI_MODEL || 'gemini-2.5-flash-image';
 
 // 預設設定
 const DEFAULT_TIMEOUT = 120000; // 2 分鐘

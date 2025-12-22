@@ -114,25 +114,59 @@ function generateGridPrompt(photoBase64, style, expressions, characterID, option
     };
   });
 
-  // 建立格子描述（6格版）- 極簡版
-  const cellDescriptions = expressionDetails.map(e => 
-    `${e.cell}."${e.popText}"`
-  ).join(' ');
+  // 建立格子描述（6格版）- 簡化版
+  const cellDescriptions = expressionDetails.map(e =>
+    `${e.cell}. ${e.expression}${e.popText ? ` "${e.popText}"` : ''}`
+  ).join(', ');
 
-  // 🎀 v6 極簡 Prompt - 減少 token 消耗，提高成功率
-  const prompt = `Create 3x2 sticker grid from photo. ${styleConfig.name} style.
+  // 🎀 裝飾風格設定（使用用戶選擇的裝飾風格）
+  const decorationStyle = scene.decorationStyle || 'minimal decorations, clean design';
+  const decorationElements = scene.decorationElements?.length > 0
+    ? scene.decorationElements.join(', ')
+    : 'sparkles, small hearts';
+  const popTextStyle = scene.popTextStyle || 'simple clean text, small font';
 
-SAME PERSON in all 6 cells. ${framing.name} view. White BG. Black outline 2-3px.
+  // 簡化版 Prompt v5 - 提高生成質量（使用用戶選擇的裝飾風格）
+  const prompt = `Create a 3x2 sticker grid (6 cells) from this photo.
 
-6 expressions (繁體中文 text): ${cellDescriptions}
+CRITICAL: Use the EXACT SAME PERSON in all 6 cells. Keep facial features identical.
 
-Rules: identical face, centered, head visible, no grid lines, clean art.`;
+STYLE: ${styleConfig.name}
 
-  // 📊 記錄 prompt 長度
-  console.log(`📏 Grid Prompt 長度: ${prompt.length} 字元`);
+6 EXPRESSIONS:
+${cellDescriptions}
 
-  // negativePrompt 已不使用，但保留介面兼容
-  const negativePrompt = '';
+⚠️ IMPORTANT - TEXT LANGUAGE:
+- ALL text in the stickers MUST be in Traditional Chinese (繁體中文)
+- DO NOT use English text
+- Use the exact Chinese text provided for each expression
+- Text should be: ${expressionDetails.map(e => `"${e.popText}"`).join(', ')}
+
+REQUIREMENTS:
+- Same person in all cells (identical face, eyes, nose, mouth)
+- ${framing.name} view
+- Character centered in each cell
+- Head fully visible
+- White background
+- Black outline around character (2-3px)
+- No grid lines between cells
+- Clean artwork, no artifacts
+
+DECORATION STYLE: ${decorationStyle}
+DECORATION ELEMENTS: ${decorationElements}
+POP TEXT STYLE: ${popTextStyle}
+
+OUTPUT: 3x2 grid with 6 stickers of the SAME PERSON with different expressions.
+TEXT MUST BE IN TRADITIONAL CHINESE (繁體中文), NOT ENGLISH.`;
+
+  const negativePrompt = `distorted face, warped features, deformed face, stretched face,
+wrong number of fingers, extra fingers, missing fingers,
+asymmetrical face, uneven features, lopsided face,
+melting face, dissolving features, blended faces,
+different people, multiple faces, changing person,
+grid lines, borders, frames,
+checkered background, transparency grid,
+blurry, low quality, artifacts, stray pixels`;
 
   return { prompt, negativePrompt };
 }
