@@ -1,17 +1,19 @@
 /**
- * Grid Generator Module v2.0
- * 6宮格批次生成系統 - 配合 AI 生成的 16:9 圖片
+ * Grid Generator Module v2.1
+ * 6宮格批次生成系統 - 自動適配不同 AI 模型輸出
  *
  * 核心概念：
- * - AI 傾向生成 1365×768 (約 16:9) 的圖片
- * - 自動裁切成 3列×2行 = 6 張獨立貼圖（370×320）
+ * - 支援不同 AI 模型的輸出比例：
+ *   - 橫向圖片（16:9）→ 3列×2行
+ *   - 縱向圖片（3:4）→ 2列×3行
+ * - 智能判斷最佳裁切方式，確保每格接近正方形
+ * - 自動裁切成 6 張獨立貼圖（370×320）
  * - 每張內容區 350×300，留白 10px
  * - 每 6 張消耗 3 代幣
  *
  * 套餐選項：
  * - 基本：6 張 = 3 代幣（1 次 API）
  * - 標準：12 張 = 6 代幣（2 次 API）
- * - 豪華：18 張 = 9 代幣（3 次 API）
  */
 
 const sharp = require('sharp');
@@ -126,14 +128,15 @@ function generateGridPrompt(photoBase64, style, expressions, characterID, option
     : 'sparkles, small hearts';
   const popTextStyle = scene.popTextStyle || 'simple clean text, small font';
 
-  // 簡化版 Prompt v5 - 提高生成質量（使用用戶選擇的裝飾風格）
-  const prompt = `Create a 3x2 sticker grid (6 cells) from this photo.
+  // 簡化版 Prompt v6 - 支援不同 AI 模型的輸出比例
+  const prompt = `Create a 6-cell sticker grid from this photo.
+The grid can be 3x2 (3 columns, 2 rows) or 2x3 (2 columns, 3 rows) - choose what works best.
 
 CRITICAL: Use the EXACT SAME PERSON in all 6 cells. Keep facial features identical.
 
 STYLE: ${styleConfig.name}
 
-6 EXPRESSIONS:
+6 EXPRESSIONS (arrange in grid order, left to right, top to bottom):
 ${cellDescriptions}
 
 ⚠️ IMPORTANT - TEXT LANGUAGE:
@@ -146,6 +149,7 @@ REQUIREMENTS:
 - Same person in all cells (identical face, eyes, nose, mouth)
 - ${framing.name} view
 - Character centered in each cell
+- Each cell should be approximately square
 - Head fully visible
 - White background
 - Black outline around character (2-3px)
@@ -156,7 +160,7 @@ DECORATION STYLE: ${decorationStyle}
 DECORATION ELEMENTS: ${decorationElements}
 POP TEXT STYLE: ${popTextStyle}
 
-OUTPUT: 3x2 grid with 6 stickers of the SAME PERSON with different expressions.
+OUTPUT: 6 stickers of the SAME PERSON with different expressions arranged in a grid.
 TEXT MUST BE IN TRADITIONAL CHINESE (繁體中文), NOT ENGLISH.`;
 
   const negativePrompt = `distorted face, warped features, deformed face, stretched face,
@@ -605,18 +609,19 @@ async function detectContentBounds(imageBuffer) {
 }
 
 /**
- * ✂️ 裁切 6宮格為獨立貼圖（v2 - 3列×2行）
+ * ✂️ 裁切 6宮格為獨立貼圖（v2.1 - 自動適配比例）
  *
  * 功能：
- * - 自動偵測 3×2 網格（配合 AI 生成的 16:9 圖片）
+ * - 智能偵測網格排列（3×2 或 2×3）
+ * - 支援不同 AI 模型的輸出比例
  * - 每張固定輸出 370×320 像素
  * - 棋盤格背景自動移除
  *
- * @param {Buffer|string} gridImage - 3×2 網格圖片（Buffer 或 URL）
+ * @param {Buffer|string} gridImage - 6 格網格圖片（Buffer 或 URL）
  * @returns {Array<Buffer>} - 6 張 370×320 的貼圖 Buffer
  */
 async function cropGridToStickers(gridImage) {
-  console.log(`✂️ 開始裁切 6宮格（3列×2行）...`);
+  console.log(`✂️ 開始裁切 6宮格（智能判斷排列方式）...`);
 
   // 下載圖片（如果是 URL）
   let imageBuffer;
@@ -672,14 +677,52 @@ async function cropGridToStickers(gridImage) {
   const aspectRatio = imageWidth / imageHeight;
   console.log(`📊 寬高比: ${aspectRatio.toFixed(2)}`);
 
-  // 🆕 固定使用 3列×2行 佈局
-  const gridCols = 3;
-  const gridRows = 2;
+  // 🆕 智能判斷網格排列方式（根據圖片比例自動適配不同 AI 模型）
+  // - 橫向圖片（寬 > 高）→ 3列×2行
+  // - 縱向圖片（高 > 寬）→ 2列×3行
+  // - 接近正方形 → 比較哪種排列讓每格更接近正方形
+  let gridCols, gridRows;
+
+  if (aspectRatio > 1.2) {
+    // 明顯橫向圖片：3列×2行
+    gridCols = 3;
+    gridRows = 2;
+    console.log(`📐 檢測為橫向圖片，使用 3列×2行`);
+  } else if (aspectRatio < 0.83) {
+    // 明顯縱向圖片：2列×3行
+    gridCols = 2;
+    gridRows = 3;
+    console.log(`📐 檢測為縱向圖片，使用 2列×3行`);
+  } else {
+    // 接近正方形：比較兩種排列，選擇讓每格更接近正方形的
+    const option1CellRatio = (imageWidth / 3) / (imageHeight / 2); // 3×2
+    const option2CellRatio = (imageWidth / 2) / (imageHeight / 3); // 2×3
+    
+    // 計算每格與正方形（比例 1）的差距
+    const diff1 = Math.abs(option1CellRatio - 1);
+    const diff2 = Math.abs(option2CellRatio - 1);
+    
+    if (diff1 <= diff2) {
+      gridCols = 3;
+      gridRows = 2;
+      console.log(`📐 接近正方形，選擇 3列×2行（每格比例 ${option1CellRatio.toFixed(2)}）`);
+    } else {
+      gridCols = 2;
+      gridRows = 3;
+      console.log(`📐 接近正方形，選擇 2列×3行（每格比例 ${option2CellRatio.toFixed(2)}）`);
+    }
+  }
 
   // 計算每格大小（精確除以行列數）
   const cellWidth = Math.floor(imageWidth / gridCols);
   const cellHeight = Math.floor(imageHeight / gridRows);
   console.log(`📏 格子大小: ${cellWidth}×${cellHeight}（${gridCols}列×${gridRows}行）`);
+  
+  // 驗證格子比例是否合理（正常應該接近正方形）
+  const cellRatio = cellWidth / cellHeight;
+  if (cellRatio < 0.5 || cellRatio > 2) {
+    console.warn(`⚠️ 警告：格子比例 ${cellRatio.toFixed(2)} 偏離正方形較多，可能影響貼圖品質`);
+  }
 
   const results = [];
   const { output } = GRID_CONFIG;
@@ -831,7 +874,8 @@ async function cropGridToStickers(gridImage) {
   }
 
   const successCount = results.filter(r => r.status === 'completed').length;
-  console.log(`✅ 裁切完成：${successCount}/6 成功`);
+  const totalCells = gridCols * gridRows;
+  console.log(`✅ 裁切完成：${successCount}/${totalCells} 成功（${gridCols}列×${gridRows}行）`);
 
   return results;
 }
