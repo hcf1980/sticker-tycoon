@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>登入 - Sticker Tycoon</title>
+  <link rel="stylesheet" href="app.css">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+  <div class="auth-page">
+    <div class="auth-card card animate-fadeIn">
+      <div class="auth-header">
+        <div class="auth-logo">🎨 Sticker Tycoon</div>
+        <h1 class="auth-title">歡迎回來</h1>
+        <p class="auth-subtitle">登入您的帳號繼續創作</p>
+      </div>
+
+      <div id="alert-container"></div>
+
+      <form id="login-form">
+        <div class="form-group">
+          <label class="form-label" for="email">Email</label>
+          <input 
+            type="email" 
+            id="email" 
+            class="form-control" 
+            placeholder="your@email.com"
+            required
+            autocomplete="email"
+          >
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">密碼</label>
+          <input 
+            type="password" 
+            id="password" 
+            class="form-control" 
+            placeholder="輸入密碼"
+            required
+            autocomplete="current-password"
+          >
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block btn-lg" id="submit-btn">
+          <span id="btn-text">登入</span>
+          <span id="btn-loading" style="display: none;">登入中...</span>
+        </button>
+      </form>
+
+      <div class="auth-divider">
+        <span>或</span>
+      </div>
+
+      <a href="https://line.me/R/ti/p/@sticker-tycoon" class="btn btn-secondary btn-block" target="_blank">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="#00B900">
+          <path d="M12 2C6.48 2 2 5.64 2 10.14c0 3.13 2.21 5.84 5.44 7.14-.08.42-.49 2.44-.51 2.61 0 0-.01.08-.01.11 0 .23.18.41.41.41.11 0 .22-.04.3-.12l3.04-2.26c.44.06.89.11 1.33.11 5.52 0 10-3.64 10-8.14S17.52 2 12 2z"/>
+        </svg>
+        使用 LINE 帳號（透過 LINE Bot 購買代幣）
+      </a>
+
+      <div class="auth-footer">
+        還沒有帳號？<a href="register.html">立即註冊</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="auth.js"></script>
+  <script>
+    // 檢查是否已登入
+    if (window.StickerAuth.isLoggedIn()) {
+      window.location.href = 'dashboard.html';
+    }
+
+    const form = document.getElementById('login-form');
+    const alertContainer = document.getElementById('alert-container');
+    const submitBtn = document.getElementById('submit-btn');
+    const btnText = document.getElementById('btn-text');
+    const btnLoading = document.getElementById('btn-loading');
+
+    function showAlert(type, message) {
+      alertContainer.innerHTML = `
+        <div class="alert alert-${type}">
+          ${type === 'error' ? '❌' : '✅'} ${message}
+        </div>
+      `;
+    }
+
+    function setLoading(loading) {
+      submitBtn.disabled = loading;
+      btnText.style.display = loading ? 'none' : 'inline';
+      btnLoading.style.display = loading ? 'inline' : 'none';
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      setLoading(true);
+      alertContainer.innerHTML = '';
+
+      const result = await window.StickerAuth.login(email, password);
+
+      if (result.success) {
+        showAlert('success', '登入成功！正在跳轉...');
+        setTimeout(() => {
+          window.location.href = 'dashboard.html';
+        }, 1000);
+      } else {
+        showAlert('error', result.error);
+        setLoading(false);
+      }
+    });
+  </script>
+</body>
+</html>
+

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>我的工作室 - Sticker Tycoon</title>
+  <link rel="stylesheet" href="app.css">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+  <!-- 導航列 -->
+  <nav class="navbar">
+    <div class="container">
+      <a href="dashboard.html" class="navbar-brand">
+        <span>🎨 Sticker Tycoon</span>
+      </a>
+      <div class="navbar-nav">
+        <a href="dashboard.html" class="nav-link active">我的作品</a>
+        <a href="create.html" class="nav-link">創作貼圖</a>
+        <div class="nav-user">
+          <div class="nav-user-avatar" id="user-avatar">?</div>
+          <span id="user-name">載入中...</span>
+          <span class="nav-user-credits">🪙 <span id="user-credits">0</span></span>
+        </div>
+        <button class="btn btn-sm btn-secondary" onclick="handleLogout()">登出</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 主要內容 -->
+  <main class="dashboard">
+    <div class="container">
+      <!-- 標題 -->
+      <div class="dashboard-header">
+        <h1 class="dashboard-title">我的工作室</h1>
+        <a href="create.html" class="btn btn-primary btn-lg">
+          ✨ 開始創作
+        </a>
+      </div>
+
+      <!-- 統計卡片 -->
+      <div class="stats-grid" id="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">🪙</div>
+          <div class="stat-value" id="stat-credits">--</div>
+          <div class="stat-label">代幣餘額</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🎨</div>
+          <div class="stat-value" id="stat-sets">--</div>
+          <div class="stat-label">貼圖組數</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🖼️</div>
+          <div class="stat-value" id="stat-stickers">--</div>
+          <div class="stat-label">貼圖總數</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🔗</div>
+          <div class="stat-value" id="stat-referrals">--</div>
+          <div class="stat-label">推薦人數</div>
+        </div>
+      </div>
+
+      <!-- 代幣提示 -->
+      <div class="alert alert-info" id="token-alert" style="display: none;">
+        💡 需要更多代幣？請透過 <a href="https://line.me/R/ti/p/@sticker-tycoon" target="_blank" style="color: var(--primary);">LINE Bot</a> 購買
+      </div>
+
+      <!-- 貼圖組列表 -->
+      <h2 style="margin-bottom: 20px;">我的貼圖組</h2>
+      
+      <div id="sticker-sets-container">
+        <div class="loading">
+          <div class="loading-spinner"></div>
+          <div class="loading-text">載入中...</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="auth.js"></script>
+  <script src="api.js"></script>
+  <script>
+    let currentUser = null;
+
+    // 頁面載入
+    document.addEventListener('DOMContentLoaded', async () => {
+      // 檢查登入狀態
+      currentUser = await window.StickerAuth.requireAuth();
+      if (!currentUser) return;
+
+      // 更新用戶資訊
+      updateUserDisplay();
+
+      // 載入資料
+      await loadDashboardData();
+    });
+
+    function updateUserDisplay() {
+      document.getElementById('user-name').textContent = currentUser.displayName || currentUser.email;
+      document.getElementById('user-credits').textContent = currentUser.credits || 0;
+      document.getElementById('user-avatar').textContent = 
+        (currentUser.displayName || currentUser.email).charAt(0).toUpperCase();
+    }
+
+    async function loadDashboardData() {
+      try {
+        // 載入用戶資料
+        const profileData = await window.StickerAPI.getUserProfile();
+        if (profileData.user) {
+          currentUser = profileData.user;
+          updateUserDisplay();
+          
+          document.getElementById('stat-credits').textContent = profileData.user.credits || 0;
+          document.getElementById('stat-referrals').textContent = profileData.user.referralCount || 0;
+
+          // 顯示代幣提示（如果餘額低）
+          if (profileData.user.credits < 10) {
+            document.getElementById('token-alert').style.display = 'flex';
+          }
+        }
+
+        // 載入貼圖組
+        const setsData = await window.StickerAPI.getStickerSets(1, 50);
+        
+        document.getElementById('stat-sets').textContent = setsData.pagination?.total || 0;
+        
+        // 計算貼圖總數
+        const totalStickers = setsData.stickerSets?.reduce((sum, set) => sum + (set.count || 0), 0) || 0;
+        document.getElementById('stat-stickers').textContent = totalStickers;
+
+        // 渲染貼圖組
+        renderStickerSets(setsData.stickerSets || []);
+
+      } catch (error) {
+        console.error('載入失敗:', error);
+        document.getElementById('sticker-sets-container').innerHTML = `
+          <div class="alert alert-error">
+            載入失敗：${error.message}
+          </div>
+        `;
+      }
+    }
+
+    function renderStickerSets(sets) {
+      const container = document.getElementById('sticker-sets-container');
+
+      if (sets.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">🎨</div>
+            <h3 class="empty-state-title">還沒有貼圖作品</h3>
+            <p class="empty-state-text">開始創作您的第一組 AI 貼圖吧！</p>
+            <a href="create.html" class="btn btn-primary btn-lg">
+              ✨ 開始創作
+            </a>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = `
+        <div class="sticker-sets-grid">
+          ${sets.map(set => `
+            <div class="sticker-set-card animate-fadeIn">
+              <div class="sticker-set-cover">
+                ${set.coverUrl 
+                  ? `<img src="${set.coverUrl}" alt="${set.name}" loading="lazy">`
+                  : `<div class="placeholder">🖼️</div>`
+                }
+              </div>
+              <div class="sticker-set-info">
+                <h3 class="sticker-set-name">${escapeHtml(set.name)}</h3>
+                <div class="sticker-set-meta">
+                  <span>${getStatusBadge(set.status)}</span>
+                  <span>📊 ${set.count} 張</span>
+                  <span>🎨 ${set.style || '可愛風'}</span>
+                </div>
+                <div class="sticker-set-actions">
+                  ${set.status === 'completed' 
+                    ? `<a href="view.html?id=${set.setId}" class="btn btn-primary btn-sm">查看</a>`
+                    : set.status === 'processing' || set.status === 'pending'
+                    ? `<span class="status-badge status-processing animate-pulse">⏳ 生成中...</span>`
+                    : `<span class="status-badge status-failed">❌ 失敗</span>`
+                  }
+                  <button class="btn btn-secondary btn-sm" onclick="deleteStickerSet('${set.setId}', '${escapeHtml(set.name)}')">
+                    🗑️
+                  </button>
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function getStatusBadge(status) {
+      const badges = {
+        completed: '<span class="status-badge status-completed">✅ 完成</span>',
+        processing: '<span class="status-badge status-processing">⏳ 處理中</span>',
+        generating: '<span class="status-badge status-processing">🎨 生成中</span>',
+        pending: '<span class="status-badge status-pending">⏸️ 等待中</span>',
+        failed: '<span class="status-badge status-failed">❌ 失敗</span>'
+      };
+      return badges[status] || badges.pending;
+    }
+
+    async function deleteStickerSet(setId, name) {
+      if (!confirm(`確定要刪除「${name}」嗎？此操作無法復原。`)) {
+        return;
+      }
+
+      try {
+        await window.StickerAPI.deleteStickerSet(setId);
+        alert('刪除成功！');
+        await loadDashboardData();
+      } catch (error) {
+        alert('刪除失敗：' + error.message);
+      }
+    }
+
+    function handleLogout() {
+      if (confirm('確定要登出嗎？')) {
+        window.StickerAuth.logout();
+      }
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>
+

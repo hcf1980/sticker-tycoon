@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sticker Tycoon - AI 貼圖創作平台</title>
+  <link rel="stylesheet" href="app.css">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <style>
+    .landing {
+      min-height: 100vh;
+    }
+
+    .hero {
+      min-height: 80vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 60px 20px;
+    }
+
+    .hero-content {
+      max-width: 800px;
+    }
+
+    .hero-badge {
+      display: inline-block;
+      padding: 8px 20px;
+      background: rgba(0, 212, 255, 0.1);
+      border: 1px solid var(--primary);
+      border-radius: var(--radius-full);
+      color: var(--primary);
+      font-size: 0.9rem;
+      margin-bottom: 30px;
+    }
+
+    .hero-title {
+      font-size: 3.5rem;
+      font-weight: 700;
+      line-height: 1.2;
+      margin-bottom: 20px;
+    }
+
+    .hero-title span {
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-subtitle {
+      font-size: 1.3rem;
+      color: var(--text-secondary);
+      margin-bottom: 40px;
+      line-height: 1.7;
+    }
+
+    .hero-cta {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .hero-cta .btn {
+      padding: 18px 40px;
+      font-size: 1.1rem;
+    }
+
+    .features {
+      padding: 80px 20px;
+    }
+
+    .features-title {
+      text-align: center;
+      font-size: 2.5rem;
+      margin-bottom: 60px;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 30px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 35px;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-5px);
+      border-color: var(--primary);
+      box-shadow: var(--shadow-glow);
+    }
+
+    .feature-icon {
+      font-size: 3rem;
+      margin-bottom: 20px;
+    }
+
+    .feature-title {
+      font-size: 1.3rem;
+      margin-bottom: 10px;
+    }
+
+    .feature-desc {
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .cta-section {
+      padding: 80px 20px;
+      text-align: center;
+      background: linear-gradient(180deg, transparent 0%, rgba(0, 212, 255, 0.05) 100%);
+    }
+
+    .cta-title {
+      font-size: 2.5rem;
+      margin-bottom: 20px;
+    }
+
+    .cta-subtitle {
+      color: var(--text-secondary);
+      font-size: 1.2rem;
+      margin-bottom: 40px;
+    }
+
+    .footer {
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--text-secondary);
+      border-top: 1px solid var(--border-color);
+    }
+
+    @media (max-width: 768px) {
+      .hero-title {
+        font-size: 2.5rem;
+      }
+
+      .hero-subtitle {
+        font-size: 1.1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="landing">
+    <!-- 導航 -->
+    <nav class="navbar">
+      <div class="container">
+        <a href="/app/" class="navbar-brand">
+          <span>🎨 Sticker Tycoon</span>
+        </a>
+        <div class="navbar-nav">
+          <a href="login.html" class="nav-link">登入</a>
+          <a href="register.html" class="btn btn-primary">免費註冊</a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-content animate-fadeIn">
+        <div class="hero-badge">🚀 AI 驅動的貼圖創作平台</div>
+        <h1 class="hero-title">
+          用 AI 創造<br><span>專屬於你的貼圖</span>
+        </h1>
+        <p class="hero-subtitle">
+          只需上傳一張照片，AI 就能為你生成多款表情貼圖<br>
+          輕鬆打造個人化 LINE 貼圖，讓聊天更有趣！
+        </p>
+        <div class="hero-cta">
+          <a href="register.html" class="btn btn-primary">
+            🎁 免費註冊領 40 代幣
+          </a>
+          <a href="https://line.me/R/ti/p/@sticker-tycoon" class="btn btn-secondary" target="_blank">
+            💬 透過 LINE Bot 使用
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section class="features">
+      <h2 class="features-title">為什麼選擇 Sticker Tycoon？</h2>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🤖</div>
+          <h3 class="feature-title">AI 智能生成</h3>
+          <p class="feature-desc">
+            先進的 AI 技術，從照片自動生成多種表情貼圖，保持人物一致性
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <h3 class="feature-title">快速便捷</h3>
+          <p class="feature-desc">
+            幾分鐘內完成整組貼圖，無需設計技能，人人都能輕鬆創作
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🎨</div>
+          <h3 class="feature-title">多種風格</h3>
+          <p class="feature-desc">
+            可愛風、寫實風、手繪風、動漫風⋯⋯多種風格任你選擇
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📱</div>
+          <h3 class="feature-title">跨平台使用</h3>
+          <p class="feature-desc">
+            網頁版或 LINE Bot，隨時隨地都能創作和管理你的貼圖
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">💰</div>
+          <h3 class="feature-title">價格實惠</h3>
+          <p class="feature-desc">
+            一組 6 張貼圖只需 3 代幣，新用戶免費獲得 40 代幣
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🔒</div>
+          <h3 class="feature-title">安全可靠</h3>
+          <p class="feature-desc">
+            您的照片安全存儲，支援帳號綁定，數據不會丟失
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-section">
+      <h2 class="cta-title">立即開始創作</h2>
+      <p class="cta-subtitle">註冊即送 40 代幣，可製作約 80 張貼圖！</p>
+      <a href="register.html" class="btn btn-primary btn-lg">
+        ✨ 免費開始
+      </a>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>© 2024 Sticker Tycoon. All rights reserved.</p>
+      <p style="margin-top: 10px;">
+        <a href="/" style="color: var(--primary);">首頁</a> · 
+        <a href="/token-guide.html" style="color: var(--primary);">代幣購買</a> · 
+        <a href="https://line.me/R/ti/p/@sticker-tycoon" style="color: var(--primary);">LINE Bot</a>
+      </p>
+    </footer>
+  </div>
+
+  <script src="auth.js"></script>
+  <script>
+    // 如果已登入，跳轉到儀表板
+    if (window.StickerAuth.isLoggedIn()) {
+      window.location.href = 'dashboard.html';
+    }
+  </script>
+</body>
+</html>
+

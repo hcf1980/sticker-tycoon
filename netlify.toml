@@ -58,6 +58,57 @@
   to = "/.netlify/functions/youtuber-promotion-apply"
   status = 200
 
+# Web API 路由（認證與貼圖操作）
+[[redirects]]
+  from = "/api/auth/register"
+  to = "/.netlify/functions/web-api/auth-register"
+  status = 200
+
+[[redirects]]
+  from = "/api/auth/login"
+  to = "/.netlify/functions/web-api/auth-login"
+  status = 200
+
+[[redirects]]
+  from = "/api/auth/verify"
+  to = "/.netlify/functions/web-api/auth-verify"
+  status = 200
+
+[[redirects]]
+  from = "/api/auth/refresh"
+  to = "/.netlify/functions/web-api/auth-refresh"
+  status = 200
+
+[[redirects]]
+  from = "/api/user/profile"
+  to = "/.netlify/functions/web-api/user-profile"
+  status = 200
+
+[[redirects]]
+  from = "/api/stickers/create"
+  to = "/.netlify/functions/web-api/sticker-create"
+  status = 200
+
+[[redirects]]
+  from = "/api/stickers/generate"
+  to = "/.netlify/functions/web-api/sticker-generate"
+  status = 200
+
+[[redirects]]
+  from = "/api/stickers/status"
+  to = "/.netlify/functions/web-api/sticker-status"
+  status = 200
+
+[[redirects]]
+  from = "/api/stickers/list"
+  to = "/.netlify/functions/web-api/sticker-list"
+  status = 200
+
+[[redirects]]
+  from = "/api/stickers/detail"
+  to = "/.netlify/functions/web-api/sticker-detail"
+  status = 200
+
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"

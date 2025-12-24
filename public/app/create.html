@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>創作貼圖 - Sticker Tycoon</title>
+  <link rel="stylesheet" href="app.css">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <style>
+    /* 創作頁面特定樣式 */
+    .create-wizard {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    .wizard-progress {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 40px;
+      position: relative;
+    }
+
+    .wizard-progress::before {
+      content: '';
+      position: absolute;
+      top: 20px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--border-color);
+      z-index: 0;
+    }
+
+    .wizard-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .wizard-step-number {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--bg-card);
+      border: 2px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      margin-bottom: 8px;
+      transition: all 0.3s ease;
+    }
+
+    .wizard-step.active .wizard-step-number {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: var(--bg-dark);
+    }
+
+    .wizard-step.completed .wizard-step-number {
+      background: var(--success);
+      border-color: var(--success);
+      color: var(--bg-dark);
+    }
+
+    .wizard-step-label {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      text-align: center;
+    }
+
+    .wizard-step.active .wizard-step-label {
+      color: var(--primary);
+    }
+
+    .step-content {
+      display: none;
+    }
+
+    .step-content.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    /* 照片上傳 */
+    .photo-upload {
+      border: 2px dashed var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 60px 30px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .photo-upload:hover {
+      border-color: var(--primary);
+      background: rgba(0, 212, 255, 0.05);
+    }
+
+    .photo-upload.has-image {
+      padding: 20px;
+    }
+
+    .photo-preview {
+      max-width: 300px;
+      max-height: 300px;
+      border-radius: var(--radius-md);
+      margin: 20px auto;
+    }
+
+    .photo-upload-icon {
+      font-size: 4rem;
+      margin-bottom: 15px;
+      opacity: 0.5;
+    }
+
+    /* 選擇網格 */
+    .option-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 15px;
+      margin: 20px 0;
+    }
+
+    .option-card {
+      background: var(--bg-card);
+      border: 2px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .option-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-3px);
+    }
+
+    .option-card.selected {
+      border-color: var(--primary);
+      background: rgba(0, 212, 255, 0.1);
+      box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+    }
+
+    .option-icon {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+    }
+
+    .option-name {
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+
+    .option-desc {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    /* 表情選擇 */
+    .expression-templates {
+      margin-bottom: 20px;
+    }
+
+    .expression-template-btn {
+      display: inline-block;
+      padding: 8px 16px;
+      margin: 5px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-full);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .expression-template-btn:hover,
+    .expression-template-btn.selected {
+      border-color: var(--primary);
+      background: rgba(0, 212, 255, 0.1);
+    }
+
+    .expression-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .expression-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 8px 15px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-full);
+      font-size: 0.9rem;
+    }
+
+    .expression-tag .remove {
+      cursor: pointer;
+      opacity: 0.6;
+    }
+
+    .expression-tag .remove:hover {
+      opacity: 1;
+      color: var(--error);
+    }
+
+    /* 數量選擇 */
+    .count-options {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      margin: 30px 0;
+    }
+
+    .count-option {
+      background: var(--bg-card);
+      border: 2px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 30px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      min-width: 150px;
+    }
+
+    .count-option:hover {
+      border-color: var(--primary);
+    }
+
+    .count-option.selected {
+      border-color: var(--primary);
+      background: rgba(0, 212, 255, 0.1);
+      box-shadow: var(--shadow-glow);
+    }
+
+    .count-number {
+      font-size: 3rem;
+      font-weight: 700;
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .count-label {
+      color: var(--text-secondary);
+      margin-top: 5px;
+    }
+
+    .count-tokens {
+      margin-top: 10px;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* 確認頁面 */
+    .confirm-summary {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 25px;
+      margin: 20px 0;
+    }
+
+    .confirm-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .confirm-item:last-child {
+      border-bottom: none;
+    }
+
+    .confirm-label {
+      color: var(--text-secondary);
+    }
+
+    .confirm-value {
+      font-weight: 500;
+    }
+
+    /* 生成進度 */
+    .generation-progress {
+      text-align: center;
+      padding: 60px 20px;
+    }
+
+    .progress-ring {
+      width: 150px;
+      height: 150px;
+      margin: 0 auto 30px;
+    }
+
+    .progress-ring circle {
+      fill: none;
+      stroke-width: 8;
+    }
+
+    .progress-ring .bg {
+      stroke: var(--border-color);
+    }
+
+    .progress-ring .progress {
+      stroke: var(--primary);
+      stroke-linecap: round;
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+      transition: stroke-dashoffset 0.5s ease;
+    }
+
+    .progress-text {
+      font-size: 2rem;
+      font-weight: 700;
+    }
+
+    .progress-status {
+      color: var(--text-secondary);
+      margin-top: 10px;
+    }
+
+    /* 導航按鈕 */
+    .wizard-nav {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-color);
+    }
+  </style>
+</head>
+<body>
+  <!-- 導航列 -->
+  <nav class="navbar">
+    <div class="container">
+      <a href="dashboard.html" class="navbar-brand">
+        <span>🎨 Sticker Tycoon</span>
+      </a>
+      <div class="navbar-nav">
+        <a href="dashboard.html" class="nav-link">我的作品</a>
+        <a href="create.html" class="nav-link active">創作貼圖</a>
+        <div class="nav-user">
+          <div class="nav-user-avatar" id="user-avatar">?</div>
+          <span id="user-name">載入中...</span>
+          <span class="nav-user-credits">🪙 <span id="user-credits">0</span></span>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 創作精靈 -->
+  <main class="create-wizard">
+    <h1 style="text-align: center; margin-bottom: 10px;">✨ AI 貼圖創作</h1>
+    <p style="text-align: center; color: var(--text-secondary); margin-bottom: 30px;">
+      只需幾個步驟，讓 AI 為您創作專屬貼圖
+    </p>
+
+    <!-- 進度指示器 -->
+    <div class="wizard-progress">
+      <div class="wizard-step active" data-step="1">
+        <div class="wizard-step-number">1</div>
+        <div class="wizard-step-label">基本資訊</div>
+      </div>
+      <div class="wizard-step" data-step="2">
+        <div class="wizard-step-number">2</div>
+        <div class="wizard-step-label">上傳照片</div>
+      </div>
+      <div class="wizard-step" data-step="3">
+        <div class="wizard-step-number">3</div>
+        <div class="wizard-step-label">選擇風格</div>
+      </div>
+      <div class="wizard-step" data-step="4">
+        <div class="wizard-step-number">4</div>
+        <div class="wizard-step-label">選擇表情</div>
+      </div>
+      <div class="wizard-step" data-step="5">
+        <div class="wizard-step-number">5</div>
+        <div class="wizard-step-label">確認生成</div>
+      </div>
+    </div>
+
+    <div id="alert-container"></div>
+
+    <!-- 步驟 1: 基本資訊 -->
+    <div class="step-content active" data-step="1">
+      <div class="card">
+        <h2>📝 貼圖組名稱</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 20px;">
+          為您的貼圖組取一個有意義的名稱
+        </p>
+        
+        <div class="form-group">
+          <input 
+            type="text" 
+            id="sticker-name" 
+            class="form-control" 
+            placeholder="例如：小明的日常表情"
+            maxlength="50"
+          >
+        </div>
+
+        <h3 style="margin-top: 30px; margin-bottom: 15px;">📐 構圖方式</h3>
+        <div class="option-grid" id="framing-options"></div>
+      </div>
+    </div>
+
+    <!-- 步驟 2: 上傳照片 -->
+    <div class="step-content" data-step="2">
+      <div class="card">
+        <h2>📸 上傳照片</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 20px;">
+          上傳一張清晰的正面照，AI 會根據照片生成貼圖
+        </p>
+        
+        <div class="photo-upload" id="photo-upload" onclick="triggerPhotoUpload()">
+          <div class="photo-upload-icon">📷</div>
+          <p>點擊上傳照片</p>
+          <p style="font-size: 0.85rem; color: var(--text-secondary);">
+            支援 JPG、PNG，建議正面清晰照片
+          </p>
+        </div>
+        <input type="file" id="photo-input" accept="image/*" style="display: none;" onchange="handlePhotoSelect(event)">
+      </div>
+    </div>
+
+    <!-- 步驟 3: 選擇風格 -->
+    <div class="step-content" data-step="3">
+      <div class="card">
+        <h2>🎨 選擇風格</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 20px;">
+          選擇您喜歡的貼圖藝術風格
+        </p>
+        
+        <div class="option-grid" id="style-options"></div>
+
+        <h3 style="margin-top: 30px; margin-bottom: 15px;">🎀 裝飾風格</h3>
+        <div class="option-grid" id="scene-options"></div>
+      </div>
+    </div>
+
+    <!-- 步驟 4: 選擇表情 -->
+    <div class="step-content" data-step="4">
+      <div class="card">
+        <h2>😊 選擇表情</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 20px;">
+          選擇表情模板或自訂表情
+        </p>
+
+        <h3>快速選擇模板</h3>
+        <div class="expression-templates" id="expression-templates"></div>
+
+        <h3 style="margin-top: 20px;">已選擇的表情</h3>
+        <div class="expression-list" id="expression-list"></div>
+
+        <div class="form-group" style="margin-top: 20px;">
+          <label class="form-label">自訂表情（按 Enter 新增）</label>
+          <input 
+            type="text" 
+            id="custom-expression" 
+            class="form-control" 
+            placeholder="輸入表情文字，例如：加油"
+            onkeypress="handleExpressionKeypress(event)"
+          >
+        </div>
+
+        <h3 style="margin-top: 30px; margin-bottom: 15px;">📊 貼圖數量</h3>
+        <div class="count-options" id="count-options">
+          <div class="count-option" data-count="6" onclick="selectCount(6)">
+            <div class="count-number">6</div>
+            <div class="count-label">張貼圖</div>
+            <div class="count-tokens">🪙 3 代幣</div>
+          </div>
+          <div class="count-option selected" data-count="12" onclick="selectCount(12)">
+            <div class="count-number">12</div>
+            <div class="count-label">張貼圖</div>
+            <div class="count-tokens">🪙 6 代幣</div>
+          </div>
+          <div class="count-option" data-count="18" onclick="selectCount(18)">
+            <div class="count-number">18</div>
+            <div class="count-label">張貼圖</div>
+            <div class="count-tokens">🪙 9 代幣</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 步驟 5: 確認生成 -->
+    <div class="step-content" data-step="5">
+      <div class="card">
+        <h2>✅ 確認並生成</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 20px;">
+          確認以下設定，開始 AI 生成
+        </p>
+
+        <div class="confirm-summary" id="confirm-summary">
+          <!-- 動態生成 -->
+        </div>
+
+        <div class="alert alert-warning" id="token-warning" style="display: none;">
+          ⚠️ 代幣不足！請先透過 LINE Bot 購買代幣
+        </div>
+      </div>
+    </div>
+
+    <!-- 生成中 -->
+    <div class="step-content" data-step="generating">
+      <div class="card">
+        <div class="generation-progress">
+          <svg class="progress-ring" viewBox="0 0 100 100">
+            <circle class="bg" cx="50" cy="50" r="45"/>
+            <circle class="progress" cx="50" cy="50" r="45" 
+              stroke-dasharray="283" 
+              stroke-dashoffset="283"
+              id="progress-circle"/>
+          </svg>
+          <div class="progress-text" id="progress-text">0%</div>
+          <div class="progress-status" id="progress-status">準備中...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 導航按鈕 -->
+    <div class="wizard-nav">
+      <button class="btn btn-secondary" id="prev-btn" onclick="prevStep()" style="visibility: hidden;">
+        ← 上一步
+      </button>
+      <button class="btn btn-primary" id="next-btn" onclick="nextStep()">
+        下一步 →
+      </button>
+    </div>
+  </main>
+
+  <script src="auth.js"></script>
+  <script src="api.js"></script>
+  <script>
+    let currentUser = null;
+    let currentStep = 1;
+    const totalSteps = 5;
+
+    // 表單資料
+    const formData = {
+      name: '',
+      photoBase64: null,
+      style: 'cute',
+      framingId: 'halfbody',
+      sceneId: 'kawaii',
+      expressions: [],
+      count: 12
+    };
+
+    // 頁面載入
+    document.addEventListener('DOMContentLoaded', async () => {
+      currentUser = await window.StickerAuth.requireAuth();
+      if (!currentUser) return;
+
+      updateUserDisplay();
+      await initOptions();
+    });
+
+    function updateUserDisplay() {
+      document.getElementById('user-name').textContent = currentUser.displayName || currentUser.email;
+      document.getElementById('user-credits').textContent = currentUser.credits || 0;
+      document.getElementById('user-avatar').textContent = 
+        (currentUser.displayName || currentUser.email).charAt(0).toUpperCase();
+    }
+
+    async function initOptions() {
+      // 風格選項
+      const styles = await window.StickerAPI.getStyleList();
+      document.getElementById('style-options').innerHTML = styles.map(s => `
+        <div class="option-card ${s.id === formData.style ? 'selected' : ''}" 
+             data-value="${s.id}" onclick="selectStyle('${s.id}')">
+          <div class="option-icon">${s.icon}</div>
+          <div class="option-name">${s.name}</div>
+          <div class="option-desc">${s.description}</div>
+        </div>
+      `).join('');
+
+      // 構圖選項
+      const framings = await window.StickerAPI.getFramingOptions();
+      document.getElementById('framing-options').innerHTML = framings.map(f => `
+        <div class="option-card ${f.id === formData.framingId ? 'selected' : ''}" 
+             data-value="${f.id}" onclick="selectFraming('${f.id}')">
+          <div class="option-name">${f.name}</div>
+          <div class="option-desc">${f.description}</div>
+        </div>
+      `).join('');
+
+      // 場景選項
+      const scenes = await window.StickerAPI.getSceneOptions();
+      document.getElementById('scene-options').innerHTML = scenes.map(s => `
+        <div class="option-card ${s.id === formData.sceneId ? 'selected' : ''}" 
+             data-value="${s.id}" onclick="selectScene('${s.id}')">
+          <div class="option-name">${s.name}</div>
+          <div class="option-desc">${s.description}</div>
+        </div>
+      `).join('');
+
+      // 表情模板
+      const templates = await window.StickerAPI.getExpressionTemplates();
+      document.getElementById('expression-templates').innerHTML = Object.entries(templates).map(([key, t]) => `
+        <span class="expression-template-btn" onclick="selectExpressionTemplate('${key}')">${t.name}</span>
+      `).join('');
+
+      // 預設表情
+      formData.expressions = templates.daily.expressions.slice(0, 12);
+      updateExpressionList();
+    }
+
+    function selectStyle(styleId) {
+      formData.style = styleId;
+      document.querySelectorAll('#style-options .option-card').forEach(card => {
+        card.classList.toggle('selected', card.dataset.value === styleId);
+      });
+    }
+
+    function selectFraming(framingId) {
+      formData.framingId = framingId;
+      document.querySelectorAll('#framing-options .option-card').forEach(card => {
+        card.classList.toggle('selected', card.dataset.value === framingId);
+      });
+    }
+
+    function selectScene(sceneId) {
+      formData.sceneId = sceneId;
+      document.querySelectorAll('#scene-options .option-card').forEach(card => {
+        card.classList.toggle('selected', card.dataset.value === sceneId);
+      });
+    }
+
+    async function selectExpressionTemplate(templateKey) {
+      const templates = await window.StickerAPI.getExpressionTemplates();
+      const template = templates[templateKey];
+      if (template) {
+        formData.expressions = [...template.expressions];
+        // 根據數量調整
+        while (formData.expressions.length < formData.count) {
+          formData.expressions.push(formData.expressions[formData.expressions.length % template.expressions.length]);
+        }
+        formData.expressions = formData.expressions.slice(0, formData.count);
+        updateExpressionList();
+      }
+    }
+
+    function selectCount(count) {
+      formData.count = count;
+      document.querySelectorAll('.count-option').forEach(opt => {
+        opt.classList.toggle('selected', parseInt(opt.dataset.count) === count);
+      });
+      // 調整表情數量
+      while (formData.expressions.length < count) {
+        formData.expressions.push('開心');
+      }
+      formData.expressions = formData.expressions.slice(0, count);
+      updateExpressionList();
+    }
+
+    function updateExpressionList() {
+      document.getElementById('expression-list').innerHTML = formData.expressions.map((expr, i) => `
+        <span class="expression-tag">
+          ${expr}
+          <span class="remove" onclick="removeExpression(${i})">✕</span>
+        </span>
+      `).join('');
+    }
+
+    function removeExpression(index) {
+      if (formData.expressions.length > 1) {
+        formData.expressions.splice(index, 1);
+        updateExpressionList();
+      }
+    }
+
+    function handleExpressionKeypress(event) {
+      if (event.key === 'Enter') {
+        const input = event.target;
+        const value = input.value.trim();
+        if (value && formData.expressions.length < 18) {
+          formData.expressions.push(value);
+          input.value = '';
+          updateExpressionList();
+        }
+      }
+    }
+
+    function triggerPhotoUpload() {
+      document.getElementById('photo-input').click();
+    }
+
+    function handlePhotoSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        formData.photoBase64 = e.target.result;
+        
+        const uploadDiv = document.getElementById('photo-upload');
+        uploadDiv.classList.add('has-image');
+        uploadDiv.innerHTML = `
+          <img src="${e.target.result}" class="photo-preview" alt="預覽">
+          <p style="margin-top: 15px;">點擊更換照片</p>
+        `;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function updateStepUI() {
+      // 更新進度指示器
+      document.querySelectorAll('.wizard-step').forEach(step => {
+        const stepNum = parseInt(step.dataset.step);
+        step.classList.remove('active', 'completed');
+        if (stepNum === currentStep) {
+          step.classList.add('active');
+        } else if (stepNum < currentStep) {
+          step.classList.add('completed');
+        }
+      });
+
+      // 更新步驟內容
+      document.querySelectorAll('.step-content').forEach(content => {
+        content.classList.remove('active');
+      });
+      document.querySelector(`.step-content[data-step="${currentStep}"]`)?.classList.add('active');
+
+      // 更新按鈕
+      document.getElementById('prev-btn').style.visibility = currentStep > 1 ? 'visible' : 'hidden';
+      
+      if (currentStep === totalSteps) {
+        document.getElementById('next-btn').innerHTML = '🚀 開始生成';
+        document.getElementById('next-btn').classList.add('btn-lg');
+        updateConfirmSummary();
+      } else {
+        document.getElementById('next-btn').innerHTML = '下一步 →';
+        document.getElementById('next-btn').classList.remove('btn-lg');
+      }
+    }
+
+    function updateConfirmSummary() {
+      const tokensRequired = Math.ceil(formData.count / 6) * 3;
+      const hasEnoughTokens = currentUser.credits >= tokensRequired;
+
+      document.getElementById('confirm-summary').innerHTML = `
+        <div class="confirm-item">
+          <span class="confirm-label">貼圖組名稱</span>
+          <span class="confirm-value">${formData.name || '(未命名)'}</span>
+        </div>
+        <div class="confirm-item">
+          <span class="confirm-label">照片</span>
+          <span class="confirm-value">${formData.photoBase64 ? '✅ 已上傳' : '❌ 未上傳'}</span>
+        </div>
+        <div class="confirm-item">
+          <span class="confirm-label">風格</span>
+          <span class="confirm-value">${formData.style}</span>
+        </div>
+        <div class="confirm-item">
+          <span class="confirm-label">構圖</span>
+          <span class="confirm-value">${formData.framingId}</span>
+        </div>
+        <div class="confirm-item">
+          <span class="confirm-label">貼圖數量</span>
+          <span class="confirm-value">${formData.count} 張</span>
+        </div>
+        <div class="confirm-item">
+          <span class="confirm-label">所需代幣</span>
+          <span class="confirm-value" style="color: ${hasEnoughTokens ? 'var(--accent)' : 'var(--error)'}">
+            🪙 ${tokensRequired} 代幣
+          </span>
+        </div>
+        <div class="confirm-item">
+          <span class="confirm-label">您的餘額</span>
+          <span class="confirm-value">🪙 ${currentUser.credits} 代幣</span>
+        </div>
+      `;
+
+      document.getElementById('token-warning').style.display = hasEnoughTokens ? 'none' : 'flex';
+      document.getElementById('next-btn').disabled = !hasEnoughTokens;
+    }
+
+    function validateStep() {
+      switch (currentStep) {
+        case 1:
+          formData.name = document.getElementById('sticker-name').value.trim();
+          if (!formData.name) {
+            showAlert('error', '請輸入貼圖組名稱');
+            return false;
+          }
+          break;
+        case 2:
+          if (!formData.photoBase64) {
+            showAlert('error', '請上傳照片');
+            return false;
+          }
+          break;
+        case 4:
+          if (formData.expressions.length !== formData.count) {
+            showAlert('error', `請選擇 ${formData.count} 個表情（目前 ${formData.expressions.length} 個）`);
+            return false;
+          }
+          break;
+      }
+      return true;
+    }
+
+    function nextStep() {
+      if (!validateStep()) return;
+
+      if (currentStep === totalSteps) {
+        startGeneration();
+        return;
+      }
+
+      currentStep++;
+      updateStepUI();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function prevStep() {
+      if (currentStep > 1) {
+        currentStep--;
+        updateStepUI();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+
+    async function startGeneration() {
+      try {
+        document.querySelector('.wizard-nav').style.display = 'none';
+        document.querySelectorAll('.step-content').forEach(c => c.classList.remove('active'));
+        document.querySelector('.step-content[data-step="generating"]').classList.add('active');
+
+        // 創建貼圖組
+        const createResult = await window.StickerAPI.createStickerSet({
+          name: formData.name,
+          photoBase64: formData.photoBase64,
+          style: formData.style,
+          framingId: formData.framingId,
+          sceneId: formData.sceneId,
+          expressions: formData.expressions,
+          count: formData.count
+        });
+
+        if (!createResult.success) {
+          throw new Error(createResult.error || '創建失敗');
+        }
+
+        // 開始生成
+        await window.StickerAPI.startGeneration(createResult.task.taskId);
+
+        // 輪詢進度
+        const stopPolling = window.StickerAPI.pollGenerationStatus(
+          createResult.task.taskId,
+          (status) => {
+            if (status.error) {
+              showAlert('error', status.error);
+              return;
+            }
+
+            const progress = status.task.progress || 0;
+            updateProgress(progress, status.task.status);
+
+            if (status.task.status === 'completed') {
+              setTimeout(() => {
+                window.location.href = `view.html?id=${createResult.stickerSet.setId}`;
+              }, 1500);
+            } else if (status.task.status === 'failed') {
+              showAlert('error', status.task.errorMessage || '生成失敗');
+              document.querySelector('.wizard-nav').style.display = 'flex';
+            }
+          },
+          3000
+        );
+
+      } catch (error) {
+        showAlert('error', error.message);
+        document.querySelector('.wizard-nav').style.display = 'flex';
+        currentStep = totalSteps;
+        updateStepUI();
+      }
+    }
+
+    function updateProgress(percent, status) {
+      const circle = document.getElementById('progress-circle');
+      const circumference = 283;
+      const offset = circumference - (percent / 100) * circumference;
+      circle.style.strokeDashoffset = offset;
+
+      document.getElementById('progress-text').textContent = `${Math.round(percent)}%`;
+      
+      const statusText = {
+        pending: '準備中...',
+        processing: '生成中...',
+        completed: '完成！',
+        failed: '生成失敗'
+      };
+      document.getElementById('progress-status').textContent = statusText[status] || '處理中...';
+    }
+
+    function showAlert(type, message) {
+      document.getElementById('alert-container').innerHTML = `
+        <div class="alert alert-${type}">
+          ${type === 'error' ? '❌' : '✅'} ${message}
+        </div>
+      `;
+    }
+
+    // 初始化 UI
+    updateStepUI();
+  </script>
+</body>
+</html>
+
