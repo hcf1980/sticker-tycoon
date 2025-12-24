@@ -3,7 +3,7 @@
  */
 
 const { createClient } = require('@supabase/supabase-js');
-const { getSupabaseClient } = require('../supabase-client');
+const { getSupabaseClient } = require('./supabase-client');
 
 function getSupabaseAuthClient() {
   return createClient(

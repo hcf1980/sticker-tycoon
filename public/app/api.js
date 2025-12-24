@@ -3,13 +3,13 @@
  * 封裝所有 API 呼叫
  */
 
-const API_BASE = '/.netlify/functions/web-api';
+const API_BASE = '/.netlify/functions';
 
 /**
  * 取得用戶資料
  */
 async function getUserProfile() {
-  const response = await window.StickerAuth.authFetch(`${API_BASE}/user-profile`);
+  const response = await window.StickerAuth.authFetch(`${API_BASE}/web-api-user-profile`);
   const data = await response.json();
   
   if (!response.ok) {
@@ -23,7 +23,7 @@ async function getUserProfile() {
  * 更新用戶資料
  */
 async function updateUserProfile(updates) {
-  const response = await window.StickerAuth.authFetch(`${API_BASE}/user-profile`, {
+  const response = await window.StickerAuth.authFetch(`${API_BASE}/web-api-user-profile`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(updates)
@@ -43,7 +43,7 @@ async function updateUserProfile(updates) {
  */
 async function getStickerSets(page = 1, limit = 10) {
   const response = await window.StickerAuth.authFetch(
-    `${API_BASE}/sticker-list?page=${page}&limit=${limit}`
+    `${API_BASE}/web-api-sticker-list?page=${page}&limit=${limit}`
   );
   
   const data = await response.json();
@@ -60,7 +60,7 @@ async function getStickerSets(page = 1, limit = 10) {
  */
 async function getStickerSetDetail(setId) {
   const response = await window.StickerAuth.authFetch(
-    `${API_BASE}/sticker-detail?setId=${setId}`
+    `${API_BASE}/web-api-sticker-detail?setId=${setId}`
   );
   
   const data = await response.json();
@@ -77,7 +77,7 @@ async function getStickerSetDetail(setId) {
  */
 async function deleteStickerSet(setId) {
   const response = await window.StickerAuth.authFetch(
-    `${API_BASE}/sticker-detail?setId=${setId}`,
+    `${API_BASE}/web-api-sticker-detail?setId=${setId}`,
     { method: 'DELETE' }
   );
   
@@ -94,7 +94,7 @@ async function deleteStickerSet(setId) {
  * 創建貼圖組
  */
 async function createStickerSet(params) {
-  const response = await window.StickerAuth.authFetch(`${API_BASE}/sticker-create`, {
+  const response = await window.StickerAuth.authFetch(`${API_BASE}/web-api-sticker-create`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params)
@@ -113,7 +113,7 @@ async function createStickerSet(params) {
  * 開始生成貼圖
  */
 async function startGeneration(taskId) {
-  const response = await window.StickerAuth.authFetch(`${API_BASE}/sticker-generate`, {
+  const response = await window.StickerAuth.authFetch(`${API_BASE}/web-api-sticker-generate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ taskId })
@@ -133,7 +133,7 @@ async function startGeneration(taskId) {
  */
 async function getGenerationStatus(taskId) {
   const response = await window.StickerAuth.authFetch(
-    `${API_BASE}/sticker-status?taskId=${taskId}`
+    `${API_BASE}/web-api-sticker-status?taskId=${taskId}`
   );
   
   const data = await response.json();

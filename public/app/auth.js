@@ -3,7 +3,7 @@
  * 處理登入、註冊、Token 管理
  */
 
-const API_BASE = '/.netlify/functions/web-api';
+const API_BASE = '/.netlify/functions';
 
 // Token 儲存鍵
 const STORAGE_KEYS = {
@@ -81,7 +81,7 @@ function isLoggedIn() {
  */
 async function register(email, password, displayName = null) {
   try {
-    const response = await fetch(`${API_BASE}/auth-register`, {
+    const response = await fetch(`${API_BASE}/web-api-auth-register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password, displayName })
@@ -109,7 +109,7 @@ async function register(email, password, displayName = null) {
  */
 async function login(email, password) {
   try {
-    const response = await fetch(`${API_BASE}/auth-login`, {
+    const response = await fetch(`${API_BASE}/web-api-auth-login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
@@ -148,7 +148,7 @@ async function refreshToken() {
   }
 
   try {
-    const response = await fetch(`${API_BASE}/auth-refresh`, {
+    const response = await fetch(`${API_BASE}/web-api-auth-refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refreshToken })
@@ -180,7 +180,7 @@ async function verifyAndGetUser() {
   }
 
   try {
-    const response = await fetch(`${API_BASE}/auth-verify`, {
+    const response = await fetch(`${API_BASE}/web-api-auth-verify`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }

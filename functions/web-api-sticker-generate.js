@@ -4,9 +4,9 @@
  */
 
 const { createClient } = require('@supabase/supabase-js');
-const { getUserByUnifiedId } = require('../services/user-service');
-const { getSupabaseClient } = require('../supabase-client');
-const { generateStickersIntelligent } = require('../sticker-generator-enhanced');
+const { getUserByUnifiedId } = require('./services/user-service');
+const { getSupabaseClient } = require('./supabase-client');
+const { generateStickersIntelligent } = require('./sticker-generator-enhanced');
 
 function getSupabaseAuthClient() {
   return createClient(

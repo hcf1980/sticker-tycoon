@@ -4,7 +4,7 @@
  */
 
 const { createClient } = require('@supabase/supabase-js');
-const { getUserByEmail, getUserByUnifiedId } = require('../services/user-service');
+const { getUserByEmail, getUserByUnifiedId } = require('./services/user-service');
 
 function getSupabaseAuthClient() {
   const SUPABASE_URL = process.env.SUPABASE_URL;

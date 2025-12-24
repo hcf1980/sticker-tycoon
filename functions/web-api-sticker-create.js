@@ -5,9 +5,9 @@
 
 const { createClient } = require('@supabase/supabase-js');
 const { v4: uuidv4 } = require('uuid');
-const { getUserByUnifiedId, deductUserTokens } = require('../services/user-service');
-const { getSupabaseClient } = require('../supabase-client');
-const { generateCharacterID, StickerStyles, SceneTemplates, FramingTemplates } = require('../sticker-styles');
+const { getUserByUnifiedId, deductUserTokens } = require('./services/user-service');
+const { getSupabaseClient } = require('./supabase-client');
+const { generateCharacterID, StickerStyles, SceneTemplates, FramingTemplates } = require('./sticker-styles');
 
 function getSupabaseAuthClient() {
   return createClient(

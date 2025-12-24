@@ -3,8 +3,8 @@
  */
 
 const { createClient } = require('@supabase/supabase-js');
-const { getUserByUnifiedId, updateUserProfile, getUserTokenBalance } = require('../services/user-service');
-const { getSupabaseClient } = require('../supabase-client');
+const { getUserByUnifiedId, updateUserProfile, getUserTokenBalance } = require('./services/user-service');
+const { getSupabaseClient } = require('./supabase-client');
 
 function getSupabaseAuthClient() {
   return createClient(

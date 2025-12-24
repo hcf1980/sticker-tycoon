@@ -4,7 +4,7 @@
  */
 
 const { createClient } = require('@supabase/supabase-js');
-const { createWebUser, getUserByEmail } = require('../services/user-service');
+const { createWebUser, getUserByEmail } = require('./services/user-service');
 
 // 初始化 Supabase Client（使用 anon key 給前端認證用）
 function getSupabaseAuthClient() {
