@@ -139,10 +139,28 @@ exports.handler = async (event, context) => {
 
   } catch (error) {
     console.error('註冊錯誤:', error);
+    
+    // 返回更詳細的錯誤訊息（方便調試）
+    let errorMessage = '系統錯誤，請稍後再試';
+    
+    if (error.message) {
+      // 常見錯誤處理
+      if (error.message.includes('column') && error.message.includes('does not exist')) {
+        errorMessage = '資料庫尚未更新，請聯繫管理員執行資料庫遷移';
+      } else if (error.message.includes('SUPABASE')) {
+        errorMessage = '環境變數未正確設定';
+      } else {
+        errorMessage = `錯誤: ${error.message}`;
+      }
+    }
+    
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: '系統錯誤，請稍後再試' })
+      body: JSON.stringify({ 
+        error: errorMessage,
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      })
     };
   }
 };

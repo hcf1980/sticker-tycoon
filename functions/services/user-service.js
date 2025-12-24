@@ -67,11 +67,22 @@ async function getUserByEmail(email) {
       .eq('email', email.toLowerCase())
       .single();
 
-    if (error && error.code !== 'PGRST116') throw error;
+    // PGRST116 = 沒找到記錄（正常）
+    // 42703 = 欄位不存在（需要執行資料庫遷移）
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return null; // 正常：沒找到用戶
+      }
+      if (error.code === '42703' || (error.message && error.message.includes('does not exist'))) {
+        console.error('❌ 資料庫欄位 email 不存在，請執行資料庫遷移');
+        throw new Error('資料庫尚未更新，請執行遷移腳本');
+      }
+      throw error;
+    }
     return data || null;
   } catch (error) {
     console.error('根據 Email 取得用戶失敗:', error);
-    return null;
+    throw error; // 將錯誤向上拋出，讓調用者處理
   }
 }
 
@@ -110,7 +121,18 @@ async function createWebUser(authUserId, email, displayName = null) {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      // 檢查是否為欄位不存在的錯誤
+      if (error.code === '42703' || (error.message && error.message.includes('does not exist'))) {
+        console.error('❌ 資料庫缺少必要欄位 (auth_user_id/email/user_type)');
+        console.error('請執行以下 SQL 遷移：');
+        console.error('ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_user_id UUID UNIQUE;');
+        console.error('ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(255) UNIQUE;');
+        console.error('ALTER TABLE users ADD COLUMN IF NOT EXISTS user_type VARCHAR(10) DEFAULT \'line\';');
+        throw new Error('資料庫尚未更新，請執行遷移腳本添加 auth_user_id, email, user_type 欄位');
+      }
+      throw error;
+    }
 
     // 記錄初始代幣到 token_ledger
     if (data) {
