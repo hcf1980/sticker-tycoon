@@ -41,6 +41,37 @@
 [functions."analyze-style-image"]
   timeout = 26
 
+# Web API 函數
+[functions."web-api-auth-register"]
+  timeout = 10
+
+[functions."web-api-auth-login"]
+  timeout = 10
+
+[functions."web-api-auth-verify"]
+  timeout = 10
+
+[functions."web-api-auth-refresh"]
+  timeout = 10
+
+[functions."web-api-user-profile"]
+  timeout = 10
+
+[functions."web-api-sticker-create"]
+  timeout = 30
+
+[functions."web-api-sticker-generate"]
+  timeout = 26
+
+[functions."web-api-sticker-status"]
+  timeout = 10
+
+[functions."web-api-sticker-list"]
+  timeout = 10
+
+[functions."web-api-sticker-detail"]
+  timeout = 10
+
 # API 路由重定向
 [[redirects]]
   from = "/api/admin/rich-menu-info"
