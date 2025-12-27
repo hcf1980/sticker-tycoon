@@ -393,6 +393,71 @@ async function markTutorialShown(userId) {
 }
 
 /**
+ * 生成教學用的 bubble（圖片置中顯示 85% 寬度）
+ */
+function createTutorialBubble(baseUrl, headerColor, headerTitle, stepText, imageFile, title, desc, hasFooter = false) {
+  const bubble = {
+    type: 'bubble',
+    size: 'kilo',
+    header: {
+      type: 'box',
+      layout: 'vertical',
+      backgroundColor: headerColor,
+      paddingAll: 'md',
+      contents: [
+        { type: 'text', text: headerTitle, weight: 'bold', size: 'md', color: '#FFFFFF' },
+        { type: 'text', text: stepText, size: 'xs', color: '#FFFFFFCC' }
+      ]
+    },
+    hero: {
+      type: 'box',
+      layout: 'vertical',
+      backgroundColor: '#F5F5F5',
+      paddingAll: 'md',
+      justifyContent: 'center',
+      alignItems: 'center',
+      contents: [
+        {
+          type: 'image',
+          url: `${baseUrl}/images/demo/${imageFile}`,
+          size: '85%',
+          aspectRatio: '9:16',
+          aspectMode: 'fit'
+        }
+      ]
+    },
+    body: {
+      type: 'box',
+      layout: 'vertical',
+      paddingAll: 'md',
+      contents: [
+        { type: 'text', text: title, weight: 'bold', size: 'md', color: '#333333' },
+        { type: 'text', text: desc, size: 'sm', color: '#666666', margin: 'sm', wrap: true }
+      ]
+    }
+  };
+
+  if (hasFooter) {
+    bubble.footer = {
+      type: 'box',
+      layout: 'vertical',
+      paddingAll: 'sm',
+      contents: [
+        {
+          type: 'button',
+          style: 'primary',
+          color: '#06C755',
+          height: 'sm',
+          action: { type: 'message', label: '🚀 開始創建', text: '創建貼圖' }
+        }
+      ]
+    };
+  }
+
+  return bubble;
+}
+
+/**
  * 完整功能說明 Flex Message（第一部分：創建貼圖流程 - Carousel 格式）
  */
 function generateTutorialPart1FlexMessage() {
@@ -404,175 +469,11 @@ function generateTutorialPart1FlexMessage() {
     contents: {
       type: 'carousel',
       contents: [
-        // 步驟 1：上傳照片
-        {
-          type: 'bubble',
-          size: 'kilo',
-          header: {
-            type: 'box',
-            layout: 'vertical',
-            backgroundColor: '#FF6B6B',
-            paddingAll: 'md',
-            contents: [
-              { type: 'text', text: '📸 創建貼圖', weight: 'bold', size: 'md', color: '#FFFFFF' },
-              { type: 'text', text: '步驟 1/5', size: 'xs', color: '#FFFFFFCC' }
-            ]
-          },
-          hero: {
-            type: 'image',
-            url: `${baseUrl}/images/demo/step1-upload.png`,
-            size: 'full',
-            aspectRatio: '1:1',
-            aspectMode: 'cover'
-          },
-          body: {
-            type: 'box',
-            layout: 'vertical',
-            paddingAll: 'md',
-            contents: [
-              { type: 'text', text: '上傳照片', weight: 'bold', size: 'md', color: '#333333' },
-              { type: 'text', text: '選擇一張清晰的正面照', size: 'sm', color: '#666666', margin: 'sm', wrap: true }
-            ]
-          }
-        },
-        // 步驟 2：選擇風格
-        {
-          type: 'bubble',
-          size: 'kilo',
-          header: {
-            type: 'box',
-            layout: 'vertical',
-            backgroundColor: '#AF52DE',
-            paddingAll: 'md',
-            contents: [
-              { type: 'text', text: '📸 創建貼圖', weight: 'bold', size: 'md', color: '#FFFFFF' },
-              { type: 'text', text: '步驟 2/5', size: 'xs', color: '#FFFFFFCC' }
-            ]
-          },
-          hero: {
-            type: 'image',
-            url: `${baseUrl}/images/demo/step2-style.png`,
-            size: 'full',
-            aspectRatio: '1:1',
-            aspectMode: 'cover'
-          },
-          body: {
-            type: 'box',
-            layout: 'vertical',
-            paddingAll: 'md',
-            contents: [
-              { type: 'text', text: '選擇風格', weight: 'bold', size: 'md', color: '#333333' },
-              { type: 'text', text: '可愛風、寫實風、Q版等', size: 'sm', color: '#666666', margin: 'sm', wrap: true }
-            ]
-          }
-        },
-        // 步驟 3：選擇表情
-        {
-          type: 'bubble',
-          size: 'kilo',
-          header: {
-            type: 'box',
-            layout: 'vertical',
-            backgroundColor: '#007AFF',
-            paddingAll: 'md',
-            contents: [
-              { type: 'text', text: '📸 創建貼圖', weight: 'bold', size: 'md', color: '#FFFFFF' },
-              { type: 'text', text: '步驟 3/5', size: 'xs', color: '#FFFFFFCC' }
-            ]
-          },
-          hero: {
-            type: 'image',
-            url: `${baseUrl}/images/demo/step3-emotion.png`,
-            size: 'full',
-            aspectRatio: '1:1',
-            aspectMode: 'cover'
-          },
-          body: {
-            type: 'box',
-            layout: 'vertical',
-            paddingAll: 'md',
-            contents: [
-              { type: 'text', text: '選擇表情', weight: 'bold', size: 'md', color: '#333333' },
-              { type: 'text', text: '最多可選擇 24 種表情！', size: 'sm', color: '#666666', margin: 'sm', wrap: true }
-            ]
-          }
-        },
-        // 步驟 4：AI 生成中
-        {
-          type: 'bubble',
-          size: 'kilo',
-          header: {
-            type: 'box',
-            layout: 'vertical',
-            backgroundColor: '#FF9500',
-            paddingAll: 'md',
-            contents: [
-              { type: 'text', text: '📸 創建貼圖', weight: 'bold', size: 'md', color: '#FFFFFF' },
-              { type: 'text', text: '步驟 4/5', size: 'xs', color: '#FFFFFFCC' }
-            ]
-          },
-          hero: {
-            type: 'image',
-            url: `${baseUrl}/images/demo/step4-generating.png`,
-            size: 'full',
-            aspectRatio: '1:1',
-            aspectMode: 'cover'
-          },
-          body: {
-            type: 'box',
-            layout: 'vertical',
-            paddingAll: 'md',
-            contents: [
-              { type: 'text', text: 'AI 生成中', weight: 'bold', size: 'md', color: '#333333' },
-              { type: 'text', text: 'AI 正在為你創作貼圖...', size: 'sm', color: '#666666', margin: 'sm', wrap: true }
-            ]
-          }
-        },
-        // 步驟 5：完成
-        {
-          type: 'bubble',
-          size: 'kilo',
-          header: {
-            type: 'box',
-            layout: 'vertical',
-            backgroundColor: '#34C759',
-            paddingAll: 'md',
-            contents: [
-              { type: 'text', text: '📸 創建貼圖', weight: 'bold', size: 'md', color: '#FFFFFF' },
-              { type: 'text', text: '步驟 5/5 ✅', size: 'xs', color: '#FFFFFFCC' }
-            ]
-          },
-          hero: {
-            type: 'image',
-            url: `${baseUrl}/images/demo/step5-complete.png`,
-            size: 'full',
-            aspectRatio: '1:1',
-            aspectMode: 'cover'
-          },
-          body: {
-            type: 'box',
-            layout: 'vertical',
-            paddingAll: 'md',
-            contents: [
-              { type: 'text', text: '🎉 貼圖生成完畢', weight: 'bold', size: 'md', color: '#333333' },
-              { type: 'text', text: '選擇下載或申請代上架！', size: 'sm', color: '#666666', margin: 'sm', wrap: true }
-            ]
-          },
-          footer: {
-            type: 'box',
-            layout: 'vertical',
-            paddingAll: 'sm',
-            contents: [
-              {
-                type: 'button',
-                style: 'primary',
-                color: '#06C755',
-                height: 'sm',
-                action: { type: 'message', label: '🚀 開始創建', text: '創建貼圖' }
-              }
-            ]
-          }
-        }
+        createTutorialBubble(baseUrl, '#FF6B6B', '📸 創建貼圖', '步驟 1/5', 'step1-upload.png', '上傳照片', '選擇一張清晰的正面照'),
+        createTutorialBubble(baseUrl, '#AF52DE', '📸 創建貼圖', '步驟 2/5', 'step2-style.png', '選擇風格', '可愛風、寫實風、Q版等'),
+        createTutorialBubble(baseUrl, '#007AFF', '📸 創建貼圖', '步驟 3/5', 'step3-emotion.png', '選擇表情', '最多可選擇 24 種表情！'),
+        createTutorialBubble(baseUrl, '#FF9500', '📸 創建貼圖', '步驟 4/5', 'step4-generating.png', 'AI 生成中', 'AI 正在為你創作貼圖...'),
+        createTutorialBubble(baseUrl, '#34C759', '📸 創建貼圖', '步驟 5/5 ✅', 'step5-complete.png', '🎉 貼圖生成完畢', '選擇下載或申請代上架！', true)
       ]
     },
     quickReply: {
@@ -583,6 +484,71 @@ function generateTutorialPart1FlexMessage() {
       ]
     }
   };
+}
+
+/**
+ * 生成下載/上架教學用的 bubble（圖片置中顯示 85% 寬度）
+ */
+function createDownloadTutorialBubble(baseUrl, headerColor, stepText, imageFile, title, desc, hasFooter = false) {
+  const bubble = {
+    type: 'bubble',
+    size: 'kilo',
+    header: {
+      type: 'box',
+      layout: 'vertical',
+      backgroundColor: headerColor,
+      paddingAll: 'md',
+      contents: [
+        { type: 'text', text: '🚀 下載/上架', weight: 'bold', size: 'md', color: '#FFFFFF' },
+        { type: 'text', text: stepText, size: 'xs', color: '#FFFFFFCC' }
+      ]
+    },
+    hero: {
+      type: 'box',
+      layout: 'vertical',
+      backgroundColor: '#F5F5F5',
+      paddingAll: 'md',
+      justifyContent: 'center',
+      alignItems: 'center',
+      contents: [
+        {
+          type: 'image',
+          url: `${baseUrl}/images/demo/${imageFile}`,
+          size: '85%',
+          aspectRatio: '9:16',
+          aspectMode: 'fit'
+        }
+      ]
+    },
+    body: {
+      type: 'box',
+      layout: 'vertical',
+      paddingAll: 'md',
+      contents: [
+        { type: 'text', text: title, weight: 'bold', size: 'md', color: '#333333' },
+        { type: 'text', text: desc, size: 'sm', color: '#666666', margin: 'sm', wrap: true }
+      ]
+    }
+  };
+
+  if (hasFooter) {
+    bubble.footer = {
+      type: 'box',
+      layout: 'vertical',
+      paddingAll: 'sm',
+      contents: [
+        {
+          type: 'button',
+          style: 'primary',
+          color: '#06C755',
+          height: 'sm',
+          action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' }
+        }
+      ]
+    };
+  }
+
+  return bubble;
 }
 
 /**
@@ -597,113 +563,9 @@ function generateTutorialPart2FlexMessage() {
     contents: {
       type: 'carousel',
       contents: [
-        // 步驟 1：選滿 40 張
-        {
-          type: 'bubble',
-          size: 'kilo',
-          header: {
-            type: 'box',
-            layout: 'vertical',
-            backgroundColor: '#34C759',
-            paddingAll: 'md',
-            contents: [
-              { type: 'text', text: '🚀 下載/上架', weight: 'bold', size: 'md', color: '#FFFFFF' },
-              { type: 'text', text: '步驟 1/3', size: 'xs', color: '#FFFFFFCC' }
-            ]
-          },
-          hero: {
-            type: 'image',
-            url: `${baseUrl}/images/demo/step-40stickers.png`,
-            size: 'full',
-            aspectRatio: '1:1',
-            aspectMode: 'cover'
-          },
-          body: {
-            type: 'box',
-            layout: 'vertical',
-            paddingAll: 'md',
-            contents: [
-              { type: 'text', text: '選滿 40 張貼圖', weight: 'bold', size: 'md', color: '#333333' },
-              { type: 'text', text: '確認已生成 40 張才能下載或申請上架！', size: 'sm', color: '#666666', margin: 'sm', wrap: true }
-            ]
-          }
-        },
-        // 步驟 2：自行下載
-        {
-          type: 'bubble',
-          size: 'kilo',
-          header: {
-            type: 'box',
-            layout: 'vertical',
-            backgroundColor: '#007AFF',
-            paddingAll: 'md',
-            contents: [
-              { type: 'text', text: '🚀 下載/上架', weight: 'bold', size: 'md', color: '#FFFFFF' },
-              { type: 'text', text: '步驟 2/3', size: 'xs', color: '#FFFFFFCC' }
-            ]
-          },
-          hero: {
-            type: 'image',
-            url: `${baseUrl}/images/demo/step-download.png`,
-            size: 'full',
-            aspectRatio: '1:1',
-            aspectMode: 'cover'
-          },
-          body: {
-            type: 'box',
-            layout: 'vertical',
-            paddingAll: 'md',
-            contents: [
-              { type: 'text', text: '自行下載', weight: 'bold', size: 'md', color: '#333333' },
-              { type: 'text', text: '下載 ZIP 壓縮檔，自行上傳到 LINE Creators', size: 'sm', color: '#666666', margin: 'sm', wrap: true }
-            ]
-          }
-        },
-        // 步驟 3：免費代上架
-        {
-          type: 'bubble',
-          size: 'kilo',
-          header: {
-            type: 'box',
-            layout: 'vertical',
-            backgroundColor: '#FF6B6B',
-            paddingAll: 'md',
-            contents: [
-              { type: 'text', text: '🚀 下載/上架', weight: 'bold', size: 'md', color: '#FFFFFF' },
-              { type: 'text', text: '步驟 3/3 ⭐', size: 'xs', color: '#FFFFFFCC' }
-            ]
-          },
-          hero: {
-            type: 'image',
-            url: `${baseUrl}/images/demo/step-listing.png`,
-            size: 'full',
-            aspectRatio: '1:1',
-            aspectMode: 'cover'
-          },
-          body: {
-            type: 'box',
-            layout: 'vertical',
-            paddingAll: 'md',
-            contents: [
-              { type: 'text', text: '免費代上架 ⭐', weight: 'bold', size: 'md', color: '#333333' },
-              { type: 'text', text: '填寫貼圖資訊，我們幫你上架到 LINE Store！', size: 'sm', color: '#666666', margin: 'sm', wrap: true }
-            ]
-          },
-          footer: {
-            type: 'box',
-            layout: 'vertical',
-            paddingAll: 'sm',
-            contents: [
-              {
-                type: 'button',
-                style: 'primary',
-                color: '#06C755',
-                height: 'sm',
-                action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' }
-              }
-            ]
-          }
-        }
+        createDownloadTutorialBubble(baseUrl, '#34C759', '步驟 1/3', 'step-40stickers.png', '選滿 40 張貼圖', '確認已生成 40 張才能下載或申請上架！'),
+        createDownloadTutorialBubble(baseUrl, '#007AFF', '步驟 2/3', 'step-download.png', '自行下載', '下載 ZIP 壓縮檔，自行上傳到 LINE Creators'),
+        createDownloadTutorialBubble(baseUrl, '#FF6B6B', '步驟 3/3 ⭐', 'step-listing.png', '免費代上架 ⭐', '填寫貼圖資訊，我們幫你上架到 LINE Store！', true)
       ]
     },
     quickReply: {
