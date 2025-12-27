@@ -393,190 +393,191 @@ async function markTutorialShown(userId) {
 }
 
 /**
- * 完整功能說明 Flex Message（第一部分：基本操作）
+ * 完整功能說明 Flex Message（第一部分：創建貼圖流程 - Carousel 格式）
  */
 function generateTutorialPart1FlexMessage() {
+  const baseUrl = process.env.URL || 'https://sticker-tycoon.netlify.app';
+
   return {
     type: 'flex',
-    altText: '📖 貼圖大亨 - 完整功能說明（1/2）',
+    altText: '📸 創建貼圖教學 - 左右滑動查看步驟',
     contents: {
-      type: 'bubble',
-      size: 'mega',
-      header: {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
-          {
-            type: 'text',
-            text: '📖 完整功能說明',
-            weight: 'bold',
-            size: 'xl',
-            color: '#FFFFFF'
-          },
-          {
-            type: 'text',
-            text: '第 1 部分：基本操作',
-            size: 'sm',
-            color: '#FFFFFF',
-            margin: 'sm'
-          }
-        ],
-        backgroundColor: '#FF6B6B',
-        paddingAll: '20px'
-      },
-      body: {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
-          {
-            type: 'text',
-            text: '🎨 創建貼圖流程',
-            weight: 'bold',
-            size: 'lg',
-            color: '#333333'
-          },
-          {
+      type: 'carousel',
+      contents: [
+        // 步驟 1：上傳照片
+        {
+          type: 'bubble',
+          size: 'kilo',
+          header: {
             type: 'box',
             layout: 'vertical',
-            margin: 'md',
-            spacing: 'sm',
-            contents: [
-              {
-                type: 'box',
-                layout: 'horizontal',
-                contents: [
-                  { type: 'text', text: '1️⃣', size: 'md', flex: 0, margin: 'none' },
-                  {
-                    type: 'box',
-                    layout: 'vertical',
-                    margin: 'md',
-                    contents: [
-                      { type: 'text', text: '輸入「創建貼圖」開始', size: 'sm', weight: 'bold', color: '#333333' },
-                      { type: 'text', text: '設定貼圖組名稱', size: 'xs', color: '#666666', margin: 'xs' }
-                    ]
-                  }
-                ]
-              },
-              {
-                type: 'box',
-                layout: 'horizontal',
-                margin: 'md',
-                contents: [
-                  { type: 'text', text: '2️⃣', size: 'md', flex: 0 },
-                  {
-                    type: 'box',
-                    layout: 'vertical',
-                    margin: 'md',
-                    contents: [
-                      { type: 'text', text: '上傳你的照片', size: 'sm', weight: 'bold', color: '#333333' },
-                      { type: 'text', text: '建議：正面清晰大頭照', size: 'xs', color: '#666666', margin: 'xs' }
-                    ]
-                  }
-                ]
-              },
-              {
-                type: 'box',
-                layout: 'horizontal',
-                margin: 'md',
-                contents: [
-                  { type: 'text', text: '3️⃣', size: 'md', flex: 0 },
-                  {
-                    type: 'box',
-                    layout: 'vertical',
-                    margin: 'md',
-                    contents: [
-                      { type: 'text', text: '選擇風格與構圖', size: 'sm', weight: 'bold', color: '#333333' },
-                      { type: 'text', text: '可愛風、寫實風、Q版等', size: 'xs', color: '#666666', margin: 'xs' }
-                    ]
-                  }
-                ]
-              },
-              {
-                type: 'box',
-                layout: 'horizontal',
-                margin: 'md',
-                contents: [
-                  { type: 'text', text: '4️⃣', size: 'md', flex: 0 },
-                  {
-                    type: 'box',
-                    layout: 'vertical',
-                    margin: 'md',
-                    contents: [
-                      { type: 'text', text: '選擇表情與數量', size: 'sm', weight: 'bold', color: '#333333' },
-                      { type: 'text', text: '8-40 張，每 6 張 = 3 代幣', size: 'xs', color: '#666666', margin: 'xs' }
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          { type: 'separator', margin: 'xl' },
-          {
-            type: 'text',
-            text: '💰 代幣說明',
-            weight: 'bold',
-            size: 'lg',
-            color: '#333333',
-            margin: 'xl'
-          },
-          {
-            type: 'box',
-            layout: 'vertical',
-            margin: 'md',
-            spacing: 'sm',
-            backgroundColor: '#FFF3E0',
-            cornerRadius: 'md',
+            backgroundColor: '#FF6B6B',
             paddingAll: 'md',
             contents: [
-              { type: 'text', text: '🎁 新用戶免費 40 代幣', size: 'sm', color: '#E65100', weight: 'bold' },
-              { type: 'text', text: '📊 每 6 張貼圖 = 3 代幣', size: 'xs', color: '#666666', margin: 'sm' },
-              { type: 'text', text: '🎯 18 張完整包 = 9 代幣', size: 'xs', color: '#666666', margin: 'xs' },
-              { type: 'text', text: '💎 40 張最大包 = 20 代幣', size: 'xs', color: '#666666', margin: 'xs' }
+              { type: 'text', text: '📸 創建貼圖', weight: 'bold', size: 'md', color: '#FFFFFF' },
+              { type: 'text', text: '步驟 1/5', size: 'xs', color: '#FFFFFFCC' }
+            ]
+          },
+          hero: {
+            type: 'image',
+            url: `${baseUrl}/images/demo/step1-upload.png`,
+            size: 'full',
+            aspectRatio: '1:1',
+            aspectMode: 'cover'
+          },
+          body: {
+            type: 'box',
+            layout: 'vertical',
+            paddingAll: 'md',
+            contents: [
+              { type: 'text', text: '上傳照片', weight: 'bold', size: 'md', color: '#333333' },
+              { type: 'text', text: '選擇一張清晰的正面照', size: 'sm', color: '#666666', margin: 'sm', wrap: true }
             ]
           }
-        ],
-        paddingAll: '20px'
-      },
-      footer: {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
-          {
-            type: 'button',
-            style: 'primary',
-            color: '#667eea',
-            action: {
-              type: 'uri',
-              label: '📖 查看完整圖文教學',
-              uri: `${process.env.URL || 'https://sticker-tycoon.netlify.app'}/guide.html`
-            }
+        },
+        // 步驟 2：選擇風格
+        {
+          type: 'bubble',
+          size: 'kilo',
+          header: {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#AF52DE',
+            paddingAll: 'md',
+            contents: [
+              { type: 'text', text: '📸 創建貼圖', weight: 'bold', size: 'md', color: '#FFFFFF' },
+              { type: 'text', text: '步驟 2/5', size: 'xs', color: '#FFFFFFCC' }
+            ]
           },
-          {
-            type: 'button',
-            style: 'secondary',
-            action: {
-              type: 'message',
-              label: '👉 查看第 2 部分',
-              text: '功能說明2'
-            }
+          hero: {
+            type: 'image',
+            url: `${baseUrl}/images/demo/step2-style.png`,
+            size: 'full',
+            aspectRatio: '1:1',
+            aspectMode: 'cover'
           },
-          {
-            type: 'button',
-            style: 'link',
-            action: {
-              type: 'message',
-              label: '🚀 立即開始創建',
-              text: '創建貼圖'
-            }
+          body: {
+            type: 'box',
+            layout: 'vertical',
+            paddingAll: 'md',
+            contents: [
+              { type: 'text', text: '選擇風格', weight: 'bold', size: 'md', color: '#333333' },
+              { type: 'text', text: '可愛風、寫實風、Q版等', size: 'sm', color: '#666666', margin: 'sm', wrap: true }
+            ]
           }
-        ],
-        spacing: 'sm'
-      }
+        },
+        // 步驟 3：選擇表情
+        {
+          type: 'bubble',
+          size: 'kilo',
+          header: {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#007AFF',
+            paddingAll: 'md',
+            contents: [
+              { type: 'text', text: '📸 創建貼圖', weight: 'bold', size: 'md', color: '#FFFFFF' },
+              { type: 'text', text: '步驟 3/5', size: 'xs', color: '#FFFFFFCC' }
+            ]
+          },
+          hero: {
+            type: 'image',
+            url: `${baseUrl}/images/demo/step3-emotion.png`,
+            size: 'full',
+            aspectRatio: '1:1',
+            aspectMode: 'cover'
+          },
+          body: {
+            type: 'box',
+            layout: 'vertical',
+            paddingAll: 'md',
+            contents: [
+              { type: 'text', text: '選擇表情', weight: 'bold', size: 'md', color: '#333333' },
+              { type: 'text', text: '最多可選擇 24 種表情！', size: 'sm', color: '#666666', margin: 'sm', wrap: true }
+            ]
+          }
+        },
+        // 步驟 4：AI 生成中
+        {
+          type: 'bubble',
+          size: 'kilo',
+          header: {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#FF9500',
+            paddingAll: 'md',
+            contents: [
+              { type: 'text', text: '📸 創建貼圖', weight: 'bold', size: 'md', color: '#FFFFFF' },
+              { type: 'text', text: '步驟 4/5', size: 'xs', color: '#FFFFFFCC' }
+            ]
+          },
+          hero: {
+            type: 'image',
+            url: `${baseUrl}/images/demo/step4-generating.png`,
+            size: 'full',
+            aspectRatio: '1:1',
+            aspectMode: 'cover'
+          },
+          body: {
+            type: 'box',
+            layout: 'vertical',
+            paddingAll: 'md',
+            contents: [
+              { type: 'text', text: 'AI 生成中', weight: 'bold', size: 'md', color: '#333333' },
+              { type: 'text', text: 'AI 正在為你創作貼圖...', size: 'sm', color: '#666666', margin: 'sm', wrap: true }
+            ]
+          }
+        },
+        // 步驟 5：完成
+        {
+          type: 'bubble',
+          size: 'kilo',
+          header: {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#34C759',
+            paddingAll: 'md',
+            contents: [
+              { type: 'text', text: '📸 創建貼圖', weight: 'bold', size: 'md', color: '#FFFFFF' },
+              { type: 'text', text: '步驟 5/5 ✅', size: 'xs', color: '#FFFFFFCC' }
+            ]
+          },
+          hero: {
+            type: 'image',
+            url: `${baseUrl}/images/demo/step5-complete.png`,
+            size: 'full',
+            aspectRatio: '1:1',
+            aspectMode: 'cover'
+          },
+          body: {
+            type: 'box',
+            layout: 'vertical',
+            paddingAll: 'md',
+            contents: [
+              { type: 'text', text: '🎉 貼圖生成完畢', weight: 'bold', size: 'md', color: '#333333' },
+              { type: 'text', text: '選擇下載或申請代上架！', size: 'sm', color: '#666666', margin: 'sm', wrap: true }
+            ]
+          },
+          footer: {
+            type: 'box',
+            layout: 'vertical',
+            paddingAll: 'sm',
+            contents: [
+              {
+                type: 'button',
+                style: 'primary',
+                color: '#06C755',
+                height: 'sm',
+                action: { type: 'message', label: '🚀 開始創建', text: '創建貼圖' }
+              }
+            ]
+          }
+        }
+      ]
     },
     quickReply: {
       items: [
-        { type: 'action', action: { type: 'uri', label: '📖 圖文教學', uri: `${process.env.URL || 'https://sticker-tycoon.netlify.app'}/guide.html` } },
-        { type: 'action', action: { type: 'message', label: '👉 功能說明2', text: '功能說明2' } },
+        { type: 'action', action: { type: 'message', label: '🚀 下載/上架說明', text: '功能說明2' } },
         { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
         { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } }
       ]
@@ -585,239 +586,129 @@ function generateTutorialPart1FlexMessage() {
 }
 
 /**
- * 完整功能說明 Flex Message（第二部分：進階功能與注意事項）
+ * 完整功能說明 Flex Message（第二部分：下載/上架說明 - Carousel 格式）
  */
 function generateTutorialPart2FlexMessage() {
+  const baseUrl = process.env.URL || 'https://sticker-tycoon.netlify.app';
+
   return {
     type: 'flex',
-    altText: '📖 貼圖大亨 - 完整功能說明（2/2）',
+    altText: '🚀 下載/上架教學 - 左右滑動查看步驟',
     contents: {
-      type: 'bubble',
-      size: 'mega',
-      header: {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
-          {
-            type: 'text',
-            text: '📖 完整功能說明',
-            weight: 'bold',
-            size: 'xl',
-            color: '#FFFFFF'
-          },
-          {
-            type: 'text',
-            text: '第 2 部分：進階功能',
-            size: 'sm',
-            color: '#FFFFFF',
-            margin: 'sm'
-          }
-        ],
-        backgroundColor: '#06C755',
-        paddingAll: '20px'
-      },
-      body: {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
-          {
-            type: 'text',
-            text: '📁 管理貼圖',
-            weight: 'bold',
-            size: 'lg',
-            color: '#333333'
-          },
-          {
+      type: 'carousel',
+      contents: [
+        // 步驟 1：選滿 40 張
+        {
+          type: 'bubble',
+          size: 'kilo',
+          header: {
             type: 'box',
             layout: 'vertical',
-            margin: 'md',
-            spacing: 'sm',
-            contents: [
-              { type: 'text', text: '• 輸入「我的貼圖」查看所有貼圖組', size: 'sm', color: '#555555' },
-              { type: 'text', text: '• 輸入「查詢進度」查看生成狀態', size: 'sm', color: '#555555' },
-              { type: 'text', text: '• 輸入「代幣」查詢剩餘代幣', size: 'sm', color: '#555555' },
-              { type: 'text', text: '• 點擊「管理待上傳」準備打包', size: 'sm', color: '#555555' }
-            ]
-          },
-          { type: 'separator', margin: 'xl' },
-          {
-            type: 'text',
-            text: '🎁 賺取代幣',
-            weight: 'bold',
-            size: 'lg',
-            color: '#333333',
-            margin: 'xl'
-          },
-          {
-            type: 'box',
-            layout: 'vertical',
-            margin: 'md',
-            spacing: 'sm',
-            backgroundColor: '#E8F5E9',
-            cornerRadius: 'md',
+            backgroundColor: '#34C759',
             paddingAll: 'md',
             contents: [
-              { type: 'text', text: '📤 分享給好友，雙方各得 10 代幣', size: 'sm', color: '#2E7D32', weight: 'bold' },
-              { type: 'text', text: '👥 最多推薦 3 位好友 = 30 代幣', size: 'xs', color: '#666666', margin: 'sm' },
-              { type: 'text', text: '🎬 YouTuber 推廣計畫另有優惠', size: 'xs', color: '#666666', margin: 'xs' }
+              { type: 'text', text: '🚀 下載/上架', weight: 'bold', size: 'md', color: '#FFFFFF' },
+              { type: 'text', text: '步驟 1/3', size: 'xs', color: '#FFFFFFCC' }
             ]
           },
-          { type: 'separator', margin: 'xl' },
-          {
-            type: 'text',
-            text: '⚠️ 重要注意事項',
-            weight: 'bold',
-            size: 'lg',
-            color: '#FF6B6B',
-            margin: 'xl'
+          hero: {
+            type: 'image',
+            url: `${baseUrl}/images/demo/step-40stickers.png`,
+            size: 'full',
+            aspectRatio: '1:1',
+            aspectMode: 'cover'
           },
-          {
+          body: {
             type: 'box',
             layout: 'vertical',
-            margin: 'md',
-            spacing: 'sm',
-            backgroundColor: '#FFEBEE',
-            cornerRadius: 'md',
             paddingAll: 'md',
             contents: [
-              {
-                type: 'text',
-                text: '📸 照片品質',
-                size: 'sm',
-                weight: 'bold',
-                color: '#C62828'
-              },
-              {
-                type: 'text',
-                text: '• 正面清晰大頭照效果最佳\n• 光線充足、背景簡單\n• 避免側臉、遮擋、模糊',
-                size: 'xs',
-                color: '#666666',
-                margin: 'xs',
-                wrap: true
-              },
-              {
-                type: 'text',
-                text: '⏱️ 生成時間',
-                size: 'sm',
-                weight: 'bold',
-                color: '#C62828',
-                margin: 'md'
-              },
-              {
-                type: 'text',
-                text: '• 通常 2-5 分鐘完成\n• 高峰期可能需要 5-10 分鐘\n• 完成後會自動通知',
-                size: 'xs',
-                color: '#666666',
-                margin: 'xs',
-                wrap: true
-              },
-              {
-                type: 'text',
-                text: '📦 上傳 LINE',
-                size: 'sm',
-                weight: 'bold',
-                color: '#C62828',
-                margin: 'md'
-              },
-              {
-                type: 'text',
-                text: '• 需滿 40 張才能打包\n• 下載 ZIP 檔案\n• 到 LINE Creators Market 上傳\n• 審核通過後即可販售',
-                size: 'xs',
-                color: '#666666',
-                margin: 'xs',
-                wrap: true
-              }
-            ]
-          },
-          { type: 'separator', margin: 'xl' },
-          {
-            type: 'box',
-            layout: 'vertical',
-            margin: 'md',
-            backgroundColor: '#FFF3E0',
-            cornerRadius: 'md',
-            paddingAll: 'md',
-            contents: [
-              {
-                type: 'text',
-                text: '💡 小提示',
-                size: 'sm',
-                weight: 'bold',
-                color: '#E65100'
-              },
-              {
-                type: 'text',
-                text: '• 隨時輸入「取消」可重新開始\n• 輸入「示範圖集」查看範例\n• 有問題輸入「客服」聯繫我們',
-                size: 'xs',
-                color: '#666666',
-                margin: 'xs',
-                wrap: true
-              }
+              { type: 'text', text: '選滿 40 張貼圖', weight: 'bold', size: 'md', color: '#333333' },
+              { type: 'text', text: '確認已生成 40 張才能下載或申請上架！', size: 'sm', color: '#666666', margin: 'sm', wrap: true }
             ]
           }
-        ],
-        paddingAll: '20px'
-      },
-      footer: {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
-          {
-            type: 'button',
-            style: 'primary',
-            color: '#667eea',
-            action: {
-              type: 'uri',
-              label: '📖 查看完整圖文教學',
-              uri: `${process.env.URL || 'https://sticker-tycoon.netlify.app'}/guide.html`
-            }
-          },
-          {
-            type: 'button',
-            style: 'primary',
-            color: '#06C755',
-            margin: 'sm',
-            action: {
-              type: 'message',
-              label: '🚀 開始創建貼圖',
-              text: '創建貼圖'
-            }
-          },
-          {
+        },
+        // 步驟 2：自行下載
+        {
+          type: 'bubble',
+          size: 'kilo',
+          header: {
             type: 'box',
-            layout: 'horizontal',
-            spacing: 'sm',
-            margin: 'sm',
+            layout: 'vertical',
+            backgroundColor: '#007AFF',
+            paddingAll: 'md',
+            contents: [
+              { type: 'text', text: '🚀 下載/上架', weight: 'bold', size: 'md', color: '#FFFFFF' },
+              { type: 'text', text: '步驟 2/3', size: 'xs', color: '#FFFFFFCC' }
+            ]
+          },
+          hero: {
+            type: 'image',
+            url: `${baseUrl}/images/demo/step-download.png`,
+            size: 'full',
+            aspectRatio: '1:1',
+            aspectMode: 'cover'
+          },
+          body: {
+            type: 'box',
+            layout: 'vertical',
+            paddingAll: 'md',
+            contents: [
+              { type: 'text', text: '自行下載', weight: 'bold', size: 'md', color: '#333333' },
+              { type: 'text', text: '下載 ZIP 壓縮檔，自行上傳到 LINE Creators', size: 'sm', color: '#666666', margin: 'sm', wrap: true }
+            ]
+          }
+        },
+        // 步驟 3：免費代上架
+        {
+          type: 'bubble',
+          size: 'kilo',
+          header: {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#FF6B6B',
+            paddingAll: 'md',
+            contents: [
+              { type: 'text', text: '🚀 下載/上架', weight: 'bold', size: 'md', color: '#FFFFFF' },
+              { type: 'text', text: '步驟 3/3 ⭐', size: 'xs', color: '#FFFFFFCC' }
+            ]
+          },
+          hero: {
+            type: 'image',
+            url: `${baseUrl}/images/demo/step-listing.png`,
+            size: 'full',
+            aspectRatio: '1:1',
+            aspectMode: 'cover'
+          },
+          body: {
+            type: 'box',
+            layout: 'vertical',
+            paddingAll: 'md',
+            contents: [
+              { type: 'text', text: '免費代上架 ⭐', weight: 'bold', size: 'md', color: '#333333' },
+              { type: 'text', text: '填寫貼圖資訊，我們幫你上架到 LINE Store！', size: 'sm', color: '#666666', margin: 'sm', wrap: true }
+            ]
+          },
+          footer: {
+            type: 'box',
+            layout: 'vertical',
+            paddingAll: 'sm',
             contents: [
               {
                 type: 'button',
-                style: 'link',
-                flex: 1,
-                action: {
-                  type: 'message',
-                  label: '📁 我的貼圖',
-                  text: '我的貼圖'
-                }
-              },
-              {
-                type: 'button',
-                style: 'link',
-                flex: 1,
-                action: {
-                  type: 'message',
-                  label: '🎁 分享賺幣',
-                  text: '分享給好友'
-                }
+                style: 'primary',
+                color: '#06C755',
+                height: 'sm',
+                action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' }
               }
             ]
           }
-        ],
-        spacing: 'sm'
-      }
+        }
+      ]
     },
     quickReply: {
       items: [
-        { type: 'action', action: { type: 'uri', label: '📖 圖文教學', uri: `${process.env.URL || 'https://sticker-tycoon.netlify.app'}/guide.html` } },
+        { type: 'action', action: { type: 'message', label: '📸 創建貼圖教學', text: '功能說明' } },
         { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
         { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
         { type: 'action', action: { type: 'message', label: '🎁 分享給好友', text: '分享給好友' } }

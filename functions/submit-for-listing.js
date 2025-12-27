@@ -124,7 +124,7 @@ exports.handler = async function(event) {
       body: JSON.stringify({
         success: true,
         applicationId,
-        message: '上架申請已提交，預計 3-7 個工作天完成'
+        message: '上架申請已提交，預計 1-3 個工作天完成'
       })
     };
 

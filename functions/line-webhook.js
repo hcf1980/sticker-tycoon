@@ -2402,7 +2402,7 @@ async function handleDemoGallery(replyToken, userId) {
  */
 function generateDemoGalleryFromDB(items) {
   // LINE 官方帳號連結
-  const lineOALink = 'https://line.me/R/ti/p/@276vcfne';
+  const lineOALink = 'https://line.me/R/ti/p/@sticker-tycoon';
 
   // 分享文字
   const shareText = `🎨 推薦你一個超讚的貼圖製作工具！
@@ -2411,7 +2411,7 @@ function generateDemoGalleryFromDB(items) {
 
 🎁 新用戶免費送 40 代幣
 📸 上傳照片就能生成貼圖
-🚀 3-7 天免費代上架 LINE 貼圖小舖
+🚀 1-3 天免費代上架 LINE 貼圖小舖
 
 👉 點擊加入：${lineOALink}`;
 
@@ -3076,7 +3076,7 @@ async function handleReferralInfo(replyToken, userId) {
     const shareText = `🎨 推薦貼圖製作工具！
 AI 幫你做專屬 LINE 貼圖 ✨
 🎁 新用戶 40 代幣+推薦碼「${referralCode}」再送 10！
-👉 https://line.me/R/ti/p/@276vcfne
+👉 https://line.me/R/ti/p/@sticker-tycoon
 加入後輸入「輸入推薦碼 ${referralCode}」`;
 
     // 簡單的文字訊息 + QuickReply 分享按鈕
@@ -3202,7 +3202,7 @@ async function handleShareReferralCode(replyToken, userId) {
 📋 推薦碼：${code}
 
 👉 加入方式：
-1. 加入 LINE 官方帳號 @276vcfne
+1. 加入 LINE 官方帳號 @sticker-tycoon
 2. 輸入「輸入推薦碼 ${code}」
 3. 一起來創建可愛貼圖吧！`;
 

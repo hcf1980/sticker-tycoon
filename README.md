@@ -5,7 +5,7 @@
 
 > 輕鬆三步驟，創建專屬 LINE 貼圖 - AI 驅動的 LINE Bot 貼圖生成系統
 
-[立即使用](https://line.me/R/ti/p/@276vcfne) | [功能特色](#功能特色) | [技術架構](#技術架構) | [部署指南](#部署指南) | [Logo 設置](#-logo-設置)
+[立即使用](https://line.me/R/ti/p/@sticker-tycoon) | [功能特色](#功能特色) | [技術架構](#技術架構) | [部署指南](#部署指南) | [Logo 設置](#-logo-設置)
 
 ---
 
@@ -420,7 +420,7 @@ convert original.png -resize 180x180 apple-touch-icon.png
 
 ## 📞 聯絡方式
 
-- LINE 官方帳號: [@276vcfne](https://line.me/R/ti/p/@276vcfne)
+- LINE 官方帳號: [@sticker-tycoon](https://line.me/R/ti/p/@sticker-tycoon)
 - 問題回報: [GitHub Issues](https://github.com/YOUR_USERNAME/sticker-tycoon/issues)
 - Email: johnyarcher2100@yahoo.com.tw
 
