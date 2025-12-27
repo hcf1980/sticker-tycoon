@@ -482,7 +482,8 @@ function generateTutorialPart1FlexMessage() {
       items: [
         { type: 'action', action: { type: 'message', label: '🚀 下載/上架說明', text: '功能說明2' } },
         { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
-        { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } }
+        { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
+        { type: 'action', action: { type: 'message', label: '🎁 分享給好友', text: '分享給好友' } }
       ]
     }
   };

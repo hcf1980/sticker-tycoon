@@ -78,14 +78,10 @@ async function handleTextMessage(replyToken, userId, text) {
         text: '❌ 已取消創建流程\n\n輸入「創建貼圖」重新開始！',
         quickReply: {
           items: [
-            {
-              type: 'action',
-              action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' }
-            },
-            {
-              type: 'action',
-              action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' }
-            }
+            { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
+            { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
+            { type: 'action', action: { type: 'message', label: '📸 創建教學', text: '功能說明' } },
+            { type: 'action', action: { type: 'message', label: '🚀 上架教學', text: '功能說明2' } }
           ]
         }
       });
@@ -132,6 +128,7 @@ async function handleTextMessage(replyToken, userId, text) {
           quickReply: {
             items: [
               { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
+              { type: 'action', action: { type: 'message', label: '📸 創建教學', text: '功能說明' } },
               { type: 'action', action: { type: 'message', label: '✨ 示範圖集', text: '示範圖集' } },
               { type: 'action', action: { type: 'message', label: '💰 我的代幣', text: '代幣' } }
             ]
@@ -291,7 +288,8 @@ async function handleTextMessage(replyToken, userId, text) {
         items: [
           { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
           { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
-          { type: 'action', action: { type: 'message', label: '💰 我的代幣', text: '代幣' } }
+          { type: 'action', action: { type: 'message', label: '📸 創建教學', text: '功能說明' } },
+          { type: 'action', action: { type: 'message', label: '🚀 上架教學', text: '功能說明2' } }
         ]
       }
     });
@@ -646,6 +644,7 @@ async function handleCheckProgress(replyToken, userId) {
           quickReply: {
             items: [
               { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
+              { type: 'action', action: { type: 'message', label: '📸 創建教學', text: '功能說明' } },
               { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
               { type: 'action', action: { type: 'message', label: '💰 我的代幣', text: '代幣' } }
             ]
@@ -752,6 +751,7 @@ async function handleImageMessage(replyToken, userId, messageId) {
         quickReply: {
           items: [
             { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
+            { type: 'action', action: { type: 'message', label: '📸 創建教學', text: '功能說明' } },
             { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
             { type: 'action', action: { type: 'message', label: '✨ 示範圖集', text: '示範圖集' } }
           ]
@@ -2237,7 +2237,8 @@ async function handleClearUploadQueue(replyToken, userId) {
         items: [
           { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
           { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
-          { type: 'action', action: { type: 'message', label: '🎁 分享給好友', text: '分享給好友' } }
+          { type: 'action', action: { type: 'message', label: '📸 創建教學', text: '功能說明' } },
+          { type: 'action', action: { type: 'message', label: '🚀 上架教學', text: '功能說明2' } }
         ]
       }
     });
@@ -2333,6 +2334,7 @@ async function handleDemoGallery(replyToken, userId) {
         quickReply: {
           items: [
             { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
+            { type: 'action', action: { type: 'message', label: '📸 創建教學', text: '功能說明' } },
             { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } }
           ]
         }
@@ -2348,6 +2350,7 @@ async function handleDemoGallery(replyToken, userId) {
         quickReply: {
           items: [
             { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
+            { type: 'action', action: { type: 'message', label: '📸 創建教學', text: '功能說明' } },
             { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
             { type: 'action', action: { type: 'message', label: '💰 我的代幣', text: '代幣' } }
           ]
@@ -2368,6 +2371,7 @@ async function handleDemoGallery(replyToken, userId) {
         quickReply: {
           items: [
             { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
+            { type: 'action', action: { type: 'message', label: '📸 創建教學', text: '功能說明' } },
             { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } }
           ]
         }
@@ -2390,6 +2394,7 @@ async function handleDemoGallery(replyToken, userId) {
       quickReply: {
         items: [
           { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
+          { type: 'action', action: { type: 'message', label: '📸 創建教學', text: '功能說明' } },
           { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } }
         ]
       }
@@ -3212,8 +3217,9 @@ async function handleShareReferralCode(replyToken, userId) {
     quickReply: {
       items: [
         { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
-        { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
-        { type: 'action', action: { type: 'message', label: '💰 我的代幣', text: '代幣' } }
+        { type: 'action', action: { type: 'message', label: '📸 創建教學', text: '功能說明' } },
+        { type: 'action', action: { type: 'message', label: '🚀 上架教學', text: '功能說明2' } },
+        { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } }
       ]
     }
   });
