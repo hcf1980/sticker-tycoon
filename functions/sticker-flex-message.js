@@ -544,7 +544,16 @@ function generateTutorialPart1FlexMessage() {
           {
             type: 'button',
             style: 'primary',
-            color: '#FF6B6B',
+            color: '#667eea',
+            action: {
+              type: 'uri',
+              label: '📖 查看完整圖文教學',
+              uri: `${process.env.URL || 'https://sticker-tycoon.netlify.app'}/guide.html`
+            }
+          },
+          {
+            type: 'button',
+            style: 'secondary',
             action: {
               type: 'message',
               label: '👉 查看第 2 部分',
@@ -566,6 +575,7 @@ function generateTutorialPart1FlexMessage() {
     },
     quickReply: {
       items: [
+        { type: 'action', action: { type: 'uri', label: '📖 圖文教學', uri: `${process.env.URL || 'https://sticker-tycoon.netlify.app'}/guide.html` } },
         { type: 'action', action: { type: 'message', label: '👉 功能說明2', text: '功能說明2' } },
         { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
         { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } }
@@ -755,7 +765,18 @@ function generateTutorialPart2FlexMessage() {
           {
             type: 'button',
             style: 'primary',
+            color: '#667eea',
+            action: {
+              type: 'uri',
+              label: '📖 查看完整圖文教學',
+              uri: `${process.env.URL || 'https://sticker-tycoon.netlify.app'}/guide.html`
+            }
+          },
+          {
+            type: 'button',
+            style: 'primary',
             color: '#06C755',
+            margin: 'sm',
             action: {
               type: 'message',
               label: '🚀 開始創建貼圖',
@@ -796,6 +817,7 @@ function generateTutorialPart2FlexMessage() {
     },
     quickReply: {
       items: [
+        { type: 'action', action: { type: 'uri', label: '📖 圖文教學', uri: `${process.env.URL || 'https://sticker-tycoon.netlify.app'}/guide.html` } },
         { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
         { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
         { type: 'action', action: { type: 'message', label: '🎁 分享給好友', text: '分享給好友' } }
