@@ -220,48 +220,12 @@
         <div class="feature-arrow">怎麼用？→</div>
       </div>
 
-      <!-- 選擇風格 -->
-      <div class="feature-item" onclick="openModal('style')">
-        <div class="feature-icon purple">🎨</div>
-        <div class="feature-content">
-          <h3>選擇風格</h3>
-          <p>8 種預設 + 無限自訂風格</p>
-        </div>
-        <div class="feature-arrow">怎麼用？→</div>
-      </div>
-
-      <!-- 選擇表情 -->
-      <div class="feature-item" onclick="openModal('emotion')">
-        <div class="feature-icon blue">😊</div>
-        <div class="feature-content">
-          <h3>選擇表情</h3>
-          <p>24 種表情任你選擇</p>
-        </div>
-        <div class="feature-arrow">怎麼用？→</div>
-      </div>
-
       <!-- 下載/上架 -->
       <div class="feature-item" onclick="openModal('download')">
         <div class="feature-icon green">🚀</div>
         <div class="feature-content">
           <h3>下載 / 代上架</h3>
           <p>免費代上架到 LINE Store</p>
-        </div>
-        <div class="feature-arrow">怎麼用？→</div>
-      </div>
-    </div>
-
-    <!-- 代幣說明 -->
-    <div class="feature-list">
-      <h2 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 16px; color: #333;">
-        💰 代幣說明
-      </h2>
-
-      <div class="feature-item" onclick="openModal('token')">
-        <div class="feature-icon" style="background: linear-gradient(135deg, #ffd700 0%, #ffb700 100%);">💎</div>
-        <div class="feature-content">
-          <h3>代幣怎麼用？</h3>
-          <p>了解代幣消耗與購買方式</p>
         </div>
         <div class="feature-arrow">怎麼用？→</div>
       </div>
@@ -350,96 +314,6 @@
     </div>
   </div>
 
-  <!-- Modal: 選擇風格 -->
-  <div class="modal-overlay" id="modal-style">
-    <div class="modal-content">
-      <div class="modal-header" style="position: relative; background: linear-gradient(135deg, #af52de 0%, #bf5af2 100%);">
-        <button class="modal-close" onclick="closeModal('style')">✕</button>
-        <h2>🎨 選擇風格</h2>
-        <p style="font-size: 0.9rem; opacity: 0.9; margin-top: 8px;">打造獨一無二的貼圖風格</p>
-      </div>
-      <div class="steps-container">
-        <div class="step-card">
-          <div class="step-number" style="background: #af52de;">風格 1</div>
-          <div class="step-title">8 種預設風格</div>
-          <div class="step-image">
-            <div style="background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%); height: 180px; border-radius: 12px; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; padding: 16px;">
-              <span style="font-size: 2rem;">🎭</span>
-              <span style="font-size: 2rem;">🌸</span>
-              <span style="font-size: 2rem;">🎪</span>
-              <span style="font-size: 2rem;">🌈</span>
-            </div>
-          </div>
-          <div class="step-desc">
-            可愛風、搞笑風、文青風...<br>
-            <span class="highlight" style="color: #af52de;">點擊即可預覽效果</span>
-          </div>
-        </div>
-        <div class="step-card">
-          <div class="step-number" style="background: #af52de;">風格 2</div>
-          <div class="step-title">自訂風格</div>
-          <div class="step-image">
-            <div style="background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%); height: 180px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 4rem;">✏️</div>
-          </div>
-          <div class="step-desc">
-            輸入你想要的風格描述<br>
-            <span class="highlight" style="color: #af52de;">例如：「賽博龐克風」</span>
-          </div>
-        </div>
-      </div>
-      <div class="steps-indicator">
-        <span class="dot active"></span>
-        <span class="dot"></span>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal: 選擇表情 -->
-  <div class="modal-overlay" id="modal-emotion">
-    <div class="modal-content">
-      <div class="modal-header" style="position: relative; background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);">
-        <button class="modal-close" onclick="closeModal('emotion')">✕</button>
-        <h2>😊 選擇表情</h2>
-        <p style="font-size: 0.9rem; opacity: 0.9; margin-top: 8px;">24 種表情任你挑選</p>
-      </div>
-      <div class="steps-container">
-        <div class="step-card">
-          <div class="step-number" style="background: #007aff;">表情選擇</div>
-          <div class="step-title">勾選想要的表情</div>
-          <div class="step-image">
-            <div style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); height: 180px; border-radius: 12px; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px; padding: 16px;">
-              <span style="font-size: 2rem;">😀</span>
-              <span style="font-size: 2rem;">😍</span>
-              <span style="font-size: 2rem;">🤣</span>
-              <span style="font-size: 2rem;">😭</span>
-              <span style="font-size: 2rem;">😎</span>
-              <span style="font-size: 2rem;">🥺</span>
-            </div>
-          </div>
-          <div class="step-desc">
-            開心、難過、生氣、驚訝...<br>
-            <span class="highlight" style="color: #007aff;">可多選，最多 24 種！</span>
-          </div>
-        </div>
-        <div class="step-card">
-          <div class="step-number" style="background: #007aff;">小技巧</div>
-          <div class="step-title">快速全選</div>
-          <div class="step-image">
-            <div style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); height: 180px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 4rem;">✅</div>
-          </div>
-          <div class="step-desc">
-            點擊「全選」按鈕<br>
-            <span class="highlight" style="color: #007aff;">一次選擇所有表情！</span>
-          </div>
-        </div>
-      </div>
-      <div class="steps-indicator">
-        <span class="dot active"></span>
-        <span class="dot"></span>
-      </div>
-    </div>
-  </div>
-
   <!-- Modal: 下載/上架 -->
   <div class="modal-overlay" id="modal-download">
     <div class="modal-content">
@@ -453,92 +327,16 @@
           <div class="step-number" style="background: #34c759;">方式 1</div>
           <div class="step-title">下載貼圖</div>
           <div class="step-image">
-            <div style="background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); height: 180px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 4rem;">📥</div>
+            <img src="/images/demo/step5-complete.png" alt="下載貼圖" style="width: 100%; height: 180px; object-fit: cover; border-radius: 12px;">
           </div>
           <div class="step-desc">
             下載 ZIP 壓縮檔<br>
             <span class="highlight" style="color: #34c759;">自行上傳到 LINE Creators</span>
           </div>
         </div>
-        <div class="step-card">
-          <div class="step-number" style="background: #34c759;">方式 2</div>
-          <div class="step-title">免費代上架 ⭐</div>
-          <div class="step-image">
-            <div style="background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); height: 180px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 4rem;">🎁</div>
-          </div>
-          <div class="step-desc">
-            填寫貼圖資訊<br>
-            <span class="highlight" style="color: #34c759;">我們幫你上架到 LINE Store！</span>
-          </div>
-        </div>
-        <div class="step-card">
-          <div class="step-number" style="background: #34c759;">流程</div>
-          <div class="step-title">代上架流程</div>
-          <div class="step-image">
-            <div style="background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); height: 180px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 16px;">
-              <div style="font-size: 0.9rem;">📝 填寫資訊</div>
-              <div>↓</div>
-              <div style="font-size: 0.9rem;">📤 提交申請</div>
-              <div>↓</div>
-              <div style="font-size: 0.9rem;">✅ 審核上架（約 3-7 天）</div>
-            </div>
-          </div>
-          <div class="step-desc">
-            提交後請耐心等待<br>
-            <span class="highlight" style="color: #34c759;">上架成功會通知你！</span>
-          </div>
-        </div>
       </div>
       <div class="steps-indicator">
         <span class="dot active"></span>
-        <span class="dot"></span>
-        <span class="dot"></span>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal: 代幣說明 -->
-  <div class="modal-overlay" id="modal-token">
-    <div class="modal-content">
-      <div class="modal-header" style="position: relative; background: linear-gradient(135deg, #ffd700 0%, #ffb700 100%);">
-        <button class="modal-close" onclick="closeModal('token')">✕</button>
-        <h2>💎 代幣說明</h2>
-        <p style="font-size: 0.9rem; opacity: 0.9; margin-top: 8px;">了解代幣的使用方式</p>
-      </div>
-      <div class="steps-container">
-        <div class="step-card">
-          <div class="step-number" style="background: #ffb700;">消耗</div>
-          <div class="step-title">代幣消耗規則</div>
-          <div class="step-image">
-            <div style="background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%); height: 180px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 16px;">
-              <div style="font-size: 1.1rem; font-weight: 600;">🖼️ 每張貼圖 = 1 代幣</div>
-              <div style="font-size: 0.9rem; color: #666;">生成 24 張 = 消耗 24 代幣</div>
-            </div>
-          </div>
-          <div class="step-desc">
-            只有成功生成才會扣除<br>
-            <span class="highlight" style="color: #ff9500;">失敗不扣代幣！</span>
-          </div>
-        </div>
-        <div class="step-card">
-          <div class="step-number" style="background: #ffb700;">購買</div>
-          <div class="step-title">如何購買代幣</div>
-          <div class="step-image">
-            <div style="background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%); height: 180px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 16px;">
-              <div style="font-size: 2rem;">💰</div>
-              <div style="font-size: 0.9rem;">點擊右上角「購買代幣」</div>
-              <div style="font-size: 0.9rem;">選擇方案 → 完成付款</div>
-            </div>
-          </div>
-          <div class="step-desc">
-            多種方案可選<br>
-            <span class="highlight" style="color: #ff9500;">買越多越划算！</span>
-          </div>
-        </div>
-      </div>
-      <div class="steps-indicator">
-        <span class="dot active"></span>
-        <span class="dot"></span>
       </div>
     </div>
   </div>
