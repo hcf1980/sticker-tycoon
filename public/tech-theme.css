@@ -251,6 +251,18 @@ body {
   color: var(--accent-green);
 }
 
+.tag-purple {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  background: rgba(157, 78, 221, 0.15);
+  border: 1px solid var(--accent-purple);
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--accent-purple);
+}
+
 /* 風格卡片 */
 .style-card {
   background: var(--bg-card);

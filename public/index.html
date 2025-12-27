@@ -131,8 +131,8 @@
             <div class="absolute -top-4 -right-4 glass-card px-4 py-2 rounded-full">
               <span class="text-2xl">🎨</span>
               <span class="text-sm font-medium text-white ml-1">8 種風格</span>
-            </div>
-            
+        </div>
+
             <div class="absolute -bottom-4 -left-4 glass-card px-4 py-2 rounded-full">
               <span class="text-2xl">⚡</span>
               <span class="text-sm font-medium text-white ml-1">3 分鐘生成</span>
@@ -173,10 +173,10 @@
         <div class="glass-card p-6 text-center">
           <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-purple-500/20 to-purple-500/5 flex items-center justify-center">
             <span class="text-4xl">🎭</span>
-          </div>
+            </div>
           <h3 class="text-lg font-bold text-white mb-2">24 種表情</h3>
           <p class="text-gray-400 text-sm">開心、難過、生氣、驚訝... 豐富表情一次滿足</p>
-        </div>
+            </div>
 
         <!-- Feature 3 -->
         <div class="glass-card p-6 text-center">
@@ -199,32 +199,96 @@
     </div>
   </section>
 
-  <!-- Gallery Section -->
+  <!-- Gallery Section - 真實上架成品展示 -->
   <section id="gallery" class="py-20 relative overflow-hidden">
     <div class="absolute inset-0 bg-gradient-to-b from-transparent via-purple-900/10 to-transparent"></div>
-    
+
     <div class="container mx-auto px-4 relative z-10">
       <div class="text-center mb-12">
-        <span class="tag-tech mb-4 inline-flex">🖼️ 精選作品</span>
+        <span class="tag-tech mb-4 inline-flex">🏆 真實上架成品</span>
         <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">
-          看看大家的 <span class="title-gradient">創作成果</span>
+          已在 LINE Store <span class="title-gradient">販售中</span>
         </h2>
-        <p class="text-gray-400">這些都是使用貼圖大亨 AI 創作的真實作品</p>
+        <p class="text-gray-400">這些都是使用貼圖大亨 AI 創作並成功上架的真實作品</p>
       </div>
 
-      <div id="demoGallery" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-12">
-        <!-- Loading -->
-        <div class="col-span-full flex flex-col items-center justify-center py-16">
-          <div class="loader-tech mb-4"></div>
-          <p class="text-gray-400">載入精選作品中...</p>
+      <!-- 成品貼圖展示 -->
+      <div class="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto mb-12">
+        <!-- Andy's Talk -->
+        <a href="https://store.line.me/stickershop/product/32182921/zh-Hant" target="_blank" rel="noopener" class="group">
+          <div class="glass-card p-6 rounded-3xl hover:border-cyan-400/50 transition-all duration-300 transform hover:scale-[1.02]">
+            <div class="relative mb-4">
+              <img src="https://stickershop.line-scdn.net/stickershop/v1/product/32182921/LINEStorePC/main.png"
+                   alt="Andy's Talk 貼圖"
+                   class="w-full rounded-2xl shadow-lg">
+              <div class="absolute top-3 right-3">
+                <span class="tag-green text-xs px-3 py-1">🔥 熱賣中</span>
+              </div>
+              <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-4">
+                <span class="text-white font-bold">👆 點擊前往 LINE Store</span>
+              </div>
+            </div>
+            <div class="text-center">
+              <h3 class="text-xl font-bold text-white mb-2">Andy's Talk</h3>
+              <p class="text-gray-400 text-sm mb-3">40 張表情貼圖 · 可愛風格</p>
+              <div class="flex items-center justify-center gap-4">
+                <span class="text-cyan-400 font-bold text-lg">NT$30</span>
+                <span class="text-xs text-gray-500 bg-white/10 px-3 py-1 rounded-full">LINE Store 販售中</span>
+              </div>
+            </div>
+          </div>
+        </a>
+
+        <!-- Andy's Talk2 -->
+        <a href="https://store.line.me/stickershop/product/32191704/zh-Hant" target="_blank" rel="noopener" class="group">
+          <div class="glass-card p-6 rounded-3xl hover:border-purple-400/50 transition-all duration-300 transform hover:scale-[1.02]">
+            <div class="relative mb-4">
+              <img src="https://stickershop.line-scdn.net/stickershop/v1/product/32191704/LINEStorePC/main.png"
+                   alt="Andy's Talk2 貼圖"
+                   class="w-full rounded-2xl shadow-lg">
+              <div class="absolute top-3 right-3">
+                <span class="tag-purple text-xs px-3 py-1">✨ 新上架</span>
+              </div>
+              <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-4">
+                <span class="text-white font-bold">👆 點擊前往 LINE Store</span>
+              </div>
+            </div>
+            <div class="text-center">
+              <h3 class="text-xl font-bold text-white mb-2">Andy's Talk2</h3>
+              <p class="text-gray-400 text-sm mb-3">40 張表情貼圖 · 可愛風格</p>
+              <div class="flex items-center justify-center gap-4">
+                <span class="text-purple-400 font-bold text-lg">NT$30</span>
+                <span class="text-xs text-gray-500 bg-white/10 px-3 py-1 rounded-full">LINE Store 販售中</span>
+              </div>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <!-- 貼圖預覽輪播 -->
+      <div class="glass-card p-6 rounded-3xl max-w-4xl mx-auto mb-12">
+        <h3 class="text-center text-lg font-bold text-white mb-6">📸 貼圖預覽</h3>
+        <div class="grid grid-cols-4 md:grid-cols-8 gap-3" id="stickerPreview">
+          <!-- Andy's Talk 貼圖預覽 -->
+          <img src="https://stickershop.line-scdn.net/stickershop/v1/sticker/645893161/iPhone/sticker@2x.png" alt="貼圖1" class="w-full rounded-lg hover:scale-110 transition-transform cursor-pointer">
+          <img src="https://stickershop.line-scdn.net/stickershop/v1/sticker/645893162/iPhone/sticker@2x.png" alt="貼圖2" class="w-full rounded-lg hover:scale-110 transition-transform cursor-pointer">
+          <img src="https://stickershop.line-scdn.net/stickershop/v1/sticker/645893163/iPhone/sticker@2x.png" alt="貼圖3" class="w-full rounded-lg hover:scale-110 transition-transform cursor-pointer">
+          <img src="https://stickershop.line-scdn.net/stickershop/v1/sticker/645893164/iPhone/sticker@2x.png" alt="貼圖4" class="w-full rounded-lg hover:scale-110 transition-transform cursor-pointer">
+          <!-- Andy's Talk2 貼圖預覽 -->
+          <img src="https://stickershop.line-scdn.net/stickershop/v1/sticker/646116401/iPhone/sticker@2x.png" alt="貼圖5" class="w-full rounded-lg hover:scale-110 transition-transform cursor-pointer">
+          <img src="https://stickershop.line-scdn.net/stickershop/v1/sticker/646116402/iPhone/sticker@2x.png" alt="貼圖6" class="w-full rounded-lg hover:scale-110 transition-transform cursor-pointer">
+          <img src="https://stickershop.line-scdn.net/stickershop/v1/sticker/646116403/iPhone/sticker@2x.png" alt="貼圖7" class="w-full rounded-lg hover:scale-110 transition-transform cursor-pointer">
+          <img src="https://stickershop.line-scdn.net/stickershop/v1/sticker/646116404/iPhone/sticker@2x.png" alt="貼圖8" class="w-full rounded-lg hover:scale-110 transition-transform cursor-pointer">
         </div>
+        <p class="text-center text-gray-500 text-sm mt-4">👆 這些都是 AI 自動生成的貼圖！</p>
       </div>
 
+      <!-- CTA -->
       <div class="text-center">
-        <div class="glass-card inline-block p-8 rounded-3xl">
+        <div class="glass-card inline-block p-8 rounded-3xl border-2 border-cyan-400/30">
           <p class="text-2xl font-bold text-white mb-2">🎨 你也可以創作這樣的作品！</p>
-          <p class="text-gray-400 mb-6">只需 3 步驟，今天就開始創作專屬貼圖</p>
-          <a href="https://line.me/R/ti/p/@sticker-tycoon" class="btn-neon-solid">
+          <p class="text-gray-400 mb-6">只需 3 步驟，今天就開始創作專屬貼圖，上架 LINE Store 賺取收益</p>
+          <a href="https://line.me/R/ti/p/@sticker-tycoon" class="btn-neon-solid text-lg">
             🚀 立即免費開始
           </a>
           <p class="text-sm text-gray-500 mt-4">✨ 新用戶贈送 40 代幣，免費體驗完整功能</p>
@@ -430,7 +494,7 @@
                 <div class="text-cyan-400 font-bold">70 代幣</div>
                   <div class="text-xs text-gray-500">NT$ 300</div>
                 </div>
-            </div>
+              </div>
             <div class="flex justify-between items-center p-4 rounded-xl bg-gradient-to-r from-cyan-500/10 to-purple-500/10 border-2 border-cyan-400/50">
               <div>
                 <span class="font-medium text-white">超值包</span>
@@ -590,56 +654,6 @@
 
   <!-- Scripts -->
   <script>
-    // Load Demo Gallery
-    async function loadDemoGallery() {
-      try {
-        const response = await fetch('/.netlify/functions/demo-gallery');
-        if (!response.ok) throw new Error('載入失敗');
-
-        const data = await response.json();
-        const items = data.items || [];
-        const displayItems = items.slice(0, 12);
-        const container = document.getElementById('demoGallery');
-
-        if (displayItems.length === 0) {
-          container.innerHTML = `
-            <div class="col-span-full text-center py-16">
-              <p class="text-gray-500">精選作品即將上線，敬請期待！</p>
-            </div>
-          `;
-          return;
-        }
-
-        container.innerHTML = displayItems.map((item, idx) => `
-          <div class="gallery-item group">
-            <img src="${item.url}" alt="${item.styleName || '貼圖'} ${idx + 1}" loading="lazy">
-            <div class="overlay">
-              <div class="text-white">
-                <p class="font-bold text-sm">${item.styleName || '精選風格'}</p>
-                ${item.expression ? `<p class="text-xs text-gray-300">${truncateText(item.expression, 30)}</p>` : ''}
-              </div>
-            </div>
-            <div class="absolute top-2 left-2">
-              <span class="tag-tech text-xs">${item.styleName || '精選'}</span>
-            </div>
-          </div>
-        `).join('');
-
-      } catch (error) {
-        console.error('載入示範圖集失敗:', error);
-        document.getElementById('demoGallery').innerHTML = `
-          <div class="col-span-full text-center py-16">
-            <p class="text-gray-500">載入失敗，請重新整理頁面</p>
-          </div>
-        `;
-      }
-    }
-
-    function truncateText(text, maxLength) {
-      if (!text) return '';
-      return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
-    }
-
     // Scroll Animation
     function initScrollAnimations() {
       const observer = new IntersectionObserver((entries) => {
@@ -650,7 +664,7 @@
         });
       }, { threshold: 0.1 });
 
-      document.querySelectorAll('.fade-in-up').forEach(el => observer.observe(el));
+      document.querySelectorAll('.fade-in-up, .glass-card').forEach(el => observer.observe(el));
     }
 
     // Smooth Scroll
@@ -664,10 +678,56 @@
       });
     });
 
+    // 貼圖預覽圖片錯誤處理
+    function handleStickerImageErrors() {
+      const stickerImages = document.querySelectorAll('#stickerPreview img');
+      stickerImages.forEach((img, index) => {
+        img.onerror = function() {
+          // 如果圖片載入失敗，使用備用圖片或隱藏
+          this.style.display = 'none';
+        };
+      });
+    }
+
+    // 添加貼圖卡片動畫效果
+    function initCardAnimations() {
+      const cards = document.querySelectorAll('.glass-card');
+      cards.forEach((card, index) => {
+        card.style.animationDelay = `${index * 0.1}s`;
+      });
+    }
+
+    // 統計數字動畫
+    function animateNumbers() {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const target = entry.target;
+            const finalValue = parseInt(target.dataset.value) || 1000;
+            let currentValue = 0;
+            const increment = finalValue / 50;
+            const timer = setInterval(() => {
+              currentValue += increment;
+              if (currentValue >= finalValue) {
+                currentValue = finalValue;
+                clearInterval(timer);
+              }
+              target.textContent = Math.floor(currentValue).toLocaleString() + '+';
+            }, 30);
+            observer.unobserve(target);
+          }
+        });
+      }, { threshold: 0.5 });
+
+      document.querySelectorAll('[data-animate-number]').forEach(el => observer.observe(el));
+    }
+
     // Init
     document.addEventListener('DOMContentLoaded', () => {
-      loadDemoGallery();
       initScrollAnimations();
+      handleStickerImageErrors();
+      initCardAnimations();
+      animateNumbers();
     });
   </script>
 </body>
