@@ -393,7 +393,7 @@ async function markTutorialShown(userId) {
 }
 
 /**
- * 生成教學用的 bubble（圖片置中顯示 85% 寬度）
+ * 生成教學用的 bubble（圖片置中顯示 98% 寬度，減少空白）
  */
 function createTutorialBubble(baseUrl, headerColor, headerTitle, stepText, imageFile, title, desc, hasFooter = false) {
   const bubble = {
@@ -403,24 +403,25 @@ function createTutorialBubble(baseUrl, headerColor, headerTitle, stepText, image
       type: 'box',
       layout: 'vertical',
       backgroundColor: headerColor,
-      paddingAll: 'md',
+      paddingAll: 'xs',
+      paddingStart: 'md',
       contents: [
-        { type: 'text', text: headerTitle, weight: 'bold', size: 'md', color: '#FFFFFF' },
-        { type: 'text', text: stepText, size: 'xs', color: '#FFFFFFCC' }
+        { type: 'text', text: headerTitle, weight: 'bold', size: 'sm', color: '#FFFFFF' },
+        { type: 'text', text: stepText, size: 'xxs', color: '#FFFFFFCC' }
       ]
     },
     hero: {
       type: 'box',
       layout: 'vertical',
       backgroundColor: '#F5F5F5',
-      paddingAll: 'md',
+      paddingAll: 'xs',
       justifyContent: 'center',
       alignItems: 'center',
       contents: [
         {
           type: 'image',
           url: `${baseUrl}/images/demo/${imageFile}`,
-          size: '85%',
+          size: '98%',
           aspectRatio: '9:16',
           aspectMode: 'fit'
         }
@@ -429,10 +430,11 @@ function createTutorialBubble(baseUrl, headerColor, headerTitle, stepText, image
     body: {
       type: 'box',
       layout: 'vertical',
-      paddingAll: 'md',
+      paddingAll: 'sm',
+      paddingTop: 'xs',
       contents: [
-        { type: 'text', text: title, weight: 'bold', size: 'md', color: '#333333' },
-        { type: 'text', text: desc, size: 'sm', color: '#666666', margin: 'sm', wrap: true }
+        { type: 'text', text: title, weight: 'bold', size: 'sm', color: '#333333' },
+        { type: 'text', text: desc, size: 'xs', color: '#666666', margin: 'xs', wrap: true }
       ]
     }
   };
@@ -441,7 +443,7 @@ function createTutorialBubble(baseUrl, headerColor, headerTitle, stepText, image
     bubble.footer = {
       type: 'box',
       layout: 'vertical',
-      paddingAll: 'sm',
+      paddingAll: 'xs',
       contents: [
         {
           type: 'button',
@@ -487,7 +489,7 @@ function generateTutorialPart1FlexMessage() {
 }
 
 /**
- * 生成下載/上架教學用的 bubble（圖片置中顯示 85% 寬度）
+ * 生成下載/上架教學用的 bubble（圖片置中顯示 98% 寬度，減少空白）
  */
 function createDownloadTutorialBubble(baseUrl, headerColor, stepText, imageFile, title, desc, hasFooter = false) {
   const bubble = {
@@ -497,24 +499,25 @@ function createDownloadTutorialBubble(baseUrl, headerColor, stepText, imageFile,
       type: 'box',
       layout: 'vertical',
       backgroundColor: headerColor,
-      paddingAll: 'md',
+      paddingAll: 'xs',
+      paddingStart: 'md',
       contents: [
-        { type: 'text', text: '🚀 下載/上架', weight: 'bold', size: 'md', color: '#FFFFFF' },
-        { type: 'text', text: stepText, size: 'xs', color: '#FFFFFFCC' }
+        { type: 'text', text: '🚀 下載/上架', weight: 'bold', size: 'sm', color: '#FFFFFF' },
+        { type: 'text', text: stepText, size: 'xxs', color: '#FFFFFFCC' }
       ]
     },
     hero: {
       type: 'box',
       layout: 'vertical',
       backgroundColor: '#F5F5F5',
-      paddingAll: 'md',
+      paddingAll: 'xs',
       justifyContent: 'center',
       alignItems: 'center',
       contents: [
         {
           type: 'image',
           url: `${baseUrl}/images/demo/${imageFile}`,
-          size: '85%',
+          size: '98%',
           aspectRatio: '9:16',
           aspectMode: 'fit'
         }
@@ -523,10 +526,11 @@ function createDownloadTutorialBubble(baseUrl, headerColor, stepText, imageFile,
     body: {
       type: 'box',
       layout: 'vertical',
-      paddingAll: 'md',
+      paddingAll: 'sm',
+      paddingTop: 'xs',
       contents: [
-        { type: 'text', text: title, weight: 'bold', size: 'md', color: '#333333' },
-        { type: 'text', text: desc, size: 'sm', color: '#666666', margin: 'sm', wrap: true }
+        { type: 'text', text: title, weight: 'bold', size: 'sm', color: '#333333' },
+        { type: 'text', text: desc, size: 'xs', color: '#666666', margin: 'xs', wrap: true }
       ]
     }
   };
@@ -535,7 +539,7 @@ function createDownloadTutorialBubble(baseUrl, headerColor, stepText, imageFile,
     bubble.footer = {
       type: 'box',
       layout: 'vertical',
-      paddingAll: 'sm',
+      paddingAll: 'xs',
       contents: [
         {
           type: 'button',
