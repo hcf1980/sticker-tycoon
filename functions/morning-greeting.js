@@ -72,10 +72,11 @@ async function generateMorningImage(solarTerm) {
   if (!AI_API_KEY) {
     throw new Error('AI_IMAGE_API_KEY 未設定');
   }
-  
+
   const { imagePrompt } = generateMorningPrompts(solarTerm);
-  
+
   console.log(`🤖 調用 AI API: ${AI_MODEL_3}`);
+  console.log(`📅 節氣: ${solarTerm.name} (${solarTerm.isSolarTermDay ? '節氣當天' : '一般日子'})`);
   console.log(`📝 Prompt 長度: ${imagePrompt.length} 字元`);
   
   try {
@@ -103,10 +104,15 @@ async function generateMorningImage(solarTerm) {
     // 從回應中提取圖片
     const imageData = extractImageFromResponse(response);
     
+    // 根據是否為節氣當天生成不同的祝福語
+    const greeting = solarTerm.isSolarTermDay
+      ? `${solarTerm.name}早安，${solarTerm.emotion.split('、')[0]}的一天！`
+      : solarTerm.greeting || `早安，${solarTerm.emotion.split('、')[0]}的一天！`;
+
     return {
       success: true,
       imageData,
-      greeting: `${solarTerm.name}早安，${solarTerm.emotion.split('、')[0]}的一天！`
+      greeting
     };
     
   } catch (error) {
