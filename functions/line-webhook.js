@@ -2296,31 +2296,26 @@ async function handleMorningGreeting(replyToken, userId) {
   try {
     console.log(`🌅 用戶 ${userId} 請求早安圖`);
 
-    // 先發送等待訊息
-    await getLineClient().replyMessage(replyToken, {
-      type: 'text',
-      text: '🌅 正在為您準備今日早安圖...\n\n⏳ 首次生成可能需要 30 秒，請稍候！'
-    });
-
-    // 獲取或生成早安圖
+    // 直接從緩存獲取早安圖（不再即時生成）
     const result = await getMorningGreeting();
 
     if (!result.success) {
-      return getLineClient().pushMessage(userId, {
+      // 今日早安圖尚未生成
+      return getLineClient().replyMessage(replyToken, {
         type: 'text',
-        text: `❌ 早安圖生成失敗：${result.error}\n\n請稍後再試！`,
+        text: `🌅 ${result.solarTerm}早安！\n\n${result.error}\n\n💡 早安圖每日凌晨自動更新，請稍後再來看看！`,
         quickReply: {
           items: [
-            { type: 'action', action: { type: 'message', label: '🌅 再試一次', text: '早安圖' } },
             { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
-            { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } }
+            { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
+            { type: 'action', action: { type: 'message', label: '📸 創建教學', text: '功能說明' } }
           ]
         }
       });
     }
 
     // 發送早安圖
-    const messages = [
+    return getLineClient().replyMessage(replyToken, [
       {
         type: 'image',
         originalContentUrl: result.imageUrl,
@@ -2328,7 +2323,7 @@ async function handleMorningGreeting(replyToken, userId) {
       },
       {
         type: 'text',
-        text: `🌅 ${result.solarTerm}早安！\n\n${result.greeting}\n\n${result.fromCache ? '📦 今日早安圖' : '✨ 新鮮出爐的早安圖'}`,
+        text: `🌅 ${result.solarTerm}早安！\n\n${result.greeting}`,
         quickReply: {
           items: [
             { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
@@ -2338,19 +2333,17 @@ async function handleMorningGreeting(replyToken, userId) {
           ]
         }
       }
-    ];
-
-    return getLineClient().pushMessage(userId, messages);
+    ]);
 
   } catch (error) {
     console.error('❌ 早安圖處理失敗:', error);
-    return getLineClient().pushMessage(userId, {
+    return getLineClient().replyMessage(replyToken, {
       type: 'text',
       text: '❌ 系統錯誤，請稍後再試',
       quickReply: {
         items: [
-          { type: 'action', action: { type: 'message', label: '🌅 再試一次', text: '早安圖' } },
-          { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } }
+          { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
+          { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } }
         ]
       }
     });

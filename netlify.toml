@@ -41,6 +41,11 @@
 [functions."analyze-style-image"]
   timeout = 26
 
+# 排程生成早安圖（每日凌晨 2:00 台灣時間 = UTC 18:00）
+[functions."scheduled-morning-greeting"]
+  schedule = "0 18 * * *"
+  timeout = 180
+
 # Web API 函數
 [functions."web-api-auth-register"]
   timeout = 10

@@ -12,25 +12,28 @@ const AI_API_KEY = process.env.AI_IMAGE_API_KEY;
 const AI_API_URL = process.env.AI_IMAGE_API_URL || 'https://newapi.pockgo.com';
 const AI_MODEL_3 = process.env.AI_MODEL_3 || 'gemini-3-pro-image-preview-2k';
 
+// 生成鎖定（防止重複生成）
+let isGenerating = false;
+
 /**
- * 獲取或生成今日早安圖
+ * 獲取今日早安圖（只從緩存讀取，不自動生成）
  * @returns {object} { success, imageUrl, solarTerm, greeting, fromCache }
  */
 async function getMorningGreeting() {
   const supabase = getSupabaseClient();
   const today = getDateString();
   const solarTerm = getCurrentSolarTerm();
-  
+
   console.log(`🌅 早安圖請求 - 日期: ${today}, 節氣: ${solarTerm.name}`);
-  
+
   try {
-    // 1. 檢查今日是否已有緩存
+    // 檢查今日是否已有緩存
     const { data: cached, error: cacheError } = await supabase
       .from('morning_greetings')
       .select('*')
       .eq('date', today)
       .single();
-    
+
     if (cached && !cacheError) {
       console.log(`✅ 使用緩存的早安圖: ${cached.image_url}`);
       return {
@@ -41,49 +44,17 @@ async function getMorningGreeting() {
         fromCache: true
       };
     }
-    
-    // 2. 沒有緩存，生成新圖片
-    console.log(`🎨 生成新的早安圖...`);
-    const result = await generateMorningImage(solarTerm);
-    
-    if (!result.success) {
-      throw new Error(result.error || '圖片生成失敗');
-    }
-    
-    // 3. 上傳到 Supabase Storage
-    const uploadResult = await uploadMorningImage(result.imageData, today);
-    
-    // 4. 儲存到資料庫
-    const { error: insertError } = await supabase
-      .from('morning_greetings')
-      .insert({
-        date: today,
-        solar_term: solarTerm.name,
-        solar_term_en: solarTerm.nameEn,
-        emotion: solarTerm.emotion,
-        scene: solarTerm.scene,
-        season: solarTerm.season,
-        image_url: uploadResult.publicUrl,
-        greeting_text: result.greeting || `${solarTerm.name}早安，${solarTerm.emotion.split('、')[0]}的一天！`,
-        created_at: new Date().toISOString()
-      });
-    
-    if (insertError) {
-      console.error('❌ 儲存早安圖記錄失敗:', insertError);
-      // 即使儲存失敗，仍返回圖片
-    }
-    
-    console.log(`✅ 早安圖生成完成: ${uploadResult.publicUrl}`);
+
+    // 沒有緩存，返回提示訊息（不在用戶請求時生成）
+    console.log(`⚠️ 今日早安圖尚未生成`);
     return {
-      success: true,
-      imageUrl: uploadResult.publicUrl,
-      solarTerm: solarTerm.name,
-      greeting: result.greeting || `${solarTerm.name}早安！`,
-      fromCache: false
+      success: false,
+      error: '今日早安圖正在準備中，請稍後再試！',
+      solarTerm: solarTerm.name
     };
-    
+
   } catch (error) {
-    console.error('❌ 早安圖生成失敗:', error.message);
+    console.error('❌ 早安圖查詢失敗:', error.message);
     return {
       success: false,
       error: error.message,
@@ -266,10 +237,95 @@ async function hasTodayGreeting() {
   return !error && !!data;
 }
 
+/**
+ * 定時生成早安圖（供排程任務調用）
+ * 此函數會檢查是否已有今日圖片，沒有才生成
+ * @returns {object} { success, message, imageUrl }
+ */
+async function scheduledGenerateMorningGreeting() {
+  const supabase = getSupabaseClient();
+  const today = getDateString();
+  const solarTerm = getCurrentSolarTerm();
+
+  console.log(`⏰ 排程生成早安圖 - 日期: ${today}, 節氣: ${solarTerm.name}`);
+
+  // 防止重複生成
+  if (isGenerating) {
+    console.log(`⚠️ 早安圖正在生成中，跳過此次請求`);
+    return { success: false, message: '正在生成中' };
+  }
+
+  try {
+    // 1. 檢查今日是否已有緩存
+    const { data: cached, error: cacheError } = await supabase
+      .from('morning_greetings')
+      .select('id, image_url')
+      .eq('date', today)
+      .single();
+
+    if (cached && !cacheError) {
+      console.log(`✅ 今日早安圖已存在: ${cached.image_url}`);
+      return { success: true, message: '已存在', imageUrl: cached.image_url };
+    }
+
+    // 2. 設置生成鎖定
+    isGenerating = true;
+    console.log(`🎨 開始生成今日早安圖...`);
+
+    // 3. 生成圖片
+    const result = await generateMorningImage(solarTerm);
+
+    if (!result.success) {
+      throw new Error(result.error || '圖片生成失敗');
+    }
+
+    // 4. 上傳到 Supabase Storage
+    const uploadResult = await uploadMorningImage(result.imageData, today);
+
+    // 5. 儲存到資料庫
+    const { error: insertError } = await supabase
+      .from('morning_greetings')
+      .insert({
+        date: today,
+        solar_term: solarTerm.name,
+        solar_term_en: solarTerm.nameEn,
+        emotion: solarTerm.emotion,
+        scene: solarTerm.scene,
+        season: solarTerm.season,
+        image_url: uploadResult.publicUrl,
+        greeting_text: result.greeting || `${solarTerm.name}早安，${solarTerm.emotion.split('、')[0]}的一天！`,
+        created_at: new Date().toISOString()
+      });
+
+    if (insertError) {
+      console.error('❌ 儲存早安圖記錄失敗:', insertError);
+    }
+
+    console.log(`✅ 排程早安圖生成完成: ${uploadResult.publicUrl}`);
+    return {
+      success: true,
+      message: '生成成功',
+      imageUrl: uploadResult.publicUrl,
+      solarTerm: solarTerm.name
+    };
+
+  } catch (error) {
+    console.error('❌ 排程早安圖生成失敗:', error.message);
+    return {
+      success: false,
+      message: error.message
+    };
+  } finally {
+    // 釋放鎖定
+    isGenerating = false;
+  }
+}
+
 module.exports = {
   getMorningGreeting,
   generateMorningImage,
   hasTodayGreeting,
+  scheduledGenerateMorningGreeting,
   extractImageFromResponse,
   uploadMorningImage
 };
