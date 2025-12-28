@@ -7,7 +7,7 @@ const line = require('@line/bot-sdk');
 const axios = require('axios');
 const { supabase, isReplyTokenUsed, recordReplyToken, getOrCreateUser, getUserStickerSets, getUserLatestTask, getUserPendingTasks, getStickerSet, getStickerImages, deleteStickerSet, addToUploadQueue, removeFromUploadQueue, getUploadQueue, clearUploadQueue, getUserTokenBalance, getTokenTransactions, getUserReferralInfo, applyReferralCode, deductTokens, addTokens } = require('./supabase-client');
 const { ConversationStage, getConversationState, updateConversationState, resetConversationState, isInCreationFlow } = require('./conversation-state');
-const { generateWelcomeFlexMessage, generateTutorialPart1FlexMessage, generateTutorialPart2FlexMessage, shouldShowTutorial, markTutorialShown } = require('./sticker-flex-message');
+const { generateWelcomeFlexMessage, generateTutorialPart1FlexMessage, generateTutorialPart2FlexMessage, generateTutorialPart3FlexMessage, shouldShowTutorial, markTutorialShown } = require('./sticker-flex-message');
 const { scheduleProfileUpdate } = require('./utils/profile-updater');
 const { globalMonitor } = require('./utils/performance-monitor');
 const { handleStartCreate, handleNaming, handleStyleSelection, handleFramingSelection, handleCharacterDescription, handleExpressionTemplate, handleSceneSelection, handleCustomScene, handleCountSelection, handlePhotoUpload } = require('./handlers/create-handler');
@@ -81,8 +81,8 @@ async function handleTextMessage(replyToken, userId, text) {
           items: [
             { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
             { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
-            { type: 'action', action: { type: 'message', label: '📸 創建教學', text: '功能說明' } },
-            { type: 'action', action: { type: 'message', label: '🚀 上架教學', text: '功能說明2' } }
+            { type: 'action', action: { type: 'message', label: '🌅 早安圖', text: '早安圖' } },
+            { type: 'action', action: { type: 'message', label: '📸 創建教學', text: '功能說明' } }
           ]
         }
       });
@@ -130,8 +130,8 @@ async function handleTextMessage(replyToken, userId, text) {
             items: [
               { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
               { type: 'action', action: { type: 'message', label: '📸 創建教學', text: '功能說明' } },
-              { type: 'action', action: { type: 'message', label: '✨ 示範圖集', text: '示範圖集' } },
-              { type: 'action', action: { type: 'message', label: '💰 我的代幣', text: '代幣' } }
+              { type: 'action', action: { type: 'message', label: '🌅 早安圖', text: '早安圖' } },
+              { type: 'action', action: { type: 'message', label: '✨ 示範圖集', text: '示範圖集' } }
             ]
           }
         });
@@ -157,6 +157,11 @@ async function handleTextMessage(replyToken, userId, text) {
     // 功能說明第2部分
     if (text === '功能說明2') {
       return getLineClient().replyMessage(replyToken, generateTutorialPart2FlexMessage());
+    }
+
+    // 功能說明第3部分（早安圖說明）
+    if (text === '功能說明3' || text === '早安圖說明') {
+      return getLineClient().replyMessage(replyToken, generateTutorialPart3FlexMessage());
     }
 
     // 早安圖
@@ -294,8 +299,8 @@ async function handleTextMessage(replyToken, userId, text) {
         items: [
           { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
           { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
-          { type: 'action', action: { type: 'message', label: '📸 創建教學', text: '功能說明' } },
-          { type: 'action', action: { type: 'message', label: '🚀 上架教學', text: '功能說明2' } }
+          { type: 'action', action: { type: 'message', label: '🌅 早安圖', text: '早安圖' } },
+          { type: 'action', action: { type: 'message', label: '📸 創建教學', text: '功能說明' } }
         ]
       }
     });
@@ -651,8 +656,8 @@ async function handleCheckProgress(replyToken, userId) {
             items: [
               { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
               { type: 'action', action: { type: 'message', label: '📸 創建教學', text: '功能說明' } },
-              { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
-              { type: 'action', action: { type: 'message', label: '💰 我的代幣', text: '代幣' } }
+              { type: 'action', action: { type: 'message', label: '🌅 早安圖', text: '早安圖' } },
+              { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } }
             ]
           }
         });
@@ -2243,8 +2248,8 @@ async function handleClearUploadQueue(replyToken, userId) {
         items: [
           { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
           { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
-          { type: 'action', action: { type: 'message', label: '📸 創建教學', text: '功能說明' } },
-          { type: 'action', action: { type: 'message', label: '🚀 上架教學', text: '功能說明2' } }
+          { type: 'action', action: { type: 'message', label: '🌅 早安圖', text: '早安圖' } },
+          { type: 'action', action: { type: 'message', label: '📸 創建教學', text: '功能說明' } }
         ]
       }
     });
@@ -3284,8 +3289,8 @@ async function handleShareReferralCode(replyToken, userId) {
     quickReply: {
       items: [
         { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
+        { type: 'action', action: { type: 'message', label: '🌅 早安圖', text: '早安圖' } },
         { type: 'action', action: { type: 'message', label: '📸 創建教學', text: '功能說明' } },
-        { type: 'action', action: { type: 'message', label: '🚀 上架教學', text: '功能說明2' } },
         { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } }
       ]
     }

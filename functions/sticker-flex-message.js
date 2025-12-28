@@ -394,7 +394,7 @@ async function markTutorialShown(userId) {
 }
 
 /**
- * 生成教學用的 bubble（圖片置中顯示 98% 寬度，減少空白）
+ * 生成教學用的 bubble（直接使用圖片作為 hero，無多餘空白）
  */
 function createTutorialBubble(baseUrl, headerColor, headerTitle, stepText, imageFile, title, desc, hasFooter = false) {
   const bubble = {
@@ -412,21 +412,11 @@ function createTutorialBubble(baseUrl, headerColor, headerTitle, stepText, image
       ]
     },
     hero: {
-      type: 'box',
-      layout: 'vertical',
-      backgroundColor: '#F5F5F5',
-      paddingAll: 'xs',
-      justifyContent: 'center',
-      alignItems: 'center',
-      contents: [
-        {
-          type: 'image',
-          url: `${baseUrl}/images/demo/${imageFile}`,
-          size: '98%',
-          aspectRatio: '9:16',
-          aspectMode: 'fit'
-        }
-      ]
+      type: 'image',
+      url: `${baseUrl}/images/demo/${imageFile}`,
+      size: 'full',
+      aspectRatio: '9:16',
+      aspectMode: 'cover'
     },
     body: {
       type: 'box',
@@ -482,16 +472,16 @@ function generateTutorialPart1FlexMessage() {
     quickReply: {
       items: [
         { type: 'action', action: { type: 'message', label: '🚀 下載/上架說明', text: '功能說明2' } },
+        { type: 'action', action: { type: 'message', label: '🌅 早安圖說明', text: '功能說明3' } },
         { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
-        { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
-        { type: 'action', action: { type: 'message', label: '🎁 分享給好友', text: '分享給好友' } }
+        { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } }
       ]
     }
   };
 }
 
 /**
- * 生成下載/上架教學用的 bubble（圖片置中顯示 98% 寬度，減少空白）
+ * 生成下載/上架教學用的 bubble（直接使用圖片作為 hero，無多餘空白）
  */
 function createDownloadTutorialBubble(baseUrl, headerColor, stepText, imageFile, title, desc, hasFooter = false) {
   const bubble = {
@@ -509,21 +499,11 @@ function createDownloadTutorialBubble(baseUrl, headerColor, stepText, imageFile,
       ]
     },
     hero: {
-      type: 'box',
-      layout: 'vertical',
-      backgroundColor: '#F5F5F5',
-      paddingAll: 'xs',
-      justifyContent: 'center',
-      alignItems: 'center',
-      contents: [
-        {
-          type: 'image',
-          url: `${baseUrl}/images/demo/${imageFile}`,
-          size: '98%',
-          aspectRatio: '9:16',
-          aspectMode: 'fit'
-        }
-      ]
+      type: 'image',
+      url: `${baseUrl}/images/demo/${imageFile}`,
+      size: 'full',
+      aspectRatio: '9:16',
+      aspectMode: 'cover'
     },
     body: {
       type: 'box',
@@ -577,9 +557,98 @@ function generateTutorialPart2FlexMessage() {
     quickReply: {
       items: [
         { type: 'action', action: { type: 'message', label: '📸 創建貼圖教學', text: '功能說明' } },
+        { type: 'action', action: { type: 'message', label: '🌅 早安圖說明', text: '功能說明3' } },
         { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
-        { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
-        { type: 'action', action: { type: 'message', label: '🎁 分享給好友', text: '分享給好友' } }
+        { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } }
+      ]
+    }
+  };
+}
+
+/**
+ * 完整功能說明 Flex Message（第三部分：早安圖功能說明）
+ */
+function generateTutorialPart3FlexMessage() {
+  return {
+    type: 'flex',
+    altText: '🌅 早安圖功能說明',
+    contents: {
+      type: 'bubble',
+      size: 'mega',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#FF9500',
+        paddingAll: 'lg',
+        contents: [
+          { type: 'text', text: '🌅 早安圖功能', weight: 'bold', size: 'xl', color: '#FFFFFF', align: 'center' },
+          { type: 'text', text: '每日 AI 生成節氣早安圖', size: 'xs', color: '#FFFFFFCC', align: 'center', margin: 'sm' }
+        ]
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'lg',
+        spacing: 'md',
+        contents: [
+          {
+            type: 'box',
+            layout: 'vertical',
+            spacing: 'sm',
+            contents: [
+              { type: 'text', text: '✨ 功能特色', weight: 'bold', size: 'md', color: '#FF9500' },
+              { type: 'text', text: '• 每日凌晨自動生成全新早安圖', size: 'sm', color: '#555555', wrap: true },
+              { type: 'text', text: '• 結合 24 節氣主題，富有文化氣息', size: 'sm', color: '#555555', wrap: true },
+              { type: 'text', text: '• AI 智慧生成，每天都是獨一無二', size: 'sm', color: '#555555', wrap: true }
+            ]
+          },
+          { type: 'separator', margin: 'lg' },
+          {
+            type: 'box',
+            layout: 'vertical',
+            spacing: 'sm',
+            contents: [
+              { type: 'text', text: '📅 節氣主題', weight: 'bold', size: 'md', color: '#007AFF' },
+              { type: 'text', text: '春：立春、雨水、驚蟄、春分...', size: 'sm', color: '#555555', wrap: true },
+              { type: 'text', text: '夏：立夏、小滿、芒種、夏至...', size: 'sm', color: '#555555', wrap: true },
+              { type: 'text', text: '秋：立秋、處暑、白露、秋分...', size: 'sm', color: '#555555', wrap: true },
+              { type: 'text', text: '冬：立冬、小雪、大雪、冬至...', size: 'sm', color: '#555555', wrap: true }
+            ]
+          },
+          { type: 'separator', margin: 'lg' },
+          {
+            type: 'box',
+            layout: 'vertical',
+            spacing: 'sm',
+            contents: [
+              { type: 'text', text: '💡 使用方式', weight: 'bold', size: 'md', color: '#34C759' },
+              { type: 'text', text: '輸入「早安」或「早安圖」即可獲取今日早安圖，分享給親朋好友傳遞溫暖問候！', size: 'sm', color: '#555555', wrap: true }
+            ]
+          }
+        ]
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'md',
+        contents: [
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#FF9500',
+            height: 'sm',
+            action: { type: 'message', label: '🌅 獲取今日早安圖', text: '早安圖' }
+          }
+        ]
+      }
+    },
+    quickReply: {
+      items: [
+        { type: 'action', action: { type: 'message', label: '🌅 早安圖', text: '早安圖' } },
+        { type: 'action', action: { type: 'message', label: '📸 創建貼圖教學', text: '功能說明' } },
+        { type: 'action', action: { type: 'message', label: '🚀 下載/上架說明', text: '功能說明2' } },
+        { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
+        { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } }
       ]
     }
   };
@@ -591,6 +660,7 @@ module.exports = {
   generateExpressionSelectionFlexMessage,
   generateTutorialPart1FlexMessage,
   generateTutorialPart2FlexMessage,
+  generateTutorialPart3FlexMessage,
   shouldShowTutorial,
   markTutorialShown
 };
