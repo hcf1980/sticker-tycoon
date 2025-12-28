@@ -162,6 +162,7 @@ function generateWelcomeFlexMessage() {
     quickReply: {
       items: [
         { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
+        { type: 'action', action: { type: 'message', label: '🌅 早安圖', text: '早安圖' } },
         { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
         { type: 'action', action: { type: 'message', label: '🎁 分享給好友', text: '分享給好友' } }
       ]

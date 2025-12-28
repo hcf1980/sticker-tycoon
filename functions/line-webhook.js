@@ -20,6 +20,7 @@ const {
   addCancelButton,
   addCancelButtonToFlex
 } = require('./creation-flow-manager');
+const { getMorningGreeting } = require('./morning-greeting');
 
 // LINE Bot 設定 - 延遲初始化
 let client = null;
@@ -156,6 +157,11 @@ async function handleTextMessage(replyToken, userId, text) {
     // 功能說明第2部分
     if (text === '功能說明2') {
       return getLineClient().replyMessage(replyToken, generateTutorialPart2FlexMessage());
+    }
+
+    // 早安圖
+    if (text === '早安圖' || text === '早安' || text === '今日早安') {
+      return await handleMorningGreeting(replyToken, userId);
     }
 
     // 代幣查詢
@@ -534,7 +540,7 @@ async function handleConfirmGeneration(replyToken, userId, state) {
         `📊 數量：${stickerCount} 張\n\n` +
         `💰 生成成功後將扣除 ${tokenCost} 代幣\n` +
         `💰 目前餘額：${tokenBalance} 代幣\n\n` +
-        '⏳ 預計需要 2-5 分鐘';
+        '⏳ 預計需要 5-10 分鐘，好圖真的需要等！';
 
   // 如果未達推薦上限，加入推薦碼提醒
   if (showReferralReminder && referralInfo.referralCode) {
@@ -2277,6 +2283,74 @@ async function handleTutorial(replyToken, userId) {
         items: [
           { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
           { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } }
+        ]
+      }
+    });
+  }
+}
+
+/**
+ * 處理早安圖請求
+ */
+async function handleMorningGreeting(replyToken, userId) {
+  try {
+    console.log(`🌅 用戶 ${userId} 請求早安圖`);
+
+    // 先發送等待訊息
+    await getLineClient().replyMessage(replyToken, {
+      type: 'text',
+      text: '🌅 正在為您準備今日早安圖...\n\n⏳ 首次生成可能需要 30 秒，請稍候！'
+    });
+
+    // 獲取或生成早安圖
+    const result = await getMorningGreeting();
+
+    if (!result.success) {
+      return getLineClient().pushMessage(userId, {
+        type: 'text',
+        text: `❌ 早安圖生成失敗：${result.error}\n\n請稍後再試！`,
+        quickReply: {
+          items: [
+            { type: 'action', action: { type: 'message', label: '🌅 再試一次', text: '早安圖' } },
+            { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
+            { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } }
+          ]
+        }
+      });
+    }
+
+    // 發送早安圖
+    const messages = [
+      {
+        type: 'image',
+        originalContentUrl: result.imageUrl,
+        previewImageUrl: result.imageUrl
+      },
+      {
+        type: 'text',
+        text: `🌅 ${result.solarTerm}早安！\n\n${result.greeting}\n\n${result.fromCache ? '📦 今日早安圖' : '✨ 新鮮出爐的早安圖'}`,
+        quickReply: {
+          items: [
+            { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
+            { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
+            { type: 'action', action: { type: 'message', label: '📸 創建教學', text: '功能說明' } },
+            { type: 'action', action: { type: 'message', label: '🎁 分享給好友', text: '分享給好友' } }
+          ]
+        }
+      }
+    ];
+
+    return getLineClient().pushMessage(userId, messages);
+
+  } catch (error) {
+    console.error('❌ 早安圖處理失敗:', error);
+    return getLineClient().pushMessage(userId, {
+      type: 'text',
+      text: '❌ 系統錯誤，請稍後再試',
+      quickReply: {
+        items: [
+          { type: 'action', action: { type: 'message', label: '🌅 再試一次', text: '早安圖' } },
+          { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } }
         ]
       }
     });
