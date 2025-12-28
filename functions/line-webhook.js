@@ -150,17 +150,17 @@ async function handleTextMessage(replyToken, userId, text) {
     }
 
     // 功能說明
-    if (text === '創建貼圖說明' || text === '創建貼圖說明' || text === '教學' || text === '說明') {
+    if (text === '功能說明' || text === '使用說明' || text === '教學' || text === '說明') {
       return await handleTutorial(replyToken, userId);
     }
 
     // 功能說明第2部分
-    if (text === '下載/上傳說明') {
+    if (text === '功能說明2') {
       return getLineClient().replyMessage(replyToken, generateTutorialPart2FlexMessage());
     }
 
     // 功能說明第3部分（早安圖說明）
-    if (text === '早安圖說明' || text === '早安圖說明') {
+    if (text === '功能說明3' || text === '早安圖說明') {
       return getLineClient().replyMessage(replyToken, generateTutorialPart3FlexMessage());
     }
 
