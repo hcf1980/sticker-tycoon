@@ -5,6 +5,7 @@
 
 const { createClient } = require('@supabase/supabase-js');
 const { createWebUser, getUserByEmail } = require('./services/user-service');
+const { validateRequest } = require('./middleware/validation-middleware');
 
 // 初始化 Supabase Client（使用 anon key 給前端認證用）
 function getSupabaseAuthClient() {
@@ -41,36 +42,24 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { email, password, displayName } = JSON.parse(event.body || '{}');
+    // 使用驗證中間件驗證輸入
+    const { error, data } = validateRequest(event, {
+      body: {
+        email: 'email',
+        password: 'password'
+      }
+    });
 
-    // 驗證必填欄位
-    if (!email || !password) {
+    if (error) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: '請提供 Email 和密碼' })
+        body: JSON.stringify({ error: error.message })
       };
     }
 
-    // 驗證 Email 格式
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ error: 'Email 格式不正確' })
-      };
-    }
-
-    // 驗證密碼長度
-    if (password.length < 6) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ error: '密碼至少需要 6 個字元' })
-      };
-    }
-
+    const { email, password } = data.body;
+    const { displayName } = JSON.parse(event.body || '{}');
     // 檢查 Email 是否已存在
     const existingUser = await getUserByEmail(email);
     if (existingUser) {
@@ -139,28 +128,10 @@ exports.handler = async (event, context) => {
 
   } catch (error) {
     console.error('註冊錯誤:', error);
-    
-    // 返回更詳細的錯誤訊息（方便調試）
-    let errorMessage = '系統錯誤，請稍後再試';
-    
-    if (error.message) {
-      // 常見錯誤處理
-      if (error.message.includes('column') && error.message.includes('does not exist')) {
-        errorMessage = '資料庫尚未更新，請聯繫管理員執行資料庫遷移';
-      } else if (error.message.includes('SUPABASE')) {
-        errorMessage = '環境變數未正確設定';
-      } else {
-        errorMessage = `錯誤: ${error.message}`;
-      }
-    }
-    
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ 
-        error: errorMessage,
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined
-      })
+      body: JSON.stringify({ error: '系統錯誤，請稍後再試' })
     };
   }
 };
