@@ -5,6 +5,7 @@
 
 const { createClient } = require('@supabase/supabase-js');
 const { getUserByEmail, getUserByUnifiedId } = require('./services/user-service');
+const { validateRequest } = require('./middleware/validation-middleware');
 
 function getSupabaseAuthClient() {
   const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -38,15 +39,23 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { email, password } = JSON.parse(event.body || '{}');
+    // 使用驗證中間件驗證輸入
+    const { error, data } = validateRequest(event, {
+      body: {
+        email: 'email',
+        password: 'password'
+      }
+    });
 
-    if (!email || !password) {
+    if (error) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: '請提供 Email 和密碼' })
+        body: JSON.stringify({ error: error.message })
       };
     }
+
+    const { email, password } = data.body;
 
     // 使用 Supabase Auth 登入
     const supabase = getSupabaseAuthClient();

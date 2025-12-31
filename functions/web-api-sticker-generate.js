@@ -7,6 +7,7 @@ const { createClient } = require('@supabase/supabase-js');
 const { getUserByUnifiedId } = require('./services/user-service');
 const { getSupabaseClient } = require('./supabase-client');
 const { generateStickersIntelligent } = require('./sticker-generator-enhanced');
+const { validateRequest } = require('./middleware/validation-middleware');
 
 function getSupabaseAuthClient() {
   return createClient(
@@ -59,16 +60,23 @@ exports.handler = async (event, context) => {
       };
     }
 
-    const userId = authUser.id;
-    const { taskId } = JSON.parse(event.body || '{}');
+    // 驗證輸入參數
+    const { error, data } = validateRequest(event, {
+      body: {
+        taskId: 'taskId'
+      }
+    });
 
-    if (!taskId) {
+    if (error) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: '請提供任務 ID' })
+        body: JSON.stringify({ error: error.message })
       };
     }
+
+    const userId = authUser.id;
+    const { taskId } = data.body;
 
     const supabase = getSupabaseClient();
 
