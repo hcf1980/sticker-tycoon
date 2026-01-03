@@ -85,12 +85,12 @@
     <div class="actions-inner">
       <p class="hint" id="hintText">👆 點擊任一張貼圖設為封面圖片</p>
       <div class="token-info" id="tokenInfo" style="background:#fff3e0;padding:8px 12px;border-radius:8px;margin-bottom:10px;font-size:0.85rem;text-align:center;">
-        💰 您的代幣：<strong id="userTokens">載入中...</strong> 枚 | 📦 下載/上架需消耗 <strong style="color:#d32f2f;">40 代幣</strong>
+        💰 您的代幣：<strong id="userTokens">載入中...</strong> 枚 | 📦 下載檔案需消耗 <strong style="color:#d32f2f;">40 代幣</strong>
       </div>
       <div class="btn-row">
         <button class="btn btn-danger" onclick="showClearModal()">🗑️ 清空</button>
-        <button class="btn btn-secondary" id="downloadBtn" disabled onclick="showDownloadConfirm()">📥 自行上架<br><small style="font-size:0.7rem;opacity:0.8;">扣 40 代幣</small></button>
-        <button class="btn btn-primary" id="submitBtn" disabled onclick="showSubmitModal()">🚀 免費代上架<br><small style="font-size:0.7rem;opacity:0.9;">扣 40 代幣</small></button>
+        <button class="btn btn-secondary" id="downloadBtn" disabled onclick="showDownloadConfirm()">📥 自行上架<br><small style="font-size:0.7rem;opacity:0.8;">下載檔案 40 代幣</small></button>
+        <button class="btn btn-primary" id="submitBtn" disabled onclick="showSubmitModal()">🚀 免費代上架<br><small style="font-size:0.7rem;opacity:0.9;">下載檔案 40 代幣</small></button>
       </div>
     </div>
   </div>
@@ -114,7 +114,8 @@
     <div class="modal-content">
       <h3>📥 確認下載貼圖包？</h3>
       <div style="background:#fff3e0;padding:15px;border-radius:10px;margin:15px 0;">
-        <p style="font-size:1.1rem;margin-bottom:10px;">💰 將消耗 <strong style="color:#d32f2f;font-size:1.3rem;">40 代幣</strong></p>
+        <p style="font-size:1.1rem;margin-bottom:10px;">💰 將消耗 <strong style="color:#d32f2f;font-size:1.3rem;">40 代幣</strong>（下載檔案費用）</p>
+        <p style="font-size:0.9rem;color:#666;margin-bottom:10px;">💡 建議：若有銷售需求，建議自行上架以獲得完整銷售分潤</p>
         <p style="font-size:0.85rem;color:#666;">您目前有 <strong id="confirmTokens">-</strong> 枚代幣</p>
       </div>
       <p style="font-size:0.8rem;color:#666;margin-bottom:15px;">下載後您將獲得符合 LINE 規格的完整貼圖包（ZIP）</p>
@@ -143,8 +144,9 @@
         <span style="font-size:0.8rem;color:#666;">您目前有 <strong id="submitTokens">-</strong> 枚代幣</span>
       </div>
       <p style="background:#e8f5e9;padding:12px;border-radius:8px;font-size:0.85rem;margin-bottom:15px;">
-        ✅ 代上架服務免費！僅需支付貼圖製作代幣<br>
-        ⏱️ 審核時間約 1-3 個工作天
+        ✅ 代上架服務完全免費！40 代幣為下載檔案費用<br>
+        ⏱️ 審核時間約 3-7 個工作天<br>
+        💡 建議：若僅為自用需求，可委由我們進行代上架服務
       </p>
       <div style="margin-bottom:15px;">
         <label style="font-weight:600;font-size:0.9rem;display:block;margin-bottom:5px;">貼圖英文名稱 *</label>
@@ -164,14 +166,13 @@
           <button class="price-btn" data-price="120" onclick="selectPrice(120)">NT$120</button>
           <button class="price-btn" data-price="150" onclick="selectPrice(150)">NT$150</button>
         </div>
-        <p style="font-size:0.75rem;color:#666;margin-top:8px;">💡 售價越高，每次銷售您獲得的分潤越多</p>
+        <p style="font-size:0.75rem;color:#666;margin-top:8px;">💡 若有銷售需求，建議自行上架以獲得完整銷售分潤</p>
       </div>
       <div style="background:#fff3e0;padding:12px;border-radius:8px;font-size:0.8rem;margin-bottom:20px;">
         📌 <strong>注意事項：</strong><br>
         • 貼圖將由 Sticker Tycoon 統一上架<br>
-        • 銷售分潤依 LINE 官方規定計算<br>
-        • 收益將以代幣提供予用戶<br>
-        • 上架後會透過 LINE 通知您
+        • 上架後會透過 LINE 通知您<br>
+        • ⚠️ 請確保貼圖內容未使用任何版權內容或標誌，否則可能被 LINE 退件而無法上傳成功
       </div>
       <div class="modal-btns">
         <button class="btn btn-secondary" onclick="hideSubmitModal()">取消</button>

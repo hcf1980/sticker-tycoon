@@ -513,7 +513,7 @@ function generateTutorialPart1FlexMessage() {
           '步驟 1/5', 
           'step1-upload.png', 
           '📷 步驟 1：上傳照片', 
-          '選擇一張清晰的正面照片，AI 會自動提取您的特徵來生成貼圖。',
+          '選擇一張清晰的正面照片，AI 會自動提取您的特徵來生成貼圖。\n\n⚠️ 重要提醒：請確保照片中未包含任何版權內容或標誌，否則生成的貼圖可能被 LINE 退件而無法上傳成功！',
           '點擊「上傳照片」按鈕，從相簿選擇或拍照上傳',
           false
         ),
@@ -565,6 +565,7 @@ function generateTutorialPart1FlexMessage() {
     },
     quickReply: {
       items: [
+        { type: 'action', action: { type: 'message', label: '🎁 分享給好友', text: '分享給好友' } },
         { type: 'action', action: { type: 'message', label: '🚀 下載/上架說明', text: '功能說明2' } },
         { type: 'action', action: { type: 'message', label: '🌅 早安圖說明', text: '功能說明3' } },
         { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
@@ -712,9 +713,9 @@ function generateTutorialPart2FlexMessage() {
           '步驟 1/3', 
           'step-40stickers.png', 
           '📋 步驟 1：選擇貼圖與封面', 
-          '在「我的貼圖」中選擇已生成的貼圖組，確認已選滿 40 張貼圖。點擊任一張貼圖可設為封面圖（96×74）。',
+          '在「我的貼圖」中選擇已生成的貼圖組，確認已選滿 40 張貼圖。點擊任一張貼圖可設為封面圖（96×74）。\n\n⚠️ 重要提醒：請確保貼圖內容未使用任何版權內容或標誌，否則可能被 LINE 退件而無法上傳成功！',
           '點擊貼圖可更換封面，封面會顯示在 LINE Store 上',
-          '下載/上架需消耗 40 代幣',
+          '下載檔案需消耗 40 代幣',
           false
         ),
         createDownloadTutorialBubble(
@@ -722,10 +723,10 @@ function generateTutorialPart2FlexMessage() {
           '#007AFF', 
           '步驟 2/3', 
           'step-download.png', 
-          '💾 步驟 2：確認下載', 
-          '確認下載後，系統會扣除 40 代幣並生成符合 LINE 規格的完整貼圖包（ZIP 壓縮檔）。您可以自行上傳到 LINE Creators Market。',
+          '💾 步驟 2：自行下載上架', 
+          '確認下載後，系統會扣除 40 代幣並生成符合 LINE 規格的完整貼圖包（ZIP 壓縮檔）。您可以自行上傳到 LINE Creators Market。\n\n💡 建議：若有銷售需求，建議自行上架以獲得完整銷售分潤。',
           '下載後會收到 ZIP 檔案連結，解壓後即可上傳到 LINE Creators',
-          '將消耗 40 代幣（自行上架）',
+          '將消耗 40 代幣（下載檔案費用）',
           false
         ),
         createDownloadTutorialBubble(
@@ -734,15 +735,17 @@ function generateTutorialPart2FlexMessage() {
           '步驟 3/3 ⭐', 
           'step-listing.png', 
           '⭐ 步驟 3：免費代上架服務', 
-          '填寫貼圖資訊（英文名稱、中文名稱、售價），我們會免費幫您上架到 LINE Store！審核時間約 3-7 個工作天，上架後會透過 LINE 通知您。',
-          '代上架服務完全免費！只需支付 40 代幣的貼圖製作費用。銷售分潤依 LINE 官方規定計算，收益將以代幣提供。',
+          '填寫貼圖資訊（英文名稱、中文名稱、售價），我們會免費幫您上架到 LINE Store！審核時間約 3-7 個工作天，上架後會透過 LINE 通知您。\n\n💡 建議：若僅為自用需求，可委由我們進行代上架服務。代上架服務完全免費，只需支付 40 代幣的下載檔案費用。',
+          '代上架服務完全免費！40 代幣為下載檔案費用',
           '消耗 40 代幣（代上架服務免費）',
           true
         )
       ]
+      ]
     },
     quickReply: {
       items: [
+        { type: 'action', action: { type: 'message', label: '🎁 分享給好友', text: '分享給好友' } },
         { type: 'action', action: { type: 'message', label: '📸 創建貼圖教學', text: '功能說明' } },
         { type: 'action', action: { type: 'message', label: '🌅 早安圖說明', text: '功能說明3' } },
         { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
@@ -831,6 +834,7 @@ function generateTutorialPart3FlexMessage() {
     },
     quickReply: {
       items: [
+        { type: 'action', action: { type: 'message', label: '🎁 分享給好友', text: '分享給好友' } },
         { type: 'action', action: { type: 'message', label: '🌅 早安圖', text: '早安圖' } },
         { type: 'action', action: { type: 'message', label: '📸 創建貼圖教學', text: '功能說明' } },
         { type: 'action', action: { type: 'message', label: '🚀 下載/上架說明', text: '功能說明2' } },

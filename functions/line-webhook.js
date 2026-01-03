@@ -47,6 +47,116 @@ function getChannelSecret() {
 }
 
 /**
+ * 生成標準 QuickReply 配置
+ * @param {Object} options - 配置選項
+ * @param {boolean} options.includeShare - 是否包含分享按鈕
+ * @param {boolean} options.includeCreate - 是否包含創建貼圖按鈕
+ * @param {boolean} options.includeMyStickers - 是否包含我的貼圖按鈕
+ * @param {boolean} options.includePurchase - 是否包含購買代幣按鈕
+ * @param {boolean} options.includeTutorial - 是否包含教學按鈕
+ * @param {boolean} options.includeMorningGreeting - 是否包含早安圖按鈕
+ * @param {Array} options.customItems - 自訂項目
+ * @returns {Object} QuickReply 配置
+ */
+function generateQuickReply(options = {}) {
+  const {
+    includeShare = false,
+    includeCreate = true,
+    includeMyStickers = true,
+    includePurchase = false,
+    includeTutorial = false,
+    includeMorningGreeting = false,
+    customItems = []
+  } = options;
+
+  const items = [];
+
+  // 自訂項目優先
+  if (customItems.length > 0) {
+    items.push(...customItems);
+  }
+
+  // 分享按鈕（優先顯示）
+  if (includeShare) {
+    items.push({
+      type: 'action',
+      action: {
+        type: 'message',
+        label: '🎁 分享給好友',
+        text: '分享給好友'
+      }
+    });
+  }
+
+  // 創建貼圖
+  if (includeCreate) {
+    items.push({
+      type: 'action',
+      action: {
+        type: 'message',
+        label: '🎨 創建貼圖',
+        text: '創建貼圖'
+      }
+    });
+  }
+
+  // 我的貼圖
+  if (includeMyStickers) {
+    items.push({
+      type: 'action',
+      action: {
+        type: 'message',
+        label: '📁 我的貼圖',
+        text: '我的貼圖'
+      }
+    });
+  }
+
+  // 購買代幣
+  if (includePurchase) {
+    items.push({
+      type: 'action',
+      action: {
+        type: 'message',
+        label: '💰 購買代幣',
+        text: '購買代幣'
+      }
+    });
+  }
+
+  // 早安圖
+  if (includeMorningGreeting) {
+    items.push({
+      type: 'action',
+      action: {
+        type: 'message',
+        label: '🌅 早安圖',
+        text: '早安圖'
+      }
+    });
+  }
+
+  // 教學
+  if (includeTutorial) {
+    items.push({
+      type: 'action',
+      action: {
+        type: 'message',
+        label: '📸 創建教學',
+        text: '功能說明'
+      }
+    });
+  }
+
+  // LINE 限制最多 13 個
+  return {
+    quickReply: {
+      items: items.slice(0, 13)
+    }
+  };
+}
+
+/**
  * 處理文字訊息
  */
 async function handleTextMessage(replyToken, userId, text) {
@@ -295,14 +405,13 @@ async function handleTextMessage(replyToken, userId, text) {
     return getLineClient().replyMessage(replyToken, {
       type: 'text',
       text: '❌ 系統發生錯誤，請稍後再試',
-      quickReply: {
-        items: [
-          { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
-          { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
-          { type: 'action', action: { type: 'message', label: '🌅 早安圖', text: '早安圖' } },
-          { type: 'action', action: { type: 'message', label: '📸 創建教學', text: '功能說明' } }
-        ]
-      }
+      ...generateQuickReply({
+        includeShare: true,
+        includeCreate: true,
+        includeMyStickers: true,
+        includeTutorial: true,
+        includeMorningGreeting: true
+      })
     });
   }
 }
@@ -522,13 +631,12 @@ async function handleConfirmGeneration(replyToken, userId, state) {
       text: `❌ 代幣不足！\n\n` +
             `需要 ${tokenCost} 代幣，目前餘額 ${tokenBalance} 代幣\n\n` +
             '💡 輸入「購買代幣」查看儲值方案',
-      quickReply: {
-        items: [
-          { type: 'action', action: { type: 'message', label: '💰 購買代幣', text: '購買代幣' } },
-          { type: 'action', action: { type: 'message', label: '🎁 分享賺代幣', text: '分享給好友' } },
-          { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } }
-        ]
-      }
+      ...generateQuickReply({
+        includeShare: true,
+        includePurchase: true,
+        includeMyStickers: true,
+        includeCreate: false
+      })
     });
   }
 
@@ -1347,13 +1455,14 @@ async function handleViewStickerSet(replyToken, userId, setId) {
           ]
         }
       },
-      quickReply: {
-        items: [
-          { type: 'action', action: { type: 'message', label: '📋 查詢進度', text: '查詢進度' } },
-          { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
-          { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } }
+      ...generateQuickReply({
+        includeShare: true,
+        includeCreate: true,
+        includeMyStickers: true,
+        customItems: [
+          { type: 'action', action: { type: 'message', label: '📋 查詢進度', text: '查詢進度' } }
         ]
-      }
+      })
     };
 
     return getLineClient().replyMessage(replyToken, flexMessage);
@@ -2244,11 +2353,12 @@ async function handleClearUploadQueue(replyToken, userId) {
     return getLineClient().replyMessage(replyToken, {
       type: 'text',
       text: '✅ 待上傳佇列已清空\n\n輸入「我的貼圖」重新選擇貼圖',
-      quickReply: {
-        items: [
-          { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
-          { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
-          { type: 'action', action: { type: 'message', label: '🌅 早安圖', text: '早安圖' } },
+      ...generateQuickReply({
+        includeShare: true,
+        includeCreate: true,
+        includeMyStickers: true,
+        includeMorningGreeting: true
+      })
           { type: 'action', action: { type: 'message', label: '📸 創建教學', text: '功能說明' } }
         ]
       }
@@ -3008,7 +3118,16 @@ async function handlePurchaseInfo(replyToken, userId) {
     }
   };
 
-  return getLineClient().replyMessage(replyToken, [planCarousel, paymentInfo, qrMessage]);
+  const messages = [planCarousel, paymentInfo, qrMessage];
+  
+  // 加入 QuickReply
+  messages[0].quickReply = generateQuickReply({
+    includeShare: true,
+    includeMyStickers: true,
+    includeTutorial: true
+  }).quickReply;
+  
+  return getLineClient().replyMessage(replyToken, messages);
 }
 
 /**
@@ -3377,6 +3496,14 @@ async function handlePurchaseGuide(replyToken, userId) {
     }
   };
 
+  // 加入 QuickReply
+  carousel.quickReply = generateQuickReply({
+    includeShare: true,
+    includeMyStickers: true,
+    includePurchase: true,
+    includeTutorial: true
+  }).quickReply;
+  
   return getLineClient().replyMessage(replyToken, carousel);
 }
 
