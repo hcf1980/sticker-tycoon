@@ -123,6 +123,7 @@ function extractUrlFromText(text) {
  */
 async function callAIWithFallback(messages, options = {}) {
   const {
+    size, // 🆕 新增 size 參數
     maxRetries = 2,
     timeout = DEFAULT_TIMEOUT,
     maxTokens = DEFAULT_MAX_TOKENS
@@ -153,6 +154,7 @@ async function callAIWithFallback(messages, options = {}) {
           {
             model: model.name,
             messages: messages,
+            ...(size ? { size } : {}),
             max_tokens: maxTokens
           },
           {

@@ -29,18 +29,18 @@ const AI_MODEL_3 = process.env.AI_MODEL_3 || 'gemini-3-pro-image-preview-2k';
 
 // 6宮格設定（3列×2行）
 const GRID_CONFIG = {
-  // AI 生成尺寸（實際會是約 1365×768）
-  expectedWidth: 1365,
-  expectedHeight: 768,
+  // AI 生成尺寸（改為 1110×1480，配合 2×3 網格）
+  expectedWidth: 1110,  // 370 * 3
+  expectedHeight: 960,  // 320 * 3
 
-  // 網格佈局：3列×2行
-  gridRows: 2,
-  gridCols: 3,
+  // 網格佈局：2列×3行
+  gridRows: 3,
+  gridCols: 2,
   totalCells: 6,
 
   // 每格預期尺寸
-  cellWidth: 455,   // 1365 / 3 = 455
-  cellHeight: 384,  // 768 / 2 = 384
+  cellWidth: 555,   // 1110 / 2 = 555
+  cellHeight: 320,  // 960 / 3 = 320
 
   // 最終輸出尺寸（固定）
   output: {
@@ -325,8 +325,12 @@ async function generateGridImage(photoBase64, style, expressions, characterID, o
     // 🆕 使用帶 Fallback 的 API 調用
     console.log(`🚀 使用 AI API Client with Fallback...`);
     
+    // 🆕 路線A：要求 AI 輸出固定尺寸的 6 宮格網格圖（2欄×3列）
+    // 目標：每格裁切後再縮放到 370×320，先確保網格切割穩定
+    // 這裡採用 2x 尺寸（1480×1920）提升細節，且可被 2/3 完整整除
     const imageUrl = await generateImageFromPhoto(photoBase64, prompt, {
-      maxRetries: 2,  // 每個模型嘗試 2 次
+      size: "1480x1920",
+      maxRetries: 2, // 每個模型嘗試 2 次
       timeout: 120000
     });
 
@@ -682,41 +686,10 @@ async function cropGridToStickers(gridImage) {
   const aspectRatio = imageWidth / imageHeight;
   console.log(`📊 寬高比: ${aspectRatio.toFixed(2)}`);
 
-  // 🆕 智能判斷網格排列方式（根據圖片比例自動適配不同 AI 模型）
-  // - 橫向圖片（寬 > 高）→ 3列×2行
-  // - 縱向圖片（高 > 寬）→ 2列×3行
-  // - 接近正方形 → 比較哪種排列讓每格更接近正方形
-  let gridCols, gridRows;
-
-  if (aspectRatio > 1.2) {
-    // 明顯橫向圖片：3列×2行
-    gridCols = 3;
-    gridRows = 2;
-    console.log(`📐 檢測為橫向圖片，使用 3列×2行`);
-  } else if (aspectRatio < 0.83) {
-    // 明顯縱向圖片：2列×3行
-    gridCols = 2;
-    gridRows = 3;
-    console.log(`📐 檢測為縱向圖片，使用 2列×3行`);
-  } else {
-    // 接近正方形：比較兩種排列，選擇讓每格更接近正方形的
-    const option1CellRatio = (imageWidth / 3) / (imageHeight / 2); // 3×2
-    const option2CellRatio = (imageWidth / 2) / (imageHeight / 3); // 2×3
-    
-    // 計算每格與正方形（比例 1）的差距
-    const diff1 = Math.abs(option1CellRatio - 1);
-    const diff2 = Math.abs(option2CellRatio - 1);
-    
-    if (diff1 <= diff2) {
-      gridCols = 3;
-      gridRows = 2;
-      console.log(`📐 接近正方形，選擇 3列×2行（每格比例 ${option1CellRatio.toFixed(2)}）`);
-    } else {
-      gridCols = 2;
-      gridRows = 3;
-      console.log(`📐 接近正方形，選擇 2列×3行（每格比例 ${option2CellRatio.toFixed(2)}）`);
-    }
-  }
+  // 🆕 鎖定網格排列為 2欄×3列，配合 1480x1920 的生成尺寸
+  const gridCols = 2;
+  const gridRows = 3;
+  console.log(`📐 鎖定使用 2欄×3列網格`);
 
   // 計算每格大小（精確除以行列數）
   const cellWidth = Math.floor(imageWidth / gridCols);
@@ -817,7 +790,7 @@ async function cropGridToStickers(gridImage) {
         // 步驟 4: 縮放到內容區尺寸（350×300），保持比例
         const resizedBuffer = await sharp(extractedBuffer)
           .resize(output.contentWidth, output.contentHeight, {
-            fit: 'contain',  // 保持比例，可能有透明邊
+            fit: 'cover',  // 🆕 改為 'cover'，填滿內容區，避免人物縮小
             withoutEnlargement: false,
             background: { r: 0, g: 0, b: 0, alpha: 0 }
           })
