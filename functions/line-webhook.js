@@ -2942,198 +2942,374 @@ async function handlePurchaseInfo(replyToken) {
 }
 
 /**
- * 處理購買說明 - 提供完整的購買和使用說明
+ * 處理購買說明 - 提供完整的購買和使用說明（Carousel 版本）
  */
 async function handlePurchaseGuide(replyToken) {
-  const guideUrl = `${process.env.URL}/token-guide-mobile.html`;
+  const guideUrl = `${process.env.URL || 'https://sticker-tycoon.netlify.app'}/token-guide.html`;
 
-  const message = {
-    type: 'flex',
-    altText: '📖 購買說明',
-    contents: {
-      type: 'bubble',
-      size: 'mega',
-      header: {
-        type: 'box',
-        layout: 'vertical',
-        backgroundColor: '#667eea',
-        paddingAll: 'lg',
-        contents: [
-          {
-            type: 'text',
-            text: '📖 購買說明',
-            size: 'xl',
-            weight: 'bold',
-            color: '#FFFFFF',
-            align: 'center'
-          },
-          {
-            type: 'text',
-            text: '代幣購買與使用完整指南',
-            size: 'xs',
-            color: '#FFFFFFCC',
-            align: 'center',
-            margin: 'sm'
-          }
-        ]
-      },
-      body: {
-        type: 'box',
-        layout: 'vertical',
-        paddingAll: 'lg',
-        contents: [
-          {
-            type: 'text',
-            text: '📋 本說明包含',
-            size: 'md',
-            weight: 'bold',
-            color: '#333333',
-            margin: 'none'
-          },
-          {
-            type: 'separator',
-            margin: 'md'
-          },
-          {
-            type: 'box',
-            layout: 'vertical',
-            margin: 'lg',
-            spacing: 'md',
-            contents: [
-              {
-                type: 'box',
-                layout: 'horizontal',
-                contents: [
-                  { type: 'text', text: '💳', size: 'lg', flex: 0, margin: 'none' },
-                  {
-                    type: 'text',
-                    text: 'LINE Pay 購買流程',
-                    size: 'sm',
-                    color: '#555555',
-                    margin: 'md',
-                    wrap: true
-                  }
-                ]
-              },
-              {
-                type: 'box',
-                layout: 'horizontal',
-                contents: [
-                  { type: 'text', text: '⏰', size: 'lg', flex: 0, margin: 'none' },
-                  {
-                    type: 'text',
-                    text: '代幣有效期（30天）',
-                    size: 'sm',
-                    color: '#555555',
-                    margin: 'md',
-                    wrap: true
-                  }
-                ]
-              },
-              {
-                type: 'box',
-                layout: 'horizontal',
-                contents: [
-                  { type: 'text', text: '🔄', size: 'lg', flex: 0, margin: 'none' },
-                  {
-                    type: 'text',
-                    text: 'FIFO 智慧扣款機制',
-                    size: 'sm',
-                    color: '#555555',
-                    margin: 'md',
-                    wrap: true
-                  }
-                ]
-              },
-              {
-                type: 'box',
-                layout: 'horizontal',
-                contents: [
-                  { type: 'text', text: '💎', size: 'lg', flex: 0, margin: 'none' },
-                  {
-                    type: 'text',
-                    text: '代幣方案與用途',
-                    size: 'sm',
-                    color: '#555555',
-                    margin: 'md',
-                    wrap: true
-                  }
-                ]
-              },
-              {
-                type: 'box',
-                layout: 'horizontal',
-                contents: [
-                  { type: 'text', text: '❓', size: 'lg', flex: 0, margin: 'none' },
-                  {
-                    type: 'text',
-                    text: '常見問題 FAQ',
-                    size: 'sm',
-                    color: '#555555',
-                    margin: 'md',
-                    wrap: true
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            type: 'box',
-            layout: 'vertical',
-            backgroundColor: '#d1ecf1',
-            cornerRadius: 'lg',
-            paddingAll: 'md',
-            margin: 'lg',
-            contents: [
-              {
-                type: 'text',
-                text: '🎁 新用戶福利',
-                size: 'sm',
-                weight: 'bold',
-                color: '#0c5460'
-              },
-              {
-                type: 'text',
-                text: '註冊即贈 40 代幣',
-                size: 'xs',
-                color: '#0c5460',
-                margin: 'xs'
-              }
-            ]
-          }
-        ]
-      },
-      footer: {
-        type: 'box',
-        layout: 'vertical',
-        paddingAll: 'md',
-        spacing: 'sm',
-        contents: [
-          {
-            type: 'button',
-            action: {
-              type: 'uri',
-              label: '📖 查看完整說明',
-              uri: guideUrl
+  // 卡片 1: 價目表
+  const priceListBubble = {
+    type: 'bubble',
+    size: 'mega',
+    header: {
+      type: 'box',
+      layout: 'vertical',
+      backgroundColor: '#667eea',
+      paddingAll: 'lg',
+      contents: [
+        { type: 'text', text: '💳 代幣價目表', size: 'xl', weight: 'bold', color: '#FFFFFF', align: 'center' }
+      ]
+    },
+    body: {
+      type: 'box',
+      layout: 'vertical',
+      paddingAll: 'lg',
+      spacing: 'md',
+      contents: [
+        // 基礎包
+        {
+          type: 'box',
+          layout: 'vertical',
+          backgroundColor: '#F7F9FC',
+          cornerRadius: 'lg',
+          paddingAll: 'md',
+          contents: [
+            { type: 'text', text: '基礎包', size: 'md', weight: 'bold', color: '#333333' },
+            { type: 'separator', margin: 'sm' },
+            {
+              type: 'box',
+              layout: 'horizontal',
+              margin: 'sm',
+              contents: [
+                { type: 'text', text: '代幣數量', size: 'xs', color: '#888888', flex: 1 },
+                { type: 'text', text: '70 代幣', size: 'sm', weight: 'bold', color: '#333333', align: 'end' }
+              ]
             },
-            style: 'primary',
-            color: '#667eea'
-          },
-          {
-            type: 'button',
-            action: {
-              type: 'message',
-              label: '🛒 購買代幣',
-              text: '購買代幣'
+            {
+              type: 'box',
+              layout: 'horizontal',
+              contents: [
+                { type: 'text', text: '售價', size: 'xs', color: '#888888', flex: 1 },
+                { type: 'text', text: 'NT$ 300', size: 'sm', weight: 'bold', color: '#667eea', align: 'end' }
+              ]
             },
-            style: 'secondary'
-          }
-        ]
-      }
+            {
+              type: 'box',
+              layout: 'horizontal',
+              contents: [
+                { type: 'text', text: '平均單價', size: 'xs', color: '#888888', flex: 1 },
+                { type: 'text', text: 'NT$ 4.29/代幣', size: 'xs', color: '#666666', align: 'end' }
+              ]
+            }
+          ]
+        },
+        // 超值包
+        {
+          type: 'box',
+          layout: 'vertical',
+          backgroundColor: '#FFF0F0',
+          cornerRadius: 'lg',
+          paddingAll: 'md',
+          margin: 'sm',
+          contents: [
+            {
+              type: 'box',
+              layout: 'horizontal',
+              contents: [
+                { type: 'text', text: '超值包', size: 'md', weight: 'bold', color: '#333333', flex: 1 },
+                { type: 'text', text: '🔥 最受歡迎', size: 'xxs', color: '#FF6B6B', weight: 'bold' }
+              ]
+            },
+            { type: 'separator', margin: 'sm' },
+            {
+              type: 'box',
+              layout: 'horizontal',
+              margin: 'sm',
+              contents: [
+                { type: 'text', text: '代幣數量', size: 'xs', color: '#888888', flex: 1 },
+                { type: 'text', text: '130 代幣', size: 'sm', weight: 'bold', color: '#333333', align: 'end' }
+              ]
+            },
+            {
+              type: 'box',
+              layout: 'horizontal',
+              contents: [
+                { type: 'text', text: '售價', size: 'xs', color: '#888888', flex: 1 },
+                { type: 'text', text: 'NT$ 500', size: 'sm', weight: 'bold', color: '#FF6B6B', align: 'end' }
+              ]
+            },
+            {
+              type: 'box',
+              layout: 'horizontal',
+              contents: [
+                { type: 'text', text: '平均單價', size: 'xs', color: '#888888', flex: 1 },
+                { type: 'text', text: 'NT$ 3.85/代幣', size: 'xs', color: '#666666', align: 'end' }
+              ]
+            }
+          ]
+        },
+        {
+          type: 'box',
+          layout: 'vertical',
+          backgroundColor: '#FFF8E7',
+          cornerRadius: 'md',
+          paddingAll: 'sm',
+          margin: 'sm',
+          contents: [
+            { type: 'text', text: '⏰ 代幣有效期限：30 天', size: 'xs', color: '#CC6600', weight: 'bold' }
+          ]
+        }
+      ]
+    },
+    footer: {
+      type: 'box',
+      layout: 'vertical',
+      paddingAll: 'md',
+      contents: [
+        {
+          type: 'button',
+          action: { type: 'message', label: '🛒 購買代幣', text: '購買代幣' },
+          style: 'primary',
+          color: '#667eea'
+        }
+      ]
     }
   };
 
-  return getLineClient().replyMessage(replyToken, message);
+  // 卡片 2: 交易流程
+  const processBubble = {
+    type: 'bubble',
+    size: 'mega',
+    header: {
+      type: 'box',
+      layout: 'vertical',
+      backgroundColor: '#2D9CDB',
+      paddingAll: 'lg',
+      contents: [
+        { type: 'text', text: '📝 完整交易流程', size: 'xl', weight: 'bold', color: '#FFFFFF', align: 'center' }
+      ]
+    },
+    body: {
+      type: 'box',
+      layout: 'vertical',
+      paddingAll: 'lg',
+      spacing: 'sm',
+      contents: [
+        {
+          type: 'box',
+          layout: 'horizontal',
+          contents: [
+            { type: 'text', text: '1️⃣', size: 'sm', flex: 0 },
+            { type: 'text', text: '在 LINE Bot 選擇「購買代幣」', size: 'xs', color: '#333333', flex: 1, wrap: true }
+          ]
+        },
+        {
+          type: 'box',
+          layout: 'horizontal',
+          contents: [
+            { type: 'text', text: '2️⃣', size: 'sm', flex: 0 },
+            { type: 'text', text: '選擇代幣方案（基礎包/超值包）', size: 'xs', color: '#333333', flex: 1, wrap: true }
+          ]
+        },
+        {
+          type: 'box',
+          layout: 'horizontal',
+          contents: [
+            { type: 'text', text: '3️⃣', size: 'sm', flex: 0 },
+            { type: 'text', text: '確認結帳畫面（商品、數量、金額）', size: 'xs', color: '#333333', flex: 1, wrap: true }
+          ]
+        },
+        {
+          type: 'box',
+          layout: 'horizontal',
+          contents: [
+            { type: 'text', text: '4️⃣', size: 'sm', flex: 0 },
+            { type: 'text', text: '選擇付款方式完成付款', size: 'xs', color: '#333333', flex: 1, wrap: true }
+          ]
+        },
+        {
+          type: 'box',
+          layout: 'horizontal',
+          contents: [
+            { type: 'text', text: '5️⃣', size: 'sm', flex: 0 },
+            { type: 'text', text: '付款成功，代幣即時到帳', size: 'xs', color: '#333333', flex: 1, wrap: true }
+          ]
+        },
+        { type: 'separator', margin: 'md' },
+        {
+          type: 'box',
+          layout: 'vertical',
+          backgroundColor: '#E8F5E9',
+          cornerRadius: 'md',
+          paddingAll: 'sm',
+          margin: 'sm',
+          contents: [
+            { type: 'text', text: '💳 支援付款方式', size: 'xs', weight: 'bold', color: '#2E7D32' },
+            { type: 'text', text: '信用卡、LINE Pay、超商代碼、ATM 轉帳', size: 'xxs', color: '#666666', margin: 'xs' }
+          ]
+        }
+      ]
+    }
+  };
+
+  // 卡片 3: 退換貨政策
+  const refundPolicyBubble = {
+    type: 'bubble',
+    size: 'mega',
+    header: {
+      type: 'box',
+      layout: 'vertical',
+      backgroundColor: '#FF6B6B',
+      paddingAll: 'lg',
+      contents: [
+        { type: 'text', text: '🔄 退換貨政策', size: 'xl', weight: 'bold', color: '#FFFFFF', align: 'center' }
+      ]
+    },
+    body: {
+      type: 'box',
+      layout: 'vertical',
+      paddingAll: 'lg',
+      spacing: 'sm',
+      contents: [
+        {
+          type: 'box',
+          layout: 'vertical',
+          backgroundColor: '#FFE8E8',
+          cornerRadius: 'md',
+          paddingAll: 'sm',
+          margin: 'sm',
+          contents: [
+            { type: 'text', text: '⚠️ 重要說明', size: 'xs', weight: 'bold', color: '#CC0000' },
+            { type: 'text', text: '代幣為數位商品，一經購買並成功入帳後，無法退換貨。', size: 'xxs', color: '#666666', wrap: true, margin: 'xs' }
+          ]
+        },
+        {
+          type: 'box',
+          layout: 'vertical',
+          backgroundColor: '#E8F5E9',
+          cornerRadius: 'md',
+          paddingAll: 'sm',
+          margin: 'sm',
+          contents: [
+            { type: 'text', text: '✅ 可申請代幣調整的情況', size: 'xs', weight: 'bold', color: '#2E7D32' },
+            { type: 'text', text: '• 系統錯誤導致重複扣款', size: 'xxs', color: '#666666', margin: 'xs' },
+            { type: 'text', text: '• 付款成功但代幣未入帳', size: 'xxs', color: '#666666', margin: 'xs' },
+            { type: 'text', text: '• 程式異常導致出圖錯誤', size: 'xxs', color: '#666666', margin: 'xs' }
+          ]
+        },
+        {
+          type: 'box',
+          layout: 'vertical',
+          backgroundColor: '#E3F2FD',
+          cornerRadius: 'md',
+          paddingAll: 'sm',
+          margin: 'sm',
+          contents: [
+            { type: 'text', text: '📞 客服聯繫', size: 'xs', weight: 'bold', color: '#1976D2' },
+            { type: 'text', text: 'Email: johnyarcher2100@yahoo.com.tw', size: 'xxs', color: '#666666', margin: 'xs' },
+            { type: 'text', text: '電話: 0922-327-910', size: 'xxs', color: '#666666', margin: 'xs' },
+            { type: 'text', text: '處理時效: 1-3 個工作天', size: 'xxs', color: '#666666', margin: 'xs' }
+          ]
+        }
+      ]
+    },
+    footer: {
+      type: 'box',
+      layout: 'vertical',
+      paddingAll: 'md',
+      contents: [
+        {
+          type: 'button',
+          action: { type: 'uri', label: '📖 查看完整說明', uri: guideUrl },
+          style: 'secondary'
+        }
+      ]
+    }
+  };
+
+  // 卡片 4: 商家資訊與法規
+  const merchantInfoBubble = {
+    type: 'bubble',
+    size: 'mega',
+    header: {
+      type: 'box',
+      layout: 'vertical',
+      backgroundColor: '#4CAF50',
+      paddingAll: 'lg',
+      contents: [
+        { type: 'text', text: '🏢 商家資訊', size: 'xl', weight: 'bold', color: '#FFFFFF', align: 'center' }
+      ]
+    },
+    body: {
+      type: 'box',
+      layout: 'vertical',
+      paddingAll: 'lg',
+      spacing: 'sm',
+      contents: [
+        {
+          type: 'box',
+          layout: 'vertical',
+          backgroundColor: '#E8F5E9',
+          cornerRadius: 'md',
+          paddingAll: 'sm',
+          margin: 'sm',
+          contents: [
+            { type: 'text', text: '✓ 綠界賣家資料驗證通過', size: 'xs', weight: 'bold', color: '#2E7D32' },
+            { type: 'text', text: 'ECPay Verified Seller', size: 'xxs', color: '#666666', margin: 'xs' }
+          ]
+        },
+        {
+          type: 'box',
+          layout: 'vertical',
+          backgroundColor: '#F7F9FC',
+          cornerRadius: 'md',
+          paddingAll: 'sm',
+          margin: 'sm',
+          contents: [
+            { type: 'text', text: '📧 Email', size: 'xs', weight: 'bold', color: '#333333' },
+            { type: 'text', text: 'johnyarcher2100@yahoo.com.tw', size: 'xxs', color: '#666666', margin: 'xs' }
+          ]
+        },
+        {
+          type: 'box',
+          layout: 'vertical',
+          backgroundColor: '#F7F9FC',
+          cornerRadius: 'md',
+          paddingAll: 'sm',
+          margin: 'sm',
+          contents: [
+            { type: 'text', text: '📞 電話', size: 'xs', weight: 'bold', color: '#333333' },
+            { type: 'text', text: '0922-327-910', size: 'xxs', color: '#666666', margin: 'xs' }
+          ]
+        },
+        {
+          type: 'box',
+          layout: 'vertical',
+          backgroundColor: '#E3F2FD',
+          cornerRadius: 'md',
+          paddingAll: 'sm',
+          margin: 'sm',
+          contents: [
+            { type: 'text', text: '⚖️ 法規遵循', size: 'xs', weight: 'bold', color: '#1976D2' },
+            { type: 'text', text: '遵循《消費者保護法》', size: 'xxs', color: '#666666', margin: 'xs' },
+            { type: 'text', text: '《個人資料保護法》', size: 'xxs', color: '#666666', margin: 'xs' }
+          ]
+        }
+      ]
+    }
+  };
+
+  // Carousel Message
+  const carousel = {
+    type: 'flex',
+    altText: '📖 代幣購買完整說明',
+    contents: {
+      type: 'carousel',
+      contents: [priceListBubble, processBubble, refundPolicyBubble, merchantInfoBubble]
+    }
+  };
+
+  return getLineClient().replyMessage(replyToken, carousel);
 }
 
 /**
