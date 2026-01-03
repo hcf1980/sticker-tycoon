@@ -34,6 +34,22 @@ function switchTab(tab) {
   else if (tab === 'expressions') loadExpressions();
 }
 
+// 計算風格總字數（用於排序）
+function calculateStyleCharCount(style) {
+  const fields = [
+    style.core_style || '',
+    style.lighting || '',
+    style.composition || '',
+    style.brushwork || '',
+    style.mood || '',
+    style.color_palette || '',
+    style.description || '',
+    style.forbidden || '',
+    style.reference || ''
+  ];
+  return fields.join('').length;
+}
+
 // 載入風格設定
 async function loadStyles() {
   const container = document.getElementById('styles-list');
@@ -60,8 +76,17 @@ async function loadStyles() {
       return;
     }
 
-    // 顯示風格列表
-    container.innerHTML = data.map(style => `
+    // 🆕 按字數從大到小排序
+    const sortedData = [...data].sort((a, b) => {
+      const countA = calculateStyleCharCount(a);
+      const countB = calculateStyleCharCount(b);
+      return countB - countA; // 從大到小
+    });
+
+    // 顯示風格列表（顯示字數）
+    container.innerHTML = sortedData.map(style => {
+      const charCount = calculateStyleCharCount(style);
+      return `
       <div class="border rounded-lg p-4 hover:shadow-md transition">
         <div class="flex justify-between items-start">
           <div class="flex-1">
@@ -69,6 +94,7 @@ async function loadStyles() {
               <span class="text-2xl">${style.emoji || '🎨'}</span>
               <h3 class="text-lg font-bold">${style.name}</h3>
               <span class="text-xs bg-gray-200 px-2 py-1 rounded">${style.style_id}</span>
+              <span class="text-xs bg-pink-100 text-pink-700 px-2 py-1 rounded font-bold">${charCount} 字元</span>
             </div>
             <p class="text-sm text-gray-600 mb-2">${style.description || ''}</p>
             <div class="text-xs text-gray-500">
@@ -81,7 +107,8 @@ async function loadStyles() {
           </button>
         </div>
       </div>
-    `).join('');
+    `;
+    }).join('');
 
   } catch (error) {
     console.error('載入風格失敗:', error);

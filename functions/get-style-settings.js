@@ -33,10 +33,30 @@ exports.handler = async (event) => {
 
       if (error) throw error;
 
+      // 🆕 按字數從大到小排序
+      const calculateCharCount = (style) => {
+        const fields = [
+          style.core_style || '',
+          style.lighting || '',
+          style.composition || '',
+          style.brushwork || '',
+          style.mood || '',
+          style.color_palette || '',
+          style.description || '',
+          style.forbidden || '',
+          style.reference || ''
+        ];
+        return fields.join('').length;
+      };
+
+      const sortedData = [...(data || [])].sort((a, b) => {
+        return calculateCharCount(b) - calculateCharCount(a); // 從大到小
+      });
+
       return {
         statusCode: 200,
         headers,
-        body: JSON.stringify({ success: true, data })
+        body: JSON.stringify({ success: true, data: sortedData })
       };
 
     } else if (type === 'framing') {
@@ -83,13 +103,33 @@ exports.handler = async (event) => {
       if (framingResult.error) throw framingResult.error;
       if (scenesResult.error) throw scenesResult.error;
 
+      // 🆕 按字數從大到小排序風格設定
+      const calculateCharCount = (style) => {
+        const fields = [
+          style.core_style || '',
+          style.lighting || '',
+          style.composition || '',
+          style.brushwork || '',
+          style.mood || '',
+          style.color_palette || '',
+          style.description || '',
+          style.forbidden || '',
+          style.reference || ''
+        ];
+        return fields.join('').length;
+      };
+
+      const sortedStyles = [...(stylesResult.data || [])].sort((a, b) => {
+        return calculateCharCount(b) - calculateCharCount(a); // 從大到小
+      });
+
       return {
         statusCode: 200,
         headers,
         body: JSON.stringify({
           success: true,
           data: {
-            styles: stylesResult.data,
+            styles: sortedStyles,
             framing: framingResult.data,
             scenes: scenesResult.data
           }

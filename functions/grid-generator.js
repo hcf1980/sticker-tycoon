@@ -128,65 +128,24 @@ function generateGridPrompt(photoBase64, style, expressions, characterID, option
     : 'sparkles, small hearts';
   const popTextStyle = scene.popTextStyle || 'simple clean text, small font';
 
-  // 簡化版 Prompt v8 - 強化尺寸要求與角色一致性
-  const prompt = `Create a 6-cell sticker grid from this photo.
+  // 精簡版 Prompt v9 - 刪除重複內容，保留核心要求
+  const prompt = `Create 1480×1920px image: 2 columns × 3 rows grid (6 equal cells, ~740×640px each).
 
-⚠️ CRITICAL SIZE REQUIREMENT:
-- OUTPUT IMAGE MUST BE EXACTLY 1480 pixels wide × 1920 pixels tall
-- This is a vertical (portrait) image with 2 columns × 3 rows grid
-- Each cell will be approximately 740×640 pixels
-- DO NOT generate any other size - it must be 1480×1920
-
-⚠️ CRITICAL LAYOUT REQUIREMENTS:
-- Create exactly 6 EQUAL-SIZED cells arranged in a 2 columns × 3 rows grid
-- Each cell MUST contain the character prominently centered
-- Character should occupy at least 70% of each cell
-- NO cell should show only text/decorations without the character
-- Character must be FULLY VISIBLE in each cell (head, upper body, no cropping)
-
-⚠️ CHARACTER CONSISTENCY (VERY IMPORTANT):
-- Use the EXACT SAME PERSON from the photo in ALL 6 cells
-- Keep IDENTICAL: face shape, eyes, nose, mouth, hairstyle, hair color
-- Keep IDENTICAL: clothing style and color from the original photo
-- Only the facial EXPRESSION changes between cells
-- DO NOT change the character's outfit or appearance
+REQUIREMENTS:
+- Same person in all 6 cells (identical face, hair, clothes - only expression changes)
+- Character centered, 70-80% of cell, fully visible (head + upper body)
+- ${framing.name} view, white/solid background, 2-3px black outline
+- Text in Traditional Chinese, small, near character
+- Decorations: ${decorationElements} (minimal, don't obscure character)
 
 STYLE: ${styleConfig.name}
+DECORATION: ${decorationStyle}
+TEXT STYLE: ${popTextStyle}
 
-6 EXPRESSIONS (left to right, top to bottom):
-${cellDescriptions}
+EXPRESSIONS (top-left to bottom-right):
+${cellDescriptions}`;
 
-TEXT LANGUAGE:
-- ALL text MUST be in Traditional Chinese (繁體中文)
-- Text: ${expressionDetails.map(e => `"${e.popText}"`).join(', ')}
-- Text should be small, positioned near the character (not replacing the character)
-
-CELL REQUIREMENTS:
-- ${framing.name} view - character must be clearly visible
-- Character CENTERED and LARGE in each cell (70-80% of cell area)
-- Head and upper body fully visible
-- White or simple solid background
-- Black outline around character (2-3px)
-- Small decorations only (${decorationElements}) - do not obscure character
-
-DECORATION STYLE: ${decorationStyle}
-POP TEXT STYLE: ${popTextStyle}
-
-OUTPUT REQUIREMENTS:
-- Image dimensions: EXACTLY 1480×1920 pixels (vertical/portrait orientation)
-- Grid layout: 2 columns × 3 rows (6 equal cells)
-- Each cell: approximately 740×640 pixels
-- All 6 stickers with the SAME PERSON (same clothes, same appearance) showing different expressions
-- Character must be FULLY VISIBLE in each cell - no head or body parts cut off`;
-
-  const negativePrompt = `distorted face, warped features, deformed face, stretched face,
-wrong number of fingers, extra fingers, missing fingers,
-asymmetrical face, uneven features, lopsided face,
-melting face, dissolving features, blended faces,
-different people, multiple faces, changing person,
-grid lines, borders, frames,
-checkered background, transparency grid,
-blurry, low quality, artifacts, stray pixels`;
+  const negativePrompt = `distorted face, wrong fingers, different people, multiple faces, grid lines, checkered background, blurry, low quality`;
 
   return { prompt, negativePrompt };
 }

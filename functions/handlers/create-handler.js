@@ -881,7 +881,25 @@ function generateConfirmationMessage(data) {
 }
 
 /**
- * 從資料庫讀取啟用的風格設定
+ * 計算風格總字數（用於排序）
+ */
+function calculateStyleCharCount(style) {
+  const fields = [
+    style.core_style || '',
+    style.lighting || '',
+    style.composition || '',
+    style.brushwork || '',
+    style.mood || '',
+    style.color_palette || '',
+    style.description || '',
+    style.forbidden || '',
+    style.reference || ''
+  ];
+  return fields.join('').length;
+}
+
+/**
+ * 從資料庫讀取啟用的風格設定（按字數從大到小排序）
  */
 async function getActiveStyles() {
   try {
@@ -904,7 +922,16 @@ async function getActiveStyles() {
       return Object.values(StickerStyles);
     }
 
-    return data;
+    // 🆕 按字數從大到小排序
+    const sortedData = [...data].sort((a, b) => {
+      const countA = calculateStyleCharCount(a);
+      const countB = calculateStyleCharCount(b);
+      return countB - countA; // 從大到小
+    });
+
+    console.log(`📊 風格已按字數排序（最多 ${calculateStyleCharCount(sortedData[0])} 字元 → 最少 ${calculateStyleCharCount(sortedData[sortedData.length - 1])} 字元）`);
+
+    return sortedData;
   } catch (error) {
     console.error('讀取風格設定異常:', error);
     return Object.values(StickerStyles);
