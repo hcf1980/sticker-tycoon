@@ -2359,9 +2359,6 @@ async function handleClearUploadQueue(replyToken, userId) {
         includeMyStickers: true,
         includeMorningGreeting: true
       })
-          { type: 'action', action: { type: 'message', label: '📸 創建教學', text: '功能說明' } }
-        ]
-      }
     });
 
   } catch (error) {
