@@ -575,9 +575,9 @@ function generateTutorialPart1FlexMessage() {
 }
 
 /**
- * 生成下載/上架教學用的 bubble（直接使用圖片作為 hero，無多餘空白）
+ * 生成下載/上架教學用的 bubble（優化版 - 更友善的呈現）
  */
-function createDownloadTutorialBubble(baseUrl, headerColor, stepText, imageFile, title, desc, hasFooter = false) {
+function createDownloadTutorialBubble(baseUrl, headerColor, stepText, imageFile, title, desc, actionHint = '', costInfo = '', hasFooter = false) {
   const bubble = {
     type: 'bubble',
     size: 'kilo',
@@ -585,28 +585,90 @@ function createDownloadTutorialBubble(baseUrl, headerColor, stepText, imageFile,
       type: 'box',
       layout: 'vertical',
       backgroundColor: headerColor,
-      paddingAll: 'xs',
-      paddingStart: 'md',
+      paddingAll: 'md',
       contents: [
-        { type: 'text', text: '🚀 下載/上架', weight: 'bold', size: 'sm', color: '#FFFFFF' },
-        { type: 'text', text: stepText, size: 'xxs', color: '#FFFFFFCC' }
+        {
+          type: 'box',
+          layout: 'horizontal',
+          contents: [
+            { type: 'text', text: '🚀 下載/上架', weight: 'bold', size: 'lg', color: '#FFFFFF', flex: 1 },
+            {
+              type: 'box',
+              layout: 'vertical',
+              backgroundColor: '#FFFFFF33',
+              cornerRadius: 'md',
+              paddingAll: 'xs',
+              paddingStart: 'sm',
+              paddingEnd: 'sm',
+              contents: [
+                { type: 'text', text: stepText, size: 'xs', weight: 'bold', color: '#FFFFFF', align: 'center' }
+              ]
+            }
+          ]
+        }
       ]
     },
     hero: {
       type: 'image',
       url: `${baseUrl}/images/demo/${imageFile}`,
       size: 'full',
-      aspectRatio: '9:16',
-      aspectMode: 'cover'
+      aspectRatio: '20:13',
+      aspectMode: 'cover',
+      backgroundColor: '#F5F5F5'
     },
     body: {
       type: 'box',
       layout: 'vertical',
-      paddingAll: 'sm',
-      paddingTop: 'xs',
+      paddingAll: 'lg',
+      spacing: 'sm',
       contents: [
-        { type: 'text', text: title, weight: 'bold', size: 'sm', color: '#333333' },
-        { type: 'text', text: desc, size: 'xs', color: '#666666', margin: 'xs', wrap: true }
+        {
+          type: 'box',
+          layout: 'vertical',
+          spacing: 'xs',
+          contents: [
+            { type: 'text', text: title, weight: 'bold', size: 'xl', color: '#333333' },
+            { type: 'text', text: desc, size: 'sm', color: '#666666', wrap: true, margin: 'sm' }
+          ]
+        },
+        ...(costInfo ? [{
+          type: 'box',
+          layout: 'vertical',
+          backgroundColor: '#FFF3CD',
+          cornerRadius: 'md',
+          paddingAll: 'md',
+          margin: 'md',
+          contents: [
+            {
+              type: 'box',
+              layout: 'horizontal',
+              spacing: 'sm',
+              contents: [
+                { type: 'text', text: '💰', size: 'sm', flex: 0 },
+                { type: 'text', text: costInfo, size: 'sm', weight: 'bold', color: '#856404', flex: 1, wrap: true }
+              ]
+            }
+          ]
+        }] : []),
+        ...(actionHint ? [{
+          type: 'box',
+          layout: 'vertical',
+          backgroundColor: '#E3F2FD',
+          cornerRadius: 'md',
+          paddingAll: 'md',
+          margin: 'md',
+          contents: [
+            {
+              type: 'box',
+              layout: 'horizontal',
+              spacing: 'sm',
+              contents: [
+                { type: 'text', text: '💡', size: 'sm', flex: 0 },
+                { type: 'text', text: actionHint, size: 'xs', color: '#1976D2', flex: 1, wrap: true }
+              ]
+            }
+          ]
+        }] : [])
       ]
     }
   };
@@ -615,14 +677,15 @@ function createDownloadTutorialBubble(baseUrl, headerColor, stepText, imageFile,
     bubble.footer = {
       type: 'box',
       layout: 'vertical',
-      paddingAll: 'xs',
+      paddingAll: 'md',
+      spacing: 'sm',
       contents: [
         {
           type: 'button',
           style: 'primary',
           color: '#06C755',
-          height: 'sm',
-          action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' }
+          height: 'md',
+          action: { type: 'message', label: '📁 查看我的貼圖', text: '我的貼圖' }
         }
       ]
     };
@@ -639,13 +702,43 @@ function generateTutorialPart2FlexMessage() {
 
   return {
     type: 'flex',
-    altText: '🚀 下載/上架教學 - 左右滑動查看步驟',
+    altText: '🚀 下載/上架教學 - 左右滑動查看 3 個步驟',
     contents: {
       type: 'carousel',
       contents: [
-        createDownloadTutorialBubble(baseUrl, '#34C759', '步驟 1/3', 'step-40stickers.png', '選滿 40 張貼圖', '確認已生成 40 張才能下載或申請上架！'),
-        createDownloadTutorialBubble(baseUrl, '#007AFF', '步驟 2/3', 'step-download.png', '自行下載', '下載 ZIP 壓縮檔，自行上傳到 LINE Creators'),
-        createDownloadTutorialBubble(baseUrl, '#FF6B6B', '步驟 3/3 ⭐', 'step-listing.png', '免費代上架 ⭐', '填寫貼圖資訊，我們幫你上架到 LINE Store！', true)
+        createDownloadTutorialBubble(
+          baseUrl, 
+          '#34C759', 
+          '步驟 1/3', 
+          'step-40stickers.png', 
+          '📋 步驟 1：選擇貼圖與封面', 
+          '在「我的貼圖」中選擇已生成的貼圖組，確認已選滿 40 張貼圖。點擊任一張貼圖可設為封面圖（96×74）。',
+          '點擊貼圖可更換封面，封面會顯示在 LINE Store 上',
+          '下載/上架需消耗 40 代幣',
+          false
+        ),
+        createDownloadTutorialBubble(
+          baseUrl, 
+          '#007AFF', 
+          '步驟 2/3', 
+          'step-download.png', 
+          '💾 步驟 2：確認下載', 
+          '確認下載後，系統會扣除 40 代幣並生成符合 LINE 規格的完整貼圖包（ZIP 壓縮檔）。您可以自行上傳到 LINE Creators Market。',
+          '下載後會收到 ZIP 檔案連結，解壓後即可上傳到 LINE Creators',
+          '將消耗 40 代幣（自行上架）',
+          false
+        ),
+        createDownloadTutorialBubble(
+          baseUrl, 
+          '#FF6B6B', 
+          '步驟 3/3 ⭐', 
+          'step-listing.png', 
+          '⭐ 步驟 3：免費代上架服務', 
+          '填寫貼圖資訊（英文名稱、中文名稱、售價），我們會免費幫您上架到 LINE Store！審核時間約 3-7 個工作天，上架後會透過 LINE 通知您。',
+          '代上架服務完全免費！只需支付 40 代幣的貼圖製作費用。銷售分潤依 LINE 官方規定計算，收益將以代幣提供。',
+          '消耗 40 代幣（代上架服務免費）',
+          true
+        )
       ]
     },
     quickReply: {

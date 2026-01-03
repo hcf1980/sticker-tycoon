@@ -781,7 +781,7 @@ async function cropGridToStickers(gridImage) {
         // 如果內容偏離中心，使用 position 參數調整
         let resizeOptions = {
           fit: 'contain',  // 確保內容完整不被裁切
-          withoutEnlargement: false,
+            withoutEnlargement: false,
           background: { r: 0, g: 0, b: 0, alpha: 0 }  // 透明背景
         };
         
