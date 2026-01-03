@@ -741,7 +741,6 @@ function generateTutorialPart2FlexMessage() {
           true
         )
       ]
-      ]
     },
     quickReply: {
       items: [
