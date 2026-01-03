@@ -128,15 +128,21 @@ function generateGridPrompt(photoBase64, style, expressions, characterID, option
     : 'sparkles, small hearts';
   const popTextStyle = scene.popTextStyle || 'simple clean text, small font';
 
-  // 簡化版 Prompt v7 - 強化角色一致性與位置準確度
+  // 簡化版 Prompt v8 - 強化尺寸要求與角色一致性
   const prompt = `Create a 6-cell sticker grid from this photo.
 
+⚠️ CRITICAL SIZE REQUIREMENT:
+- OUTPUT IMAGE MUST BE EXACTLY 1480 pixels wide × 1920 pixels tall
+- This is a vertical (portrait) image with 2 columns × 3 rows grid
+- Each cell will be approximately 740×640 pixels
+- DO NOT generate any other size - it must be 1480×1920
+
 ⚠️ CRITICAL LAYOUT REQUIREMENTS:
-- Create exactly 6 EQUAL-SIZED cells arranged in a grid
-- Prefer 3 columns × 2 rows (horizontal layout) for best results
+- Create exactly 6 EQUAL-SIZED cells arranged in a 2 columns × 3 rows grid
 - Each cell MUST contain the character prominently centered
 - Character should occupy at least 70% of each cell
 - NO cell should show only text/decorations without the character
+- Character must be FULLY VISIBLE in each cell (head, upper body, no cropping)
 
 ⚠️ CHARACTER CONSISTENCY (VERY IMPORTANT):
 - Use the EXACT SAME PERSON from the photo in ALL 6 cells
@@ -166,7 +172,12 @@ CELL REQUIREMENTS:
 DECORATION STYLE: ${decorationStyle}
 POP TEXT STYLE: ${popTextStyle}
 
-OUTPUT: 6 stickers with the SAME PERSON (same clothes, same appearance) showing different expressions.`;
+OUTPUT REQUIREMENTS:
+- Image dimensions: EXACTLY 1480×1920 pixels (vertical/portrait orientation)
+- Grid layout: 2 columns × 3 rows (6 equal cells)
+- Each cell: approximately 740×640 pixels
+- All 6 stickers with the SAME PERSON (same clothes, same appearance) showing different expressions
+- Character must be FULLY VISIBLE in each cell - no head or body parts cut off`;
 
   const negativePrompt = `distorted face, warped features, deformed face, stretched face,
 wrong number of fingers, extra fingers, missing fingers,
@@ -328,13 +339,17 @@ async function generateGridImage(photoBase64, style, expressions, characterID, o
     // 🆕 路線A：要求 AI 輸出固定尺寸的 6 宮格網格圖（2欄×3列）
     // 目標：每格裁切後再縮放到 370×320，先確保網格切割穩定
     // 這裡採用 2x 尺寸（1480×1920）提升細節，且可被 2/3 完整整除
+    // 
+    // ⚠️ 注意：Gemini API 可能不支援 size 參數，所以我們在 prompt 中明確指定尺寸
+    // 如果 API 支援 size 參數，可以同時傳遞以確保
     const imageUrl = await generateImageFromPhoto(photoBase64, prompt, {
-      size: "1480x1920",
+      // size: "1480x1920",  // 暫時註解，因為 Gemini 可能不支援此格式
       maxRetries: 2, // 每個模型嘗試 2 次
       timeout: 120000
     });
 
     console.log(`✅ 6宮格生成成功！圖片類型: ${imageUrl.startsWith('data:') ? 'base64' : 'URL'}`);
+    console.log(`📝 提示：已在 prompt 中明確要求生成 1480×1920 尺寸的圖片`);
     return imageUrl;
 
   } catch (error) {
@@ -686,6 +701,18 @@ async function cropGridToStickers(gridImage) {
   const aspectRatio = imageWidth / imageHeight;
   console.log(`📊 寬高比: ${aspectRatio.toFixed(2)}`);
 
+  // 🆕 檢查圖片尺寸是否符合預期（1480×1920 或接近比例）
+  const expectedWidth = 1480;
+  const expectedHeight = 1920;
+  const expectedRatio = expectedWidth / expectedHeight; // 0.77
+  const sizeTolerance = 0.2; // 允許 20% 的誤差
+  
+  if (Math.abs(aspectRatio - expectedRatio) > sizeTolerance) {
+    console.warn(`⚠️ 警告：圖片尺寸比例 ${aspectRatio.toFixed(2)} 與預期 ${expectedRatio.toFixed(2)} 差異較大！`);
+    console.warn(`   預期：${expectedWidth}×${expectedHeight}，實際：${imageWidth}×${imageHeight}`);
+    console.warn(`   AI 可能未按照 size 參數生成，將嘗試自動適配...`);
+  }
+
   // 🆕 鎖定網格排列為 2欄×3列，配合 1480x1920 的生成尺寸
   const gridCols = 2;
   const gridRows = 3;
@@ -698,8 +725,11 @@ async function cropGridToStickers(gridImage) {
   
   // 驗證格子比例是否合理（正常應該接近正方形）
   const cellRatio = cellWidth / cellHeight;
-  if (cellRatio < 0.5 || cellRatio > 2) {
+  console.log(`📊 每格比例: ${cellRatio.toFixed(2)}（目標：接近 1.0）`);
+  
+  if (cellRatio < 0.7 || cellRatio > 1.5) {
     console.warn(`⚠️ 警告：格子比例 ${cellRatio.toFixed(2)} 偏離正方形較多，可能影響貼圖品質`);
+    console.warn(`   建議檢查 AI API 的 size 參數是否正確傳遞`);
   }
 
   const results = [];
@@ -787,13 +817,49 @@ async function cropGridToStickers(gridImage) {
           console.log(`    ⚠️ 內容過少 (${(contentInfo.contentRatio * 100).toFixed(1)}%)，可能是空白格`);
         }
 
-        // 步驟 4: 縮放到內容區尺寸（350×300），保持比例
+        // 步驟 4: 縮放到內容區尺寸（350×300）
+        // 🆕 使用 'contain' 模式確保內容完整，避免裁切到人物
+        // 如果內容偏離中心，使用 position 參數調整
+        let resizeOptions = {
+          fit: 'contain',  // 確保內容完整不被裁切
+          withoutEnlargement: false,
+          background: { r: 0, g: 0, b: 0, alpha: 0 }  // 透明背景
+        };
+        
+        // 🆕 如果檢測到內容區域，嘗試以內容為中心進行縮放
+        if (contentInfo.hasContent && contentInfo.bounds) {
+          const { left, top, right, bottom } = contentInfo.bounds;
+          const currentMetadata = await sharp(extractedBuffer).metadata();
+          const currentWidth = currentMetadata.width;
+          const currentHeight = currentMetadata.height;
+          
+          // 計算內容中心點相對於格子的位置
+          const contentCenterX = (left + right) / 2;
+          const contentCenterY = (top + bottom) / 2;
+          const cellCenterX = currentWidth / 2;
+          const cellCenterY = currentHeight / 2;
+          
+          // 如果內容明顯偏離中心（超過 15%），調整 position
+          const offsetX = (contentCenterX - cellCenterX) / currentWidth;
+          const offsetY = (contentCenterY - cellCenterY) / currentHeight;
+          
+          if (Math.abs(offsetX) > 0.15 || Math.abs(offsetY) > 0.15) {
+            console.log(`    🎯 內容偏移：(${(offsetX * 100).toFixed(1)}%, ${(offsetY * 100).toFixed(1)}%)`);
+            
+            // 計算 position（'center', 'top', 'bottom', 'left', 'right', 'top left' 等）
+            let position = 'center';
+            if (offsetY < -0.15) position = 'top';
+            else if (offsetY > 0.15) position = 'bottom';
+            if (offsetX < -0.15) position = position === 'center' ? 'left' : `${position} left`;
+            else if (offsetX > 0.15) position = position === 'center' ? 'right' : `${position} right`;
+            
+            resizeOptions.position = position;
+            console.log(`    📍 調整縮放位置為: ${position}`);
+          }
+        }
+        
         const resizedBuffer = await sharp(extractedBuffer)
-          .resize(output.contentWidth, output.contentHeight, {
-            fit: 'cover',  // 🆕 改為 'cover'，填滿內容區，避免人物縮小
-            withoutEnlargement: false,
-            background: { r: 0, g: 0, b: 0, alpha: 0 }
-          })
+          .resize(output.contentWidth, output.contentHeight, resizeOptions)
           .ensureAlpha()
           .toBuffer();
 
