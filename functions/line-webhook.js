@@ -176,12 +176,12 @@ async function handleTextMessage(replyToken, userId, text) {
 
     // 購買代幣
     if (text === '購買代幣' || text === '儲值' || text === '買代幣') {
-      return await handlePurchaseInfo(replyToken);
+      return await handlePurchaseInfo(replyToken, userId);
     }
 
     // 購買說明
     if (text === '購買說明' || text === '代幣說明' || text === '使用說明' || text === '說明') {
-      return await handlePurchaseGuide(replyToken);
+      return await handlePurchaseGuide(replyToken, userId);
     }
 
     // 分享給好友
@@ -2714,9 +2714,78 @@ async function handleTokenQuery(replyToken, userId) {
 }
 
 /**
- * 處理購買代幣資訊 - 美化版 Carousel
+ * 處理購買代幣資訊 - 美化版 Carousel（包含用戶代幣資訊）
  */
-async function handlePurchaseInfo(replyToken) {
+async function handlePurchaseInfo(replyToken, userId) {
+  // 獲取用戶代幣資訊
+  const balance = await getUserTokenBalance(userId);
+  const transactions = await getTokenTransactions(userId, 3); // 最近 3 筆交易
+
+  // 用戶代幣資訊卡片（第一個）
+  const userTokenBubble = {
+    type: 'bubble',
+    size: 'kilo',
+    header: {
+      type: 'box',
+      layout: 'vertical',
+      backgroundColor: '#9C27B0',
+      paddingAll: 'lg',
+      contents: [
+        { type: 'text', text: '💰 我的代幣', size: 'xl', weight: 'bold', color: '#FFFFFF', align: 'center' }
+      ]
+    },
+    body: {
+      type: 'box',
+      layout: 'vertical',
+      paddingAll: 'lg',
+      spacing: 'md',
+      contents: [
+        {
+          type: 'box',
+          layout: 'vertical',
+          alignItems: 'center',
+          contents: [
+            { type: 'text', text: '💎', size: '5xl', margin: 'sm' },
+            { type: 'text', text: `${balance || 0} 代幣`, size: 'xxl', weight: 'bold', color: '#333333', margin: 'md' }
+          ]
+        },
+        { type: 'separator', margin: 'lg' },
+        ...(transactions && transactions.length > 0 ? [
+          {
+            type: 'box',
+            layout: 'vertical',
+            spacing: 'xs',
+            margin: 'md',
+            contents: [
+              { type: 'text', text: '📜 最近交易', size: 'sm', weight: 'bold', color: '#666666' },
+              ...transactions.slice(0, 3).map(t => ({
+                type: 'box',
+                layout: 'horizontal',
+                contents: [
+                  { type: 'text', text: t.amount > 0 ? '➕' : '➖', size: 'xs', flex: 0 },
+                  { type: 'text', text: `${Math.abs(t.amount)} 代幣`, size: 'xxs', color: '#888888', flex: 1 },
+                  { type: 'text', text: t.type === 'purchase' ? '購買' : t.type === 'generate' ? '生成' : t.type === 'refund' ? '退款' : '其他', size: 'xxs', color: '#888888', align: 'end' }
+                ]
+              }))
+            ]
+          }
+        ] : [])
+      ]
+    },
+    footer: {
+      type: 'box',
+      layout: 'vertical',
+      paddingAll: 'md',
+      contents: [
+        {
+          type: 'button',
+          action: { type: 'message', label: '🛒 購買代幣', text: '購買代幣' },
+          style: 'primary',
+          color: '#9C27B0'
+        }
+      ]
+    }
+  };
   // 方案卡片生成函數
   const createPlanBubble = (price, tokens, bonus, isPopular = false) => {
     const perToken = (price / tokens).toFixed(1);
@@ -2772,13 +2841,14 @@ async function handlePurchaseInfo(replyToken) {
     };
   };
 
-  // 方案輪播（只保留 300 元和 500 元兩個方案）
+  // 方案輪播（第一個顯示用戶代幣資訊，然後是兩個方案）
   const planCarousel = {
     type: 'flex',
     altText: '🛒 購買代幣方案',
     contents: {
       type: 'carousel',
       contents: [
+        userTokenBubble, // 🆕 第一個顯示用戶代幣資訊
         createPlanBubble(300, 70, 10, false),
         createPlanBubble(500, 130, 30, true)
       ]
@@ -2944,10 +3014,80 @@ async function handlePurchaseInfo(replyToken) {
 /**
  * 處理購買說明 - 提供完整的購買和使用說明（Carousel 版本）
  */
-async function handlePurchaseGuide(replyToken) {
+async function handlePurchaseGuide(replyToken, userId) {
   const guideUrl = `${process.env.URL || 'https://sticker-tycoon.netlify.app'}/token-guide.html`;
 
-  // 卡片 1: 價目表
+  // 獲取用戶代幣資訊
+  const balance = await getUserTokenBalance(userId);
+  const transactions = await getTokenTransactions(userId, 3); // 最近 3 筆交易
+
+  // 卡片 1: 用戶代幣資訊（第一個）
+  const userTokenBubble = {
+    type: 'bubble',
+    size: 'kilo',
+    header: {
+      type: 'box',
+      layout: 'vertical',
+      backgroundColor: '#9C27B0',
+      paddingAll: 'lg',
+      contents: [
+        { type: 'text', text: '💰 我的代幣', size: 'xl', weight: 'bold', color: '#FFFFFF', align: 'center' }
+      ]
+    },
+    body: {
+      type: 'box',
+      layout: 'vertical',
+      paddingAll: 'lg',
+      spacing: 'md',
+      contents: [
+        {
+          type: 'box',
+          layout: 'vertical',
+          alignItems: 'center',
+          contents: [
+            { type: 'text', text: '💎', size: '5xl', margin: 'sm' },
+            { type: 'text', text: `${balance || 0} 代幣`, size: 'xxl', weight: 'bold', color: '#333333', margin: 'md' }
+          ]
+        },
+        { type: 'separator', margin: 'lg' },
+        ...(transactions && transactions.length > 0 ? [
+          {
+            type: 'box',
+            layout: 'vertical',
+            spacing: 'xs',
+            margin: 'md',
+            contents: [
+              { type: 'text', text: '📜 最近交易', size: 'sm', weight: 'bold', color: '#666666' },
+              ...transactions.slice(0, 3).map(t => ({
+                type: 'box',
+                layout: 'horizontal',
+                contents: [
+                  { type: 'text', text: t.amount > 0 ? '➕' : '➖', size: 'xs', flex: 0 },
+                  { type: 'text', text: `${Math.abs(t.amount)} 代幣`, size: 'xxs', color: '#888888', flex: 1 },
+                  { type: 'text', text: t.type === 'purchase' ? '購買' : t.type === 'generate' ? '生成' : t.type === 'refund' ? '退款' : '其他', size: 'xxs', color: '#888888', align: 'end' }
+                ]
+              }))
+            ]
+          }
+        ] : [])
+      ]
+    },
+    footer: {
+      type: 'box',
+      layout: 'vertical',
+      paddingAll: 'md',
+      contents: [
+        {
+          type: 'button',
+          action: { type: 'message', label: '🛒 購買代幣', text: '購買代幣' },
+          style: 'primary',
+          color: '#9C27B0'
+        }
+      ]
+    }
+  };
+
+  // 卡片 2: 價目表
   const priceListBubble = {
     type: 'bubble',
     size: 'mega',
@@ -3076,7 +3216,7 @@ async function handlePurchaseGuide(replyToken) {
     }
   };
 
-  // 卡片 2: 交易流程
+  // 卡片 3: 交易流程
   const processBubble = {
     type: 'bubble',
     size: 'mega',
@@ -3152,7 +3292,7 @@ async function handlePurchaseGuide(replyToken) {
     }
   };
 
-  // 卡片 3: 退換貨政策
+  // 卡片 4: 退換貨政策
   const refundPolicyBubble = {
     type: 'bubble',
     size: 'mega',
@@ -3227,85 +3367,13 @@ async function handlePurchaseGuide(replyToken) {
     }
   };
 
-  // 卡片 4: 商家資訊與法規
-  const merchantInfoBubble = {
-    type: 'bubble',
-    size: 'mega',
-    header: {
-      type: 'box',
-      layout: 'vertical',
-      backgroundColor: '#4CAF50',
-      paddingAll: 'lg',
-      contents: [
-        { type: 'text', text: '🏢 商家資訊', size: 'xl', weight: 'bold', color: '#FFFFFF', align: 'center' }
-      ]
-    },
-    body: {
-      type: 'box',
-      layout: 'vertical',
-      paddingAll: 'lg',
-      spacing: 'sm',
-      contents: [
-        {
-          type: 'box',
-          layout: 'vertical',
-          backgroundColor: '#E8F5E9',
-          cornerRadius: 'md',
-          paddingAll: 'sm',
-          margin: 'sm',
-          contents: [
-            { type: 'text', text: '✓ 綠界賣家資料驗證通過', size: 'xs', weight: 'bold', color: '#2E7D32' },
-            { type: 'text', text: 'ECPay Verified Seller', size: 'xxs', color: '#666666', margin: 'xs' }
-          ]
-        },
-        {
-          type: 'box',
-          layout: 'vertical',
-          backgroundColor: '#F7F9FC',
-          cornerRadius: 'md',
-          paddingAll: 'sm',
-          margin: 'sm',
-          contents: [
-            { type: 'text', text: '📧 Email', size: 'xs', weight: 'bold', color: '#333333' },
-            { type: 'text', text: 'johnyarcher2100@yahoo.com.tw', size: 'xxs', color: '#666666', margin: 'xs' }
-          ]
-        },
-        {
-          type: 'box',
-          layout: 'vertical',
-          backgroundColor: '#F7F9FC',
-          cornerRadius: 'md',
-          paddingAll: 'sm',
-          margin: 'sm',
-          contents: [
-            { type: 'text', text: '📞 電話', size: 'xs', weight: 'bold', color: '#333333' },
-            { type: 'text', text: '0922-327-910', size: 'xxs', color: '#666666', margin: 'xs' }
-          ]
-        },
-        {
-          type: 'box',
-          layout: 'vertical',
-          backgroundColor: '#E3F2FD',
-          cornerRadius: 'md',
-          paddingAll: 'sm',
-          margin: 'sm',
-          contents: [
-            { type: 'text', text: '⚖️ 法規遵循', size: 'xs', weight: 'bold', color: '#1976D2' },
-            { type: 'text', text: '遵循《消費者保護法》', size: 'xxs', color: '#666666', margin: 'xs' },
-            { type: 'text', text: '《個人資料保護法》', size: 'xxs', color: '#666666', margin: 'xs' }
-          ]
-        }
-      ]
-    }
-  };
-
-  // Carousel Message
+  // Carousel Message（移除商家資訊卡片）
   const carousel = {
     type: 'flex',
     altText: '📖 代幣購買完整說明',
     contents: {
       type: 'carousel',
-      contents: [priceListBubble, processBubble, refundPolicyBubble, merchantInfoBubble]
+      contents: [userTokenBubble, priceListBubble, processBubble, refundPolicyBubble]
     }
   };
 

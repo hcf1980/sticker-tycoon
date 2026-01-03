@@ -394,9 +394,9 @@ async function markTutorialShown(userId) {
 }
 
 /**
- * 生成教學用的 bubble（直接使用圖片作為 hero，無多餘空白）
+ * 生成教學用的 bubble（優化版 - 更友善的呈現）
  */
-function createTutorialBubble(baseUrl, headerColor, headerTitle, stepText, imageFile, title, desc, hasFooter = false) {
+function createTutorialBubble(baseUrl, headerColor, headerTitle, stepText, imageFile, title, desc, actionHint = '', hasFooter = false) {
   const bubble = {
     type: 'bubble',
     size: 'kilo',
@@ -404,28 +404,71 @@ function createTutorialBubble(baseUrl, headerColor, headerTitle, stepText, image
       type: 'box',
       layout: 'vertical',
       backgroundColor: headerColor,
-      paddingAll: 'xs',
-      paddingStart: 'md',
+      paddingAll: 'md',
       contents: [
-        { type: 'text', text: headerTitle, weight: 'bold', size: 'sm', color: '#FFFFFF' },
-        { type: 'text', text: stepText, size: 'xxs', color: '#FFFFFFCC' }
+        {
+          type: 'box',
+          layout: 'horizontal',
+          contents: [
+            { type: 'text', text: headerTitle, weight: 'bold', size: 'lg', color: '#FFFFFF', flex: 1 },
+            {
+              type: 'box',
+              layout: 'vertical',
+              backgroundColor: '#FFFFFF33',
+              cornerRadius: 'md',
+              paddingAll: 'xs',
+              paddingStart: 'sm',
+              paddingEnd: 'sm',
+              contents: [
+                { type: 'text', text: stepText, size: 'xs', weight: 'bold', color: '#FFFFFF', align: 'center' }
+              ]
+            }
+          ]
+        }
       ]
     },
     hero: {
       type: 'image',
       url: `${baseUrl}/images/demo/${imageFile}`,
       size: 'full',
-      aspectRatio: '9:16',
-      aspectMode: 'cover'
+      aspectRatio: '20:13',
+      aspectMode: 'cover',
+      backgroundColor: '#F5F5F5'
     },
     body: {
       type: 'box',
       layout: 'vertical',
-      paddingAll: 'sm',
-      paddingTop: 'xs',
+      paddingAll: 'lg',
+      spacing: 'sm',
       contents: [
-        { type: 'text', text: title, weight: 'bold', size: 'sm', color: '#333333' },
-        { type: 'text', text: desc, size: 'xs', color: '#666666', margin: 'xs', wrap: true }
+        {
+          type: 'box',
+          layout: 'vertical',
+          spacing: 'xs',
+          contents: [
+            { type: 'text', text: title, weight: 'bold', size: 'xl', color: '#333333' },
+            { type: 'text', text: desc, size: 'sm', color: '#666666', wrap: true, margin: 'sm' }
+          ]
+        },
+        ...(actionHint ? [{
+          type: 'box',
+          layout: 'vertical',
+          backgroundColor: '#E3F2FD',
+          cornerRadius: 'md',
+          paddingAll: 'md',
+          margin: 'md',
+          contents: [
+            {
+              type: 'box',
+              layout: 'horizontal',
+              spacing: 'sm',
+              contents: [
+                { type: 'text', text: '💡', size: 'sm', flex: 0 },
+                { type: 'text', text: actionHint, size: 'xs', color: '#1976D2', flex: 1, wrap: true }
+              ]
+            }
+          ]
+        }] : [])
       ]
     }
   };
@@ -434,14 +477,15 @@ function createTutorialBubble(baseUrl, headerColor, headerTitle, stepText, image
     bubble.footer = {
       type: 'box',
       layout: 'vertical',
-      paddingAll: 'xs',
+      paddingAll: 'md',
+      spacing: 'sm',
       contents: [
         {
           type: 'button',
           style: 'primary',
           color: '#06C755',
-          height: 'sm',
-          action: { type: 'message', label: '🚀 開始創建', text: '創建貼圖' }
+          height: 'md',
+          action: { type: 'message', label: '🚀 開始創建貼圖', text: '創建貼圖' }
         }
       ]
     };
@@ -458,15 +502,65 @@ function generateTutorialPart1FlexMessage() {
 
   return {
     type: 'flex',
-    altText: '📸 創建貼圖教學 - 左右滑動查看步驟',
+    altText: '📸 創建貼圖教學 - 左右滑動查看 5 個步驟',
     contents: {
       type: 'carousel',
       contents: [
-        createTutorialBubble(baseUrl, '#FF6B6B', '📸 創建貼圖', '步驟 1/5', 'step1-upload.png', '上傳照片', '選擇一張清晰的正面照'),
-        createTutorialBubble(baseUrl, '#AF52DE', '📸 創建貼圖', '步驟 2/5', 'step2-style.png', '選擇風格', '可愛風、寫實風、Q版等'),
-        createTutorialBubble(baseUrl, '#007AFF', '📸 創建貼圖', '步驟 3/5', 'step3-emotion.png', '選擇表情', '最多可選擇 24 種表情！'),
-        createTutorialBubble(baseUrl, '#FF9500', '📸 創建貼圖', '步驟 4/5', 'step4-generating.png', 'AI 生成中', 'AI 正在為你創作貼圖...'),
-        createTutorialBubble(baseUrl, '#34C759', '📸 創建貼圖', '步驟 5/5 ✅', 'step5-complete.png', '🎉 貼圖生成完畢', '選擇下載或申請代上架！', true)
+        createTutorialBubble(
+          baseUrl, 
+          '#FF6B6B', 
+          '📸 創建貼圖', 
+          '步驟 1/5', 
+          'step1-upload.png', 
+          '📷 步驟 1：上傳照片', 
+          '選擇一張清晰的正面照片，AI 會自動提取您的特徵來生成貼圖。',
+          '點擊「上傳照片」按鈕，從相簿選擇或拍照上傳',
+          false
+        ),
+        createTutorialBubble(
+          baseUrl, 
+          '#AF52DE', 
+          '📸 創建貼圖', 
+          '步驟 2/5', 
+          'step2-style.png', 
+          '🎨 步驟 2：選擇風格', 
+          '從 8 種預設風格中選擇，或自訂任何您想要的風格（如：宮崎駿風、Q版等）。',
+          '點擊風格按鈕選擇，或輸入「自訂風格：XXX」',
+          false
+        ),
+        createTutorialBubble(
+          baseUrl, 
+          '#007AFF', 
+          '📸 創建貼圖', 
+          '步驟 3/5', 
+          'step3-emotion.png', 
+          '😊 步驟 3：選擇表情', 
+          '從表情模板中選擇，或自訂表情文字。最多可選擇 24 種表情！',
+          '點擊表情模板快速選擇，或輸入自訂表情',
+          false
+        ),
+        createTutorialBubble(
+          baseUrl, 
+          '#FF9500', 
+          '📸 創建貼圖', 
+          '步驟 4/5', 
+          'step4-generating.png', 
+          '⚡ 步驟 4：AI 生成中', 
+          'AI 正在為您創作貼圖，通常需要 1-3 分鐘。您可以稍後在「我的貼圖」中查看結果。',
+          '請耐心等待，生成完成後會收到通知',
+          false
+        ),
+        createTutorialBubble(
+          baseUrl, 
+          '#34C759', 
+          '📸 創建貼圖', 
+          '步驟 5/5 ✅', 
+          'step5-complete.png', 
+          '🎉 步驟 5：完成！', 
+          '貼圖生成完成後，您可以下載貼圖組，或申請免費代上架服務，讓貼圖在 LINE Store 販售！',
+          '點擊「查看詳情」查看所有貼圖，或申請代上架',
+          true
+        )
       ]
     },
     quickReply: {
