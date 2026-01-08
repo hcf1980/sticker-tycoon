@@ -15,12 +15,12 @@ const { validateInput, validateMultiple } = require('../utils/input-validator');
  * const handler = validateQueryParams({
  *   code: 'referralCode',
  *   userId: 'userId'
- * })(async (event) => {
+ * })((event) => {
  *   // event.validatedQuery 包含驗證後的查詢參數
  * });
  */
 function validateQueryParams(requiredFields) {
-  return (handler) => async (event) => {
+  return (handler) => (event) => {
     const errors = {};
     const validated = {};
 
@@ -77,7 +77,7 @@ function validateQueryParams(requiredFields) {
  * });
  */
 function validateBody(schema) {
-  return (handler) => async (event) => {
+  return (handler) => (event) => {
     try {
       // 解析請求體
       const body = JSON.parse(event.body || '{}');
@@ -123,7 +123,7 @@ function validateBody(schema) {
  * @returns {Function} 中間件函數
  */
 function validatePathParams(schema) {
-  return (handler) => async (event) => {
+  return (handler) => (event) => {
     const errors = {};
     const validated = {};
 
@@ -176,7 +176,7 @@ function validatePathParams(schema) {
  */
 function compose(...middlewares) {
   return (handler) => {
-    return async (event) => {
+    return (event) => {
       let current = handler;
 
       // 從後向前組合中間件
@@ -231,7 +231,7 @@ function validateRequest(event, schema = {}) {
       } else {
         data.body = bodyResult.data;
       }
-    } catch (parseError) {
+    } catch {
       errors.body = { _root: '無效的 JSON 格式' };
     }
   }

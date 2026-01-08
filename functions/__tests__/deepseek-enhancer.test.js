@@ -6,10 +6,7 @@
 // Mock axios
 jest.mock('axios');
 
-const axios = require('axios');
 const {
-  isDeepSeekAvailable,
-  enhanceExpressions,
   getStyleDescription,
   buildEnhancedPrompt
 } = require('../deepseek-enhancer');

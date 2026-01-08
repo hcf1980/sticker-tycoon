@@ -175,7 +175,7 @@ describe('supabase-client.js', () => {
       });
 
       const supabaseModule = require('../supabase-client');
-      const result = await supabaseModule.getOrCreateUser('new-user', 'New User');
+      await supabaseModule.getOrCreateUser('new-user', 'New User');
       // 由於 mock 的複雜性，這裡只檢查函數可以正常執行
       // 實際結果取決於 mock 設定
     });

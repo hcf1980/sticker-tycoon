@@ -61,7 +61,7 @@ function extractImageFromResponse(response) {
       }
       // image 格式
       if (item.type === 'image' && item.image) {
-        if (item.image.url) return item.image.url;
+        if (item.image.url) {return item.image.url;}
         if (item.image.data) {
           const mimeType = item.image.mime_type || 'image/png';
           return `data:${mimeType};base64,${item.image.data}`;
@@ -79,17 +79,17 @@ function extractImageFromResponse(response) {
     for (const item of content) {
       if (item.type === 'text' && item.text) {
         const url = extractUrlFromText(item.text);
-        if (url) return url;
+        if (url) {return url;}
       }
     }
   }
 
   // 處理字串格式
   if (typeof content === 'string') {
-    if (content.startsWith('data:image')) return content;
-    if (content.startsWith('http')) return content;
+    if (content.startsWith('data:image')) {return content;}
+    if (content.startsWith('http')) {return content;}
     const url = extractUrlFromText(content);
-    if (url) return url;
+    if (url) {return url;}
   }
 
   throw new Error('無法從回應中提取圖片');
@@ -101,15 +101,15 @@ function extractImageFromResponse(response) {
 function extractUrlFromText(text) {
   // Markdown 圖片格式: ![alt](url)
   const markdownMatch = text.match(/!\[.*?\]\((https?:\/\/[^\s\)]+)\)/);
-  if (markdownMatch) return markdownMatch[1];
+  if (markdownMatch) {return markdownMatch[1];}
 
   // 直接圖片 URL（帶副檔名）
   const urlMatch = text.match(/(https?:\/\/[^\s]+\.(png|jpg|jpeg|webp|gif))/i);
-  if (urlMatch) return urlMatch[1];
+  if (urlMatch) {return urlMatch[1];}
 
   // 任何 https URL
   const anyUrlMatch = text.match(/(https?:\/\/[^\s\)\]"']+)/);
-  if (anyUrlMatch) return anyUrlMatch[1];
+  if (anyUrlMatch) {return anyUrlMatch[1];}
 
   return null;
 }

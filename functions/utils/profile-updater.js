@@ -5,7 +5,6 @@
 
 const { getLineClient } = require('../services/line-client');
 const { getOrCreateUser } = require('../supabase-client');
-const { globalCache } = require('./cache-manager');
 
 // 記錄最近更新的用戶，避免頻繁更新
 const recentlyUpdated = new Map();

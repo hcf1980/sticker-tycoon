@@ -12,8 +12,6 @@ const {
   getStickerSet,
   getStickerImages,
   deleteStickerSet,
-  getUploadQueue,
-  clearUploadQueue,
 } = require('../supabase-client');
 const { generateStickerListFlexMessage } = require('../sticker-flex-message');
 const logger = require('../utils/logger');
@@ -72,7 +70,7 @@ async function handleTokenQuery(userId) {
 /**
  * 處理「購買代幣」命令
  */
-async function handlePurchaseInfo() {
+function handlePurchaseInfo() {
   logger.info('處理購買代幣命令');
   
   return {

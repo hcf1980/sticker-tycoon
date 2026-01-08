@@ -5,7 +5,6 @@
 
 const {
   StickerStyles,
-  StyleEnhancer,
   ExpressionEnhancer,
   DefaultExpressions,
   SceneTemplates,
@@ -13,7 +12,6 @@ const {
   generateCharacterID,
   generateStickerPrompt,
   generateStickerPromptV2,
-  generatePhotoStickerPromptV2,
   getAllStyles,
   getAllExpressionTemplates,
   getAllSceneTemplates,
@@ -21,7 +19,6 @@ const {
   getSceneConfig,
   getFramingConfig,
   getExpressionEnhancement,
-  getStyleEnhancement,
   LineStickerSpecs
 } = require('../sticker-styles');
 

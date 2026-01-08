@@ -3,12 +3,14 @@
  * 處理貼圖創建流程的各個階段
  */
 
-const { v4: uuidv4 } = require('uuid');
-const { ConversationStage, getConversationState, updateConversationState, getExpressionTemplates } = require('../conversation-state');
-const { createStickerSet, getOrCreateUser, getSupabaseClient } = require('../supabase-client');
-const { StickerStyles, DefaultExpressions, LineStickerSpecs, SceneTemplates, FramingTemplates, getSceneConfig, getFramingConfig } = require('../sticker-styles');
+const { ConversationStage, getConversationState, updateConversationState } = require('../conversation-state');
+const { getOrCreateUser, getSupabaseClient } = require('../supabase-client');
+const { DefaultExpressions, LineStickerSpecs, SceneTemplates, FramingTemplates } = require('../sticker-styles');
 const { generateStyleSelectionFlexMessage, generateExpressionSelectionFlexMessage } = require('../sticker-flex-message');
-const { loadFramingSettings, loadSceneSettings, loadExpressionTemplateSettings } = require('../style-settings-loader');
+const { generateCountSelectionMessage } = require('./messages/creation-messages');
+const { generateConfirmationMessage } = require('./messages/confirmation-messages');
+const { getActiveStyles, getStyleById } = require('./messages/style-settings-messages');
+const { loadFramingSettings, loadSceneSettings } = require('../style-settings-loader');
 
 /**
  * 從資料庫取得構圖設定（優先資料庫，否則使用預設）
@@ -47,20 +49,6 @@ async function getActiveSceneTemplates() {
 /**
  * 從資料庫取得表情模板設定（優先資料庫，否則使用預設）
  */
-async function getActiveExpressionTemplates() {
-  try {
-    const dbTemplates = await loadExpressionTemplateSettings();
-    if (dbTemplates && Object.keys(dbTemplates).length > 0) {
-      console.log('😊 使用資料庫表情模板設定');
-      return dbTemplates;
-    }
-  } catch (error) {
-    console.error('讀取資料庫表情模板設定失敗:', error);
-  }
-  // 使用原有的 getExpressionTemplates 作為 fallback
-  console.log('😊 使用預設表情模板設定');
-  return null;
-}
 
 /**
  * 開始創建流程
@@ -187,7 +175,7 @@ async function handleStyleSelection(userId, styleId) {
   // 如果有照片，進入構圖選擇；否則進入角色描述
   if (tempData.photoUrl) {
     await updateConversationState(userId, ConversationStage.FRAMING, tempData);
-    return await generateFramingSelectionMessage(style);
+    return generateFramingSelectionMessage(style);
   } else {
     // 舊流程：沒有照片時要求描述角色
     await updateConversationState(userId, ConversationStage.CHARACTER, tempData);
@@ -361,7 +349,7 @@ async function handleCharacterDescription(userId, description) {
   await updateConversationState(userId, ConversationStage.EXPRESSIONS, tempData);
 
   // 生成表情選擇訊息（需要 await）
-  return await generateExpressionSelectionFlexMessage();
+  return generateExpressionSelectionFlexMessage();
 }
 
 /**
@@ -394,7 +382,7 @@ async function handleExpressionTemplate(userId, templateId) {
       .eq('is_active', true)
       .single();
 
-    if (error) throw error;
+    if (error) {throw error;}
 
     if (data) {
       template = {
@@ -438,7 +426,7 @@ async function handleExpressionTemplate(userId, templateId) {
   // 更新到場景選擇階段
   await updateConversationState(userId, ConversationStage.SCENE_SELECT, tempData);
 
-  return await generateSceneSelectionFlexMessage();
+  return generateSceneSelectionFlexMessage();
 }
 
 /**
@@ -629,174 +617,7 @@ async function handleCustomScene(userId, description) {
  * 生成數量選擇訊息（6宮格批次生成優化版）
  * 每 6 張 = 1 次 API = 3 代幣
  */
-function generateCountSelectionMessage(expressions) {
-  const validCounts = LineStickerSpecs.validCounts; // [6, 12, 18]
-
-  // Quick Reply 項目（包含代幣消耗說明）
-  const quickReplyItems = validCounts.map(count => {
-    const apiCalls = count / 6;
-    const tokenCost = apiCalls * 3;  // 每次API調用消耗3枚代幣
-    return {
-      type: 'action',
-      action: {
-        type: 'message',
-        label: `${count}張 (${tokenCost}代幣)`,
-        text: `數量:${count}`
-      }
-    };
-  });
-  quickReplyItems.push({
-    type: 'action',
-    action: { type: 'message', label: '❌ 取消', text: '取消' }
-  });
-
-  return {
-    type: 'flex',
-    altText: '選擇貼圖數量',
-    contents: {
-      type: 'bubble',
-      body: {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
-          {
-            type: 'text',
-            text: '📊 選擇貼圖數量',
-            weight: 'bold',
-            size: 'lg',
-            color: '#FF6B6B'
-          },
-          {
-            type: 'text',
-            text: '🎨 6宮格批次生成特價！',
-            size: 'sm',
-            color: '#FF6B6B',
-            margin: 'xs',
-            weight: 'bold'
-          },
-          {
-            type: 'text',
-            text: '💰 每6張僅需 3 枚代幣',
-            size: 'xs',
-            color: '#28A745',
-            margin: 'sm',
-            weight: 'bold'
-          },
-          { type: 'separator', margin: 'lg' },
-          // 6張選項
-          {
-            type: 'box',
-            layout: 'horizontal',
-            margin: 'lg',
-            spacing: 'sm',
-            contents: [
-              {
-                type: 'box',
-                layout: 'vertical',
-                flex: 1,
-                contents: [
-                  {
-                    type: 'button',
-                    style: 'primary',
-                    height: 'sm',
-                    action: {
-                      type: 'message',
-                      label: '6 張',
-                      text: '數量:6'
-                    },
-                    color: '#FF6B6B'
-                  },
-                  {
-                    type: 'text',
-                    text: '3 代幣',
-                    size: 'xxs',
-                    color: '#28A745',
-                    align: 'center',
-                    margin: 'xs',
-                    weight: 'bold'
-                  }
-                ]
-              }
-            ]
-          },
-          // 12張選項
-          {
-            type: 'box',
-            layout: 'horizontal',
-            margin: 'sm',
-            spacing: 'sm',
-            contents: [
-              {
-                type: 'box',
-                layout: 'vertical',
-                flex: 1,
-                contents: [
-                  {
-                    type: 'button',
-                    style: 'secondary',
-                    height: 'sm',
-                    action: {
-                      type: 'message',
-                      label: '12 張',
-                      text: '數量:12'
-                    }
-                  },
-                  {
-                    type: 'text',
-                    text: '6 代幣',
-                    size: 'xxs',
-                    color: '#28A745',
-                    align: 'center',
-                    margin: 'xs',
-                    weight: 'bold'
-                  }
-                ]
-              }
-            ]
-          },
-          // 18張選項
-          {
-            type: 'box',
-            layout: 'horizontal',
-            margin: 'sm',
-            spacing: 'sm',
-            contents: [
-              {
-                type: 'box',
-                layout: 'vertical',
-                flex: 1,
-                contents: [
-                  {
-                    type: 'button',
-                    style: 'secondary',
-                    height: 'sm',
-                    action: {
-                      type: 'message',
-                      label: '18 張',
-                      text: '數量:18'
-                    }
-                  },
-                  {
-                    type: 'text',
-                    text: '9 代幣',
-                    size: 'xxs',
-                    color: '#28A745',
-                    align: 'center',
-                    margin: 'xs',
-                    weight: 'bold'
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      }
-    },
-    quickReply: {
-      items: quickReplyItems
-    }
-  };
-}
+// generateCountSelectionMessage 已移至 ./messages/creation-messages
 
 /**
  * 處理數量選擇
@@ -828,141 +649,11 @@ async function handleCountSelection(userId, count) {
   return generateConfirmationMessage(tempData);
 }
 
-/**
- * 生成確認訊息
- */
-function generateConfirmationMessage(data) {
-  const style = StickerStyles[data.style];
-  const scene = data.sceneConfig || { emoji: '✨', name: '無場景' };
+// generateConfirmationMessage 已移至 ./messages/confirmation-messages.js
 
-  // 根據是否有照片顯示不同的內容
-  const hasPhoto = data.photoUrl || data.photoBase64;
-  const sourceText = hasPhoto
-    ? '📷 來源：你的照片'
-    : `👤 角色：${(data.character || '').substring(0, 30)}${data.character && data.character.length > 30 ? '...' : ''}`;
+// calculateStyleCharCount / getActiveStyles 已移至 ./messages/style-settings-messages.js
 
-  // 場景文字
-  const sceneText = data.scene === 'custom' && data.customSceneDescription
-    ? `🌍 場景：${data.customSceneDescription.substring(0, 20)}${data.customSceneDescription.length > 20 ? '...' : ''}`
-    : `🌍 場景：${scene.emoji} ${scene.name}`;
-
-  // 計算代幣消耗（每 6 張 = 3 代幣）
-  const stickerCount = data.count || 6;
-  const tokenCost = Math.ceil(stickerCount / 6) * 3;
-
-  return {
-    type: 'flex',
-    altText: '確認貼圖設定',
-    contents: {
-      type: 'bubble',
-      body: {
-        type: 'box', layout: 'vertical',
-        contents: [
-          { type: 'text', text: '✅ 確認貼圖設定', weight: 'bold', size: 'lg', color: '#FF6B6B' },
-          { type: 'separator', margin: 'lg' },
-          { type: 'text', text: `📛 名稱：${data.name}`, size: 'sm', margin: 'lg' },
-          { type: 'text', text: `🎨 風格：${style.emoji} ${style.name}`, size: 'sm', margin: 'sm' },
-          { type: 'text', text: sourceText, size: 'sm', margin: 'sm', wrap: true },
-          { type: 'text', text: sceneText, size: 'sm', margin: 'sm', wrap: true },
-          { type: 'text', text: `📊 數量：${stickerCount} 張`, size: 'sm', margin: 'sm' },
-          { type: 'text', text: `💰 消耗：${tokenCost} 代幣`, size: 'sm', margin: 'sm', color: '#28A745', weight: 'bold' },
-          { type: 'separator', margin: 'lg' }
-        ]
-      },
-      footer: {
-        type: 'box', layout: 'horizontal', spacing: 'sm',
-        contents: [
-          { type: 'button', style: 'primary', action: { type: 'message', label: '✅ 開始生成', text: '確認生成' }, color: '#FF6B6B' },
-          { type: 'button', style: 'secondary', action: { type: 'message', label: '❌ 取消', text: '取消' } }
-        ]
-      }
-    }
-  };
-}
-
-/**
- * 計算風格總字數（用於排序）
- */
-function calculateStyleCharCount(style) {
-  const fields = [
-    style.core_style || '',
-    style.lighting || '',
-    style.composition || '',
-    style.brushwork || '',
-    style.mood || '',
-    style.color_palette || '',
-    style.description || '',
-    style.forbidden || '',
-    style.reference || ''
-  ];
-  return fields.join('').length;
-}
-
-/**
- * 從資料庫讀取啟用的風格設定（按字數從大到小排序）
- */
-async function getActiveStyles() {
-  try {
-    const supabase = getSupabaseClient();
-    const { data, error } = await supabase
-      .from('style_settings')
-      .select('*')
-      .eq('is_active', true)
-      .order('style_id');
-
-    if (error) {
-      console.error('讀取風格設定失敗:', error);
-      // 如果資料庫讀取失敗，返回預設風格
-      return Object.values(StickerStyles);
-    }
-
-    // 如果沒有資料，返回預設風格
-    if (!data || data.length === 0) {
-      console.log('資料庫無風格設定，使用預設值');
-      return Object.values(StickerStyles);
-    }
-
-    // 🆕 按字數從大到小排序
-    const sortedData = [...data].sort((a, b) => {
-      const countA = calculateStyleCharCount(a);
-      const countB = calculateStyleCharCount(b);
-      return countB - countA; // 從大到小
-    });
-
-    console.log(`📊 風格已按字數排序（最多 ${calculateStyleCharCount(sortedData[0])} 字元 → 最少 ${calculateStyleCharCount(sortedData[sortedData.length - 1])} 字元）`);
-
-    return sortedData;
-  } catch (error) {
-    console.error('讀取風格設定異常:', error);
-    return Object.values(StickerStyles);
-  }
-}
-
-/**
- * 根據 ID 從資料庫讀取單一風格設定
- */
-async function getStyleById(styleId) {
-  try {
-    const supabase = getSupabaseClient();
-    const { data, error } = await supabase
-      .from('style_settings')
-      .select('*')
-      .eq('style_id', styleId)
-      .eq('is_active', true)
-      .single();
-
-    if (error || !data) {
-      console.error('讀取風格失敗，使用預設值:', error);
-      // 如果資料庫讀取失敗，返回預設風格
-      return StickerStyles[styleId];
-    }
-
-    return data;
-  } catch (error) {
-    console.error('讀取風格異常:', error);
-    return StickerStyles[styleId];
-  }
-}
+// getStyleById 已移至 ./messages/style-settings-messages.js
 
 module.exports = {
   handleStartCreate,

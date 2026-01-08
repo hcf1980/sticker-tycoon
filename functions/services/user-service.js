@@ -4,7 +4,6 @@
  */
 
 const { getSupabaseClient } = require('../supabase-client');
-const { globalCache } = require('../utils/cache-manager');
 
 /**
  * 用戶類型
@@ -36,7 +35,7 @@ async function getUserByUnifiedId(unifiedUserId, userType = null) {
         .eq('line_user_id', unifiedUserId)
         .single();
       
-      if (lineUser) return lineUser;
+      if (lineUser) {return lineUser;}
 
       const { data: webUser } = await supabase
         .from('users')
@@ -48,7 +47,7 @@ async function getUserByUnifiedId(unifiedUserId, userType = null) {
     }
 
     const { data, error } = await query.single();
-    if (error && error.code !== 'PGRST116') throw error;
+    if (error && error.code !== 'PGRST116') {throw error;}
     return data || null;
   } catch (error) {
     console.error('取得用戶失敗:', error);
@@ -202,7 +201,7 @@ async function bindLineAccount(authUserId, lineUserId) {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {throw error;}
 
     console.log(`✅ LINE 帳號綁定成功: ${lineUserId} -> ${authUserId}`);
     return { success: true, user: data, merged: false };
@@ -228,7 +227,7 @@ async function mergeUsers(webAuthUserId, lineUser) {
       .eq('auth_user_id', webAuthUserId)
       .single();
 
-    if (webError) throw webError;
+    if (webError) {throw webError;}
 
     // 2. 合併代幣餘額
     const mergedCredits = (webUser.sticker_credits || 0) + (lineUser.sticker_credits || 0);
@@ -250,7 +249,7 @@ async function mergeUsers(webAuthUserId, lineUser) {
       .select()
       .single();
 
-    if (updateError) throw updateError;
+    if (updateError) {throw updateError;}
 
     // 5. 轉移 LINE 用戶的貼圖組到 Web 用戶
     await supabase
@@ -308,7 +307,7 @@ async function mergeUsers(webAuthUserId, lineUser) {
  * Web 用戶返回 auth_user_id，LINE 用戶返回 line_user_id
  */
 function getUnifiedUserId(user) {
-  if (!user) return null;
+  if (!user) {return null;}
   return user.auth_user_id || user.line_user_id;
 }
 
@@ -385,7 +384,7 @@ async function deductUserTokens(userId, amount, description, referenceId = null)
       .eq('is_expired', false)
       .order('expires_at', { ascending: true });
 
-    if (ledgerError) throw ledgerError;
+    if (ledgerError) {throw ledgerError;}
 
     const totalAvailable = availableLedgers?.reduce(
       (sum, l) => sum + l.remaining_tokens, 0
@@ -402,7 +401,7 @@ async function deductUserTokens(userId, amount, description, referenceId = null)
     // 2. FIFO 扣除
     let remaining = amount;
     for (const ledger of availableLedgers) {
-      if (remaining <= 0) break;
+      if (remaining <= 0) {break;}
 
       const deduct = Math.min(ledger.remaining_tokens, remaining);
       await supabase
@@ -420,7 +419,7 @@ async function deductUserTokens(userId, amount, description, referenceId = null)
     const newBalance = totalAvailable - amount;
     
     // 嘗試更新 auth_user_id
-    let { error: updateError } = await supabase
+    const { error: updateError } = await supabase
       .from('users')
       .update({ sticker_credits: newBalance, updated_at: new Date().toISOString() })
       .eq('auth_user_id', userId);
@@ -484,7 +483,7 @@ async function updateUserProfile(userId, updates) {
       error = result.error;
     }
 
-    if (error) throw error;
+    if (error) {throw error;}
     return { success: true, user: data };
   } catch (error) {
     console.error('更新用戶資料失敗:', error);

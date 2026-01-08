@@ -49,7 +49,7 @@ async function withRetry(fn, options = {}) {
   throw lastError;
 }
 
-async function parallelLimit(tasks, limit = 5, options = {}) {
+function parallelLimit(tasks, limit = 5, options = {}) {
   const { onProgress = () => {} } = options;
   const results = new Array(tasks.length);
   let completed = 0;
@@ -105,7 +105,7 @@ async function queueTasks(tasks, options = {}) {
   return results;
 }
 
-async function asyncMap(items, fn, limit = 5) {
+function asyncMap(items, fn, limit = 5) {
   const tasks = items.map((item, index) => () => fn(item, index));
   return parallelLimit(tasks, limit);
 }
@@ -133,7 +133,7 @@ async function asyncFinally(fn, finallyFn) {
   }
 }
 
-async function raceSuccess(promises, operationName = 'operation') {
+function raceSuccess(promises, operationName = 'operation') {
   const errors = [];
 
   return new Promise((resolve, reject) => {
@@ -177,11 +177,11 @@ async function batchAsync(items, fn, options = {}) {
   return results;
 }
 
-async function withTimeoutRetry(fn, options = {}) {
+function withTimeoutRetry(fn, options = {}) {
   const { timeoutMs = 30000, maxAttempts = 3, ...retryOptions } = options;
 
   return withRetry(
-    async () => withTimeout(fn(), timeoutMs, 'api call'),
+    () => withTimeout(fn(), timeoutMs, 'api call'),
     { maxAttempts, ...retryOptions }
   );
 }
@@ -189,7 +189,7 @@ async function withTimeoutRetry(fn, options = {}) {
 function debounceAsync(fn, delayMs) {
   let timeoutId;
 
-  return async function debouncedFn(...args) {
+  return function debouncedFn(...args) {
     return new Promise((resolve, reject) => {
       clearTimeout(timeoutId);
 
@@ -207,9 +207,9 @@ function debounceAsync(fn, delayMs) {
 
 function throttleAsync(fn, delayMs) {
   let lastTime = 0;
-  let lastPromise = Promise.resolve();
+  const lastPromise = Promise.resolve();
 
-  return async function throttledFn(...args) {
+  return function throttledFn(...args) {
     const now = Date.now();
 
     if (now - lastTime >= delayMs) {
