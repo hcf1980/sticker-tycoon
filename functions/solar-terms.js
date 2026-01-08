@@ -120,6 +120,11 @@ function generateMorningPrompts(solarTerm) {
     : `capturing a peaceful ${solarTerm.season} morning`;
 
   const imagePrompt = `Create a warm, realistic lifestyle photograph ${themeDescription}.
+
+IMPORTANT OUTPUT FORMAT:
+- Vertical portrait image, 1080x1920 (9:16)
+- Full-frame (no borders), suitable as a phone wallpaper / LINE sharing image
+
 The atmosphere reflects "${solarTerm.emotion}", without any instructional or symbolic elements.
 
 Scene:
