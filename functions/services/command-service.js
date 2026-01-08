@@ -22,16 +22,16 @@ const { validator } = require('../utils');
  */
 async function handleMyStickers(userId) {
   logger.info('處理我的貼圖命令', { userId });
-  
+
   const sets = await getUserStickerSets(userId);
-  
+
   if (sets.length === 0) {
     return {
       type: 'text',
       text: '📁 你還沒有創建任何貼圖組\n\n輸入「創建貼圖」開始創建你的第一組貼圖！',
     };
   }
-  
+
   // 生成貼圖列表 Flex Message（帶推薦好友資訊）
   const referralInfo = await getUserReferralInfo(userId);
   return generateStickerListFlexMessage(sets, referralInfo);
@@ -50,7 +50,7 @@ async function handleTokenQuery(userId) {
 
   if (transactions && transactions.length > 0) {
     text += '📊 最近交易記錄：\n';
-    transactions.forEach(tx => {
+    transactions.forEach((tx) => {
       const date = new Date(tx.created_at).toLocaleDateString('zh-TW');
       const amount = tx.amount > 0 ? `+${tx.amount}` : tx.amount;
       const type = getTransactionTypeText(tx.transaction_type);
@@ -72,17 +72,18 @@ async function handleTokenQuery(userId) {
  */
 function handlePurchaseInfo() {
   logger.info('處理購買代幣命令');
-  
+
   return {
     type: 'text',
-    text: '💳 代幣儲值方案\n\n' +
-          '方案一：NT$ 300 → 70 代幣\n' +
-          '方案二：NT$ 500 → 130 代幣 ⭐推薦\n' +
-          '方案三：NT$ 1000 → 300 代幣\n\n' +
-          '💰 付款方式：\n' +
-          '請使用以下帳號轉帳後\n' +
-          '提供轉帳後五碼給管理員\n\n' +
-          '📞 聯絡管理員購買',
+    text:
+      '💳 代幣儲值方案\n\n' +
+      '方案一：NT$ 300 → 70 代幣\n' +
+      '方案二：NT$ 500 → 130 代幣 ⭐推薦\n' +
+      '方案三：NT$ 1000 → 300 代幣\n\n' +
+      '💰 付款方式：\n' +
+      '請使用以下帳號轉帳後\n' +
+      '提供轉帳後五碼給管理員\n\n' +
+      '📞 聯絡管理員購買',
   };
 }
 
@@ -120,7 +121,7 @@ async function handleReferralInfo(userId) {
  */
 async function handleApplyReferralCode(userId, code) {
   logger.info('處理使用推薦碼命令', { userId, code });
-  
+
   // 驗證推薦碼格式
   const validation = validator.validate('referralCode', code);
   if (!validation.success) {
@@ -129,24 +130,25 @@ async function handleApplyReferralCode(userId, code) {
       text: `❌ ${validation.error}\n\n推薦碼格式：6 位大寫英數字\n例如：ABC123`,
     };
   }
-  
+
   try {
     const result = await applyReferralCode(userId, code);
-    
+
     if (result.success) {
       return {
         type: 'text',
-        text: `🎉 推薦碼使用成功！\n\n` +
-              `✅ 您獲得 ${result.tokens} 代幣\n` +
-              `💰 目前餘額：${result.balance} 代幣\n\n` +
-              `感謝您的支持！`,
-      };
-    } else {
-      return {
-        type: 'text',
-        text: `❌ ${result.message}`,
+        text:
+          `🎉 推薦碼使用成功！\n\n` +
+          `✅ 您獲得 ${result.tokens} 代幣\n` +
+          `💰 目前餘額：${result.balance} 代幣\n\n` +
+          `感謝您的支持！`,
       };
     }
+
+    return {
+      type: 'text',
+      text: `❌ ${result.message}`,
+    };
   } catch (error) {
     logger.error('使用推薦碼失敗', { userId, code, error: error.message });
     return {
@@ -161,28 +163,26 @@ async function handleApplyReferralCode(userId, code) {
  */
 async function handleViewStickerSet(userId, setId) {
   logger.info('處理查看貼圖組命令', { userId, setId });
-  
+
   const set = await getStickerSet(setId);
-  
+
   if (!set || set.user_id !== userId) {
     return {
       type: 'text',
       text: '❌ 找不到此貼圖組',
     };
   }
-  
+
   const stickers = await getStickerImages(setId);
-  
-  // 生成貼圖組詳情 Flex Message
-  // TODO: 創建專用的 Flex Message
-  
+
   return {
     type: 'text',
-    text: `📦 貼圖組：${set.name}\n\n` +
-          `🎨 風格：${set.style}\n` +
-          `📊 數量：${stickers.length} 張\n` +
-          `📌 狀態：${set.status}\n\n` +
-          `輸入「下載貼圖:${setId}」下載打包`,
+    text:
+      `📦 貼圖組：${set.name}\n\n` +
+      `🎨 風格：${set.style}\n` +
+      `📊 數量：${stickers.length} 張\n` +
+      `📌 狀態：${set.status}\n\n` +
+      `輸入「下載貼圖:${setId}」下載打包`,
   };
 }
 
@@ -191,18 +191,18 @@ async function handleViewStickerSet(userId, setId) {
  */
 async function handleDeleteStickerSet(userId, setId) {
   logger.info('處理刪除貼圖組命令', { userId, setId });
-  
+
   const set = await getStickerSet(setId);
-  
+
   if (!set || set.user_id !== userId) {
     return {
       type: 'text',
       text: '❌ 找不到此貼圖組',
     };
   }
-  
+
   await deleteStickerSet(setId);
-  
+
   return {
     type: 'text',
     text: `✅ 已刪除貼圖組「${set.name}」`,
@@ -234,4 +234,3 @@ module.exports = {
   handleViewStickerSet,
   handleDeleteStickerSet,
 };
-
