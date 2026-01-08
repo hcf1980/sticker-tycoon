@@ -115,24 +115,57 @@
           <span>💳</span> 代幣購買方案
         </h2>
         
-        <div class="grid md:grid-cols-2 gap-4 mb-6">
+        <div class="grid md:grid-cols-2 gap-6 mb-6">
           <!-- 基礎包 -->
-          <div class="bg-white/5 rounded-2xl p-6 border border-white/10 hover:border-cyan-400/50 transition text-center">
-            <h3 class="text-lg font-bold text-gray-300 mb-2">基礎包</h3>
-            <div class="text-3xl font-extrabold text-cyan-400 mb-1">70 代幣</div>
-            <div class="text-2xl font-bold text-white mb-4">NT$ 300</div>
-            <p class="text-sm text-gray-500">適合輕度使用者</p>
+          <div class="price-card text-center">
+            <div class="flex items-center justify-center gap-2 mb-4">
+              <span class="text-2xl">📦</span>
+              <h3 class="text-lg font-bold text-gray-200">基礎包</h3>
+            </div>
+
+            <div class="text-5xl font-extrabold title-gradient leading-none">70</div>
+            <div class="text-sm text-gray-400 mt-2">代幣</div>
+
+            <div class="mt-6">
+              <div class="text-3xl font-extrabold text-white">NT$ 300</div>
+              <div class="mt-2 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-gray-300">
+                <span class="text-cyan-400">≈</span>
+                <span>NT$ 4.29 / 代幣</span>
+              </div>
+            </div>
+
+            <div class="mt-6 text-sm text-gray-400">適合輕度使用者</div>
           </div>
-          
+
           <!-- 超值包 -->
-          <div class="bg-gradient-to-br from-cyan-500/10 to-purple-500/10 rounded-2xl p-6 border-2 border-cyan-400/50 text-center relative">
+          <div class="price-card featured text-center">
             <div class="absolute -top-3 left-1/2 -translate-x-1/2">
               <span class="tag-green text-xs">🔥 最受歡迎</span>
             </div>
-            <h3 class="text-lg font-bold text-white mb-2 mt-2">超值包</h3>
-            <div class="text-3xl font-extrabold text-cyan-400 mb-1">130 代幣</div>
-            <div class="text-2xl font-bold text-white mb-4">NT$ 500</div>
-            <p class="text-sm text-gray-400">CP 值最高推薦</p>
+
+            <div class="flex items-center justify-center gap-2 mb-4 mt-2">
+              <span class="text-2xl">⚡</span>
+              <h3 class="text-lg font-bold text-white">超值包</h3>
+            </div>
+
+            <div class="text-5xl font-extrabold title-gradient leading-none">130</div>
+            <div class="text-sm text-gray-300 mt-2">代幣</div>
+
+            <div class="mt-6">
+              <div class="text-3xl font-extrabold text-white">NT$ 500</div>
+              <div class="mt-2 flex flex-col items-center gap-2">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-400/30 text-xs text-cyan-200">
+                  <span>≈</span>
+                  <span>NT$ 3.85 / 代幣</span>
+                </div>
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 border border-green-400/30 text-xs text-green-200">
+                  <span>💡</span>
+                  <span>比基礎包更划算</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-6 text-sm text-gray-300">CP 值最高推薦</div>
           </div>
         </div>
         
