@@ -199,7 +199,7 @@ async function processImage(input, type = 'sticker') {
 
     // 處理圖片
     let processedImage = sharp(imageBuffer);
-
+    
     // 取得原始圖片資訊
     const metadata = await processedImage.metadata();
     console.log(`📐 原始圖片尺寸: ${metadata.width}x${metadata.height}`);

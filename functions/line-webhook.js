@@ -97,7 +97,7 @@ async function handleTextMessage(replyToken, userId, text) {
       return getLineClient().replyMessage(replyToken, {
         type: 'text',
         text: '❌ 已取消創建流程\n\n輸入「創建貼圖」重新開始！',
-        quickReply: quickReply: {
+        quickReply: {
           items: [
             { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
             { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
