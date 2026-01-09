@@ -97,7 +97,7 @@ async function handleTextMessage(replyToken, userId, text) {
       return getLineClient().replyMessage(replyToken, {
         type: 'text',
         text: '❌ 已取消創建流程\n\n輸入「創建貼圖」重新開始！',
-        quickReply: {
+        quickReply: quickReply: {
           items: [
             { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
             { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
@@ -1525,6 +1525,23 @@ async function handleViewStickerSet(replyToken, userId, setId) {
  * 發送貼圖輪播訊息 - 每格一張大圖
  */
 async function sendStickerCarousel(replyToken, set, stickers) {
+  // 統一的 Quick Reply
+  const quickReply = {
+    items: [
+      { type: 'action', action: { type: 'message', label: '🎁 分享給好友', text: '分享給好友' } },
+      { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
+      { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
+      { type: 'action', action: { type: 'message', label: '💰 購買代幣', text: '購買代幣' } },
+      {
+        type: 'action',
+        action: {
+          type: 'uri',
+          label: '🎬 YouTube 推廣計畫',
+          uri: `${process.env.URL || 'https://sticker-tycoon.netlify.app'}/youtuber-promotion.html`,
+        },
+      },
+    ],
+  };
   const statusText = {
     'completed': '✅ 已完成',
     'processing': '⏳ 生成中',
@@ -1644,7 +1661,8 @@ async function sendStickerCarousel(replyToken, set, stickers) {
       contents: {
         type: 'carousel',
         contents: allBubbles
-      }
+      },
+      quickReply: quickReply
     });
   } else {
     // 需要多個 carousel
@@ -1658,7 +1676,8 @@ async function sendStickerCarousel(replyToken, set, stickers) {
       contents: {
         type: 'carousel',
         contents: firstBubbles
-      }
+      },
+      quickReply: quickReply
     });
 
     // 後續 carousel：每批 12 張
@@ -1679,7 +1698,8 @@ async function sendStickerCarousel(replyToken, set, stickers) {
         contents: {
           type: 'carousel',
           contents: batchBubbles
-        }
+        },
+        quickReply: quickReply
       });
 
       startIndex = endIndex;
