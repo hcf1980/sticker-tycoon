@@ -18,6 +18,113 @@ const archiver = require('archiver');
 const { Readable } = require('stream');
 const { LineStickerSpecs } = require('./sticker-styles');
 
+// ================================
+// 去背/去雜訊（無付費 API 的近似方案）
+// 適用情境：背景接近白色或單色、前景與背景對比明顯
+// ================================
+const REMOVE_BG_ENABLED = true;
+const REMOVE_BG_SAMPLE_BORDER_PX = 12; // 取樣邊界厚度
+const REMOVE_BG_BG_DISTANCE_THRESHOLD = 26; // 背景色距離閾值（越小越嚴格）
+const REMOVE_BG_SOFT_EDGE_PX = 2; // 邊緣柔化
+const REMOVE_BG_ALPHA_THRESHOLD = 18; // alpha 小於此值直接清為 0（去點點）
+
+function clampByte(n) {
+  return Math.max(0, Math.min(255, Math.round(n)));
+}
+
+function colorDistance(a, b) {
+  const dr = a.r - b.r;
+  const dg = a.g - b.g;
+  const db = a.b - b.b;
+  return Math.sqrt(dr * dr + dg * dg + db * db);
+}
+
+function avgColor(samples) {
+  if (samples.length === 0) return { r: 255, g: 255, b: 255 };
+  const sum = samples.reduce(
+    (acc, c) => ({ r: acc.r + c.r, g: acc.g + c.g, b: acc.b + c.b }),
+    { r: 0, g: 0, b: 0 }
+  );
+  return {
+    r: sum.r / samples.length,
+    g: sum.g / samples.length,
+    b: sum.b / samples.length,
+  };
+}
+
+function estimateBgColorFromBorder({ data, width, height, borderPx }) {
+  const samples = [];
+
+  const bx = Math.max(1, Math.min(borderPx, Math.floor(width / 6)));
+  const by = Math.max(1, Math.min(borderPx, Math.floor(height / 6)));
+
+  const pushPixel = (x, y) => {
+    const idx = (y * width + x) * 4;
+    const r = data[idx];
+    const g = data[idx + 1];
+    const b = data[idx + 2];
+    const a = data[idx + 3];
+    // 只用接近不透明的像素做背景估計（避免把透明邊緣拿來估計）
+    if (a > 200) samples.push({ r, g, b });
+  };
+
+  // top/bottom
+  for (let y = 0; y < by; y++) {
+    for (let x = 0; x < width; x++) pushPixel(x, y);
+  }
+  for (let y = height - by; y < height; y++) {
+    for (let x = 0; x < width; x++) pushPixel(x, y);
+  }
+
+  // left/right
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < bx; x++) pushPixel(x, y);
+    for (let x = width - bx; x < width; x++) pushPixel(x, y);
+  }
+
+  return avgColor(samples);
+}
+
+function applyApproxRemoveBg({ rgba, width, height, bgColor, distanceThreshold, alphaThreshold }) {
+  const out = Buffer.from(rgba);
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const idx = (y * width + x) * 4;
+      const r = out[idx];
+      const g = out[idx + 1];
+      const b = out[idx + 2];
+      const a = out[idx + 3];
+
+      // 已經透明就跳過
+      if (a === 0) continue;
+
+      const dist = colorDistance({ r, g, b }, bgColor);
+
+      // dist 越小越像背景 → alpha 越趨近 0
+      if (dist <= distanceThreshold) {
+        out[idx + 3] = 0;
+        continue;
+      }
+
+      // 柔邊：在閾值附近做線性過渡，降低鋸齒/點點
+      const softRange = Math.max(8, distanceThreshold * 0.7);
+      if (dist < distanceThreshold + softRange) {
+        const t = (dist - distanceThreshold) / softRange; // 0..1
+        const nextA = clampByte(a * t);
+        out[idx + 3] = nextA;
+      }
+
+      // 去點點：很小的 alpha 直接清掉
+      if (out[idx + 3] < alphaThreshold) {
+        out[idx + 3] = 0;
+      }
+    }
+  }
+
+  return out;
+}
+
 /**
  * 從 URL 下載圖片（含重試機制）
  */
@@ -92,26 +199,66 @@ async function processImage(input, type = 'sticker') {
 
     // 處理圖片
     let processedImage = sharp(imageBuffer);
-    
+
     // 取得原始圖片資訊
     const metadata = await processedImage.metadata();
     console.log(`📐 原始圖片尺寸: ${metadata.width}x${metadata.height}`);
 
+    // 先把圖片 decode 成 RGBA，嘗試做「近似去背」
+    // 適用：背景接近白底或單色底
+    if (REMOVE_BG_ENABLED && metadata.width && metadata.height) {
+      try {
+        const raw = await processedImage
+          .ensureAlpha()
+          .raw()
+          .toBuffer({ resolveWithObject: true });
+
+        const { data, info } = raw;
+        const bgColor = estimateBgColorFromBorder({
+          data,
+          width: info.width,
+          height: info.height,
+          borderPx: REMOVE_BG_SAMPLE_BORDER_PX,
+        });
+
+        const removed = applyApproxRemoveBg({
+          rgba: data,
+          width: info.width,
+          height: info.height,
+          bgColor,
+          distanceThreshold: REMOVE_BG_BG_DISTANCE_THRESHOLD,
+          alphaThreshold: REMOVE_BG_ALPHA_THRESHOLD,
+        });
+
+        processedImage = sharp(removed, {
+          raw: {
+            width: info.width,
+            height: info.height,
+            channels: 4,
+          },
+        });
+
+        console.log(`🧼 近似去背已套用（bg≈ rgb(${bgColor.r.toFixed(0)},${bgColor.g.toFixed(0)},${bgColor.b.toFixed(0)})）`);
+      } catch (error) {
+        console.warn(`⚠️ 近似去背失敗，改用原流程：${error.message}`);
+        processedImage = sharp(imageBuffer).ensureAlpha();
+      }
+    } else {
+      processedImage = processedImage.ensureAlpha();
+    }
+
     // 縮放到目標尺寸（保持比例，置中）
     processedImage = processedImage
       .resize(contentWidth, contentHeight, {
-        fit: 'inside',  // 保持比例，不裁切
-        withoutEnlargement: false
+        fit: 'inside', // 保持比例，不裁切
+        withoutEnlargement: false,
       })
-      // 🎨 增加飽和度和對比度，讓貼圖更鮮明
+      // 🎨 調色（稍微保守，避免放大去背邊緣雜訊）
       .modulate({
-        saturation: 1.25,  // 飽和度 +25%
-        brightness: 1.02   // 亮度微調 +2%
+        saturation: 1.12,
+        brightness: 1.01,
       })
-      // 增加對比度（使用線性調整）
-      .linear(1.15, -(128 * 0.15))  // 對比度 +15%
-      // 確保透明背景
-      .ensureAlpha();
+      .linear(1.08, -(128 * 0.08));
 
     // 只有貼圖需要加 padding（main 和 tab 不需要）
     if (padding > 0) {
