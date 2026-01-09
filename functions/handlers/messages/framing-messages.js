@@ -79,4 +79,3 @@ async function generateFramingSelectionMessage(style, getActiveFramingTemplates)
 module.exports = {
   generateFramingSelectionMessage,
 };
-
