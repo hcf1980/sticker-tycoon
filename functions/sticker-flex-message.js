@@ -526,19 +526,161 @@ function createTutorialBubble(baseUrl, headerColor, headerTitle, stepText, image
  * 完整功能說明 Flex Message（第一部分：創建貼圖流程 - Carousel 格式）
  */
 function generateTutorialPart1FlexMessage() {
-  const baseUrl = process.env.URL || 'https://sticker-tycoon.netlify.app';
-
   return {
     type: 'flex',
     altText: '📸 創建貼圖教學 - 左右滑動查看步驟',
     contents: {
       type: 'carousel',
       contents: [
-        createTutorialBubble(baseUrl, '#FF6B6B', '📸 創建貼圖', '步驟 1/5', 'step1-upload.png', '上傳照片', '選擇一張清晰的正面照'),
-        createTutorialBubble(baseUrl, '#AF52DE', '📸 創建貼圖', '步驟 2/5', 'step2-style.png', '選擇風格', '可愛風、寫實風、Q版等'),
-        createTutorialBubble(baseUrl, '#007AFF', '📸 創建貼圖', '步驟 3/5', 'step3-emotion.png', '選擇表情', '最多可選擇 24 種表情！'),
-        createTutorialBubble(baseUrl, '#FF9500', '📸 創建貼圖', '步驟 4/5', 'step4-generating.png', 'AI 生成中', 'AI 正在為你創作貼圖...'),
-        createTutorialBubble(baseUrl, '#34C759', '📸 創建貼圖', '步驟 5/5 ✅', 'step5-complete.png', '🎉 貼圖生成完畢', '選擇下載或申請代上架！', true)
+        // 第一張卡片 - 上傳照片
+        {
+          type: 'bubble',
+          size: 'kilo',
+          header: {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#FF6B6B',
+            paddingAll: 'md',
+            contents: [
+              { type: 'text', text: '📸 創建貼圖', weight: 'bold', size: 'md', color: '#FFFFFF' },
+              { type: 'text', text: '步驟 1/5', size: 'xs', color: '#FFFFFFCC', margin: 'xs' }
+            ]
+          },
+          body: {
+            type: 'box',
+            layout: 'vertical',
+            paddingAll: 'md',
+            spacing: 'md',
+            contents: [
+              { type: 'text', text: '✅ 以上 1 張「傳一張正面大頭照」', size: 'sm', weight: 'bold', color: '#333333', wrap: true },
+              { type: 'separator', margin: 'md' },
+              { type: 'text', text: '📸 建議說明', size: 'xs', color: '#999999', margin: 'md' },
+              { type: 'text', text: '• 盡量選擇正面近照\n• 請先入鏡「我的/親友」單張', size: 'xs', color: '#666666', margin: 'sm', wrap: true }
+            ]
+          }
+        },
+        // 第二張卡片 - 選擇風格
+        {
+          type: 'bubble',
+          size: 'kilo',
+          header: {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#AF52DE',
+            paddingAll: 'md',
+            contents: [
+              { type: 'text', text: '📸 創建貼圖', weight: 'bold', size: 'md', color: '#FFFFFF' },
+              { type: 'text', text: '步驟 2/5', size: 'xs', color: '#FFFFFFCC', margin: 'xs' }
+            ]
+          },
+          body: {
+            type: 'box',
+            layout: 'vertical',
+            paddingAll: 'md',
+            spacing: 'md',
+            contents: [
+              { type: 'text', text: '🎨 選擇要貼的風格可', size: 'sm', weight: 'bold', color: '#333333', wrap: true },
+              { type: 'separator', margin: 'md' },
+              { type: 'text', text: '🖼️ 選擇風格', size: 'xs', color: '#999999', margin: 'md' },
+              { type: 'text', text: '可愛風、寫實風、Q版等', size: 'xs', color: '#666666', margin: 'sm', wrap: true }
+            ]
+          }
+        },
+        // 第三張卡片 - 選擇表情
+        {
+          type: 'bubble',
+          size: 'kilo',
+          header: {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#007AFF',
+            paddingAll: 'md',
+            contents: [
+              { type: 'text', text: '📸 創建貼圖', weight: 'bold', size: 'md', color: '#FFFFFF' },
+              { type: 'text', text: '步驟 3/5', size: 'xs', color: '#FFFFFFCC', margin: 'xs' }
+            ]
+          },
+          body: {
+            type: 'box',
+            layout: 'vertical',
+            paddingAll: 'md',
+            spacing: 'md',
+            contents: [
+              { type: 'text', text: '😊 選擇表情模板（會自動套用表情）', size: 'sm', weight: 'bold', color: '#333333', wrap: true },
+              { type: 'separator', margin: 'md' },
+              { type: 'text', text: '🎭 表情選擇', size: 'xs', color: '#999999', margin: 'md' },
+              { type: 'text', text: '• 不選可使用文字形容\n• 任意指定「我/他」', size: 'xs', color: '#666666', margin: 'sm', wrap: true }
+            ]
+          }
+        },
+        // 第四張卡片 - AI 生成中
+        {
+          type: 'bubble',
+          size: 'kilo',
+          header: {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#FF9500',
+            paddingAll: 'md',
+            contents: [
+              { type: 'text', text: '📸 創建貼圖', weight: 'bold', size: 'md', color: '#FFFFFF' },
+              { type: 'text', text: '步驟 4/5', size: 'xs', color: '#FFFFFFCC', margin: 'xs' }
+            ]
+          },
+          body: {
+            type: 'box',
+            layout: 'vertical',
+            paddingAll: 'md',
+            spacing: 'md',
+            contents: [
+              { type: 'text', text: '🏆 AI 生成中使用說明', size: 'sm', weight: 'bold', color: '#333333', wrap: true },
+              { type: 'separator', margin: 'md' },
+              { type: 'text', text: '⚡ AI 生成中', size: 'xs', color: '#999999', margin: 'md' },
+              { type: 'text', text: 'AI 正在為你的創作貼圖...', size: 'xs', color: '#666666', margin: 'sm', wrap: true }
+            ]
+          }
+        },
+        // 第五張卡片 - 完成
+        {
+          type: 'bubble',
+          size: 'kilo',
+          header: {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#34C759',
+            paddingAll: 'md',
+            contents: [
+              { type: 'text', text: '📸 創建貼圖', weight: 'bold', size: 'md', color: '#FFFFFF' },
+              { type: 'text', text: '步驟 5/5 ✅', size: 'xs', color: '#FFFFFFCC', margin: 'xs' }
+            ]
+          },
+          body: {
+            type: 'box',
+            layout: 'vertical',
+            paddingAll: 'md',
+            spacing: 'md',
+            contents: [
+              { type: 'text', text: '🎉 貼圖生成完畢', size: 'sm', weight: 'bold', color: '#333333', wrap: true },
+              { type: 'separator', margin: 'md' },
+              { type: 'text', text: '📥 後續流程內容', size: 'xs', color: '#999999', margin: 'md' },
+              { type: 'text', text: '• 檢查下載貼圖包「手動上架」\n• 任何問題「客服/他」', size: 'xs', color: '#666666', margin: 'sm', wrap: true }
+            ]
+          },
+          footer: {
+            type: 'box',
+            layout: 'vertical',
+            paddingAll: 'sm',
+            contents: [
+              {
+                type: 'button',
+                style: 'primary',
+                color: '#06C755',
+                height: 'sm',
+                action: { type: 'message', label: '✅ 開始創建', text: '創建貼圖' }
+              }
+            ]
+          }
+        }
       ]
     },
     quickReply: {
