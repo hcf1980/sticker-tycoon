@@ -25,6 +25,26 @@ const { getMorningGreeting } = require('./morning-greeting');
 // LINE Bot 設定 - 延遲初始化
 let client = null;
 
+// ================================
+// 防止重複上傳/連續操作（記憶體節流）
+// 注意：Netlify Functions 可能冷啟動，故此為「最佳努力」保護
+// ================================
+const PHOTO_UPLOAD_COOLDOWN_MS = 10_000; // 10 秒內重複上傳直接阻擋
+const photoUploadGuard = new Map();
+
+function getPhotoGuard(userId) {
+  return photoUploadGuard.get(userId) || { lastUploadAtMs: 0, isProcessing: false };
+}
+
+function setPhotoGuard(userId, next) {
+  photoUploadGuard.set(userId, next);
+}
+
+function clearPhotoGuard(userId) {
+  photoUploadGuard.delete(userId);
+}
+
+
 function getLineClient() {
   if (client) return client;
 
@@ -773,11 +793,46 @@ async function handleImageMessage(replyToken, userId, messageId) {
 
     // 不發送處理中訊息，直接處理（節省時間和避免 429）
 
+    // 防止連續上傳/重複觸發（避免併發造成狀態混亂）
+    const nowMs = Date.now();
+    const guard = getPhotoGuard(userId);
+
+    if (guard.isProcessing) {
+      await safeReply(replyToken, {
+        type: 'text',
+        text:
+          '⏳ 已收到你的照片，正在處理中，請勿重複上傳！\n\n' +
+          '⏱️ 通常需要 1–2 分鐘，請耐心等待。\n' +
+          '若卡住超過 3 分鐘，可輸入「取消」重新開始。',
+        quickReply: {
+          items: [{ type: 'action', action: { type: 'message', label: '❌ 取消', text: '取消' } }],
+        },
+      });
+      return;
+    }
+
+    if (nowMs - guard.lastUploadAtMs < PHOTO_UPLOAD_COOLDOWN_MS) {
+      await safeReply(replyToken, {
+        type: 'text',
+        text:
+          '⚠️ 你剛剛已上傳過照片了！\n\n' +
+          '為避免辨識錯誤，請等待處理完成（約 1–2 分鐘）再操作。\n' +
+          '若需要重來，可輸入「取消」。',
+        quickReply: {
+          items: [{ type: 'action', action: { type: 'message', label: '❌ 取消', text: '取消' } }],
+        },
+      });
+      return;
+    }
+
+    setPhotoGuard(userId, { lastUploadAtMs: nowMs, isProcessing: true });
+
     // 處理照片
     const photoResult = await handleUserPhoto(messageId, userId);
 
     if (!photoResult.success) {
       console.log('❌ 照片處理失敗');
+      clearPhotoGuard(userId);
       await safeReply(replyToken, {
         type: 'text',
         text: '❌ 照片處理失敗，請重新上傳一張清晰的正面照片！\n\n💡 建議：光線充足、正面、背景簡單的大頭照',
@@ -800,8 +855,12 @@ async function handleImageMessage(replyToken, userId, messageId) {
     console.log('📤 發送風格選擇 Flex Message');
     await safeReply(replyToken, message);
 
+    // 成功送出下一步後解除鎖
+    clearPhotoGuard(userId);
+
   } catch (error) {
     console.error('❌ 處理圖片失敗:', error);
+    clearPhotoGuard(userId);
     await safeReply(replyToken, {
       type: 'text',
       text: '❌ 系統發生錯誤，請稍後再試'
