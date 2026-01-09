@@ -1765,11 +1765,11 @@ async function sendStickerCarousel(replyToken, set, stickers) {
     const lastMessage = carouselMessages[carouselMessages.length - 1];
     lastMessage.quickReply = {
       items: [
-        { type: 'action', action: { type: 'message', label: '📥 下載貼圖包', text: `下載貼圖:${set.set_id}` } },
+        { type: 'action', action: { type: 'message', label: '📸 創建教學', text: '功能說明' } },
         { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
         { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
         { type: 'action', action: { type: 'message', label: '💰 代幣查詢', text: '代幣' } },
-        { type: 'action', action: { type: 'message', label: '🎁 分享給好友', text: '分享給好友' } }
+        { type: 'action', action: { type: 'message', label: '🎁 分享好友', text: '分享給好友' } }
       ]
     };
   }
