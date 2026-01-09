@@ -397,6 +397,39 @@ async function markTutorialShown(userId) {
  * 生成教學用的 bubble（直接使用圖片作為 hero，無多餘空白）
  */
 function createTutorialBubble(baseUrl, headerColor, headerTitle, stepText, imageFile, title, desc, hasFooter = false) {
+  const getHeroHints = (file) => {
+    switch (file) {
+      case 'step1-upload.png':
+        return {
+          top: '✅ 只上傳 1 張「單一人像正面大頭照」',
+          bullets: ['背景簡單、光線充足', '避免多人/合照/截圖', '卡住可輸入「取消」重來'],
+        };
+      case 'step2-style.png':
+        return {
+          top: '🎨 選擇喜歡的風格即可',
+          bullets: ['請用按鈕選擇，不要亂輸入', '點一次後等待畫面更新', '卡住可輸入「取消」'],
+        };
+      case 'step3-emotion.png':
+        return {
+          top: '😀 選擇表情模板（會自動隨機抽表情）',
+          bullets: ['不用追求一次選完所有', '生成時會重新抽樣，避免重複', '卡住可輸入「取消」'],
+        };
+      case 'step4-generating.png':
+        return {
+          top: '⏳ AI 生成中需要時間，請耐心等待',
+          bullets: ['約 5–10 分鐘（視排隊而定）', '不要連續操作/重複點擊', '可輸入「查詢進度」'],
+        };
+      case 'step5-complete.png':
+        return {
+          top: '🎉 完成後可下載或申請免費代上架',
+          bullets: ['檢查張數與內容', '選擇下載 ZIP 或申請上架', '任何階段都可輸入「取消」'],
+        };
+      default:
+        return { top: title, bullets: [desc] };
+    }
+  };
+
+  const heroHints = getHeroHints(imageFile);
   const bubble = {
     type: 'bubble',
     size: 'kilo',
@@ -412,12 +445,50 @@ function createTutorialBubble(baseUrl, headerColor, headerTitle, stepText, image
       ]
     },
     hero: {
-      type: 'image',
-      url: `${baseUrl}/images/demo/${imageFile}`,
-      size: 'full',
-      aspectRatio: '9:16',
-      aspectMode: 'fit',
-      backgroundColor: '#FFFFFF'
+      type: 'box',
+      layout: 'vertical',
+      paddingAll: 'sm',
+      spacing: 'sm',
+      backgroundColor: '#FFFFFF',
+      contents: [
+        {
+          type: 'text',
+          text: heroHints.top,
+          size: 'sm',
+          weight: 'bold',
+          color: '#333333',
+          wrap: true,
+        },
+        {
+          type: 'box',
+          layout: 'vertical',
+          backgroundColor: '#FFFFFF',
+          cornerRadius: 'md',
+          paddingAll: 'xs',
+          contents: [
+            {
+              type: 'image',
+              url: `${baseUrl}/images/demo/${imageFile}`,
+              size: 'full',
+              aspectRatio: '9:16',
+              aspectMode: 'fit',
+              backgroundColor: '#FFFFFF',
+            },
+          ],
+        },
+        {
+          type: 'box',
+          layout: 'vertical',
+          spacing: 'xs',
+          contents: (heroHints.bullets || []).slice(0, 3).map((t) => ({
+            type: 'text',
+            text: `• ${t}`,
+            size: 'xs',
+            color: '#666666',
+            wrap: true,
+          })),
+        },
+      ],
     },
     body: {
       type: 'box',
@@ -500,11 +571,45 @@ function createDownloadTutorialBubble(baseUrl, headerColor, stepText, imageFile,
       ]
     },
     hero: {
-      type: 'image',
-      url: `${baseUrl}/images/demo/${imageFile}`,
-      size: 'full',
-      aspectRatio: '9:16',
-      aspectMode: 'fit'
+      type: 'box',
+      layout: 'vertical',
+      paddingAll: 'sm',
+      spacing: 'sm',
+      backgroundColor: '#FFFFFF',
+      contents: [
+        {
+          type: 'text',
+          text: title,
+          size: 'sm',
+          weight: 'bold',
+          color: '#333333',
+          wrap: true,
+        },
+        {
+          type: 'box',
+          layout: 'vertical',
+          backgroundColor: '#FFFFFF',
+          cornerRadius: 'md',
+          paddingAll: 'xs',
+          contents: [
+            {
+              type: 'image',
+              url: `${baseUrl}/images/demo/${imageFile}`,
+              size: 'full',
+              aspectRatio: '9:16',
+              aspectMode: 'fit',
+              backgroundColor: '#FFFFFF',
+            },
+          ],
+        },
+        {
+          type: 'text',
+          text: desc,
+          size: 'xs',
+          color: '#666666',
+          wrap: true,
+        },
+      ],
     },
     body: {
       type: 'box',
