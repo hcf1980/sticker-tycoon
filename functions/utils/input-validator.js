@@ -223,7 +223,9 @@ function validateMultiple(data, schema) {
  * @returns {string} 清理後的字符串
  */
 function sanitizeString(input) {
-  if (typeof input !== 'string') {return '';}
+  if (typeof input !== 'string') {
+    return '';
+  }
   return input.trim();
 }
 
