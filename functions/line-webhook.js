@@ -1760,6 +1760,20 @@ async function sendStickerCarousel(replyToken, set, stickers) {
     carouselMessages = carouselMessages.slice(0, 5);
   }
 
+  // 🆕 在最後一個 carousel 訊息添加 Quick Reply
+  if (carouselMessages.length > 0) {
+    const lastMessage = carouselMessages[carouselMessages.length - 1];
+    lastMessage.quickReply = {
+      items: [
+        { type: 'action', action: { type: 'message', label: '📥 下載貼圖包', text: `下載貼圖:${set.set_id}` } },
+        { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
+        { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
+        { type: 'action', action: { type: 'message', label: '💰 代幣查詢', text: '代幣' } },
+        { type: 'action', action: { type: 'message', label: '🎁 分享給好友', text: '分享給好友' } }
+      ]
+    };
+  }
+
   console.log(`📤 發送 ${carouselMessages.length} 個 carousel，共 ${totalStickers} 張貼圖`);
 
   return getLineClient().replyMessage(replyToken, carouselMessages);
