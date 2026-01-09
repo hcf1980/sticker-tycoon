@@ -815,8 +815,18 @@ async function handleCheckProgress(replyToken, userId) {
       quickReply: {
         items: [
           { type: 'action', action: { type: 'message', label: '🔄 重試', text: '查詢進度' } },
+          { type: 'action', action: { type: 'message', label: '🎁 分享給好友', text: '分享給好友' } },
           { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
-          { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } }
+          { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
+          { type: 'action', action: { type: 'message', label: '💰 購買代幣', text: '購買代幣' } },
+          {
+            type: 'action',
+            action: {
+              type: 'uri',
+              label: '🎬 YouTube 推廣計畫',
+              uri: `${process.env.URL || 'https://sticker-tycoon.netlify.app'}/youtuber-promotion.html`
+            }
+          }
         ]
       }
     });
@@ -1468,9 +1478,18 @@ async function handleViewStickerSet(replyToken, userId, setId) {
       },
       quickReply: {
         items: [
-          { type: 'action', action: { type: 'message', label: '📋 查詢進度', text: '查詢進度' } },
+          { type: 'action', action: { type: 'message', label: '🎁 分享給好友', text: '分享給好友' } },
           { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
-          { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } }
+          { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
+          { type: 'action', action: { type: 'message', label: '💰 購買代幣', text: '購買代幣' } },
+          {
+            type: 'action',
+            action: {
+              type: 'uri',
+              label: '🎬 YouTube 推廣計畫',
+              uri: `${process.env.URL || 'https://sticker-tycoon.netlify.app'}/youtuber-promotion.html`
+            }
+          }
         ]
       }
     };
@@ -1484,8 +1503,18 @@ async function handleViewStickerSet(replyToken, userId, setId) {
       text: '❌ 系統錯誤，請稍後再試',
       quickReply: {
         items: [
+          { type: 'action', action: { type: 'message', label: '🎁 分享給好友', text: '分享給好友' } },
           { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
-          { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } }
+          { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
+          { type: 'action', action: { type: 'message', label: '💰 購買代幣', text: '購買代幣' } },
+          {
+            type: 'action',
+            action: {
+              type: 'uri',
+              label: '🎬 YouTube 推廣計畫',
+              uri: `${process.env.URL || 'https://sticker-tycoon.netlify.app'}/youtuber-promotion.html`
+            }
+          }
         ]
       }
     });
@@ -1758,8 +1787,18 @@ async function handleDeleteStickerSet(replyToken, userId, setId) {
       text: '❌ 系統錯誤，請稍後再試',
       quickReply: {
         items: [
+          { type: 'action', action: { type: 'message', label: '🎁 分享給好友', text: '分享給好友' } },
           { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
-          { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } }
+          { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
+          { type: 'action', action: { type: 'message', label: '💰 購買代幣', text: '購買代幣' } },
+          {
+            type: 'action',
+            action: {
+              type: 'uri',
+              label: '🎬 YouTube 推廣計畫',
+              uri: `${process.env.URL || 'https://sticker-tycoon.netlify.app'}/youtuber-promotion.html`
+            }
+          }
         ]
       }
     });
