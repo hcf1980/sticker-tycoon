@@ -490,6 +490,54 @@ async function handleCreationFlow(replyToken, userId, text, stage, state) {
 async function handleConfirmGeneration(replyToken, userId, state) {
   const tempData = state.temp_data;
 
+  // ================================
+  // 表情抽樣（每次生成重新抽樣 + 短期避免重複）
+  // ================================
+  const shuffleArray = (array) => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+
+  const pickExpressions = ({
+    pool,
+    count,
+    recent,
+    recentMax = 24,
+  }) => {
+    const normalizedPool = Array.isArray(pool) ? pool.filter(Boolean) : [];
+    const normalizedRecent = Array.isArray(recent) ? recent.filter(Boolean) : [];
+
+    // 先避開最近用過的
+    const preferred = normalizedPool.filter((e) => !normalizedRecent.includes(e));
+
+    const picked = [];
+    const pickFrom = (source) => {
+      for (const e of shuffleArray(source)) {
+        if (picked.length >= count) break;
+        if (!picked.includes(e)) picked.push(e);
+      }
+    };
+
+    pickFrom(preferred);
+
+    // 不夠就允許從全部 pool 補齊
+    if (picked.length < count) {
+      pickFrom(normalizedPool);
+    }
+
+    // 仍不夠就重複填充（極端情況：pool 很小）
+    while (picked.length < count && normalizedPool.length > 0) {
+      picked.push(normalizedPool[picked.length % normalizedPool.length]);
+    }
+
+    const nextRecent = [...picked, ...normalizedRecent].slice(0, recentMax);
+    return { picked, nextRecent };
+  };
+
   // 驗證資料完整性（照片流程不需要 character）
   const hasPhoto = tempData?.photoUrl || tempData?.photoBase64;
   const hasCharacter = tempData?.character;
@@ -531,6 +579,18 @@ async function handleConfirmGeneration(replyToken, userId, state) {
 
   // 計算需要的代幣數量（6宮格批次生成：每6張只需3枚代幣）
   const stickerCount = tempData.count || 6;
+
+  // 每次「確認生成」都重新抽樣表情，並短期避免重複
+  const { picked: selectedExpressions, nextRecent } = pickExpressions({
+    pool: tempData.expressions || [],
+    count: stickerCount,
+    recent: tempData.recentExpressions || [],
+    recentMax: 24,
+  });
+
+  // 更新 tempData：保留近期使用的表情，降低「不同次生成」重複率
+  tempData.expressions = selectedExpressions;
+  tempData.recentExpressions = nextRecent;
   const apiCalls = Math.ceil(stickerCount / 6);  // 每次API調用生成6張
   const tokenCost = apiCalls * 3;  // 每次API調用消耗3枚代幣
 
@@ -615,7 +675,7 @@ async function handleConfirmGeneration(replyToken, userId, state) {
       name: tempData.name,
       style: tempData.style,
       character: tempData.character || '',
-      count: tempData.count || 8,
+      count: stickerCount,
       photoUrl: tempData.photoUrl,
       photoBase64: tempData.photoBase64,
       expressions: tempData.expressions || [],
