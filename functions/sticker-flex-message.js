@@ -416,7 +416,8 @@ function createTutorialBubble(baseUrl, headerColor, headerTitle, stepText, image
       url: `${baseUrl}/images/demo/${imageFile}`,
       size: 'full',
       aspectRatio: '9:16',
-      aspectMode: 'cover'
+      aspectMode: 'fit',
+      backgroundColor: '#FFFFFF'
     },
     body: {
       type: 'box',
@@ -503,7 +504,7 @@ function createDownloadTutorialBubble(baseUrl, headerColor, stepText, imageFile,
       url: `${baseUrl}/images/demo/${imageFile}`,
       size: 'full',
       aspectRatio: '9:16',
-      aspectMode: 'cover'
+      aspectMode: 'fit'
     },
     body: {
       type: 'box',
