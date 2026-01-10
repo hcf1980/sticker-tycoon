@@ -244,7 +244,7 @@
         const supabase = window.supabase.createClient(supabaseConfig.url, supabaseConfig.anonKey);
 
         const { count, error } = await supabase
-          .from('listing_requests')
+          .from('listing_applications')
           .select('*', { count: 'exact', head: true })
           .eq('status', 'pending');
 
@@ -357,6 +357,8 @@
     function getStatusLabel(status) {
       const key = String(status || '').toLowerCase();
       if (key === 'pending') return '待審核';
+      if (['processing', 'in_progress', 'running'].includes(key)) return '處理中';
+      if (['submitted', 'submitted_line', 'submitted_to_line'].includes(key)) return '已提交';
       if (['review', 'in_review', 'waiting'].includes(key)) return '審核中';
       if (['approved', 'accepted', 'success', 'completed', 'done', 'published'].includes(key)) return '已通過';
       if (['rejected', 'denied', 'failed', 'error', 'cancelled', 'canceled'].includes(key)) return '已拒絕';
@@ -364,15 +366,49 @@
       return String(status || '其他');
     }
 
+    function clearChildren(el) {
+      while (el.firstChild) {
+        el.removeChild(el.firstChild);
+      }
+    }
+
+    function createBadgeElement(status, count) {
+      const span = document.createElement('span');
+      const klass = getStatusColorClass(status);
+      const label = getStatusLabel(status);
+      const safeCount = Number(count || 0);
+
+      // 若 tech-theme.css 沒有 tag-yellow/tag-red，提供 fallback class，避免 badge 看不到
+      const fallbackByStatus = {
+        'tag-yellow': 'bg-yellow-500/15 text-yellow-300 border border-yellow-500/30',
+        'tag-red': 'bg-red-500/15 text-red-300 border border-red-500/30',
+        'tag-green': 'bg-green-500/15 text-green-300 border border-green-500/30',
+        'tag-purple': 'bg-purple-500/15 text-purple-300 border border-purple-500/30',
+        'tag-tech': 'bg-cyan-500/10 text-cyan-300 border border-cyan-500/20'
+      };
+
+      span.className = `${klass} text-xs`;
+      span.textContent = `${label} ${safeCount}`;
+
+      // 如果 tag 類別在 CSS 不存在，仍會保留 className，但可能沒有樣式。
+      // 因此額外加上 fallback tailwind class（不影響已存在的 tag-* 樣式）。
+      const fallback = fallbackByStatus[klass] || fallbackByStatus['tag-tech'];
+      span.className = `${span.className} ${fallback} px-2 py-1 rounded-full`; 
+
+      return span;
+    }
+
     function setBadges(containerId, items) {
       const el = document.getElementById(containerId);
       if (!el) return;
-      el.innerHTML = (items || []).map((it) => {
-        const klass = getStatusColorClass(it.status);
-        const label = getStatusLabel(it.status);
-        const count = Number(it.count || 0);
-        return `<span class="${klass} text-xs">${label} ${count}</span>`;
-      }).join('');
+      clearChildren(el);
+
+      const list = Array.isArray(items) ? items : [];
+      for (const it of list) {
+        const status = it?.status;
+        const count = it?.count;
+        el.appendChild(createBadgeElement(status, count));
+      }
     }
 
     function sortStatusItems(items) {
@@ -404,61 +440,109 @@
       return Array.from(counts.entries()).map(([status, count]) => ({ status, count }));
     }
 
-    async function loadDashboardSummary() {
+    async function safeCount(supabase, tableName, filterBuilder) {
       try {
-        const supabaseConfig = JSON.parse(document.getElementById('supabase-config').textContent);
-        const supabase = window.supabase.createClient(supabaseConfig.url, supabaseConfig.anonKey);
-
-        setText('dash-listing-pending', '載入中...');
-        setText('dash-youtuber-pending', '載入中...');
-        setText('dash-stickers-today', '載入中...');
-
-        setBadges('dash-listing-badges', []);
-        setBadges('dash-youtuber-badges', []);
-        setBadges('dash-stickers-badges', []);
-
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        const listingStatusItemsPromise = fetchStatusCounts(supabase, 'listing_requests');
-        const youtuberStatusItemsPromise = fetchStatusCounts(supabase, 'youtuber_promotions');
-        const stickersStatusItemsPromise = fetchStatusCounts(supabase, 'sticker_sets', (q) => q.gte('created_at', today.toISOString()));
-
-        const [listingStatusItems, youtuberStatusItems, stickersTodayStatusItems] = await Promise.all([
-          listingStatusItemsPromise,
-          youtuberStatusItemsPromise,
-          stickersStatusItemsPromise,
-        ]);
-
-        const listingPending = (listingStatusItems || []).find((x) => String(x.status).toLowerCase() === 'pending')?.count ?? 0;
-        const youtuberPending = (youtuberStatusItems || []).find((x) => String(x.status).toLowerCase() === 'pending')?.count ?? 0;
-        const stickersTodayTotal = (stickersTodayStatusItems || []).reduce((sum, x) => sum + (Number(x.count) || 0), 0);
-
-        setText('dash-listing-pending', listingPending);
-        setText('dash-youtuber-pending', youtuberPending);
-        setText('dash-stickers-today', stickersTodayTotal);
-
-        setBadges('dash-listing-badges', sortStatusItems(listingStatusItems).slice(0, 4));
-        setBadges('dash-youtuber-badges', sortStatusItems(youtuberStatusItems).slice(0, 4));
-        setBadges('dash-stickers-badges', sortStatusItems(stickersTodayStatusItems).slice(0, 4));
-
-        setText('dash-listing-meta', listingPending === 0 ? '目前無待審核' : '需要處理');
-        setText('dash-youtuber-meta', youtuberPending === 0 ? '目前無待審核' : '需要處理');
-        setText('dash-stickers-meta', stickersTodayTotal === 0 ? '今日尚無新增' : '已有新增');
-
-        setDashboardUpdatedAt();
+        let q = supabase.from(tableName).select('*', { count: 'exact', head: true });
+        if (typeof filterBuilder === 'function') q = filterBuilder(q);
+        const { count, error } = await q;
+        if (error) throw error;
+        return { ok: true, count: count ?? 0 };
       } catch (error) {
-        console.error('載入重點摘要失敗:', error);
-        setText('dash-listing-pending', '載入失敗');
-        setText('dash-youtuber-pending', '載入失敗');
-        setText('dash-stickers-today', '載入失敗');
-        setBadges('dash-listing-badges', []);
-        setBadges('dash-youtuber-badges', []);
-        setBadges('dash-stickers-badges', []);
-        setText('dash-listing-meta', '-');
-        setText('dash-youtuber-meta', '-');
-        setText('dash-stickers-meta', '-');
+        return { ok: false, count: 0, error };
       }
+    }
+
+    async function safeStatusCounts(supabase, tableName, extraFilterBuilder) {
+      try {
+        // 避免一次拉大量資料；只取少量樣本用來生成 badge（加分用）
+        let query = supabase.from(tableName).select('status');
+        if (typeof extraFilterBuilder === 'function') {
+          query = extraFilterBuilder(query);
+        }
+        const { data, error } = await query.limit(300);
+        if (error) throw error;
+
+        const counts = new Map();
+        for (const row of (data || [])) {
+          const status = row?.status ?? 'unknown';
+          counts.set(status, (counts.get(status) || 0) + 1);
+        }
+
+        const items = Array.from(counts.entries()).map(([status, count]) => ({ status, count }));
+        return { ok: true, items };
+      } catch (error) {
+        return { ok: false, items: [], error };
+      }
+    }
+
+    async function loadDashboardSummary() {
+      const supabaseConfig = JSON.parse(document.getElementById('supabase-config').textContent);
+      const supabase = window.supabase.createClient(supabaseConfig.url, supabaseConfig.anonKey);
+
+      // 初始狀態
+      setText('dash-listing-pending', '載入中...');
+      setText('dash-youtuber-pending', '載入中...');
+      setText('dash-stickers-today', '載入中...');
+      setText('dash-listing-meta', '-');
+      setText('dash-youtuber-meta', '-');
+      setText('dash-stickers-meta', '-');
+      setBadges('dash-listing-badges', []);
+      setBadges('dash-youtuber-badges', []);
+      setBadges('dash-stickers-badges', []);
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      // 先拿「一定要有」的數字：用 count/head（最穩、最省）
+      const [listingPendingRes, youtuberPendingRes, stickersTodayRes] = await Promise.all([
+        safeCount(supabase, 'listing_applications', (q) => q.eq('status', 'pending')),
+        safeCount(supabase, 'youtuber_promotions', (q) => q.eq('status', 'pending')),
+        safeCount(supabase, 'sticker_sets', (q) => q.gte('created_at', today.toISOString())),
+      ]);
+
+      // 單項失敗不要讓整區失敗
+      if (listingPendingRes.ok) {
+        setText('dash-listing-pending', listingPendingRes.count);
+        setText('dash-listing-meta', listingPendingRes.count === 0 ? '目前無待審核' : '需要處理');
+      } else {
+        console.error('載入上架申請摘要失敗:', listingPendingRes.error);
+        setText('dash-listing-pending', '載入失敗');
+      }
+
+      if (youtuberPendingRes.ok) {
+        setText('dash-youtuber-pending', youtuberPendingRes.count);
+        setText('dash-youtuber-meta', youtuberPendingRes.count === 0 ? '目前無待審核' : '需要處理');
+      } else {
+        console.error('載入 YouTuber 摘要失敗:', youtuberPendingRes.error);
+        setText('dash-youtuber-pending', '載入失敗');
+      }
+
+      if (stickersTodayRes.ok) {
+        setText('dash-stickers-today', stickersTodayRes.count);
+        setText('dash-stickers-meta', stickersTodayRes.count === 0 ? '今日尚無新增' : '已有新增');
+      } else {
+        console.error('載入今日貼圖摘要失敗:', stickersTodayRes.error);
+        setText('dash-stickers-today', '載入失敗');
+      }
+
+      // 再嘗試拿「加分」的多狀態 badge：拿不到就維持空，不報整體失敗
+      const [listingStatusRes, youtuberStatusRes, stickersStatusRes] = await Promise.all([
+        safeStatusCounts(supabase, 'listing_applications'),
+        safeStatusCounts(supabase, 'youtuber_promotions'),
+        safeStatusCounts(supabase, 'sticker_sets', (q) => q.gte('created_at', today.toISOString())),
+      ]);
+
+      if (listingStatusRes.ok) {
+        setBadges('dash-listing-badges', sortStatusItems(listingStatusRes.items).slice(0, 4));
+      }
+      if (youtuberStatusRes.ok) {
+        setBadges('dash-youtuber-badges', sortStatusItems(youtuberStatusRes.items).slice(0, 4));
+      }
+      if (stickersStatusRes.ok) {
+        setBadges('dash-stickers-badges', sortStatusItems(stickersStatusRes.items).slice(0, 4));
+      }
+
+      setDashboardUpdatedAt();
     }
 
     async function refreshAll() {
