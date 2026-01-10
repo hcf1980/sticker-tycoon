@@ -20,7 +20,7 @@ const {
   addCancelButton,
   addCancelButtonToFlex
 } = require('./creation-flow-manager');
-const { getMorningGreeting } = require('./morning-greeting');
+const { getMorningGreeting, forceGenerateMorningGreeting } = require('./morning-greeting');
 
 // LINE Bot 設定 - 延遲初始化
 let client = null;
@@ -187,6 +187,16 @@ async function handleTextMessage(replyToken, userId, text) {
     // 早安圖
     if (text === '早安圖' || text === '早安' || text === '今日早安') {
       return await handleMorningGreeting(replyToken, userId);
+    }
+
+    // 重新生成早安圖 (Admin/Debug command)
+    if (text === '重新生成早安圖') {
+      return await handleForceRegenerateMorningGreeting(replyToken, userId);
+    }
+
+    // 重新生成早安圖 (Admin/Debug command)
+    if (text === '重新生成早安圖') {
+      return await handleForceRegenerateMorningGreeting(replyToken, userId);
     }
 
     // 代幣查詢
@@ -953,6 +963,42 @@ async function safeReply(replyToken, message) {
       console.error('❌ 回覆訊息失敗:', error.message);
     }
     return false;
+  }
+}
+
+/**
+ * 處理強制重新生成早安圖 (Admin/Debug)
+ */
+async function handleForceRegenerateMorningGreeting(replyToken, userId) {
+  // 可以在此處加入管理者權限檢查
+  // const isAdmin = checkAdmin(userId);
+  // if (!isAdmin) { return; }
+
+  try {
+    await getLineClient().replyMessage(replyToken, {
+      type: 'text',
+      text: '🔥 收到指令，正在強制重新生成今日早安圖，請稍候約 1-2 分鐘...',
+    });
+
+    const result = await forceGenerateMorningGreeting();
+
+    if (result.success) {
+      await getLineClient().pushMessage(userId, {
+        type: 'text',
+        text: `✅ 今日早安圖已重新生成！\n請輸入「早安圖」查看。`,
+      });
+    } else {
+      await getLineClient().pushMessage(userId, {
+        type: 'text',
+        text: `❌ 重新生成失敗：\n${result.message}`,
+      });
+    }
+  } catch (error) {
+    console.error('❌ 強制重新生成早安圖失敗:', error);
+    await getLineClient().pushMessage(userId, {
+      type: 'text',
+      text: `❌ 重新生成時發生嚴重錯誤：\n${error.message}`,
+    }).catch(e => console.error('發送錯誤通知失敗:', e));
   }
 }
 

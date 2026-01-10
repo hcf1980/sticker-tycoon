@@ -158,7 +158,7 @@ function extractImageFromResponse(response) {
       }
 
       // 檢查是否是 URL
-      const urlMatch = message.content.match(/https?:\/\/[^\s"'<>]+\.(png|jpg|jpeg|webp)/i);
+      const urlMatch = message.content.match(/https?:\/\/[^\s"'<>]+.(png|jpg|jpeg|webp)/i);
       if (urlMatch) {
         return urlMatch[0];
       }
@@ -327,12 +327,44 @@ async function scheduledGenerateMorningGreeting() {
   }
 }
 
+/**
+ * 強制重新生成今日早安圖
+ * 1. 刪除今日快取
+ * 2. 重新觸發生成
+ * @returns {object} The result of the generation
+ */
+async function forceGenerateMorningGreeting() {
+  const supabase = getSupabaseClient();
+  const today = getDateString();
+  console.log(`🔥 強制重新生成早安圖 - 日期: ${today}`);
+
+  try {
+    // 刪除舊的紀錄
+    const { error: deleteError } = await supabase
+      .from('morning_greetings')
+      .delete()
+      .eq('date', today);
+
+    if (deleteError) {
+      console.warn(`⚠️ 刪除舊早安圖快取失敗: ${deleteError.message}`);
+    } else {
+      console.log(`✅ 已刪除舊早安圖快取`);
+    }
+
+    // 重新生成
+    return await scheduledGenerateMorningGreeting();
+  } catch (error) {
+    console.error('❌ 強制重新生成失敗:', error.message);
+    return { success: false, message: error.message };
+  }
+}
+
 module.exports = {
   getMorningGreeting,
   generateMorningImage,
   hasTodayGreeting,
   scheduledGenerateMorningGreeting,
+  forceGenerateMorningGreeting,
   extractImageFromResponse,
   uploadMorningImage
 };
-

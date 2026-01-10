@@ -39,6 +39,34 @@ const SOLAR_TERMS = [
   { name: '大寒', nameEn: 'Major Cold', month: 1, day: 20, emotion: '等待回暖', scene: '爐火、靜夜', season: 'winter' }
 ];
 
+// 增加每日變化的隨機元素池
+const RANDOM_ELEMENTS = {
+  objects: [
+    'a steaming cup of coffee on a wooden table',
+    'an open book with glasses resting on it',
+    'a cat sleeping in a patch of sunlight',
+    'freshly baked bread on a cutting board',
+    'a potted plant on a windowsill',
+    'a comfortable armchair with a knitted blanket',
+  ],
+  scenes: [
+    'looking out a window onto a quiet Taiwanese street',
+    'a cozy corner of a living room',
+    'a sun-drenched kitchen',
+    'a balcony with a view of the city waking up',
+  ],
+  moods: ['serene and peaceful', 'warm and cozy', 'bright and optimistic', 'calm and reflective'],
+};
+
+function shuffleArray(array) {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 // 一般日子的季節主題（非節氣當天使用）
 const GENERAL_THEMES = {
   spring: { emotion: '溫暖、希望', scene: '春日陽光、花開、微風', greeting: '春天的早晨，充滿希望！' },
@@ -108,60 +136,33 @@ function getCurrentSolarTerm(date = new Date()) {
  * @returns {object} { imagePrompt, textPrompt }
  */
 function generateMorningPrompts(solarTerm) {
-  // 根據是否為節氣當天，生成不同的 prompt
   const isSolarTermDay = solarTerm.isSolarTermDay;
 
   const greetingText = isSolarTermDay
     ? `${solarTerm.name}早安\n${solarTerm.emotion.split('、')[0]}的一天\n願你平安喜樂`
     : `早安\n${solarTerm.emotion.split('、')[0]}\n願你有美好的一天`;
 
-  const themeDescription = isSolarTermDay
-    ? `inspired by the solar term "${solarTerm.name}" (${solarTerm.nameEn})`
-    : `capturing a peaceful ${solarTerm.season} morning`;
+  let themeDescription;
+  let sceneDescription;
 
-  const imagePrompt = `Create a warm, realistic lifestyle photograph ${themeDescription}.
+  if (isSolarTermDay) {
+    themeDescription = `inspired by the solar term \"${solarTerm.name}\" (${solarTerm.nameEn})`;
+    sceneDescription = `${solarTerm.scene}, a quiet Taiwanese daily life scene in the early morning, warm light, soft natural atmosphere`;
+  } else {
+    // For general days, add randomness
+    const randomObject = shuffleArray(RANDOM_ELEMENTS.objects)[0];
+    const randomScene = shuffleArray(RANDOM_ELEMENTS.scenes)[0];
+    const randomMood = shuffleArray(RANDOM_ELEMENTS.moods)[0];
 
-IMPORTANT OUTPUT FORMAT:
-- Vertical portrait image, 1080x1920 (9:16)
-- Full-frame (no borders), suitable as a phone wallpaper / LINE sharing image
+    themeDescription = `capturing a peaceful ${solarTerm.season} morning, with a ${randomMood} feeling.`;
+    sceneDescription = `${randomScene}, featuring ${randomObject}. The scene should evoke a sense of a quiet Taiwanese daily life in the early morning, with warm light and a soft natural atmosphere.`;
+  }
 
-The atmosphere reflects "${solarTerm.emotion}", without any instructional or symbolic elements.
-
-Scene:
-${solarTerm.scene}, a quiet Taiwanese daily life scene in the early morning, warm light, soft natural atmosphere
-
-Mood & Lighting:
-soft natural light, gentle contrast, calm and comforting tone, human warmth
-
-Style:
-photorealistic, cinematic depth of field, East Asian daily life, no fantasy, no symbols
-
-Composition:
-focus on everyday objects and subtle human presence
-
-Text overlay (IMPORTANT):
-Add a short, gentle Chinese morning greeting text overlay on the image.
-The text should be warm, encouraging, and suitable for sharing.
-Use a clean, readable font with good contrast against the background.
-Text should be 2-4 short lines, positioned elegantly (bottom or side).
-Example style: "${greetingText}"
-
-Emotion goal:
-the image should feel shareable, soothing, and emotionally relatable, perfect for sharing with family or friends in the morning`;
+  const imagePrompt = `MUST CREATE a vertical portrait image, 1080x1920 aspect ratio (9:16).\nThis is a strict requirement.\nThe image MUST be full-frame without any borders, suitable as a phone wallpaper or for sharing on LINE.\n\nCreate a warm, realistic lifestyle photograph ${themeDescription}.\nThe atmosphere reflects "${solarTerm.emotion}", without any instructional or symbolic elements.\n\nScene:\n${sceneDescription}\n\nMood & Lighting:\nsoft natural light, gentle contrast, calm and comforting tone, human warmth\n\nStyle:\nphotorealistic, cinematic depth of field, East Asian daily life, no fantasy, no symbols\n\nComposition:\nfocus on everyday objects and subtle human presence\n\nText overlay (IMPORTANT):\nAdd a short, gentle Chinese morning greeting text overlay on the image.\nThe text should be warm, encouraging, and suitable for sharing.\nUse a clean, readable font with good contrast against the background.\nText should be 2-4 short lines, positioned elegantly (bottom or side).\nExample style: "${greetingText}"\n\nEmotion goal:\nthe image should feel shareable, soothing, and emotionally relatable, perfect for sharing with family or friends in the morning`;
 
   const textPrompt = isSolarTermDay
-    ? `Write a short, gentle morning message inspired by "${solarTerm.name}" (${solarTerm.nameEn}).
-Do not explain the solar term.
-Do not mention calendars or almanacs.
-Use everyday language and emotional warmth.
-The message should feel natural to share with family or friends.
-Length: 2-4 short lines.
-Emotion: ${solarTerm.emotion}`
-    : `Write a short, gentle morning message for a ${solarTerm.season} day.
-Use everyday language and emotional warmth.
-The message should feel natural to share with family or friends.
-Length: 2-4 short lines.
-Emotion: ${solarTerm.emotion}`;
+    ? `Write a short, gentle morning message inspired by \"${solarTerm.name}\" (${solarTerm.nameEn}).\nDo not explain the solar term.\nDo not mention calendars or almanacs.\nUse everyday language and emotional warmth.\nThe message should feel natural to share with family or friends.\nLength: 2-4 short lines.\nEmotion: ${solarTerm.emotion}`
+    : `Write a short, gentle morning message for a ${solarTerm.season} day.\nUse everyday language and emotional warmth.\nThe message should feel natural to share with family or friends.\nLength: 2-4 short lines.\nEmotion: ${solarTerm.emotion}`;
 
   return { imagePrompt, textPrompt };
 }
@@ -184,4 +185,3 @@ module.exports = {
   generateMorningPrompts,
   getDateString
 };
-
