@@ -55,6 +55,41 @@
       <h2 class="text-2xl font-bold text-white mb-2">📋 管理功能</h2>
       <p class="text-gray-400">選擇要管理的功能模組</p>
     </div>
+
+    <!-- Dashboard Summary -->
+    <div class="glass-card p-4 mb-8">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div>
+          <h3 class="text-white font-bold">重點摘要</h3>
+          <p class="text-gray-400 text-sm">不需進入各功能頁即可快速掌握狀態</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <span id="dashboard-updated-at" class="text-gray-500 text-xs">尚未更新</span>
+          <button id="dashboard-refresh" class="btn-neon-solid px-4 py-2 text-sm">刷新</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+        <div class="stat-card">
+          <div class="value" id="dash-listing-pending">-</div>
+          <div class="text-gray-400 text-sm mt-1">上架申請待審核</div>
+          <div class="flex flex-wrap gap-2 mt-2" id="dash-listing-badges"></div>
+          <div class="text-gray-500 text-xs mt-2" id="dash-listing-meta">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="value" id="dash-youtuber-pending">-</div>
+          <div class="text-gray-400 text-sm mt-1">YouTuber 待審核</div>
+          <div class="flex flex-wrap gap-2 mt-2" id="dash-youtuber-badges"></div>
+          <div class="text-gray-500 text-xs mt-2" id="dash-youtuber-meta">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="value" id="dash-stickers-today">-</div>
+          <div class="text-gray-400 text-sm mt-1">今日新增貼圖組</div>
+          <div class="flex flex-wrap gap-2 mt-2" id="dash-stickers-badges"></div>
+          <div class="text-gray-500 text-xs mt-2" id="dash-stickers-meta">-</div>
+        </div>
+      </div>
+    </div>
     
     <!-- Admin Cards Grid -->
     <div class="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
@@ -101,7 +136,7 @@
         </div>
         <h3 class="text-lg font-bold text-white mb-2">上架申請管理</h3>
         <p class="text-gray-400 text-sm">處理用戶的免費代上架申請</p>
-        <div class="mt-3">
+        <div class="mt-3" id="listing-badges">
           <span class="tag-green text-xs" id="pending-count">載入中...</span>
         </div>
       </a>
@@ -113,7 +148,7 @@
         </div>
         <h3 class="text-lg font-bold text-white mb-2">YouTuber 推廣管理</h3>
         <p class="text-gray-400 text-sm">審核 YouTuber 申請、發放代幣獎勵</p>
-        <div class="mt-3">
+        <div class="mt-3" id="youtuber-badges">
           <span class="tag-purple text-xs" id="youtuber-pending-count">載入中...</span>
         </div>
       </a>
@@ -293,10 +328,155 @@
       }
     }
 
+    function formatTime(date) {
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+    }
+
+    function setDashboardUpdatedAt() {
+      const el = document.getElementById('dashboard-updated-at');
+      if (!el) return;
+      el.textContent = `更新於 ${formatTime(new Date())}`;
+    }
+
+    function setText(id, value) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = value;
+    }
+
+    function getStatusColorClass(status) {
+      const key = String(status || '').toLowerCase();
+      if (['pending', 'review', 'in_review', 'waiting'].includes(key)) return 'tag-yellow';
+      if (['approved', 'accepted', 'success', 'completed', 'done', 'published'].includes(key)) return 'tag-green';
+      if (['rejected', 'denied', 'failed', 'error', 'cancelled', 'canceled'].includes(key)) return 'tag-red';
+      if (['draft'].includes(key)) return 'tag-purple';
+      return 'tag-tech';
+    }
+
+    function getStatusLabel(status) {
+      const key = String(status || '').toLowerCase();
+      if (key === 'pending') return '待審核';
+      if (['review', 'in_review', 'waiting'].includes(key)) return '審核中';
+      if (['approved', 'accepted', 'success', 'completed', 'done', 'published'].includes(key)) return '已通過';
+      if (['rejected', 'denied', 'failed', 'error', 'cancelled', 'canceled'].includes(key)) return '已拒絕';
+      if (key === 'draft') return '草稿';
+      return String(status || '其他');
+    }
+
+    function setBadges(containerId, items) {
+      const el = document.getElementById(containerId);
+      if (!el) return;
+      el.innerHTML = (items || []).map((it) => {
+        const klass = getStatusColorClass(it.status);
+        const label = getStatusLabel(it.status);
+        const count = Number(it.count || 0);
+        return `<span class="${klass} text-xs">${label} ${count}</span>`;
+      }).join('');
+    }
+
+    function sortStatusItems(items) {
+      const priority = ['pending', 'review', 'in_review', 'waiting', 'approved', 'accepted', 'success', 'completed', 'done', 'published', 'draft', 'rejected', 'denied', 'failed', 'error', 'cancelled', 'canceled'];
+      const idx = (s) => {
+        const key = String(s || '').toLowerCase();
+        const i = priority.indexOf(key);
+        return i === -1 ? 999 : i;
+      };
+      return (items || []).slice().sort((a, b) => idx(a.status) - idx(b.status));
+    }
+
+    async function fetchStatusCounts(supabase, tableName, extraFilterBuilder) {
+      // 用最少資料量取得 status 分布：只取 status 欄
+      let query = supabase.from(tableName).select('status');
+      if (typeof extraFilterBuilder === 'function') {
+        query = extraFilterBuilder(query);
+      }
+
+      const { data, error } = await query.limit(2000);
+      if (error) throw error;
+
+      const counts = new Map();
+      for (const row of (data || [])) {
+        const status = row?.status ?? 'unknown';
+        counts.set(status, (counts.get(status) || 0) + 1);
+      }
+
+      return Array.from(counts.entries()).map(([status, count]) => ({ status, count }));
+    }
+
+    async function loadDashboardSummary() {
+      try {
+        const supabaseConfig = JSON.parse(document.getElementById('supabase-config').textContent);
+        const supabase = window.supabase.createClient(supabaseConfig.url, supabaseConfig.anonKey);
+
+        setText('dash-listing-pending', '載入中...');
+        setText('dash-youtuber-pending', '載入中...');
+        setText('dash-stickers-today', '載入中...');
+
+        setBadges('dash-listing-badges', []);
+        setBadges('dash-youtuber-badges', []);
+        setBadges('dash-stickers-badges', []);
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const listingStatusItemsPromise = fetchStatusCounts(supabase, 'listing_requests');
+        const youtuberStatusItemsPromise = fetchStatusCounts(supabase, 'youtuber_promotions');
+        const stickersStatusItemsPromise = fetchStatusCounts(supabase, 'sticker_sets', (q) => q.gte('created_at', today.toISOString()));
+
+        const [listingStatusItems, youtuberStatusItems, stickersTodayStatusItems] = await Promise.all([
+          listingStatusItemsPromise,
+          youtuberStatusItemsPromise,
+          stickersStatusItemsPromise,
+        ]);
+
+        const listingPending = (listingStatusItems || []).find((x) => String(x.status).toLowerCase() === 'pending')?.count ?? 0;
+        const youtuberPending = (youtuberStatusItems || []).find((x) => String(x.status).toLowerCase() === 'pending')?.count ?? 0;
+        const stickersTodayTotal = (stickersTodayStatusItems || []).reduce((sum, x) => sum + (Number(x.count) || 0), 0);
+
+        setText('dash-listing-pending', listingPending);
+        setText('dash-youtuber-pending', youtuberPending);
+        setText('dash-stickers-today', stickersTodayTotal);
+
+        setBadges('dash-listing-badges', sortStatusItems(listingStatusItems).slice(0, 4));
+        setBadges('dash-youtuber-badges', sortStatusItems(youtuberStatusItems).slice(0, 4));
+        setBadges('dash-stickers-badges', sortStatusItems(stickersTodayStatusItems).slice(0, 4));
+
+        setText('dash-listing-meta', listingPending === 0 ? '目前無待審核' : '需要處理');
+        setText('dash-youtuber-meta', youtuberPending === 0 ? '目前無待審核' : '需要處理');
+        setText('dash-stickers-meta', stickersTodayTotal === 0 ? '今日尚無新增' : '已有新增');
+
+        setDashboardUpdatedAt();
+      } catch (error) {
+        console.error('載入重點摘要失敗:', error);
+        setText('dash-listing-pending', '載入失敗');
+        setText('dash-youtuber-pending', '載入失敗');
+        setText('dash-stickers-today', '載入失敗');
+        setBadges('dash-listing-badges', []);
+        setBadges('dash-youtuber-badges', []);
+        setBadges('dash-stickers-badges', []);
+        setText('dash-listing-meta', '-');
+        setText('dash-youtuber-meta', '-');
+        setText('dash-stickers-meta', '-');
+      }
+    }
+
+    async function refreshAll() {
+      await Promise.all([
+        loadPendingCount(),
+        loadYoutuberPendingCount(),
+        loadStats(),
+        loadDashboardSummary()
+      ]);
+    }
+
+    document.getElementById('dashboard-refresh')?.addEventListener('click', function(e) {
+      e.preventDefault();
+      refreshAll();
+    });
+
     // 頁面載入時執行
-    loadPendingCount();
-    loadYoutuberPendingCount();
-    loadStats();
+    refreshAll();
   </script>
 </body>
 </html>

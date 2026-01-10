@@ -467,11 +467,11 @@ function createTutorialBubble(baseUrl, headerColor, headerTitle, stepText, image
           paddingAll: 'xs',
           contents: [
             {
-      type: 'image',
+              type: 'image',
               url: `${baseUrl}/images/demo-9x16/${imageFile}`,
-      size: 'full',
-      aspectRatio: '9:16',
-              aspectMode: 'fit',
+              size: 'full',
+              aspectRatio: '1:1',
+              aspectMode: 'cover',
               backgroundColor: '#FFFFFF',
             },
           ],
