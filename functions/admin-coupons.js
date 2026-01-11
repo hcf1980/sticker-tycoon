@@ -1,0 +1,448 @@
+/**
+ * Admin Coupons API
+ * - 建立/列出/切換啟用狀態/重新生成券圖
+ *
+ * 安全性：
+ * - 使用 SUPABASE_SERVICE_ROLE_KEY
+ * - 另外以 ADMIN_API_KEY（環境變數）做最小化保護（避免任何人直接打管理 API）
+ */
+
+const { z } = require('zod');
+const { getSupabaseClient } = require('./supabase-client');
+const { generateImage } = require('./utils/ai-api-client');
+
+const headers = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Admin-Api-Key',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Content-Type': 'application/json'
+};
+
+function requireAdmin(event) {
+  const required = process.env.ADMIN_API_KEY;
+  if (!required) {
+    // 若未設定，仍允許，但會在 log 提醒（避免你部署忘了設定導致整個功能不可用）
+    console.warn('⚠️ ADMIN_API_KEY 未設定：管理 API 將缺少額外保護');
+    return;
+  }
+
+  const key = event.headers?.['x-admin-api-key'] || event.headers?.['X-Admin-Api-Key'];
+  if (!key || key !== required) {
+    const err = new Error('Unauthorized');
+    err.statusCode = 401;
+    throw err;
+  }
+}
+
+function json(statusCode, body) {
+  return { statusCode, headers, body: JSON.stringify(body) };
+}
+
+function randomRedeemCode() {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const length = Math.floor(Math.random() * 3) + 5; // 5~7
+  let out = '';
+  for (let i = 0; i < length; i += 1) {
+    out += alphabet[Math.floor(Math.random() * alphabet.length)];
+  }
+  return out;
+}
+
+async function generateUniqueRedeemCode(supabase, maxAttempts = 8) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const code = randomRedeemCode();
+    const { data, error } = await supabase
+      .from('coupon_campaigns')
+      .select('id')
+      .eq('redeem_code', code)
+      .limit(1);
+
+    if (error) throw error;
+    if (!data || data.length === 0) return code;
+  }
+
+  throw new Error('Redeem code generation failed');
+}
+
+function buildCouponPosterPrompt({
+  name,
+  slogan,
+  tokenAmount,
+  redeemCode,
+  activateStartAt,
+  activateEndAt
+}) {
+  // 重點：海報感、貼圖大亨調性、清楚資訊、強烈視覺
+  // 由於 AI 圖片生成可能對精確文字不穩定，我們用「big clear readable text」強調
+  const safeSlogan = slogan || '貼圖大亨 Sticker Tycoon';
+
+  return `Design a stylish coupon poster image for a product called "Sticker Tycoon".
+
+Visual style:
+- futuristic neon tech style, cyber aesthetic, cyan + purple glow, dark background
+- glossy glassmorphism panels, subtle grid lines, neon light streaks
+- premium, modern, bold, high-contrast, clean layout
+- poster composition, shareable on LINE
+
+Text layout (must be big, clear, highly readable, no misspelling):
+- Title: ${name}
+- Reward: +${tokenAmount} 代幣
+- Redeem code: ${redeemCode}
+- Activate period: ${activateStartAt} ~ ${activateEndAt}
+- Brand slogan: ${safeSlogan}
+
+Other constraints:
+- no watermark
+- no QR code
+- no characters, focus on typographic poster
+- size: 1024x768 (4:3 poster)
+`;
+}
+
+async function createCampaign(event) {
+  requireAdmin(event);
+
+  const schema = z.object({
+    name: z.string().min(1),
+    slogan: z.string().optional().nullable(),
+    tokenAmount: z.number().int().positive(),
+    claimStartAt: z.string().min(1),
+    claimEndAt: z.string().min(1),
+    activateStartAt: z.string().min(1),
+    activateEndAt: z.string().min(1)
+  });
+
+  const body = schema.parse(JSON.parse(event.body || '{}'));
+
+  const supabase = getSupabaseClient();
+
+  const redeemCode = await generateUniqueRedeemCode(supabase);
+
+  // 先建活動（拿到 id），再去生圖與回填
+  const insertPayload = {
+    name: body.name,
+    slogan: body.slogan || null,
+    token_amount: body.tokenAmount,
+    redeem_code: redeemCode,
+    claim_start_at: body.claimStartAt,
+    claim_end_at: body.claimEndAt,
+    activate_start_at: body.activateStartAt,
+    activate_end_at: body.activateEndAt,
+    is_active: true
+  };
+
+  const { data: created, error: insertError } = await supabase
+    .from('coupon_campaigns')
+    .insert([insertPayload])
+    .select('*')
+    .single();
+
+  if (insertError) throw insertError;
+
+  // 生圖（4:3 海報感）
+  const prompt = buildCouponPosterPrompt({
+    name: created.name,
+    slogan: created.slogan,
+    tokenAmount: created.token_amount,
+    redeemCode: created.redeem_code,
+    activateStartAt: new Date(created.activate_start_at).toISOString().slice(0, 10),
+    activateEndAt: new Date(created.activate_end_at).toISOString().slice(0, 10)
+  });
+
+  let imageUrl = null;
+  try {
+    imageUrl = await generateImage(prompt, { size: '1024x768' });
+  } catch (e) {
+    console.error('❌ 生成優惠券圖失敗:', e.message);
+  }
+
+  // 若是 data URL，改用 storage 存；若已是 http url 就直接存
+  if (imageUrl) {
+    const updated = await persistCouponImageAndUpdateCampaign(supabase, created.id, imageUrl);
+    return json(200, { success: true, campaign: updated });
+  }
+
+  return json(200, { success: true, campaign: created, imageWarning: 'image_generation_failed' });
+}
+
+function isDataUrl(url) {
+  return typeof url === 'string' && url.startsWith('data:image');
+}
+
+function parseDataUrl(dataUrl) {
+  const match = dataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+  if (!match) throw new Error('Invalid data url');
+  const mime = match[1];
+  const base64 = match[2];
+  const buffer = Buffer.from(base64, 'base64');
+  return { mime, buffer };
+}
+
+async function persistCouponImageAndUpdateCampaign(supabase, campaignId, imageUrl) {
+  let publicUrl = imageUrl;
+
+  if (isDataUrl(imageUrl)) {
+    const { buffer } = parseDataUrl(imageUrl);
+    const bucket = 'coupons';
+    const filePath = `campaigns/${campaignId}.png`;
+
+    // 嘗試建立 bucket（如果不存在會 error；忽略即可）
+    try {
+      await supabase.storage.createBucket(bucket, { public: true });
+    } catch (_) {
+      // ignore
+    }
+
+    const { error: uploadError } = await supabase.storage
+      .from(bucket)
+      .upload(filePath, buffer, {
+        contentType: 'image/png',
+        upsert: true
+      });
+
+    if (uploadError) throw uploadError;
+
+    const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(filePath);
+    publicUrl = urlData.publicUrl;
+  }
+
+  const { data: updated, error: updateError } = await supabase
+    .from('coupon_campaigns')
+    .update({ image_url: publicUrl, updated_at: new Date().toISOString() })
+    .eq('id', campaignId)
+    .select('*')
+    .single();
+
+  if (updateError) throw updateError;
+  return updated;
+}
+
+async function regenerateImage(event) {
+  requireAdmin(event);
+
+  const schema = z.object({
+    campaignId: z.string().uuid(),
+    extraPrompt: z.string().optional().nullable()
+  });
+
+  const body = schema.parse(JSON.parse(event.body || '{}'));
+  const supabase = getSupabaseClient();
+
+  const { data: campaign, error } = await supabase
+    .from('coupon_campaigns')
+    .select('*')
+    .eq('id', body.campaignId)
+    .single();
+
+  if (error) throw error;
+  if (!campaign) return json(404, { error: 'Campaign not found' });
+
+  let prompt = buildCouponPosterPrompt({
+    name: campaign.name,
+    slogan: campaign.slogan,
+    tokenAmount: campaign.token_amount,
+    redeemCode: campaign.redeem_code,
+    activateStartAt: new Date(campaign.activate_start_at).toISOString().slice(0, 10),
+    activateEndAt: new Date(campaign.activate_end_at).toISOString().slice(0, 10)
+  });
+
+  if (body.extraPrompt) {
+    prompt += `\nExtra constraints from admin:\n${body.extraPrompt}\n`;
+  }
+
+  const imageUrl = await generateImage(prompt, { size: '1024x768' });
+  const updated = await persistCouponImageAndUpdateCampaign(supabase, campaign.id, imageUrl);
+
+  return json(200, { success: true, campaign: updated });
+}
+
+async function listCampaigns(event) {
+  requireAdmin(event);
+  const supabase = getSupabaseClient();
+
+  const { data, error } = await supabase
+    .from('coupon_campaigns')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(200);
+
+  if (error) throw error;
+  return json(200, { success: true, campaigns: data || [] });
+}
+
+async function setActive(event) {
+  requireAdmin(event);
+
+  const schema = z.object({
+    campaignId: z.string().uuid(),
+    isActive: z.boolean()
+  });
+
+  const body = schema.parse(JSON.parse(event.body || '{}'));
+  const supabase = getSupabaseClient();
+
+  const { data, error } = await supabase
+    .from('coupon_campaigns')
+    .update({ is_active: body.isActive, updated_at: new Date().toISOString() })
+    .eq('id', body.campaignId)
+    .select('*')
+    .single();
+
+  if (error) throw error;
+  return json(200, { success: true, campaign: data });
+}
+
+async function updateCampaign(event) {
+  requireAdmin(event);
+
+  const schema = z.object({
+    campaignId: z.string().uuid(),
+    name: z.string().min(1),
+    slogan: z.string().optional().nullable(),
+    tokenAmount: z.number().int().positive(),
+    claimStartAt: z.string().min(1),
+    claimEndAt: z.string().min(1),
+    activateStartAt: z.string().min(1),
+    activateEndAt: z.string().min(1),
+    isActive: z.boolean()
+  });
+
+  const body = schema.parse(JSON.parse(event.body || '{}'));
+
+  const supabase = getSupabaseClient();
+
+  const updatePayload = {
+    name: body.name,
+    slogan: body.slogan || null,
+    token_amount: body.tokenAmount,
+    claim_start_at: body.claimStartAt,
+    claim_end_at: body.claimEndAt,
+    activate_start_at: body.activateStartAt,
+    activate_end_at: body.activateEndAt,
+    is_active: body.isActive,
+    updated_at: new Date().toISOString()
+  };
+
+  const { data: updated, error: updateError } = await supabase
+    .from('coupon_campaigns')
+    .update(updatePayload)
+    .eq('id', body.campaignId)
+    .select('*')
+    .single();
+
+  if (updateError) throw updateError;
+
+  return json(200, { success: true, campaign: updated });
+}
+
+async function campaignStats(event) {
+  requireAdmin(event);
+
+  const campaignId = event.queryStringParameters?.campaignId;
+  if (!campaignId) return json(400, { error: 'Missing campaignId' });
+
+  const supabase = getSupabaseClient();
+
+  const { data: campaign, error: campaignError } = await supabase
+    .from('coupon_campaigns')
+    .select('*')
+    .eq('id', campaignId)
+    .single();
+
+  if (campaignError) throw campaignError;
+
+  const { data: redemptions, error: redemptionsError } = await supabase
+    .from('coupon_redemptions')
+    .select('id, user_id, token_amount, status, created_at')
+    .eq('campaign_id', campaignId)
+    .order('created_at', { ascending: false })
+    .limit(500);
+
+  if (redemptionsError) throw redemptionsError;
+
+  // 查使用者顯示名稱（以 line_user_id / auth_user_id 都可能）
+  const userIds = Array.from(new Set((redemptions || []).map(r => r.user_id).filter(Boolean)));
+
+  let users = [];
+  if (userIds.length > 0) {
+    // 分兩段：line_user_id in (...) + auth_user_id in (...)
+    const [lineRes, webRes] = await Promise.all([
+      supabase
+        .from('users')
+        .select('line_user_id, display_name, picture_url')
+        .in('line_user_id', userIds),
+      supabase
+        .from('users')
+        .select('auth_user_id, display_name, picture_url')
+        .in('auth_user_id', userIds)
+    ]);
+
+    users = [
+      ...(lineRes.data || []).map(u => ({ user_id: u.line_user_id, display_name: u.display_name, picture_url: u.picture_url })),
+      ...(webRes.data || []).map(u => ({ user_id: u.auth_user_id, display_name: u.display_name, picture_url: u.picture_url }))
+    ];
+  }
+
+  const userMap = new Map(users.map(u => [u.user_id, u]));
+
+  const enriched = (redemptions || []).map(r => ({
+    ...r,
+    user: userMap.get(r.user_id) || null
+  }));
+
+  const total = enriched.length;
+  const byStatus = enriched.reduce((acc, r) => {
+    acc[r.status] = (acc[r.status] || 0) + 1;
+    return acc;
+  }, {});
+
+  return json(200, {
+    success: true,
+    campaign,
+    stats: {
+      total,
+      byStatus
+    },
+    redemptions: enriched
+  });
+}
+
+exports.handler = async function handler(event) {
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 204, headers, body: '' };
+  }
+
+  try {
+    const action = event.queryStringParameters?.action;
+
+    if (event.httpMethod === 'POST' && action === 'create-campaign') {
+      return await createCampaign(event);
+    }
+
+    if (event.httpMethod === 'POST' && action === 'regenerate-image') {
+      return await regenerateImage(event);
+    }
+
+    if (event.httpMethod === 'POST' && action === 'set-active') {
+      return await setActive(event);
+    }
+
+    if (event.httpMethod === 'GET' && action === 'list-campaigns') {
+      return await listCampaigns(event);
+    }
+
+    if (event.httpMethod === 'GET' && action === 'campaign-stats') {
+      return await campaignStats(event);
+    }
+
+    if (event.httpMethod === 'POST' && action === 'update-campaign') {
+      return await updateCampaign(event);
+    }
+
+    return json(400, { error: 'Invalid action' });
+  } catch (error) {
+    console.error('Admin Coupons API error:', error);
+    const statusCode = error.statusCode || 500;
+    return json(statusCode, { error: error.message || 'Internal error' });
+  }
+};

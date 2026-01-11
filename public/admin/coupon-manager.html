@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>優惠券管理 - 貼圖大亨</title>
+
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/logo-192.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <link href="/tech-theme.css" rel="stylesheet" />
+
+  <script type="application/json" id="supabase-config">
+  {
+    "url": "https://dpuxmetnpghlfgrmthnv.supabase.co",
+    "anonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwdXhtZXRucGdobGZncm10aG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNDMwNzcsImV4cCI6MjA3OTgxOTA3N30._fleTY6Pw4myjEIjtAxkYYm6L8MfPeKq915zn68pM_8"
+  }
+  </script>
+</head>
+
+<body class="tech-bg min-h-screen">
+  <nav class="admin-nav">
+    <div class="container mx-auto px-4 py-4">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center gap-3">
+          <div class="relative">
+            <img src="/logo-192.png" alt="貼圖大亨 Logo" class="w-10 h-10 rounded-lg" />
+            <div class="absolute -inset-1 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-lg blur opacity-30"></div>
+          </div>
+          <div>
+            <h1 class="text-xl font-bold text-white">貼圖大亨</h1>
+            <p class="text-xs text-cyan-400">優惠券管理</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-4">
+          <a href="/admin/" class="text-gray-400 hover:text-cyan-400 transition text-sm">← 返回管理首頁</a>
+          <button id="logoutBtn" class="text-gray-400 hover:text-red-400 transition text-sm">登出</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container mx-auto p-6">
+    <div class="mb-6 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+      <div>
+        <h2 class="text-2xl font-bold text-white">🎫 優惠券活動</h2>
+        <p class="text-gray-400 text-sm">建立活動、生成券圖、查看兌換明細</p>
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-2">
+        <input id="adminApiKeyInput" type="password" placeholder="ADMIN_API_KEY（必填）" class="w-full sm:w-72 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50" />
+        <button id="saveAdminKeyBtn" class="btn-neon-solid px-4 py-2">保存</button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div class="stat-card">
+        <div class="value" id="stat-total">-</div>
+        <div class="text-gray-400 text-sm mt-1">活動總數</div>
+      </div>
+      <div class="stat-card">
+        <div class="value" id="stat-active">-</div>
+        <div class="text-gray-400 text-sm mt-1">啟用中</div>
+      </div>
+      <div class="stat-card">
+        <div class="value" id="stat-redeemed">-</div>
+        <div class="text-gray-400 text-sm mt-1">總兌換（近 500 筆累加）</div>
+      </div>
+      <div class="stat-card">
+        <div class="value" id="stat-updated">-</div>
+        <div class="text-gray-400 text-sm mt-1">最後更新</div>
+      </div>
+    </div>
+
+    <div class="glass-card p-4 mb-6">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        <div class="flex flex-col sm:flex-row gap-2 w-full">
+          <input id="searchInput" type="text" placeholder="搜尋活動名稱或兌換碼..." class="flex-1 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50" />
+          <select id="statusFilter" class="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50">
+            <option value="all">全部狀態</option>
+            <option value="active">進行中</option>
+            <option value="upcoming">未開始</option>
+            <option value="ended">已結束</option>
+            <option value="disabled">已停用</option>
+          </select>
+        </div>
+
+        <div class="flex gap-2">
+          <button id="refreshBtn" class="btn-neon px-4 py-2">刷新</button>
+          <button id="openCreateBtn" class="btn-neon-solid px-4 py-2">+ 新增活動</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="campaignList" class="grid grid-cols-1 lg:grid-cols-2 gap-4"></div>
+  </div>
+
+  <div id="modalBackdrop" class="hidden fixed inset-0 bg-black/60 z-50"></div>
+
+  <div id="campaignModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="min-h-full flex items-center justify-center p-4">
+      <div class="glass-card w-full max-w-4xl p-4 md:p-6">
+        <div class="flex items-start justify-between gap-4 mb-4">
+          <div>
+            <h3 class="text-white font-bold text-lg" id="campaignModalTitle">新增優惠券活動</h3>
+            <p class="text-gray-400 text-sm">兌換碼將自動生成（5~7 碼）</p>
+          </div>
+          <button id="closeCampaignModal" class="text-gray-400 hover:text-white">✕</button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div class="space-y-3">
+            <input type="hidden" id="campaignIdInput" />
+
+            <div>
+              <label class="block text-sm text-gray-300 mb-1">活動名稱</label>
+              <input id="nameInput" class="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50" placeholder="例：新年加碼活動" />
+            </div>
+
+            <div>
+              <label class="block text-sm text-gray-300 mb-1">品牌標語（選填）</label>
+              <input id="sloganInput" class="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50" placeholder="貼圖大亨 Sticker Tycoon" />
+            </div>
+
+            <div>
+              <label class="block text-sm text-gray-300 mb-1">加代幣數</label>
+              <input id="tokenAmountInput" type="number" min="1" value="20" class="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50" />
+              <p class="text-xs text-gray-500 mt-1">依你的需求：有效期固定 30 天（沿用既有 token_ledger 規則）</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-sm text-gray-300 mb-1">領用開始</label>
+                <input id="claimStartInput" type="datetime-local" class="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50" />
+              </div>
+              <div>
+                <label class="block text-sm text-gray-300 mb-1">領用結束</label>
+                <input id="claimEndInput" type="datetime-local" class="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-sm text-gray-300 mb-1">啟用開始</label>
+                <input id="activateStartInput" type="datetime-local" class="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50" />
+              </div>
+              <div>
+                <label class="block text-sm text-gray-300 mb-1">啟用結束</label>
+                <input id="activateEndInput" type="datetime-local" class="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50" />
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <input id="isActiveInput" type="checkbox" class="h-4 w-4" checked />
+              <label for="isActiveInput" class="text-sm text-gray-300">建立後立即啟用</label>
+            </div>
+
+            <div class="flex gap-2 pt-2">
+              <button id="cancelCampaignBtn" class="btn-neon px-4 py-2 flex-1">取消</button>
+              <button id="createCampaignBtn" class="btn-neon-solid px-4 py-2 flex-1">建立活動（含生成券圖）</button>
+            </div>
+          </div>
+
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <div>
+                <h4 class="text-white font-bold">券圖預覽（4:3 海報）</h4>
+                <p class="text-gray-400 text-xs">若不適合，可追加條件後重新生成</p>
+              </div>
+              <a id="downloadImageLink" href="#" class="text-cyan-400 hover:text-cyan-300 text-sm hidden" target="_blank" rel="noopener">下載</a>
+            </div>
+
+            <div class="bg-white/5 border border-white/10 rounded-lg overflow-hidden">
+              <div class="aspect-w-4 aspect-h-3">
+                <img id="couponPreviewImg" class="w-full h-full object-cover hidden" alt="coupon" />
+                <div id="couponPreviewPlaceholder" class="w-full h-56 md:h-72 flex items-center justify-center text-gray-500">尚未生成</div>
+              </div>
+            </div>
+
+            <div class="glass-card p-3">
+              <div class="flex items-center justify-between gap-2">
+                <div>
+                  <div class="text-gray-400 text-xs">兌換碼</div>
+                  <div class="text-white font-mono" id="redeemCodeText">-</div>
+                </div>
+                <button id="copyCodeBtn" class="btn-neon px-4 py-2" disabled>複製</button>
+              </div>
+
+              <div class="mt-3">
+                <label class="block text-sm text-gray-300 mb-1">重新生成條件（選填）</label>
+                <textarea id="extraPromptInput" rows="3" class="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50" placeholder="例：兌換碼更大、更醒目、背景更紫、更科技感"></textarea>
+                <div class="flex gap-2 mt-2">
+                  <button id="regenerateBtn" class="btn-neon px-4 py-2 flex-1" disabled>重新生成券圖</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="glass-card p-3">
+              <div class="flex items-center justify-between">
+                <h4 class="text-white font-bold">使用者明細（最近 500 筆）</h4>
+                <button id="openStatsBtn" class="btn-neon px-4 py-2" disabled>查看</button>
+              </div>
+              <p class="text-gray-400 text-xs mt-1">可掌握哪些用戶用過、何時使用、狀態</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 text-right">
+          <p class="text-xs text-gray-500" id="modalHint">提示：請先輸入並保存 ADMIN_API_KEY 才能操作</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="statsModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <div class="min-h-full flex items-center justify-center p-4">
+      <div class="glass-card w-full max-w-5xl p-4 md:p-6">
+        <div class="flex items-start justify-between gap-4 mb-4">
+          <div>
+            <h3 class="text-white font-bold text-lg" id="statsTitle">活動統計</h3>
+            <p class="text-gray-400 text-sm" id="statsSubtitle">-</p>
+          </div>
+          <button id="closeStatsModal" class="text-gray-400 hover:text-white">✕</button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+          <div class="stat-card">
+            <div class="value" id="statsTotal">-</div>
+            <div class="text-gray-400 text-sm mt-1">總筆數</div>
+          </div>
+          <div class="stat-card">
+            <div class="value" id="statsSuccess">-</div>
+            <div class="text-gray-400 text-sm mt-1">成功</div>
+          </div>
+          <div class="stat-card">
+            <div class="value" id="statsOther">-</div>
+            <div class="text-gray-400 text-sm mt-1">其他狀態</div>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead class="bg-white/5">
+              <tr>
+                <th class="px-3 py-2 text-left text-xs text-gray-300">用戶</th>
+                <th class="px-3 py-2 text-left text-xs text-gray-300">User ID</th>
+                <th class="px-3 py-2 text-left text-xs text-gray-300">狀態</th>
+                <th class="px-3 py-2 text-right text-xs text-gray-300">代幣</th>
+                <th class="px-3 py-2 text-right text-xs text-gray-300">時間</th>
+              </tr>
+            </thead>
+            <tbody id="statsTableBody" class="divide-y divide-white/10"></tbody>
+          </table>
+        </div>
+
+        <div class="flex justify-end gap-2 mt-4">
+          <button id="exportCsvBtn" class="btn-neon px-4 py-2">匯出 CSV</button>
+          <button id="closeStatsBtn" class="btn-neon-solid px-4 py-2">關閉</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.38.0/dist/umd/supabase.js"></script>
+  <script src="/admin/supabase-admin-client.js"></script>
+  <script>
+    if (!checkAdminAuth()) {
+      document.body.innerHTML = `
+        <div class="tech-bg min-h-screen flex items-center justify-center">
+          <div class="text-center">
+            <div class="loader-tech mx-auto mb-4"></div>
+            <p class="text-gray-400">正在跳轉到登入頁面...</p>
+          </div>
+        </div>
+      `;
+    }
+
+    const state = {
+      campaigns: [],
+      selectedCampaign: null,
+      adminApiKey: null,
+      lastStats: null
+    };
+
+    const el = (id) => document.getElementById(id);
+
+    function nowISOForInput() {
+      const d = new Date();
+      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+      return d.toISOString().slice(0, 16);
+    }
+
+    function addDaysISOForInput(days) {
+      const d = new Date();
+      d.setDate(d.getDate() + days);
+      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+      return d.toISOString().slice(0, 16);
+    }
+
+    function formatDateTime(iso) {
+      if (!iso) return '-';
+      try {
+        return new Date(iso).toLocaleString('zh-TW');
+      } catch {
+        return String(iso);
+      }
+    }
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function getAdminApiKey() {
+      return localStorage.getItem('adminApiKey') || '';
+    }
+
+    function setAdminApiKey(v) {
+      localStorage.setItem('adminApiKey', v);
+      state.adminApiKey = v;
+    }
+
+    function adminHeaders() {
+      const key = state.adminApiKey;
+      return {
+        'Content-Type': 'application/json',
+        'X-Admin-Api-Key': key
+      };
+    }
+
+    function toast(message) {
+      alert(message);
+    }
+
+    function openModal(modalId) {
+      el('modalBackdrop').classList.remove('hidden');
+      el(modalId).classList.remove('hidden');
+    }
+
+    function closeModal(modalId) {
+      el(modalId).classList.add('hidden');
+      el('modalBackdrop').classList.add('hidden');
+    }
+
+    function statusOfCampaign(c) {
+      const now = new Date();
+      const claimStart = new Date(c.claim_start_at);
+      const claimEnd = new Date(c.claim_end_at);
+
+      if (!c.is_active) return 'disabled';
+      if (now < claimStart) return 'upcoming';
+      if (now > claimEnd) return 'ended';
+      return 'active';
+    }
+
+    function statusBadge(status) {
+      const map = {
+        active: 'tag-green',
+        upcoming: 'tag-purple',
+        ended: 'tag-yellow',
+        disabled: 'tag-red'
+      };
+      const label = {
+        active: '進行中',
+        upcoming: '未開始',
+        ended: '已結束',
+        disabled: '已停用'
+      };
+
+      const klass = map[status] || 'tag-tech';
+      return `<span class="${klass} text-xs px-2 py-1 rounded-full">${label[status] || status}</span>`;
+    }
+
+    function renderCampaignList() {
+      const listEl = el('campaignList');
+      const search = el('searchInput').value.trim().toLowerCase();
+      const filter = el('statusFilter').value;
+
+      const items = state.campaigns.filter((c) => {
+        const s = statusOfCampaign(c);
+        const okFilter = filter === 'all' ? true : s === filter;
+        const okSearch = !search
+          ? true
+          : String(c.name || '').toLowerCase().includes(search) || String(c.redeem_code || '').toLowerCase().includes(search);
+        return okFilter && okSearch;
+      });
+
+      if (items.length === 0) {
+        listEl.innerHTML = `
+          <div class="glass-card p-6 text-center text-gray-400 col-span-full">
+            沒有符合條件的活動
+          </div>
+        `;
+        return;
+      }
+
+      listEl.innerHTML = items
+        .map((c) => {
+          const s = statusOfCampaign(c);
+          const img = c.image_url
+            ? `<img src="${c.image_url}" class="w-full h-40 object-cover rounded-lg border border-white/10" />`
+            : `<div class="w-full h-40 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-gray-500">尚未生成券圖</div>`;
+
+          return `
+            <div class="glass-card p-4">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <h3 class="text-white font-bold">${escapeHtml(c.name)}</h3>
+                    ${statusBadge(s)}
+                  </div>
+                  <div class="text-gray-400 text-xs mt-1">兌換碼：<span class="font-mono text-white">${escapeHtml(c.redeem_code)}</span></div>
+                  <div class="text-gray-500 text-xs mt-1">+${c.token_amount} 代幣</div>
+                </div>
+                <div class="flex gap-2">
+                  <button class="btn-neon px-3 py-2 text-sm" data-action="toggle" data-id="${c.id}" data-active="${c.is_active ? '1' : '0'}">${c.is_active ? '停用' : '啟用'}</button>
+                  <button class="btn-neon-solid px-3 py-2 text-sm" data-action="manage" data-id="${c.id}">管理</button>
+                </div>
+              </div>
+
+              <div class="mt-3">
+                ${img}
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-3 text-xs text-gray-400">
+                <div>領用：${formatDateTime(c.claim_start_at)} ~ ${formatDateTime(c.claim_end_at)}</div>
+                <div>啟用：${formatDateTime(c.activate_start_at)} ~ ${formatDateTime(c.activate_end_at)}</div>
+              </div>
+            </div>
+          `;
+        })
+        .join('');
+
+      // bind actions
+      listEl.querySelectorAll('button[data-action="manage"]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-id');
+          const c = state.campaigns.find((x) => x.id === id);
+          if (!c) return;
+          openCampaignModal(c);
+        });
+      });
+
+      listEl.querySelectorAll('button[data-action="toggle"]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const id = btn.getAttribute('data-id');
+          const isActive = btn.getAttribute('data-active') === '1';
+          await setActive(id, !isActive);
+        });
+      });
+    }
+
+    function updateTopStats() {
+      const total = state.campaigns.length;
+      const active = state.campaigns.filter((c) => statusOfCampaign(c) === 'active').length;
+      el('stat-total').textContent = String(total);
+      el('stat-active').textContent = String(active);
+
+      const redeemed = state.campaigns.reduce((sum, c) => sum + (c.__redeemCount || 0), 0);
+      el('stat-redeemed').textContent = redeemed ? String(redeemed) : '-';
+
+      el('stat-updated').textContent = new Date().toLocaleTimeString('zh-TW');
+    }
+
+    async function fetchCampaignStatsQuick(campaignId) {
+      // 只拿 total（用於頂部 summary；避免每次 list 拉全量明細）
+      const res = await fetch(`/.netlify/functions/admin-coupons?action=campaign-stats&campaignId=${encodeURIComponent(campaignId)}`, {
+        method: 'GET',
+        headers: adminHeaders()
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'stats failed');
+      return data;
+    }
+
+    async function loadCampaigns() {
+      const key = state.adminApiKey;
+      if (!key) {
+        el('campaignList').innerHTML = `<div class="glass-card p-6 text-center text-gray-400 col-span-full">請先輸入並保存 ADMIN_API_KEY</div>`;
+        el('stat-total').textContent = '-';
+        el('stat-active').textContent = '-';
+        el('stat-redeemed').textContent = '-';
+        el('stat-updated').textContent = '-';
+        return;
+      }
+
+      el('campaignList').innerHTML = `<div class="glass-card p-6 text-center text-gray-400 col-span-full">載入中...</div>`;
+
+      const res = await fetch('/.netlify/functions/admin-coupons?action=list-campaigns', {
+        method: 'GET',
+        headers: adminHeaders()
+      });
+      const data = await res.json();
+      if (!data.success) {
+        toast(`載入失敗：${data.error || 'unknown'}`);
+        return;
+      }
+
+      state.campaigns = data.campaigns || [];
+
+      // 快速統計：只對前 10 個拉 stats（避免太慢），其餘留空
+      const sample = state.campaigns.slice(0, 10);
+      await Promise.all(
+        sample.map(async (c) => {
+          try {
+            const s = await fetchCampaignStatsQuick(c.id);
+            c.__redeemCount = s.stats?.total || 0;
+          } catch {
+            c.__redeemCount = 0;
+          }
+        })
+      );
+
+      updateTopStats();
+      renderCampaignList();
+    }
+
+    function resetCampaignModalUI() {
+      el('campaignIdInput').value = '';
+      el('nameInput').value = '';
+      el('sloganInput').value = '';
+      el('tokenAmountInput').value = 20;
+      el('claimStartInput').value = nowISOForInput();
+      el('claimEndInput').value = addDaysISOForInput(7);
+      el('activateStartInput').value = nowISOForInput();
+      el('activateEndInput').value = addDaysISOForInput(14);
+      el('isActiveInput').checked = true;
+
+      el('redeemCodeText').textContent = '-';
+      el('copyCodeBtn').disabled = true;
+      el('regenerateBtn').disabled = true;
+      el('openStatsBtn').disabled = true;
+      el('extraPromptInput').value = '';
+
+      el('couponPreviewImg').classList.add('hidden');
+      el('couponPreviewPlaceholder').classList.remove('hidden');
+      el('downloadImageLink').classList.add('hidden');
+      el('downloadImageLink').href = '#';
+    }
+
+    function openCampaignModal(campaign) {
+      resetCampaignModalUI();
+
+      if (campaign) {
+        state.selectedCampaign = campaign;
+        el('campaignModalTitle').textContent = '管理優惠券活動';
+        el('createCampaignBtn').textContent = '更新（目前版本不支援）';
+        el('createCampaignBtn').disabled = true;
+
+        el('campaignIdInput').value = campaign.id;
+        el('nameInput').value = campaign.name || '';
+        el('sloganInput').value = campaign.slogan || '';
+        el('tokenAmountInput').value = campaign.token_amount || 20;
+        el('claimStartInput').value = toInputLocal(campaign.claim_start_at);
+        el('claimEndInput').value = toInputLocal(campaign.claim_end_at);
+        el('activateStartInput').value = toInputLocal(campaign.activate_start_at);
+        el('activateEndInput').value = toInputLocal(campaign.activate_end_at);
+        el('isActiveInput').checked = !!campaign.is_active;
+
+        el('redeemCodeText').textContent = campaign.redeem_code || '-';
+        el('copyCodeBtn').disabled = !campaign.redeem_code;
+        el('regenerateBtn').disabled = false;
+        el('openStatsBtn').disabled = false;
+
+        if (campaign.image_url) {
+          el('couponPreviewImg').src = campaign.image_url;
+          el('couponPreviewImg').classList.remove('hidden');
+          el('couponPreviewPlaceholder').classList.add('hidden');
+          el('downloadImageLink').classList.remove('hidden');
+          el('downloadImageLink').href = campaign.image_url;
+        }
+
+        el('modalHint').textContent = '可重新生成券圖，並查看使用者明細';
+      } else {
+        state.selectedCampaign = null;
+        el('campaignModalTitle').textContent = '新增優惠券活動';
+        el('createCampaignBtn').textContent = '建立活動（含生成券圖）';
+        el('createCampaignBtn').disabled = false;
+        el('modalHint').textContent = '建立後會自動生成兌換碼與券圖';
+      }
+
+      openModal('campaignModal');
+    }
+
+    function toInputLocal(iso) {
+      if (!iso) return '';
+      const d = new Date(iso);
+      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+      return d.toISOString().slice(0, 16);
+    }
+
+    async function createCampaign() {
+      if (!state.adminApiKey) {
+        toast('請先保存 ADMIN_API_KEY');
+        return;
+      }
+
+      const payload = {
+        name: el('nameInput').value.trim(),
+        slogan: el('sloganInput').value.trim() || null,
+        tokenAmount: Number(el('tokenAmountInput').value || 0),
+        claimStartAt: new Date(el('claimStartInput').value).toISOString(),
+        claimEndAt: new Date(el('claimEndInput').value).toISOString(),
+        activateStartAt: new Date(el('activateStartInput').value).toISOString(),
+        activateEndAt: new Date(el('activateEndInput').value).toISOString()
+      };
+
+      if (!payload.name) {
+        toast('請輸入活動名稱');
+        return;
+      }
+      if (!payload.tokenAmount || payload.tokenAmount <= 0) {
+        toast('加代幣數必須大於 0');
+        return;
+      }
+
+      el('createCampaignBtn').disabled = true;
+      el('createCampaignBtn').textContent = '建立中...';
+
+      try {
+        const res = await fetch('/.netlify/functions/admin-coupons?action=create-campaign', {
+          method: 'POST',
+          headers: adminHeaders(),
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'create failed');
+
+        // 若使用者勾選未啟用，額外 set-active
+        if (!el('isActiveInput').checked) {
+          await setActive(data.campaign.id, false, { silent: true });
+          data.campaign.is_active = false;
+        }
+
+        toast('✅ 建立成功');
+        // 直接切換到管理模式
+        const created = data.campaign;
+        await loadCampaigns();
+        const fresh = state.campaigns.find((x) => x.id === created.id) || created;
+        openCampaignModal(fresh);
+      } catch (e) {
+        toast(`❌ 建立失敗：${e.message}`);
+      } finally {
+        el('createCampaignBtn').disabled = false;
+        el('createCampaignBtn').textContent = '建立活動（含生成券圖）';
+      }
+    }
+
+    async function setActive(campaignId, isActive, opts = {}) {
+      if (!state.adminApiKey) {
+        toast('請先保存 ADMIN_API_KEY');
+        return;
+      }
+
+      const confirmText = isActive ? '確定要啟用此活動？' : '確定要停用此活動？';
+      if (!opts.silent && !confirm(confirmText)) return;
+
+      try {
+        const res = await fetch('/.netlify/functions/admin-coupons?action=set-active', {
+          method: 'POST',
+          headers: adminHeaders(),
+          body: JSON.stringify({ campaignId, isActive })
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'set-active failed');
+        if (!opts.silent) toast('✅ 已更新狀態');
+        await loadCampaigns();
+      } catch (e) {
+        toast(`❌ 更新狀態失敗：${e.message}`);
+      }
+    }
+
+    async function regenerateImage() {
+      if (!state.selectedCampaign) {
+        toast('請先選擇活動');
+        return;
+      }
+
+      const extraPrompt = el('extraPromptInput').value.trim() || null;
+      el('regenerateBtn').disabled = true;
+      el('regenerateBtn').textContent = '生成中...';
+
+      try {
+        const res = await fetch('/.netlify/functions/admin-coupons?action=regenerate-image', {
+          method: 'POST',
+          headers: adminHeaders(),
+          body: JSON.stringify({ campaignId: state.selectedCampaign.id, extraPrompt })
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'regenerate failed');
+        toast('✅ 已重新生成券圖');
+
+        // 更新 modal 預覽
+        const updated = data.campaign;
+        state.selectedCampaign = updated;
+        el('couponPreviewImg').src = updated.image_url;
+        el('couponPreviewImg').classList.remove('hidden');
+        el('couponPreviewPlaceholder').classList.add('hidden');
+        el('downloadImageLink').classList.remove('hidden');
+        el('downloadImageLink').href = updated.image_url;
+
+        // 同步列表
+        await loadCampaigns();
+      } catch (e) {
+        toast(`❌ 重新生成失敗：${e.message}`);
+      } finally {
+        el('regenerateBtn').disabled = false;
+        el('regenerateBtn').textContent = '重新生成券圖';
+      }
+    }
+
+    async function openStats() {
+      if (!state.selectedCampaign) return;
+      const id = state.selectedCampaign.id;
+
+      el('statsTableBody').innerHTML = `<tr><td colspan="5" class="px-3 py-6 text-center text-gray-400">載入中...</td></tr>`;
+
+      try {
+        const res = await fetch(`/.netlify/functions/admin-coupons?action=campaign-stats&campaignId=${encodeURIComponent(id)}`, {
+          method: 'GET',
+          headers: adminHeaders()
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'stats failed');
+
+        state.lastStats = data;
+
+        el('statsTitle').textContent = `活動統計：${data.campaign.name}`;
+        el('statsSubtitle').textContent = `兌換碼 ${data.campaign.redeem_code} / +${data.campaign.token_amount} 代幣`;
+
+        const total = data.stats?.total || 0;
+        const success = data.stats?.byStatus?.success || 0;
+        const other = total - success;
+        el('statsTotal').textContent = String(total);
+        el('statsSuccess').textContent = String(success);
+        el('statsOther').textContent = String(other);
+
+        const rows = (data.redemptions || []).map((r) => {
+          const userName = r.user?.display_name || '未知用戶';
+          const userId = r.user_id;
+          const status = r.status;
+          const token = r.token_amount;
+          const at = formatDateTime(r.created_at);
+
+          return `
+            <tr class="hover:bg-white/5">
+              <td class="px-3 py-2 text-sm text-white">
+                <div class="flex items-center gap-2">
+                  ${r.user?.picture_url ? `<img src="${r.user.picture_url}" class="w-6 h-6 rounded-full" />` : `<div class="w-6 h-6 rounded-full bg-white/10"></div>`}
+                  <span>${escapeHtml(userName)}</span>
+                </div>
+              </td>
+              <td class="px-3 py-2 text-xs text-gray-300 font-mono">${escapeHtml(userId)}</td>
+              <td class="px-3 py-2 text-sm ${status === 'success' ? 'text-green-400' : 'text-yellow-300'}">${escapeHtml(status)}</td>
+              <td class="px-3 py-2 text-right text-sm text-white">+${token}</td>
+              <td class="px-3 py-2 text-right text-xs text-gray-300">${escapeHtml(at)}</td>
+            </tr>
+          `;
+        });
+
+        el('statsTableBody').innerHTML = rows.length
+          ? rows.join('')
+          : `<tr><td colspan="5" class="px-3 py-6 text-center text-gray-400">尚無兌換紀錄</td></tr>`;
+
+        openModal('statsModal');
+      } catch (e) {
+        toast(`❌ 載入統計失敗：${e.message}`);
+      }
+    }
+
+    function exportCsv() {
+      const data = state.lastStats;
+      if (!data) {
+        toast('沒有可匯出的資料');
+        return;
+      }
+
+      const rows = data.redemptions || [];
+      const header = ['user_id', 'display_name', 'status', 'token_amount', 'created_at'];
+      const lines = [header.join(',')];
+      for (const r of rows) {
+        const cols = [
+          r.user_id,
+          (r.user?.display_name || '').replace(/"/g, '""'),
+          r.status,
+          r.token_amount,
+          r.created_at
+        ].map((v) => `"${String(v ?? '').replace(/"/g, '""')}"`);
+        lines.push(cols.join(','));
+      }
+
+      const csv = lines.join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `coupon_redemptions_${data.campaign.redeem_code}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    // events
+    el('logoutBtn').addEventListener('click', (e) => {
+      e.preventDefault();
+      clearAdminAuthStatus();
+      window.location.href = '/admin/login.html';
+    });
+
+    el('saveAdminKeyBtn').addEventListener('click', () => {
+      const v = el('adminApiKeyInput').value.trim();
+      if (!v) {
+        toast('請輸入 ADMIN_API_KEY');
+        return;
+      }
+      setAdminApiKey(v);
+      toast('✅ 已保存');
+      loadCampaigns();
+    });
+
+    el('refreshBtn').addEventListener('click', () => loadCampaigns());
+    el('searchInput').addEventListener('input', () => renderCampaignList());
+    el('statusFilter').addEventListener('change', () => renderCampaignList());
+
+    el('openCreateBtn').addEventListener('click', () => openCampaignModal(null));
+
+    el('closeCampaignModal').addEventListener('click', () => closeModal('campaignModal'));
+    el('cancelCampaignBtn').addEventListener('click', () => closeModal('campaignModal'));
+
+    el('createCampaignBtn').addEventListener('click', () => createCampaign());
+    el('regenerateBtn').addEventListener('click', () => regenerateImage());
+
+    el('openStatsBtn').addEventListener('click', () => openStats());
+
+    el('copyCodeBtn').addEventListener('click', async () => {
+      const code = el('redeemCodeText').textContent;
+      if (!code || code === '-') return;
+      try {
+        await navigator.clipboard.writeText(code);
+        toast('✅ 已複製');
+      } catch {
+        toast('複製失敗');
+      }
+    });
+
+    el('closeStatsModal').addEventListener('click', () => closeModal('statsModal'));
+    el('closeStatsBtn').addEventListener('click', () => closeModal('statsModal'));
+    el('exportCsvBtn').addEventListener('click', () => exportCsv());
+
+    // init
+    (function init() {
+      const key = getAdminApiKey();
+      if (key) {
+        state.adminApiKey = key;
+        el('adminApiKeyInput').value = key;
+      }
+
+      // datetime defaults
+      el('claimStartInput').value = nowISOForInput();
+      el('claimEndInput').value = addDaysISOForInput(7);
+      el('activateStartInput').value = nowISOForInput();
+      el('activateEndInput').value = addDaysISOForInput(14);
+
+      loadCampaigns();
+    })();
+  </script>
+</body>
+</html>
