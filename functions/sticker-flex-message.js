@@ -117,16 +117,10 @@ function generateCouponRedeemPromptFlexMessage() {
         contents: [
           {
             type: 'text',
-            text: 'Sticker Tycoon',
+            text: '貼圖大亨活動碼兌換',
             weight: 'bold',
             size: 'lg',
             color: '#FFFFFF'
-          },
-          {
-            type: 'text',
-            text: '優惠碼兌換',
-            size: 'sm',
-            color: '#E6FFE9'
           }
         ],
         paddingAll: '16px',
@@ -146,24 +140,10 @@ function generateCouponRedeemPromptFlexMessage() {
           },
           {
             type: 'text',
-            text: '例如：Q3AEF',
-            size: 'sm',
-            color: '#6B7280'
-          },
-          {
-            type: 'box',
-            layout: 'vertical',
-            contents: [
-              {
-                type: 'text',
-                text: '提示：輸入「取消」可退出',
-                size: 'xs',
-                color: '#9CA3AF'
-              }
-            ],
-            backgroundColor: '#F3F4F6',
-            paddingAll: '12px',
-            cornerRadius: '12px'
+            text: '請直接輸入你的兌換碼',
+            weight: 'bold',
+            size: 'md',
+            color: '#111827'
           }
         ],
         paddingAll: '16px'
