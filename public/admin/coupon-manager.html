@@ -25,6 +25,30 @@
 </head>
 
 <body class="tech-bg min-h-screen">
+  <style>
+    /* 修正 tech-theme 全局文字色導致 input/textarea 輸入文字看不見（黑字 + 白底） */
+    #adminApiKeyInput,
+    #campaignModal input,
+    #campaignModal textarea,
+    #campaignModal select {
+      color: #000 !important;
+      -webkit-text-fill-color: #000 !important;
+      caret-color: #000 !important;
+    }
+
+    #campaignModal input::placeholder,
+    #campaignModal textarea::placeholder,
+    #adminApiKeyInput::placeholder {
+      color: #6b7280 !important;
+      -webkit-text-fill-color: #6b7280 !important;
+    }
+
+    #campaignModal input:focus,
+    #campaignModal textarea:focus,
+    #adminApiKeyInput:focus {
+      outline: none;
+    }
+  </style>
   <nav class="admin-nav">
     <div class="container mx-auto px-4 py-4">
       <div class="flex justify-between items-center">
@@ -55,7 +79,7 @@
       </div>
 
       <div class="flex flex-col sm:flex-row gap-2">
-        <input id="adminApiKeyInput" type="password" placeholder="ADMIN_API_KEY（必填）" class="w-full sm:w-72 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50" />
+        <input id="adminApiKeyInput" type="password" placeholder="ADMIN_API_KEY（必填）" class="w-full sm:w-72 px-4 py-2 rounded-lg bg-white text-black border border-gray-300 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50" />
         <button id="saveAdminKeyBtn" class="btn-neon-solid px-4 py-2">保存</button>
       </div>
     </div>
@@ -121,39 +145,28 @@
 
             <div>
               <label class="block text-sm text-gray-300 mb-1">活動名稱</label>
-              <input id="nameInput" class="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50" placeholder="例：新年加碼活動" />
+              <input id="nameInput" class="w-full px-4 py-2 rounded-lg bg-white text-black border border-gray-300 focus:outline-none focus:ring-2 focus:ring-cyan-500/50" placeholder="例：新年加碼活動" />
             </div>
 
             <div>
               <label class="block text-sm text-gray-300 mb-1">品牌標語（選填）</label>
-              <input id="sloganInput" class="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50" placeholder="貼圖大亨 Sticker Tycoon" />
+              <input id="sloganInput" class="w-full px-4 py-2 rounded-lg bg-white text-black border border-gray-300 focus:outline-none focus:ring-2 focus:ring-cyan-500/50" placeholder="貼圖大亨 Sticker Tycoon" />
             </div>
 
             <div>
               <label class="block text-sm text-gray-300 mb-1">加代幣數</label>
-              <input id="tokenAmountInput" type="number" min="1" value="20" class="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50" />
+              <input id="tokenAmountInput" type="number" min="1" value="20" class="w-full px-4 py-2 rounded-lg bg-white text-black border border-gray-300 focus:outline-none focus:ring-2 focus:ring-cyan-500/50" />
               <p class="text-xs text-gray-500 mt-1">依你的需求：有效期固定 30 天（沿用既有 token_ledger 規則）</p>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <label class="block text-sm text-gray-300 mb-1">領用開始</label>
-                <input id="claimStartInput" type="datetime-local" class="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50" />
+                <label class="block text-sm text-gray-300 mb-1">使用開始</label>
+                <input id="startDateInput" type="date" class="w-full px-4 py-2 rounded-lg bg-white text-black border border-gray-300 focus:outline-none focus:ring-2 focus:ring-cyan-500/50" />
               </div>
               <div>
-                <label class="block text-sm text-gray-300 mb-1">領用結束</label>
-                <input id="claimEndInput" type="datetime-local" class="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50" />
-              </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <label class="block text-sm text-gray-300 mb-1">啟用開始</label>
-                <input id="activateStartInput" type="datetime-local" class="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50" />
-              </div>
-              <div>
-                <label class="block text-sm text-gray-300 mb-1">啟用結束</label>
-                <input id="activateEndInput" type="datetime-local" class="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50" />
+                <label class="block text-sm text-gray-300 mb-1">使用結束</label>
+                <input id="endDateInput" type="date" class="w-full px-4 py-2 rounded-lg bg-white text-black border border-gray-300 focus:outline-none focus:ring-2 focus:ring-cyan-500/50" />
               </div>
             </div>
 
@@ -195,7 +208,7 @@
 
               <div class="mt-3">
                 <label class="block text-sm text-gray-300 mb-1">重新生成條件（選填）</label>
-                <textarea id="extraPromptInput" rows="3" class="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50" placeholder="例：兌換碼更大、更醒目、背景更紫、更科技感"></textarea>
+                <textarea id="extraPromptInput" rows="3" class="w-full px-4 py-2 rounded-lg bg-white text-black border border-gray-300 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50" placeholder="例：兌換碼更大、更醒目、背景更紫、更科技感"></textarea>
                 <div class="flex gap-2 mt-2">
                   <button id="regenerateBtn" class="btn-neon px-4 py-2 flex-1" disabled>重新生成券圖</button>
                 </div>
@@ -291,17 +304,33 @@
 
     const el = (id) => document.getElementById(id);
 
-    function nowISOForInput() {
+    function nowDateForInput() {
       const d = new Date();
-      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-      return d.toISOString().slice(0, 16);
+      // date input expects local date; we assume admin operates in Taiwan time (local)
+      return d.toISOString().slice(0, 10);
     }
 
-    function addDaysISOForInput(days) {
+    function addDaysDateForInput(days) {
       const d = new Date();
       d.setDate(d.getDate() + days);
-      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-      return d.toISOString().slice(0, 16);
+      return d.toISOString().slice(0, 10);
+    }
+
+    function taipeiDateRangeToIso(dateStart, dateEnd) {
+      // dateStart/dateEnd are YYYY-MM-DD
+      // Start: 00:00:00+08:00, End: 23:59:59+08:00
+      const startIso = new Date(`${dateStart}T00:00:00+08:00`).toISOString();
+      const endIso = new Date(`${dateEnd}T23:59:59+08:00`).toISOString();
+      return { startIso, endIso };
+    }
+
+    function isoToTaipeiDateInput(iso) {
+      if (!iso) return '';
+      // Convert ISO -> Taipei date (YYYY-MM-DD)
+      const d = new Date(iso);
+      const utc = d.getTime() + d.getTimezoneOffset() * 60000;
+      const taipei = new Date(utc + 8 * 60 * 60 * 1000);
+      return taipei.toISOString().slice(0, 10);
     }
 
     function formatDateTime(iso) {
@@ -531,10 +560,8 @@
       el('nameInput').value = '';
       el('sloganInput').value = '';
       el('tokenAmountInput').value = 20;
-      el('claimStartInput').value = nowISOForInput();
-      el('claimEndInput').value = addDaysISOForInput(7);
-      el('activateStartInput').value = nowISOForInput();
-      el('activateEndInput').value = addDaysISOForInput(14);
+      el('startDateInput').value = nowDateForInput();
+      el('endDateInput').value = addDaysDateForInput(7);
       el('isActiveInput').checked = true;
 
       el('redeemCodeText').textContent = '-';
@@ -554,18 +581,16 @@
 
       if (campaign) {
         state.selectedCampaign = campaign;
-        el('campaignModalTitle').textContent = '管理優惠券活動';
-        el('createCampaignBtn').textContent = '更新（目前版本不支援）';
-        el('createCampaignBtn').disabled = true;
+        el('campaignModalTitle').textContent = '編輯優惠券活動';
+        el('createCampaignBtn').textContent = '更新活動';
+        el('createCampaignBtn').disabled = false;
 
         el('campaignIdInput').value = campaign.id;
         el('nameInput').value = campaign.name || '';
         el('sloganInput').value = campaign.slogan || '';
         el('tokenAmountInput').value = campaign.token_amount || 20;
-        el('claimStartInput').value = toInputLocal(campaign.claim_start_at);
-        el('claimEndInput').value = toInputLocal(campaign.claim_end_at);
-        el('activateStartInput').value = toInputLocal(campaign.activate_start_at);
-        el('activateEndInput').value = toInputLocal(campaign.activate_end_at);
+        el('startDateInput').value = isoToTaipeiDateInput(campaign.claim_start_at);
+        el('endDateInput').value = isoToTaipeiDateInput(campaign.claim_end_at);
         el('isActiveInput').checked = !!campaign.is_active;
 
         el('redeemCodeText').textContent = campaign.redeem_code || '-';
@@ -594,10 +619,8 @@
     }
 
     function toInputLocal(iso) {
-      if (!iso) return '';
-      const d = new Date(iso);
-      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-      return d.toISOString().slice(0, 16);
+      // deprecated: kept to avoid runtime errors in old references
+      return isoToTaipeiDateInput(iso);
     }
 
     async function createCampaign() {
@@ -610,10 +633,22 @@
         name: el('nameInput').value.trim(),
         slogan: el('sloganInput').value.trim() || null,
         tokenAmount: Number(el('tokenAmountInput').value || 0),
-        claimStartAt: new Date(el('claimStartInput').value).toISOString(),
-        claimEndAt: new Date(el('claimEndInput').value).toISOString(),
-        activateStartAt: new Date(el('activateStartInput').value).toISOString(),
-        activateEndAt: new Date(el('activateEndInput').value).toISOString()
+        // UI 只有「使用開始/使用結束」兩個日期（台灣時間）
+        // 後端仍沿用 claim/activate 四欄位，但這裡統一用同一個區間
+        ...(() => {
+          const startDate = el('startDateInput').value;
+          const endDate = el('endDateInput').value;
+          if (!startDate || !endDate) {
+            throw new Error('請選擇使用開始與使用結束日期');
+          }
+          const { startIso, endIso } = taipeiDateRangeToIso(startDate, endDate);
+          return {
+            claimStartAt: startIso,
+            claimEndAt: endIso,
+            activateStartAt: startIso,
+            activateEndAt: endIso
+          };
+        })()
       };
 
       if (!payload.name) {
@@ -869,10 +904,8 @@
       }
 
       // datetime defaults
-      el('claimStartInput').value = nowISOForInput();
-      el('claimEndInput').value = addDaysISOForInput(7);
-      el('activateStartInput').value = nowISOForInput();
-      el('activateEndInput').value = addDaysISOForInput(14);
+      el('startDateInput').value = nowDateForInput();
+      el('endDateInput').value = addDaysDateForInput(7);
 
       loadCampaigns();
     })();
