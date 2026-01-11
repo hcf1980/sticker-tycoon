@@ -117,10 +117,17 @@ function generateCouponRedeemPromptFlexMessage() {
         contents: [
           {
             type: 'text',
-            text: '貼圖大亨活動碼兌換',
+            text: 'Sticker Tycoon',
             weight: 'bold',
             size: 'lg',
             color: '#FFFFFF'
+          },
+          {
+            type: 'text',
+            text: '貼圖大亨活動碼兌換',
+            size: 'sm',
+            color: '#E6FFE9',
+            margin: 'xs'
           }
         ],
         paddingAll: '16px',
@@ -140,10 +147,17 @@ function generateCouponRedeemPromptFlexMessage() {
           },
           {
             type: 'text',
-            text: '請直接輸入你的兌換碼',
-            weight: 'bold',
-            size: 'md',
-            color: '#111827'
+            text: '優惠碼皆為限時活動使用，請留意兌換期限。',
+            size: 'sm',
+            color: '#374151',
+            wrap: true
+          },
+          {
+            type: 'text',
+            text: '貼圖大亨的最新活動資訊會不定期於官方管道公告，\n多多參與活動與分享，不錯過任何一次專屬優惠！',
+            size: 'sm',
+            color: '#374151',
+            wrap: true
           }
         ],
         paddingAll: '16px'
