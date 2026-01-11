@@ -102,7 +102,7 @@ async function handleTextMessage(replyToken, userId, text) {
           items: [
             { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
             { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
-            { type: 'action', action: { type: 'message', label: '🌅 早安圖', text: '早安圖' } },
+            { type: 'action', action: { type: 'message', label: '🎫 優惠碼/活動碼', text: '優惠碼' } },
             { type: 'action', action: { type: 'message', label: '📸 創建教學', text: '功能說明' } }
           ]
         }
