@@ -177,6 +177,7 @@
 
             <div class="flex gap-2 pt-2">
               <button id="cancelCampaignBtn" class="btn-neon px-4 py-2 flex-1">取消</button>
+              <button id="deleteCampaignBtn" class="btn-neon px-4 py-2 flex-1 hidden" style="background: linear-gradient(135deg, #ef4444, #b91c1c);">刪除活動</button>
               <button id="createCampaignBtn" class="btn-neon-solid px-4 py-2 flex-1">建立活動（含生成券圖）</button>
             </div>
           </div>
@@ -564,6 +565,8 @@
       el('endDateInput').value = addDaysDateForInput(7);
       el('isActiveInput').checked = true;
 
+      el('deleteCampaignBtn').classList.add('hidden');
+
       el('redeemCodeText').textContent = '-';
       el('copyCodeBtn').disabled = true;
       el('regenerateBtn').disabled = true;
@@ -584,6 +587,7 @@
         el('campaignModalTitle').textContent = '編輯優惠券活動';
         el('createCampaignBtn').textContent = '更新活動';
         el('createCampaignBtn').disabled = false;
+        el('deleteCampaignBtn').classList.remove('hidden');
 
         el('campaignIdInput').value = campaign.id;
         el('nameInput').value = campaign.name || '';
@@ -714,6 +718,46 @@
         await loadCampaigns();
       } catch (e) {
         toast(`❌ 更新狀態失敗：${e.message}`);
+      }
+    }
+
+    async function deleteCurrentCampaign() {
+      if (!state.selectedCampaign) {
+        toast('請先選擇活動');
+        return;
+      }
+
+      const { id, redeem_code, name } = state.selectedCampaign;
+      const input = prompt(`為安全起見，請輸入活動兌換碼「${redeem_code}」以確認刪除活動「${name}」`);
+
+      if (!input) return;
+
+      if (input.trim().toUpperCase() !== redeem_code.toUpperCase()) {
+        toast('兌換碼輸入錯誤，已取消刪除');
+        return;
+      }
+
+      try {
+        const res = await fetch('/.netlify/functions/admin-coupons?action=delete-campaign', {
+          method: 'POST',
+          headers: adminHeaders(),
+          body: JSON.stringify({ campaignId: id })
+        });
+
+        const data = await res.json();
+        if (!data.success) {
+          if (data.code === 'HAS_REDEMPTIONS') {
+            toast('❌ 此活動已有使用紀錄，無法刪除。請改用「停用」功能。');
+          } else {
+            throw new Error(data.error || 'delete failed');
+          }
+        } else {
+          toast('✅ 活動已成功刪除');
+          closeModal('campaignModal');
+          await loadCampaigns();
+        }
+      } catch (e) {
+        toast(`❌ 刪除失敗：${e.message}`);
       }
     }
 
@@ -877,6 +921,7 @@
 
     el('createCampaignBtn').addEventListener('click', () => createCampaign());
     el('regenerateBtn').addEventListener('click', () => regenerateImage());
+    el('deleteCampaignBtn').addEventListener('click', () => deleteCurrentCampaign());
 
     el('openStatsBtn').addEventListener('click', () => openStats());
 

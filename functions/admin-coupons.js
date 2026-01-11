@@ -76,8 +76,8 @@ function buildCouponPosterPrompt({
   return `Design a stylish coupon poster image for a product called "Sticker Tycoon".
 
 Visual style:
-- futuristic neon tech style, cyber aesthetic, cyan + purple glow, dark background
-- glossy glassmorphism panels, subtle grid lines, neon light streaks
+- LINE brand friendly: dominant LINE green (#06C755) + white, with soft rounded chat-bubble shapes and sticker-like badges
+- Sticker Tycoon brand: keep subtle neon tech accents (cyan/purple glow) and a small "Sticker Tycoon" brand corner label
 - premium, modern, bold, high-contrast, clean layout
 - poster composition, shareable on LINE
 
@@ -325,6 +325,49 @@ async function updateCampaign(event) {
   return json(200, { success: true, campaign: updated });
 }
 
+async function deleteCampaign(event) {
+  requireAdmin(event);
+
+  const schema = z.object({
+    campaignId: z.string().uuid()
+  });
+
+  const body = schema.parse(JSON.parse(event.body || '{}'));
+  const supabase = getSupabaseClient();
+
+  // 策略 A：若已有兌換紀錄，禁止刪除（改用停用）
+  const { count, error: countError } = await supabase
+    .from('coupon_redemptions')
+    .select('*', { count: 'exact', head: true })
+    .eq('campaign_id', body.campaignId);
+
+  if (countError) throw countError;
+
+  if ((count || 0) > 0) {
+    return json(400, {
+      success: false,
+      code: 'HAS_REDEMPTIONS',
+      error: '此活動已有使用紀錄，為保留歷史資料，無法刪除。請改用停用。'
+    });
+  }
+
+  // 刪除 storage 券圖（忽略不存在）
+  try {
+    await supabase.storage.from('coupons').remove([`campaigns/${body.campaignId}.png`]);
+  } catch (_) {
+    // ignore
+  }
+
+  const { error: deleteError } = await supabase
+    .from('coupon_campaigns')
+    .delete()
+    .eq('id', body.campaignId);
+
+  if (deleteError) throw deleteError;
+
+  return json(200, { success: true });
+}
+
 async function campaignStats(event) {
   requireAdmin(event);
 
@@ -425,6 +468,10 @@ exports.handler = async function handler(event) {
 
     if (event.httpMethod === 'GET' && action === 'campaign-stats') {
       return await campaignStats(event);
+    }
+
+    if (event.httpMethod === 'POST' && action === 'delete-campaign') {
+      return await deleteCampaign(event);
     }
 
     return json(400, { error: 'Invalid action' });
