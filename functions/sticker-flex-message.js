@@ -147,14 +147,14 @@ function generateCouponRedeemPromptFlexMessage() {
           },
           {
             type: 'text',
-            text: '優惠碼皆為限時活動使用，請留意兌換期限。',
+            text: '優惠碼為限時活動，請留意期限。',
             size: 'sm',
             color: '#374151',
             wrap: true
           },
           {
             type: 'text',
-            text: '貼圖大亨的最新活動資訊會不定期於官方管道公告，\n多多參與活動與分享，不錯過任何一次專屬優惠！',
+            text: '活動資訊將於官方管道公告，\n參與分享，掌握專屬優惠！',
             size: 'sm',
             color: '#374151',
             wrap: true
