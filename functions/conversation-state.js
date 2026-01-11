@@ -20,7 +20,8 @@ const ConversationStage = {
   COUNT_SELECT: 'count_select',    // 選擇貼圖數量
   CONFIRMING: 'confirming',        // 確認生成
   GENERATING: 'generating',        // 生成中
-  EDITING: 'editing'               // 編輯模式
+  EDITING: 'editing',               // 編輯模式
+  AWAITING_COUPON_CODE: 'awaiting_coupon_code' // 等待輸入優惠碼
 };
 
 /**

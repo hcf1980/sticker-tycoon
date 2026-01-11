@@ -7,6 +7,7 @@ const line = require('@line/bot-sdk');
 const axios = require('axios');
 const { supabase, isReplyTokenUsed, recordReplyToken, getOrCreateUser, getUserStickerSets, getUserLatestTask, getUserPendingTasks, getStickerSet, getStickerImages, deleteStickerSet, addToUploadQueue, removeFromUploadQueue, getUploadQueue, clearUploadQueue, getUserTokenBalance, getTokenTransactions, getUserReferralInfo, applyReferralCode, deductTokens, addTokens } = require('./supabase-client');
 const { ConversationStage, getConversationState, updateConversationState, resetConversationState, isInCreationFlow } = require('./conversation-state');
+const { handleCouponRedeemFlow } = require('./handlers/coupon-redeem-handler');
 const { generateWelcomeFlexMessage, generateTutorialPart1FlexMessage, generateTutorialPart2FlexMessage, generateTutorialPart3FlexMessage, shouldShowTutorial, markTutorialShown } = require('./sticker-flex-message');
 const { scheduleProfileUpdate } = require('./utils/profile-updater');
 const { globalMonitor } = require('./utils/performance-monitor');
@@ -110,6 +111,26 @@ async function handleTextMessage(replyToken, userId, text) {
 
     // 2. 優先處理全局命令（即使在創建流程中也可以使用）
     const globalCommands = ['分享給好友', '推薦好友', '我的推薦碼', '推薦碼', '邀請好友', '查詢進度', '我的貼圖', '貼圖列表', '代幣', '餘額', '我的代幣', '查詢代幣'];
+    const couponCommands = ['輸入優惠碼', '優惠碼', '兌換碼', '活動碼'];
+
+    // 優惠碼兌換流程（兩步）：先觸發，下一句輸入兌換碼
+    if (couponCommands.includes(text)) {
+      await updateConversationState(userId, ConversationStage.AWAITING_COUPON_CODE, { startedAt: new Date().toISOString() });
+      return getLineClient().replyMessage(replyToken, {
+        type: 'text',
+        text: '請輸入您的兌換碼（例如 Q3AEF）。\n\n輸入「取消」可退出。',
+        quickReply: {
+          items: [
+            { type: 'action', action: { type: 'message', label: '取消', text: '取消' } }
+          ]
+        }
+      });
+    }
+
+    if (currentStage === ConversationStage.AWAITING_COUPON_CODE) {
+      return await handleCouponRedeemFlow(getLineClient(), replyToken, userId, text);
+    }
+
     if (globalCommands.includes(text)) {
       // 這些命令不受創建流程限制，直接跳過創建流程處理
       console.log(`🌐 執行全局命令：${text}`);
