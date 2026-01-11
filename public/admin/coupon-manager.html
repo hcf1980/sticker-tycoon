@@ -439,8 +439,12 @@
         .map((c) => {
           const s = statusOfCampaign(c);
           const img = c.image_url
-            ? `<img src="${c.image_url}" class="w-full h-40 object-cover rounded-lg border border-white/10" />`
-            : `<div class="w-full h-40 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-gray-500">尚未生成券圖</div>`;
+            ? `
+              <div class="w-full h-64 md:h-72 bg-white/5 border border-white/10 rounded-lg overflow-hidden flex items-center justify-center">
+                <img src="${c.image_url}" class="max-w-full max-h-full object-contain" />
+              </div>
+            `
+            : `<div class="w-full h-64 md:h-72 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-gray-500">尚未生成券圖</div>`;
 
           return `
             <div class="glass-card p-4">
