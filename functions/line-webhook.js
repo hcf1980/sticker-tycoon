@@ -8,7 +8,7 @@ const axios = require('axios');
 const { supabase, isReplyTokenUsed, recordReplyToken, getOrCreateUser, getUserStickerSets, getUserLatestTask, getUserPendingTasks, getStickerSet, getStickerImages, deleteStickerSet, addToUploadQueue, removeFromUploadQueue, getUploadQueue, clearUploadQueue, getUserTokenBalance, getTokenTransactions, getUserReferralInfo, applyReferralCode, deductTokens, addTokens } = require('./supabase-client');
 const { ConversationStage, getConversationState, updateConversationState, resetConversationState, isInCreationFlow } = require('./conversation-state');
 const { handleCouponRedeemFlow } = require('./handlers/coupon-redeem-handler');
-const { generateWelcomeFlexMessage, generateTutorialPart1FlexMessage, generateTutorialPart2FlexMessage, generateTutorialPart3FlexMessage, shouldShowTutorial, markTutorialShown } = require('./sticker-flex-message');
+const { generateWelcomeFlexMessage, generateTutorialPart1FlexMessage, generateTutorialPart2FlexMessage, generateTutorialPart3FlexMessage, shouldShowTutorial, markTutorialShown, generateCouponRedeemPromptFlexMessage } = require('./sticker-flex-message');
 const { scheduleProfileUpdate } = require('./utils/profile-updater');
 const { globalMonitor } = require('./utils/performance-monitor');
 const { handleStartCreate, handleNaming, handleStyleSelection, handleFramingSelection, handleCharacterDescription, handleExpressionTemplate, handleSceneSelection, handleCustomScene, handleCountSelection, handlePhotoUpload } = require('./handlers/create-handler');
@@ -116,15 +116,7 @@ async function handleTextMessage(replyToken, userId, text) {
     // 優惠碼兌換流程（兩步）：先觸發，下一句輸入兌換碼
     if (couponCommands.includes(text)) {
       await updateConversationState(userId, ConversationStage.AWAITING_COUPON_CODE, { startedAt: new Date().toISOString() });
-      return getLineClient().replyMessage(replyToken, {
-        type: 'text',
-        text: '請輸入您的兌換碼（例如 Q3AEF）。\n\n輸入「取消」可退出。',
-        quickReply: {
-          items: [
-            { type: 'action', action: { type: 'message', label: '取消', text: '取消' } }
-          ]
-        }
-      });
+      return getLineClient().replyMessage(replyToken, generateCouponRedeemPromptFlexMessage());
     }
 
     if (currentStage === ConversationStage.AWAITING_COUPON_CODE) {
