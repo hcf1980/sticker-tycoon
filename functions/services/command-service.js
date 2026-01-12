@@ -38,15 +38,15 @@ async function handleMyStickers(userId) {
 }
 
 /**
- * 處理「代幣查詢」命令
+ * 處理「張數查詢」命令
  */
 async function handleTokenQuery(userId) {
-  logger.info('處理代幣查詢命令', { userId });
+  logger.info('處理張數查詢命令', { userId });
 
   const balance = await getUserTokenBalance(userId);
   const transactions = await getTokenTransactions(userId, 5); // 最近 5 筆交易
 
-  let text = `💰 您的代幣餘額：${balance} 代幣\n\n`;
+  let text = `💰 您的可用張數：${balance} 張\n\n`;
 
   if (transactions && transactions.length > 0) {
     text += '📊 最近交易記錄：\n';
@@ -54,7 +54,7 @@ async function handleTokenQuery(userId) {
       const date = new Date(tx.created_at).toLocaleDateString('zh-TW');
       const amount = tx.amount > 0 ? `+${tx.amount}` : tx.amount;
       const type = getTransactionTypeText(tx.transaction_type);
-      text += `\n${date} ${type} ${amount} 代幣`;
+      text += `\n${date} ${type} ${amount} 張`;
     });
   }
 
@@ -71,15 +71,15 @@ async function handleTokenQuery(userId) {
  * 處理「購買代幣」命令
  */
 function handlePurchaseInfo() {
-  logger.info('處理購買代幣命令');
-  
+  logger.info('處理購買張數命令');
+
   return {
     type: 'text',
     text:
-      '💳 代幣儲值方案\n\n' +
-          '方案一：NT$ 300 → 70 代幣\n' +
-          '方案二：NT$ 500 → 130 代幣 ⭐推薦\n' +
-          '方案三：NT$ 1000 → 300 代幣\n\n' +
+      '💳 張數儲值方案\n\n' +
+          '方案一：NT$ 300 → 70 張\n' +
+          '方案二：NT$ 500 → 130 張 ⭐推薦\n' +
+          '方案三：NT$ 1000 → 300 張\n\n' +
           '💰 付款方式：\n' +
           '請使用以下帳號轉帳後\n' +
           '提供轉帳後五碼給管理員\n\n' +
@@ -98,13 +98,13 @@ async function handleReferralInfo(userId) {
 
   const remainingCount = Math.max(0, 30 - referral_count);
 
-  let text = `🎁 推薦好友賺代幣\n\n`;
+  let text = `🎁 推薦好友賺張數\n\n`;
   text += `您的推薦碼：${referral_code}\n\n`;
   text += `✅ 已推薦：${referral_count} 位好友\n`;
   text += `💎 剩餘次數：${remainingCount} 次\n\n`;
   text += `💰 獎勵說明：\n`;
   text += `• 好友使用您的推薦碼\n`;
-  text += `• 您和好友各得 10 代幣\n`;
+  text += `• 您和好友各得 10 張\n`;
   text += `• 限時推廣，上限增至30位\n\n`;
   text += `📢 分享方式：\n`;
   text += `告訴好友輸入：\n`;
@@ -139,8 +139,8 @@ async function handleApplyReferralCode(userId, code) {
         type: 'text',
         text:
           `🎉 推薦碼使用成功！\n\n` +
-              `✅ 您獲得 ${result.tokens} 代幣\n` +
-              `💰 目前餘額：${result.balance} 代幣\n\n` +
+              `✅ 您獲得 ${result.tokens} 張\n` +
+              `💰 目前餘額：${result.balance} 張\n\n` +
               `感謝您的支持！`,
       };
     }

@@ -1,5 +1,5 @@
 /**
- * 查詢用戶代幣餘額
+ * 查詢用戶張數餘額
  */
 
 const { getUserTokenBalance } = require('./supabase-client');
@@ -39,7 +39,7 @@ exports.handler = async function(event) {
     };
 
   } catch (error) {
-    console.error('❌ 查詢代幣失敗:', error);
+    console.error('❌ 查詢張數失敗:', error);
     return {
       statusCode: 500,
       headers,

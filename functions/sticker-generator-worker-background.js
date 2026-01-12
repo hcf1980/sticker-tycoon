@@ -19,13 +19,12 @@ async function createGenerationTask(userId, setData) {
   const setId = uuidv4();
 
   try {
-    // 計算需要的代幣數量（6宮格批次生成：每6張只需3枚代幣）
+    // 計算需要的張數（新制度：1張貼圖 = 1張數）
     const stickerCount = setData.count || 6;
-    const apiCalls = Math.ceil(stickerCount / 6);  // 每次API調用生成6張
-    const tokenCost = setData.tokenCost || (apiCalls * 3);  // ✅ 優先使用傳入的 tokenCost
+    const tokenCost = setData.tokenCost || stickerCount;  // ✅ 直接等於張數
 
-    // ✅ 改為：暫不扣除代幣，等生成成功後再扣
-    console.log(`💰 待扣除 ${tokenCost} 代幣（生成成功後扣除）`);
+    // ✅ 改為：暫不扣除張數，等生成成功後再扣
+    console.log(`💰 待扣除 ${tokenCost} 張（生成成功後扣除）`);
 
     // 🆕 生成角色一致性 ID（確保同一組貼圖使用相同角色）
     const { generateCharacterID } = require('./sticker-styles');
@@ -179,11 +178,10 @@ async function executeGeneration(taskId, setId) {
     expressions = expressions.slice(0, sticker_count);
     console.log(`📋 最終表情列表 (${expressions.length} 個): ${expressions.join(', ')}`);
 
-    // 計算需要的代幣數量（與 createGenerationTask 一致）
+    // 計算需要的張數（新制度：1張貼圖 = 1張數）
     const actualCount = expressions.length;
-    const apiCalls = Math.ceil(actualCount / 6);  // 每次API調用生成6張
-    const tokenCost = apiCalls * 3;  // ✅ 直接計算，確保正確（每6張=3代幣）
-    console.log(`💰 本次生成需要 ${tokenCost} 代幣（${actualCount}張貼圖 = ${apiCalls}次API調用 × 3代幣/次）`);
+    const tokenCost = actualCount;  // ✅ 直接等於張數
+    console.log(`💰 本次生成需要 ${tokenCost} 張（${actualCount}張貼圖 = ${tokenCost}張數）`);
 
     // 更新進度：開始 AI 生成
     await updateTaskProgress(taskId, 10, 'processing');
@@ -311,7 +309,7 @@ async function executeGeneration(taskId, setId) {
       tab_image_url: uploadResults.tabImageUrl
     });
 
-    // 6. ✅ 生成成功後才扣除代幣
+    // 6. ✅ 生成成功後才扣除張數
     const deductResult = await deductTokens(
       userId,
       tokenCost,
@@ -320,9 +318,9 @@ async function executeGeneration(taskId, setId) {
     );
 
     if (deductResult.success) {
-      console.log(`💰 生成成功，已扣除 ${tokenCost} 代幣，剩餘 ${deductResult.balance} 代幣`);
+      console.log(`💰 生成成功，已扣除 ${tokenCost} 張，剩餘 ${deductResult.balance} 張`);
     } else {
-      console.error(`⚠️ 代幣扣除失敗: ${deductResult.error}（但貼圖已生成）`);
+      console.error(`⚠️ 張數扣除失敗: ${deductResult.error}（但貼圖已生成）`);
       // 即使扣除失敗，貼圖也已經生成，不影響流程
     }
 

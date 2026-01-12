@@ -85,12 +85,12 @@
     <div class="actions-inner">
       <p class="hint" id="hintText">👆 點擊任一張貼圖設為封面圖片</p>
       <div class="token-info" id="tokenInfo" style="background:#fff3e0;padding:8px 12px;border-radius:8px;margin-bottom:10px;font-size:0.85rem;text-align:center;">
-        💰 您的代幣：<strong id="userTokens">載入中...</strong> 枚 | 📦 下載/上架需消耗 <strong style="color:#d32f2f;">40 代幣</strong>
+        🎫 您的剩餘張數：<strong id="userTokens">載入中...</strong> 張 | 📦 下載/上架需消耗 <strong style="color:#d32f2f;">60 張</strong>
       </div>
       <div class="btn-row">
         <button class="btn btn-danger" onclick="showClearModal()">🗑️ 清空</button>
-        <button class="btn btn-secondary" id="downloadBtn" disabled onclick="showDownloadConfirm()">📥 自行上架<br><small style="font-size:0.7rem;opacity:0.8;">扣 40 代幣</small></button>
-        <button class="btn btn-primary" id="submitBtn" disabled onclick="showSubmitModal()">🚀 免費代上架<br><small style="font-size:0.7rem;opacity:0.9;">扣 40 代幣</small></button>
+        <button class="btn btn-secondary" id="downloadBtn" disabled onclick="showDownloadConfirm()">📥 自行上架<br><small style="font-size:0.7rem;opacity:0.8;">扣 60 張</small></button>
+        <button class="btn btn-primary" id="submitBtn" disabled onclick="showSubmitModal()">🚀 免費代上架<br><small style="font-size:0.7rem;opacity:0.9;">扣 20 張</small></button>
       </div>
     </div>
   </div>
@@ -114,8 +114,8 @@
     <div class="modal-content">
       <h3>📥 確認下載貼圖包？</h3>
       <div style="background:#fff3e0;padding:15px;border-radius:10px;margin:15px 0;">
-        <p style="font-size:1.1rem;margin-bottom:10px;">💰 將消耗 <strong style="color:#d32f2f;font-size:1.3rem;">40 代幣</strong></p>
-        <p style="font-size:0.85rem;color:#666;">您目前有 <strong id="confirmTokens">-</strong> 枚代幣</p>
+        <p style="font-size:1.1rem;margin-bottom:10px;">🎫 將消耗 <strong style="color:#d32f2f;font-size:1.3rem;">60 張</strong></p>
+        <p style="font-size:0.85rem;color:#666;">您目前有 <strong id="confirmTokens">-</strong> 張</p>
       </div>
       <p style="font-size:0.8rem;color:#666;margin-bottom:15px;">下載後您將獲得符合 LINE 規格的完整貼圖包（ZIP）</p>
       <div class="modal-btns">
@@ -139,11 +139,11 @@
     <div class="modal-content" style="max-width:450px;text-align:left;">
       <h3 style="text-align:center;margin-bottom:20px;">🚀 免費代上架服務</h3>
       <div style="background:#fff3e0;padding:12px;border-radius:8px;font-size:0.85rem;margin-bottom:15px;border:2px solid #ffcc80;">
-        💰 <strong>消耗代幣：</strong><span style="color:#d32f2f;font-weight:bold;font-size:1.1rem;">40 代幣</span><br>
-        <span style="font-size:0.8rem;color:#666;">您目前有 <strong id="submitTokens">-</strong> 枚代幣</span>
+        🎫 <strong>消耗張數：</strong><span style="color:#d32f2f;font-weight:bold;font-size:1.1rem;">20 張</span><br>
+        <span style="font-size:0.8rem;color:#666;">您目前有 <strong id="submitTokens">-</strong> 張</span>
       </div>
       <p style="background:#e8f5e9;padding:12px;border-radius:8px;font-size:0.85rem;margin-bottom:15px;">
-        ✅ 代上架服務免費！僅需支付貼圖製作代幣<br>
+        ✅ 代上架服務免費！僅需支付貼圖製作張數<br>
         ⏱️ 審核時間約 1-3 個工作天
       </p>
       <div style="margin-bottom:15px;">
@@ -170,7 +170,7 @@
         📌 <strong>注意事項：</strong><br>
         • 貼圖將由 Sticker Tycoon 統一上架<br>
         • 銷售分潤依 LINE 官方規定計算<br>
-        • 收益將以代幣提供予用戶<br>
+        • 收益將以張數提供予用戶<br>
         • 上架後會透過 LINE 通知您
       </div>
       <div class="modal-btns">
@@ -194,7 +194,8 @@
     let selectedCoverIndex = 0;
     let selectedPrice = 30;
     let userTokens = 0;
-    const DOWNLOAD_COST = 40;  // 下載/上架所需代幣
+    const DOWNLOAD_COST = 60;  // 下載所需張數
+    const LISTING_COST = 20;   // 代上架所需張數
 
     async function loadQueue() {
       if (!userId) { showEmpty('請從 LINE 開啟此頁面'); return; }
@@ -214,26 +215,27 @@
           userTokens = data.balance || 0;
           updateTokenDisplay();
         }
-      } catch (e) { console.error('載入代幣失敗', e); }
+      } catch (e) { console.error('載入張數失敗', e); }
     }
 
     function updateTokenDisplay() {
       const tokenEl = document.getElementById('userTokens');
       const confirmEl = document.getElementById('confirmTokens');
       const submitEl = document.getElementById('submitTokens');
-      const hasEnough = userTokens >= DOWNLOAD_COST;
+      const hasEnoughForDownload = userTokens >= DOWNLOAD_COST;
+      const hasEnoughForListing = userTokens >= LISTING_COST;
 
       if (tokenEl) {
         tokenEl.textContent = userTokens;
-        tokenEl.style.color = hasEnough ? '#06C755' : '#d32f2f';
+        tokenEl.style.color = hasEnoughForDownload ? '#06C755' : '#d32f2f';
       }
       if (confirmEl) {
         confirmEl.textContent = userTokens;
-        confirmEl.style.color = hasEnough ? '#06C755' : '#d32f2f';
+        confirmEl.style.color = hasEnoughForDownload ? '#06C755' : '#d32f2f';
       }
       if (submitEl) {
         submitEl.textContent = userTokens;
-        submitEl.style.color = hasEnough ? '#06C755' : '#d32f2f';
+        submitEl.style.color = hasEnoughForListing ? '#06C755' : '#d32f2f';
       }
 
       // 更新按鈕狀態
@@ -241,9 +243,9 @@
       const submitBtn = document.getElementById('submitBtn');
       const confirmDownloadBtn = document.getElementById('confirmDownloadBtn');
 
-      if (queue.length >= 40 && !hasEnough) {
-        if (downloadBtn) downloadBtn.title = '代幣不足';
-        if (submitBtn) submitBtn.title = '代幣不足';
+      if (queue.length >= 40) {
+        if (downloadBtn && !hasEnoughForDownload) downloadBtn.title = '張數不足';
+        if (submitBtn && !hasEnoughForListing) submitBtn.title = '張數不足';
       }
     }
 
@@ -323,7 +325,7 @@
 
     function showDownloadConfirm() {
       if (userTokens < DOWNLOAD_COST) {
-        showToast(`❌ 代幣不足！需要 ${DOWNLOAD_COST} 枚，您只有 ${userTokens} 枚`);
+        showToast(`❌ 張數不足！需要 ${DOWNLOAD_COST} 張，您只有 ${userTokens} 張`);
         return;
       }
       document.getElementById('confirmTokens').textContent = userTokens;
@@ -385,9 +387,9 @@
     async function download() {
       hideDownloadConfirm();
 
-      // 再次檢查代幣
+      // 再次檢查張數
       if (userTokens < DOWNLOAD_COST) {
-        showToast(`❌ 代幣不足！需要 ${DOWNLOAD_COST} 枚`);
+        showToast(`❌ 張數不足！需要 ${DOWNLOAD_COST} 張`);
         return;
       }
       const modal = document.getElementById('downloadModal');
@@ -474,8 +476,8 @@
     }
 
     function showSubmitModal() {
-      if (userTokens < DOWNLOAD_COST) {
-        showToast(`❌ 代幣不足！需要 ${DOWNLOAD_COST} 枚，您只有 ${userTokens} 枚`);
+      if (userTokens < LISTING_COST) {
+        showToast(`❌ 張數不足！需要 ${LISTING_COST} 張，您只有 ${userTokens} 張`);
         return;
       }
       document.getElementById('submitTokens').textContent = userTokens;
@@ -502,9 +504,9 @@
         return;
       }
 
-      // 再次檢查代幣
-      if (userTokens < DOWNLOAD_COST) {
-        showToast(`❌ 代幣不足！需要 ${DOWNLOAD_COST} 枚`);
+      // 再次檢查張數
+      if (userTokens < LISTING_COST) {
+        showToast(`❌ 張數不足！需要 ${LISTING_COST} 張`);
         return;
       }
 

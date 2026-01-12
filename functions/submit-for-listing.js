@@ -51,7 +51,7 @@ exports.handler = async function(event) {
       };
     }
 
-    // 檢查代幣餘額
+    // 檢查張數餘額
     const balance = await getUserTokenBalance(userId);
     if (balance < LISTING_COST) {
       return {
@@ -59,20 +59,20 @@ exports.handler = async function(event) {
         headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
         body: JSON.stringify({
           success: false,
-          error: `代幣不足！需要 ${LISTING_COST} 枚，您只有 ${balance} 枚`,
+          error: `張數不足！需要 ${LISTING_COST} 張，您只有 ${balance} 張`,
           needTokens: LISTING_COST,
           currentTokens: balance
         })
       };
     }
 
-    // 扣除代幣（deductTokens 內部會記錄交易）
+    // 扣除張數（deductTokens 內部會記錄交易）
     const deductResult = await deductTokens(userId, LISTING_COST, '提交 LINE 貼圖代上架申請', null);
     if (!deductResult.success) {
       return {
         statusCode: 400,
         headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
-        body: JSON.stringify({ success: false, error: '代幣扣除失敗：' + deductResult.error })
+        body: JSON.stringify({ success: false, error: '張數扣除失敗：' + deductResult.error })
       };
     }
     console.log(`💰 用戶 ${userId} 扣除 ${LISTING_COST} 代幣用於代上架，剩餘 ${deductResult.balance}`);

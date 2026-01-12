@@ -195,7 +195,7 @@ function generateCouponRedeemResultFlexMessage({
 
   const bodyLines = success
     ? [
-        { label: '獲得代幣', value: `+${tokenAmount}` },
+        { label: '獲得張數', value: `+${tokenAmount}` },
         { label: '目前餘額', value: `${balance}` }
       ]
     : [{ label: '原因', value: message || '兌換碼無效或已過期' }];
@@ -252,7 +252,7 @@ function generateCouponRedeemResultFlexMessage({
             height: 'sm',
             action: {
               type: 'message',
-              label: '查詢代幣',
+              label: '查詢張數',
               text: '代幣'
             },
             color: '#06C755'

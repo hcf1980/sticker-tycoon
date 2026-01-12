@@ -38,13 +38,13 @@
 - ✅ **照片轉貼圖** - 上傳照片，AI 自動轉換成貼圖
 - ✅ **自動去背** - 智能去背，符合 LINE 規格
 - ✅ **批次生成** - 支援 8/16/24/32/40 張貼圖
-- ✅ **代幣系統** - 新用戶免費 40 代幣
-- ✅ **推薦獎勵** - 邀請好友，雙方各得 10 代幣
+- ✅ **張數系統** - 新用戶免費 40 張
+- ✅ **推薦獎勵** - 邀請好友，雙方各得 10 張
 - ✅ **免費代上架** - 專業團隊協助上架到 LINE Store
 
 ### 📊 管理功能
 - 👤 用戶管理
-- 💰 代幣交易記錄
+- 🎫 張數交易記錄
 - 📦 貼圖組管理
 - 🎁 推薦系統
 - 📤 上架申請管理
@@ -82,7 +82,7 @@
        ├─────► Background Worker
        │       (sticker-generator-worker-background.js)
        │
-       └─────► Token System (Supabase)
+       └─────► Token System (Supabase - 張數系統)
 ```
 
 ---
@@ -203,7 +203,7 @@ npm run test:coverage # 測試覆蓋率
 |------|------|
 | `創建貼圖` | 開始創建新貼圖組 |
 | `我的貼圖` | 查看貼圖列表 |
-| `代幣` | 查詢代幣餘額 |
+| `張數` | 查詢張數餘額 |
 | `推薦好友` | 取得推薦碼 |
 | `查詢進度` | 查看生成進度 |
 | `取消` | 取消當前創建流程 |
@@ -221,21 +221,20 @@ npm run test:coverage # 測試覆蓋率
 7. **選擇數量** - 8/16/24/32/40 張
 8. **確認生成** - 開始 AI 生成
 
-### 代幣機制
+### 張數機制
 
-- 🎁 新用戶: 免費 **40 代幣**
-- 💰 生成 1 張貼圖: 消耗 **1 代幣**
-- 📦 下載貼圖包: 消耗 **40 代幣**
-- 🚀 申請代上架: 消耗 **40 代幣** (收益將以代幣提供予用戶)
-- 👥 推薦好友: 雙方各得 **10 代幣** (限時推廣，上限增至30位)
+- 🎁 新用戶: 免費 **40 張**
+- 🎨 生成 1 張貼圖: 消耗 **1 張**
+- 📦 下載貼圖包: 消耗 **60 張**
+- 🚀 申請代上架: 消耗 **20 張** (收益將以張數提供予用戶)
+- 👥 推薦好友: 雙方各得 **10 張** (限時推廣，上限增至30位)
 
 ### 儲值方案
 
-| 金額 | 代幣 | 單價 |
+| 金額 | 張數 | 單價 |
 |------|------|------|
-| NT$ 300 | 70 | 4.3/幣 |
-| NT$ 500 | 130 | 3.8/幣 |
-| NT$ 1000 | 300 | 3.3/幣 |
+| NT$ 300 | 140 張 | 2.14/張 |
+| NT$ 500 | 260 張 | 1.92/張 |
 
 ---
 
@@ -256,7 +255,7 @@ sticker-tycoon/
 │   ├── admin-cleanup.js         # 管理員清理功能
 │   ├── admin-listing.js         # 上架申請管理
 │   ├── admin-rich-menu.js       # Rich Menu 管理
-│   ├── admin-token.js           # 代幣管理
+│   ├── admin-token.js           # 張數管理
 │   ├── ai-generator.js          # AI 圖片生成核心
 │   ├── conversation-state.js    # 對話狀態管理
 │   ├── deepseek-enhancer.js     # 表情增強
@@ -322,7 +321,7 @@ npm run test:coverage    # 測試覆蓋率報告
 | `/pack-for-line` | POST | LINE 貼圖打包 | 26s |
 | `/admin-rich-menu` | GET/POST | Rich Menu 管理 | 30s |
 | `/admin-cleanup` | POST | 清理舊資料 | 60s |
-| `/admin-token` | POST | 代幣管理 | 10s |
+| `/admin-token` | POST | 張數管理 | 10s |
 | `/admin-listing` | GET/POST | 上架申請管理 | 10s |
 
 詳細 API 規格請參考各函數的 JSDoc 註解。
@@ -411,7 +410,7 @@ convert original.png -resize 180x180 apple-touch-icon.png
 所有主要頁面已配置圖標引用：
 - ✅ 首頁 (index.html) - 包含 header/footer logo 顯示
 - ✅ 示範圖集 (demo-gallery.html)
-- ✅ 代幣購買說明 (token-guide.html)
+- ✅ 張數購買說明 (token-guide.html)
 - ✅ YouTuber 推廣計畫 (youtuber-promotion.html)
 - ✅ 管理後台 (admin/index.html)
 - ✅ 其他功能頁面

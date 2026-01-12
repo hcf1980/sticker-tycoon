@@ -1,6 +1,6 @@
 /**
  * Admin Token Management API
- * 代幣管理 API
+ * 張數管理 API
  */
 
 const { createClient } = require('@supabase/supabase-js');
@@ -80,7 +80,7 @@ async function getUsers(db) {
   }));
 
   // 計算統計
-  const totalTokens = enrichedUsers.reduce((sum, u) => sum + (u.sticker_credits || 0), 0);
+  const totalSheets = enrichedUsers.reduce((sum, u) => sum + (u.sticker_credits || 0), 0);
 
   // 今日交易統計
   const today = new Date();
@@ -107,7 +107,7 @@ async function getUsers(db) {
       users: enrichedUsers,
       stats: {
         totalUsers: enrichedUsers.length,
-        totalTokens,
+        totalTokens: totalSheets,
         todaySpent,
         todayAdded
       }
@@ -163,7 +163,7 @@ async function adjustTokens(db, body) {
 
   if (updateError) throw updateError;
 
-  // 如果是增加代幣，同步更新 token_ledger（含有效期 30 天）
+  // 如果是增加張數，同步更新 token_ledger（含有效期 30 天）
   if (txAmount > 0) {
     const now = new Date();
     const expiresAt = new Date(now);
@@ -182,7 +182,7 @@ async function adjustTokens(db, body) {
     }]);
   }
 
-  // 如果是扣除代幣，使用 FIFO 邏輯從 token_ledger 扣除
+  // 如果是扣除張數，使用 FIFO 邏輯從 token_ledger 扣除
   if (txAmount < 0) {
     await deductFromLedger(db, lineUserId, Math.abs(txAmount));
   }
@@ -209,10 +209,10 @@ async function adjustTokens(db, body) {
 }
 
 /**
- * 從 token_ledger 使用 FIFO 扣除代幣
+ * 從 token_ledger 使用 FIFO 扣除張數
  */
 async function deductFromLedger(db, userId, amount) {
-  // 查詢所有可用代幣（未過期且有剩餘），按到期時間排序
+  // 查詢所有可用張數（未過期且有剩餘），按到期時間排序
   const { data: ledgers, error } = await db
     .from('token_ledger')
     .select('*')
@@ -227,11 +227,11 @@ async function deductFromLedger(db, userId, amount) {
   }
 
   if (!ledgers || ledgers.length === 0) {
-    console.warn(`用戶 ${userId} 沒有可用代幣記錄，跳過 ledger 扣除`);
+    console.warn(`用戶 ${userId} 沒有可用張數記錄，跳過 ledger 扣除`);
     return;
   }
 
-  // 從最早到期的代幣開始扣除
+  // 從最早到期的張數開始扣除
   let remaining = amount;
 
   for (const ledger of ledgers) {
@@ -252,7 +252,7 @@ async function deductFromLedger(db, userId, amount) {
   }
 
   if (remaining > 0) {
-    console.warn(`用戶 ${userId} 代幣不足，還需扣除 ${remaining} 代幣`);
+    console.warn(`用戶 ${userId} 張數不足，還需扣除 ${remaining} 張`);
   }
 }
 

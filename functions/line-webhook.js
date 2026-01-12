@@ -110,7 +110,7 @@ async function handleTextMessage(replyToken, userId, text) {
     }
 
     // 2. 優先處理全局命令（即使在創建流程中也可以使用）
-    const globalCommands = ['分享給好友', '推薦好友', '我的推薦碼', '推薦碼', '邀請好友', '查詢進度', '我的貼圖', '貼圖列表', '代幣', '餘額', '我的代幣', '查詢代幣'];
+    const globalCommands = ['分享給好友', '推薦好友', '我的推薦碼', '推薦碼', '邀請好友', '查詢進度', '我的貼圖', '貼圖列表', '張數', '餘額', '我的張數', '查詢張數', '代幣', '我的代幣', '查詢代幣'];
     const couponCommands = ['輸入優惠碼', '優惠碼', '兌換碼', '活動碼'];
 
     // 優惠碼兌換流程（兩步）：先觸發，下一句輸入兌換碼
@@ -212,18 +212,18 @@ async function handleTextMessage(replyToken, userId, text) {
       return await handleForceRegenerateMorningGreeting(replyToken, userId);
     }
 
-    // 代幣查詢
-    if (text === '代幣' || text === '餘額' || text === '我的代幣' || text === '查詢代幣') {
+    // 張數查詢（保留舊關鍵字相容性）
+    if (text === '代幣' || text === '餘額' || text === '我的代幣' || text === '查詢代幣' || text === '張數' || text === '我的張數' || text === '查詢張數') {
       return await handleTokenQuery(replyToken, userId);
     }
 
-    // 購買代幣
-    if (text === '購買代幣' || text === '儲值' || text === '買代幣') {
+    // 購買張數
+    if (text === '購買代幣' || text === '購買張數' || text === '儲值' || text === '買代幣') {
       return await handlePurchaseInfo(replyToken);
     }
 
     // 購買說明
-    if (text === '購買說明' || text === '代幣說明' || text === '使用說明' || text === '說明') {
+    if (text === '購買說明' || text === '代幣說明' || text === '張數說明' || text === '使用說明' || text === '說明') {
       return await handlePurchaseGuide(replyToken);
     }
 
@@ -462,9 +462,9 @@ async function handleCreationFlow(replyToken, userId, text, stage, state) {
           text: '⚠️ 請點擊上方按鈕選擇數量！',
           quickReply: {
             items: [
-              { type: 'action', action: { type: 'message', label: '6張 (3代幣)', text: '數量:6' } },
-              { type: 'action', action: { type: 'message', label: '12張 (6代幣)', text: '數量:12' } },
-              { type: 'action', action: { type: 'message', label: '18張 (9代幣)', text: '數量:18' } },
+              { type: 'action', action: { type: 'message', label: '6張 (3張)', text: '數量:6' } },
+              { type: 'action', action: { type: 'message', label: '12張 (6張)', text: '數量:12' } },
+              { type: 'action', action: { type: 'message', label: '18張 (9張)', text: '數量:18' } },
               { type: 'action', action: { type: 'message', label: '❌ 取消', text: '取消' } }
             ]
           }
@@ -573,7 +573,7 @@ async function handleConfirmGeneration(replyToken, userId, state) {
         items: [
           { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
           { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
-          { type: 'action', action: { type: 'message', label: '💰 我的代幣', text: '代幣' } }
+          { type: 'action', action: { type: 'message', label: '💰 我的張數', text: '張數' } }
         ]
       }
     });
@@ -600,7 +600,7 @@ async function handleConfirmGeneration(replyToken, userId, state) {
     });
   }
 
-  // 計算需要的代幣數量（6宮格批次生成：每6張只需3枚代幣）
+  // 計算需要的張數數量（6宮格批次生成：每6張只需3張）
   const stickerCount = tempData.count || 6;
 
   // 每次「確認生成」都重新抽樣表情，並短期避免重複
@@ -615,20 +615,20 @@ async function handleConfirmGeneration(replyToken, userId, state) {
   tempData.expressions = selectedExpressions;
   tempData.recentExpressions = nextRecent;
   const apiCalls = Math.ceil(stickerCount / 6);  // 每次API調用生成6張
-  const tokenCost = apiCalls * 3;  // 每次API調用消耗3枚代幣
+  const tokenCost = apiCalls * 3;  // 每次API調用消耗3張
 
-  // ✅ 檢查代幣是否足夠（但不扣除！等生成成功後再扣）
+  // ✅ 檢查張數是否足夠（但不扣除！等生成成功後再扣）
   const tokenBalance = await getUserTokenBalance(userId);
   if (tokenBalance < tokenCost) {
     return getLineClient().replyMessage(replyToken, {
       type: 'text',
-      text: `❌ 代幣不足！\n\n` +
-            `需要 ${tokenCost} 代幣，目前餘額 ${tokenBalance} 代幣\n\n` +
-            '💡 輸入「購買代幣」查看儲值方案',
+      text: `❌ 張數不足！\n\n` +
+            `需要 ${tokenCost} 張，目前餘額 ${tokenBalance} 張\n\n` +
+            '💡 輸入「購買張數」查看儲值方案',
       quickReply: {
         items: [
-          { type: 'action', action: { type: 'message', label: '💰 購買代幣', text: '購買代幣' } },
-          { type: 'action', action: { type: 'message', label: '🎁 分享賺代幣', text: '分享給好友' } },
+          { type: 'action', action: { type: 'message', label: '💰 購買張數', text: '購買張數' } },
+          { type: 'action', action: { type: 'message', label: '🎁 分享賺張數', text: '分享給好友' } },
           { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } }
         ]
       }
@@ -646,13 +646,13 @@ async function handleConfirmGeneration(replyToken, userId, state) {
   let messageText = '🎨 開始生成貼圖！\n\n' +
         `📛 名稱：${tempData.name}\n` +
         `📊 數量：${stickerCount} 張\n\n` +
-        `💰 生成成功後將扣除 ${tokenCost} 代幣\n` +
-        `💰 目前餘額：${tokenBalance} 代幣\n\n` +
+        `💰 生成成功後將扣除 ${tokenCost} 張\n` +
+        `💰 目前餘額：${tokenBalance} 張\n\n` +
         '⏳ 預計需要 5-10 分鐘，好圖真的需要等！';
 
   // 如果未達推薦上限，加入推薦碼提醒
   if (showReferralReminder && referralInfo.referralCode) {
-    messageText += `\n\n🎁 分享推薦碼「${referralInfo.referralCode}」給好友，雙方各得 10 代幣！`;
+    messageText += `\n\n🎁 分享推薦碼「${referralInfo.referralCode}」給好友，雙方各得 10 張！`;
   }
 
   // 建立 QuickReply 按鈕
@@ -683,7 +683,7 @@ async function handleConfirmGeneration(replyToken, userId, state) {
     });
   }
 
-  // 回覆生成中訊息（包含代幣扣除通知和 QuickReply）
+  // 回覆生成中訊息（包含張數扣除通知和 QuickReply）
   await getLineClient().replyMessage(replyToken, {
     type: 'text',
     text: messageText,
@@ -707,7 +707,7 @@ async function handleConfirmGeneration(replyToken, userId, state) {
       customSceneDescription: tempData.customSceneDescription || null,
       framing: tempData.framing || 'halfbody',  // 構圖選擇（全身/半身/大頭/特寫）
       tokensDeducted: false,  // ✅ 標記為「未扣除」，在生成成功後才扣
-      tokenCost: tokenCost    // ✅ 傳遞要扣除的代幣數量
+      tokenCost: tokenCost    // ✅ 傳遞要扣除的張數數量
     });
 
     console.log(`✅ 已建立生成任務: taskId=${taskId}, setId=${setId}`);
@@ -733,7 +733,7 @@ async function handleConfirmGeneration(replyToken, userId, state) {
   } catch (error) {
     console.error('❌ 建立生成任務失敗:', error);
     await addTokens(userId, tokenCost, 'refund', `任務建立失敗退款「${tempData.name}」`);
-    console.log(`💰 已退還 ${tokenCost} 代幣`);
+    console.log(`💰 已退還 ${tokenCost} 張`);
   }
 
   return;
@@ -797,7 +797,7 @@ async function handleCheckProgress(replyToken, userId) {
               ? [
                   { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
                   { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
-                  { type: 'action', action: { type: 'message', label: '💰 我的代幣', text: '代幣' } }
+                  { type: 'action', action: { type: 'message', label: '💰 我的張數', text: '張數' } }
                 ]
               : [
                   { type: 'action', action: { type: 'message', label: '🔄 查詢進度', text: '查詢進度' } },
@@ -841,7 +841,7 @@ async function handleCheckProgress(replyToken, userId) {
           { type: 'action', action: { type: 'message', label: '🎁 分享給好友', text: '分享給好友' } },
           { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
           { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
-          { type: 'action', action: { type: 'message', label: '💰 購買代幣', text: '購買代幣' } },
+          { type: 'action', action: { type: 'message', label: '💰 購買張數', text: '購買張數' } },
           {
             type: 'action',
             action: {
@@ -1239,7 +1239,7 @@ function generateStickerListFlexMessage(userId, sets, referralInfo = null, queue
   if (canRefer && referralInfo.referralCode) {
     uploadStatusCard.body.contents.push(
       { type: 'separator', margin: 'lg' },
-      { type: 'text', text: '🎁 分享給好友得代幣', size: 'sm', weight: 'bold', align: 'center', color: '#E65100', margin: 'md' },
+      { type: 'text', text: '🎁 分享給好友得張數', size: 'sm', weight: 'bold', align: 'center', color: '#E65100', margin: 'md' },
       { type: 'text', text: `推薦碼：${referralInfo.referralCode}`, size: 'sm', align: 'center', color: '#FF8A00', margin: 'sm' }
     );
     uploadStatusCard.footer.contents.push({
@@ -1438,8 +1438,8 @@ function generateStickerListFlexMessage(userId, sets, referralInfo = null, queue
           type: 'action',
           action: {
             type: 'message',
-            label: '💰 購買代幣',
-            text: '購買代幣'
+            label: '💰 購買張數',
+            text: '購買張數'
           }
         },
         {
@@ -1540,7 +1540,7 @@ async function handleViewStickerSet(replyToken, userId, setId) {
           { type: 'action', action: { type: 'message', label: '🎁 分享給好友', text: '分享給好友' } },
           { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
           { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
-          { type: 'action', action: { type: 'message', label: '💰 購買代幣', text: '購買代幣' } },
+          { type: 'action', action: { type: 'message', label: '💰 購買張數', text: '購買張數' } },
           {
             type: 'action',
             action: {
@@ -1565,7 +1565,7 @@ async function handleViewStickerSet(replyToken, userId, setId) {
           { type: 'action', action: { type: 'message', label: '🎁 分享給好友', text: '分享給好友' } },
           { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
           { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
-          { type: 'action', action: { type: 'message', label: '💰 購買代幣', text: '購買代幣' } },
+          { type: 'action', action: { type: 'message', label: '💰 購買張數', text: '購買張數' } },
           {
             type: 'action',
             action: {
@@ -1590,7 +1590,7 @@ async function sendStickerCarousel(replyToken, set, stickers) {
       { type: 'action', action: { type: 'message', label: '🎁 分享給好友', text: '分享給好友' } },
       { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
       { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
-      { type: 'action', action: { type: 'message', label: '💰 購買代幣', text: '購買代幣' } },
+      { type: 'action', action: { type: 'message', label: '💰 購買張數', text: '購買張數' } },
       {
         type: 'action',
         action: {
@@ -1781,7 +1781,7 @@ async function sendStickerCarousel(replyToken, set, stickers) {
         { type: 'action', action: { type: 'message', label: '📸 創建教學', text: '功能說明' } },
         { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
         { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
-        { type: 'action', action: { type: 'message', label: '💰 代幣查詢', text: '代幣' } },
+        { type: 'action', action: { type: 'message', label: '💰 張數查詢', text: '張數' } },
         { type: 'action', action: { type: 'message', label: '🎁 分享好友', text: '分享給好友' } }
       ]
     };
@@ -1883,7 +1883,7 @@ async function handleDeleteStickerSet(replyToken, userId, setId) {
           { type: 'action', action: { type: 'message', label: '🎁 分享給好友', text: '分享給好友' } },
           { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
           { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
-          { type: 'action', action: { type: 'message', label: '💰 購買代幣', text: '購買代幣' } },
+          { type: 'action', action: { type: 'message', label: '💰 購買張數', text: '購買張數' } },
           {
             type: 'action',
             action: {
@@ -2675,7 +2675,7 @@ async function handleDemoGallery(replyToken, userId) {
             { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
             { type: 'action', action: { type: 'message', label: '📸 創建教學', text: '功能說明' } },
             { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
-            { type: 'action', action: { type: 'message', label: '💰 我的代幣', text: '代幣' } }
+            { type: 'action', action: { type: 'message', label: '💰 我的張數', text: '張數' } }
           ]
         }
       });
@@ -2737,7 +2737,7 @@ function generateDemoGalleryFromDB(items) {
 
 【貼圖大亨】用 AI 幫你製作專屬 LINE 貼圖 ✨
 
-🎁 新用戶免費送 40 代幣
+🎁 新用戶免費送 40 張
 📸 上傳照片就能生成貼圖
 🚀 1-3 天免費代上架 LINE 貼圖小舖
 
@@ -2767,7 +2767,7 @@ function generateDemoGalleryFromDB(items) {
         { type: 'text', text: '包含風格、角色、場景等', size: 'xs', color: '#666666', margin: 'sm' },
         { type: 'text', text: '參考這些參數創作類似效果！', size: 'xs', color: '#666666', margin: 'xs' },
         { type: 'separator', margin: 'lg' },
-        { type: 'text', text: '🎁 新用戶免費送 40 代幣！', size: 'xs', color: '#FF6B6B', margin: 'lg', weight: 'bold' }
+        { type: 'text', text: '🎁 新用戶免費送 40 張！', size: 'xs', color: '#FF6B6B', margin: 'lg', weight: 'bold' }
       ]
     },
     footer: {
@@ -2881,7 +2881,7 @@ function generateDemoGalleryFromDB(items) {
 }
 
 /**
- * 處理代幣查詢
+ * 處理張數查詢
  */
 async function handleTokenQuery(replyToken, userId) {
   const balance = await getUserTokenBalance(userId);
@@ -2902,7 +2902,7 @@ async function handleTokenQuery(replyToken, userId) {
 
   const message = {
     type: 'flex',
-    altText: `💰 你的代幣餘額：${balance}`,
+    altText: `💰 你的可用張數：${balance}`,
     contents: {
       type: 'bubble',
       size: 'kilo',
@@ -2912,7 +2912,7 @@ async function handleTokenQuery(replyToken, userId) {
         backgroundColor: '#FFD700',
         paddingAll: 'lg',
         contents: [
-          { type: 'text', text: '💰 我的代幣', size: 'lg', weight: 'bold', color: '#333333', align: 'center' }
+          { type: 'text', text: '💰 我的張數', size: 'lg', weight: 'bold', color: '#333333', align: 'center' }
         ]
       },
       body: {
@@ -2921,7 +2921,7 @@ async function handleTokenQuery(replyToken, userId) {
         paddingAll: 'xl',
         contents: [
           { type: 'text', text: `${balance}`, size: '3xl', weight: 'bold', align: 'center', color: '#FF6B00' },
-          { type: 'text', text: '代幣', size: 'sm', align: 'center', color: '#666666', margin: 'sm' },
+          { type: 'text', text: '張', size: 'sm', align: 'center', color: '#666666', margin: 'sm' },
           { type: 'separator', margin: 'lg' },
           // 分享給好友提示
           ...(canRefer ? [{
@@ -2932,7 +2932,7 @@ async function handleTokenQuery(replyToken, userId) {
             backgroundColor: '#FFF3E0',
             cornerRadius: 'md',
             contents: [
-              { type: 'text', text: '🎁 分享給好友，雙方各得 10 代幣！', size: 'xs', color: '#E65100', align: 'center', weight: 'bold' },
+              { type: 'text', text: '🎁 分享給好友，雙方各得 10 張！', size: 'xs', color: '#E65100', align: 'center', weight: 'bold' },
               { type: 'text', text: `還可分享 ${3 - referralInfo.referralCount} 位好友`, size: 'xxs', color: '#FF8A00', align: 'center', margin: 'xs' }
             ]
           }] : [])
@@ -2946,13 +2946,13 @@ async function handleTokenQuery(replyToken, userId) {
         contents: [
           {
             type: 'button',
-            action: { type: 'message', label: '🛒 購買代幣', text: '購買代幣' },
+            action: { type: 'message', label: '🛒 購買張數', text: '購買張數' },
             style: 'primary',
             color: '#FF6B00'
           },
           ...(canRefer ? [{
             type: 'button',
-            action: { type: 'message', label: '🎁 分享給好友得代幣', text: '分享給好友' },
+            action: { type: 'message', label: '🎁 分享給好友得張數', text: '分享給好友' },
             style: 'secondary',
             height: 'sm'
           }] : [])
@@ -2965,7 +2965,7 @@ async function handleTokenQuery(replyToken, userId) {
 }
 
 /**
- * 處理購買代幣資訊 - 美化版 Carousel
+ * 處理購買張數資訊 - 美化版 Carousel
  */
 async function handlePurchaseInfo(replyToken) {
   // 方案卡片生成函數
@@ -2996,8 +2996,8 @@ async function handlePurchaseInfo(replyToken) {
             alignItems: 'center',
             contents: [
               { type: 'text', text: '🎫', size: '3xl' },
-              { type: 'text', text: `${tokens} 代幣`, size: 'xl', weight: 'bold', color: '#333333', margin: 'sm' },
-              ...(bonus > 0 ? [{ type: 'text', text: `含贈送 ${bonus} 代幣`, size: 'xs', color: '#FF6B6B', margin: 'xs' }] : [])
+              { type: 'text', text: `${tokens} 張`, size: 'xl', weight: 'bold', color: '#333333', margin: 'sm' },
+              ...(bonus > 0 ? [{ type: 'text', text: `含贈送 ${bonus} 張`, size: 'xs', color: '#FF6B6B', margin: 'xs' }] : [])
             ]
           },
           { type: 'separator', margin: 'lg' },
@@ -3006,7 +3006,7 @@ async function handlePurchaseInfo(replyToken) {
             layout: 'horizontal',
             margin: 'lg',
             contents: [
-              { type: 'text', text: '每代幣約', size: 'sm', color: '#888888', flex: 1 },
+              { type: 'text', text: '每張約', size: 'sm', color: '#888888', flex: 1 },
               { type: 'text', text: `$${perToken}`, size: 'sm', weight: 'bold', color: '#333333', align: 'end' }
             ]
           },
@@ -3023,15 +3023,15 @@ async function handlePurchaseInfo(replyToken) {
     };
   };
 
-  // 方案輪播（只保留 300 元和 500 元兩個方案）
+  // 方案輪播（使用新的張數方案：140張 和 260張）
   const planCarousel = {
     type: 'flex',
-    altText: '🛒 購買代幣方案',
+    altText: '🛒 購買張數方案',
     contents: {
       type: 'carousel',
       contents: [
-        createPlanBubble(300, 70, 10, false),
-        createPlanBubble(500, 130, 30, true)
+        createPlanBubble(300, 140, 0, false),
+        createPlanBubble(500, 260, 0, true)
       ]
     }
   };
@@ -3173,8 +3173,8 @@ async function handlePurchaseInfo(replyToken) {
           type: 'action',
           action: {
             type: 'message',
-            label: '💰 購買代幣',
-            text: '購買代幣'
+            label: '💰 購買張數',
+            text: '購買張數'
           }
         },
         {
@@ -3220,7 +3220,7 @@ async function handlePurchaseGuide(replyToken) {
           },
           {
             type: 'text',
-            text: '代幣購買與使用完整指南',
+            text: '張數購買與使用完整指南',
             size: 'xs',
             color: '#FFFFFFCC',
             align: 'center',
@@ -3273,7 +3273,7 @@ async function handlePurchaseGuide(replyToken) {
                   { type: 'text', text: '⏰', size: 'lg', flex: 0, margin: 'none' },
                   {
                     type: 'text',
-                    text: '代幣有效期（30天）',
+                    text: '張數有效期（30天）',
                     size: 'sm',
                     color: '#555555',
                     margin: 'md',
@@ -3303,7 +3303,7 @@ async function handlePurchaseGuide(replyToken) {
                   { type: 'text', text: '💎', size: 'lg', flex: 0, margin: 'none' },
                   {
                     type: 'text',
-                    text: '代幣方案與用途',
+                    text: '張數方案與用途',
                     size: 'sm',
                     color: '#555555',
                     margin: 'md',
@@ -3345,7 +3345,7 @@ async function handlePurchaseGuide(replyToken) {
               },
               {
                 type: 'text',
-                text: '註冊即贈 40 代幣',
+                text: '註冊即贈 40 張',
                 size: 'xs',
                 color: '#0c5460',
                 margin: 'xs'
@@ -3374,8 +3374,8 @@ async function handlePurchaseGuide(replyToken) {
             type: 'button',
             action: {
               type: 'message',
-              label: '🛒 購買代幣',
-              text: '購買代幣'
+              label: '🛒 購買張數',
+              text: '購買張數'
             },
             style: 'secondary'
           }
@@ -3403,14 +3403,14 @@ async function handleReferralInfo(replyToken, userId) {
     // 縮短分享文字（避免 URI 過長導致 400 錯誤）
     const shareText = `🎨 推薦貼圖製作工具！
 AI 幫你做專屬 LINE 貼圖 ✨
-🎁 新用戶 40 代幣+推薦碼「${referralCode}」再送 10！
+🎁 新用戶 40 張+推薦碼「${referralCode}」再送 10！
 👉 https://line.me/R/ti/p/@sticker-tycoon
 加入後輸入「輸入推薦碼 ${referralCode}」`;
 
     // 簡單的文字訊息 + QuickReply 分享按鈕
     const message = {
       type: 'text',
-      text: `🎁 分享給好友賺代幣
+      text: `🎁 分享給好友賺張數
 
 你的推薦碼：${referralCode}
 還可邀請：${remainingInvites} 位好友
@@ -3432,8 +3432,8 @@ AI 幫你做專屬 LINE 貼圖 ✨
             type: 'action',
             action: {
               type: 'message',
-              label: '💰 查詢代幣',
-              text: '查詢代幣'
+              label: '💰 查詢張數',
+              text: '張數'
             }
           }
         ]
@@ -3478,12 +3478,12 @@ async function handleApplyReferralCode(replyToken, userId, code) {
               cornerRadius: 'lg',
               paddingAll: 'lg',
               contents: [
-                { type: 'text', text: `+${result.tokensAwarded} 代幣`, size: 'xxl', weight: 'bold', align: 'center', color: '#28A745' },
-                { type: 'text', text: `目前餘額：${result.newBalance} 代幣`, size: 'md', align: 'center', color: '#666666', margin: 'md' }
+                { type: 'text', text: `+${result.tokensAwarded} 張`, size: 'xxl', weight: 'bold', align: 'center', color: '#28A745' },
+                { type: 'text', text: `目前餘額：${result.newBalance} 張`, size: 'md', align: 'center', color: '#666666', margin: 'md' }
               ]
             },
             { type: 'text', text: `感謝 ${result.referrerName} 的推薦！`, size: 'sm', color: '#666666', align: 'center', margin: 'lg' },
-            { type: 'text', text: '對方也獲得了 10 代幣獎勵 🎁', size: 'xs', color: '#999999', align: 'center', margin: 'sm' }
+            { type: 'text', text: '對方也獲得了 10 張獎勵 🎁', size: 'xs', color: '#999999', align: 'center', margin: 'sm' }
           ]
         },
         footer: {
@@ -3507,7 +3507,7 @@ async function handleApplyReferralCode(replyToken, userId, code) {
       quickReply: {
         items: [
           { type: 'action', action: { type: 'message', label: '🎨 創建貼圖', text: '創建貼圖' } },
-          { type: 'action', action: { type: 'message', label: '💰 購買代幣', text: '購買代幣' } },
+          { type: 'action', action: { type: 'message', label: '💰 購買張數', text: '購買張數' } },
           { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } }
         ]
       }
@@ -3525,7 +3525,7 @@ async function handleShareReferralCode(replyToken, userId) {
   // 生成分享訊息
   const shareText = `🎁 我在用「貼圖大亨」創建專屬 LINE 貼圖！
 
-輸入我的推薦碼，你我都能獲得 10 代幣 🎉
+輸入我的推薦碼，你我都能獲得 10 張 🎉
 
 📋 推薦碼：${code}
 

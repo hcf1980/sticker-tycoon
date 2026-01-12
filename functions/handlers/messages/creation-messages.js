@@ -2,20 +2,20 @@ const { LineStickerSpecs } = require('../../sticker-styles');
 
 /**
  * 生成數量選擇訊息（6宮格批次生成優化版）
- * 每 6 張 = 1 次 API = 3 代幣
+ * 每 6 張 = 1 次 API = 3 張
  */
 function generateCountSelectionMessage(_expressions) {
   const validCounts = LineStickerSpecs.validCounts; // [6, 12, 18]
 
-  // Quick Reply 項目（包含代幣消耗說明）
+  // Quick Reply 項目（包含張數消耗說明）
   const quickReplyItems = validCounts.map(count => {
     const apiCalls = count / 6;
-    const tokenCost = apiCalls * 3;  // 每次API調用消耗3枚代幣
+    const tokenCost = apiCalls * 3;  // 每次API調用消耗3張
     return {
       type: 'action',
       action: {
         type: 'message',
-        label: `${count}張 (${tokenCost}代幣)`,
+        label: `${count}張 (${tokenCost}張)`,
         text: `數量:${count}`
       }
     };
@@ -51,7 +51,7 @@ function generateCountSelectionMessage(_expressions) {
           },
           {
             type: 'text',
-            text: '💰 每6張僅需 3 枚代幣',
+            text: '💰 每6張僅需 3 張',
             size: 'xs',
             color: '#28A745',
             margin: 'sm',

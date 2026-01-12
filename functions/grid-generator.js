@@ -51,14 +51,14 @@ const GRID_CONFIG = {
     padding: 10
   },
 
-  // 代幣設定
-  tokensPerBatch: 3,  // 每 6 張 = 3 代幣
+  // 張數設定（新制度：1 張貼圖 = 1 張）
+  tokensPerBatch: 6,  // 每 6 張 = 6 張
 
   // 套餐配置
   packages: {
-    basic: { stickers: 6, tokens: 3, apiCalls: 1 },
-    standard: { stickers: 12, tokens: 6, apiCalls: 2 },
-    premium: { stickers: 18, tokens: 9, apiCalls: 3 }
+    basic: { stickers: 6, tokens: 6, apiCalls: 1 },
+    standard: { stickers: 12, tokens: 12, apiCalls: 2 },
+    premium: { stickers: 18, tokens: 18, apiCalls: 3 }
   }
 };
 

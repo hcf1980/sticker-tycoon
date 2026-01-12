@@ -134,7 +134,7 @@ async function getOrCreateUser(lineUserId, displayName = null, pictureUrl = null
         line_user_id: lineUserId,
         display_name: displayName,
         picture_url: pictureUrl,
-        sticker_credits: 40,  // 初始 40 代幣
+        sticker_credits: 40,  // 初始 40 張
         referral_code: referralCode
       }])
       .select()
@@ -142,15 +142,15 @@ async function getOrCreateUser(lineUserId, displayName = null, pictureUrl = null
 
     if (insertError) throw insertError;
 
-    // 非同步記錄初始代幣交易和代幣帳本（不阻塞回應）
+    // 非同步記錄初始張數交易和張數帳本（不阻塞回應）
     if (newUser) {
       const now = new Date();
       const expiresAt = new Date(now);
       expiresAt.setDate(expiresAt.getDate() + 30); // 30 天後過期
 
       // 記錄到 token_transactions
-      recordTokenTransaction(lineUserId, 40, 40, 'initial', '新用戶贈送 40 代幣', null, null, expiresAt.toISOString())
-        .catch(err => console.error('記錄初始代幣交易失敗:', err));
+      recordTokenTransaction(lineUserId, 40, 40, 'initial', '新用戶贈送 40 張', null, null, expiresAt.toISOString())
+        .catch(err => console.error('記錄初始張數交易失敗:', err));
 
       // 記錄到 token_ledger（用於有效期追蹤和 FIFO 扣款）
       getSupabaseClient()
@@ -166,8 +166,8 @@ async function getOrCreateUser(lineUserId, displayName = null, pictureUrl = null
           expires_at: expiresAt.toISOString(),
           is_expired: false
         }])
-        .then(() => console.log(`✅ 新用戶 ${lineUserId} 的代幣帳本已建立`))
-        .catch(err => console.error('記錄初始代幣帳本失敗:', err));
+        .then(() => console.log(`✅ 新用戶 ${lineUserId} 的張數帳本已建立`))
+        .catch(err => console.error('記錄初始張數帳本失敗:', err));
 
       // 快取新用戶
       globalCache.set(cacheKey, newUser, 600000);
@@ -741,7 +741,7 @@ async function isInUploadQueue(userId, stickerId) {
 }
 
 /**
- * 記錄代幣交易
+ * 記錄張數交易
  */
 async function recordTokenTransaction(userId, amount, balanceAfter, type, description, referenceId = null, adminNote = null, expiresAt = null) {
   try {
@@ -767,13 +767,13 @@ async function recordTokenTransaction(userId, amount, balanceAfter, type, descri
     if (error) throw error;
     return true;
   } catch (error) {
-    console.error('記錄代幣交易失敗:', error);
+    console.error('記錄張數交易失敗:', error);
     return false;
   }
 }
 
 /**
- * 取得用戶代幣餘額（優化版：使用快取的用戶資料）
+ * 取得用戶張數餘額（優化版：使用快取的用戶資料）
  */
 async function getUserTokenBalance(lineUserId) {
   try {
@@ -795,13 +795,13 @@ async function getUserTokenBalance(lineUserId) {
     if (error) throw error;
     return data?.sticker_credits || 0;
   } catch (error) {
-    console.error('取得代幣餘額失敗:', error);
+    console.error('取得張數餘額失敗:', error);
     return 0;
   }
 }
 
 /**
- * 檢查並扣除代幣（FIFO：優先扣除最早到期的代幣）
+ * 檢查並扣除張數（FIFO：優先扣除最早到期的張數）
  * @param {string} lineUserId - LINE 用戶 ID
  * @param {number} amount - 要扣除的數量
  * @param {string} description - 描述
@@ -812,7 +812,7 @@ async function deductTokens(lineUserId, amount, description, referenceId = null)
   try {
     const supabase = getSupabaseClient();
 
-    // 1. 查詢所有可用代幣（未過期且有剩餘），按到期時間排序（FIFO）
+    // 1. 查詢所有可用張數（未過期且有剩餘），按到期時間排序（FIFO）
     const { data: availableLedgers, error: ledgerError } = await supabase
       .from('token_ledger')
       .select('*')
@@ -823,7 +823,7 @@ async function deductTokens(lineUserId, amount, description, referenceId = null)
 
     if (ledgerError) throw ledgerError;
 
-    // 計算總可用代幣
+    // 計算總可用張數
     const totalAvailable = availableLedgers?.reduce(
       (sum, l) => sum + l.remaining_tokens, 0
     ) || 0;
@@ -833,11 +833,11 @@ async function deductTokens(lineUserId, amount, description, referenceId = null)
       return {
         success: false,
         balance: totalAvailable,
-        error: `代幣不足！目前餘額 ${totalAvailable}，需要 ${amount} 代幣`
+        error: `張數不足！目前餘額 ${totalAvailable}，需要 ${amount} 張`
       };
     }
 
-    // 2. 從最早到期的代幣開始扣除（FIFO）
+    // 2. 從最早到期的張數開始扣除（FIFO）
     let remaining = amount;
     const updates = [];
 
@@ -855,7 +855,7 @@ async function deductTokens(lineUserId, amount, description, referenceId = null)
       remaining -= deduct;
     }
 
-    // 3. 批次更新代幣帳本
+    // 3. 批次更新張數帳本
     for (const update of updates) {
       await supabase
         .from('token_ledger')
@@ -889,17 +889,17 @@ async function deductTokens(lineUserId, amount, description, referenceId = null)
 
     // 6. 非同步記錄交易（不阻塞回應）
     recordTokenTransaction(lineUserId, -amount, newBalance, 'generate', description, referenceId)
-      .catch(err => console.error('記錄代幣交易失敗:', err));
+      .catch(err => console.error('記錄張數交易失敗:', err));
 
     return { success: true, balance: newBalance };
   } catch (error) {
-    console.error('扣除代幣失敗:', error);
+    console.error('扣除張數失敗:', error);
     return { success: false, balance: 0, error: error.message };
   }
 }
 
 /**
- * 增加代幣（含有效期追蹤，購買/管理員調整用）
+ * 增加張數（含有效期追蹤，購買/管理員調整用）
  */
 async function addTokens(lineUserId, amount, type, description, adminNote = null) {
   try {
@@ -917,7 +917,7 @@ async function addTokens(lineUserId, amount, type, description, adminNote = null
     const currentBalance = user?.sticker_credits || 0;
     const newBalance = currentBalance + amount;
 
-    // 增加代幣
+    // 增加張數
     const { error: updateError } = await supabase
       .from('users')
       .update({ sticker_credits: newBalance, updated_at: new Date().toISOString() })
@@ -959,17 +959,17 @@ async function addTokens(lineUserId, amount, type, description, adminNote = null
 
     // 非同步記錄交易（不阻塞回應）
     recordTokenTransaction(lineUserId, amount, newBalance, type, description, null, adminNote, expiresAt.toISOString())
-      .catch(err => console.error('記錄代幣交易失敗:', err));
+      .catch(err => console.error('記錄張數交易失敗:', err));
 
     return { success: true, balance: newBalance };
   } catch (error) {
-    console.error('增加代幣失敗:', error);
+    console.error('增加張數失敗:', error);
     return { success: false, balance: 0, error: error.message };
   }
 }
 
 /**
- * 取得用戶代幣交易記錄
+ * 取得用戶張數交易記錄
  */
 async function getTokenTransactions(lineUserId, limit = 20) {
   try {
@@ -983,7 +983,7 @@ async function getTokenTransactions(lineUserId, limit = 20) {
     if (error) throw error;
     return data || [];
   } catch (error) {
-    console.error('取得代幣交易記錄失敗:', error);
+    console.error('取得張數交易記錄失敗:', error);
     return [];
   }
 }
@@ -1183,7 +1183,7 @@ module.exports = {
   getUploadQueue,
   clearUploadQueue,
   isInUploadQueue,
-  // 代幣系統
+  // 張數系統
   recordTokenTransaction,
   getUserTokenBalance,
   deductTokens,

@@ -3,17 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>代幣管理 - 貼圖大亨</title>
+  <title>張數管理 - 貼圖大亨</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <style>
-    .token-card { transition: all 0.2s; }
-    .token-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .sheets-card { transition: all 0.2s; }
+    .sheets-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
   </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
   <nav class="bg-yellow-500 text-white p-4 shadow-lg">
     <div class="container mx-auto flex justify-between items-center">
-      <h1 class="text-xl font-bold">💰 代幣管理</h1>
+      <h1 class="text-xl font-bold">💰 張數管理</h1>
       <div>
         <a href="/admin/" class="text-white hover:text-yellow-200 mr-4">← 返回</a>
         <button onclick="logout()" class="bg-yellow-600 hover:bg-yellow-700 px-3 py-1 rounded">登出</button>
@@ -24,19 +24,19 @@
   <main class="container mx-auto p-4">
     <!-- 統計卡片 -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-      <div class="bg-white rounded-lg p-4 shadow token-card">
+      <div class="bg-white rounded-lg p-4 shadow sheets-card">
         <div class="text-sm text-gray-500">總用戶數</div>
         <div class="text-2xl font-bold text-blue-600" id="stat-users">-</div>
       </div>
-      <div class="bg-white rounded-lg p-4 shadow token-card">
-        <div class="text-sm text-gray-500">總代幣數</div>
+      <div class="bg-white rounded-lg p-4 shadow sheets-card">
+        <div class="text-sm text-gray-500">總張數</div>
         <div class="text-2xl font-bold text-yellow-600" id="stat-total-tokens">-</div>
       </div>
-      <div class="bg-white rounded-lg p-4 shadow token-card">
+      <div class="bg-white rounded-lg p-4 shadow sheets-card">
         <div class="text-sm text-gray-500">今日消耗</div>
         <div class="text-2xl font-bold text-red-600" id="stat-today-spent">-</div>
       </div>
-      <div class="bg-white rounded-lg p-4 shadow token-card">
+      <div class="bg-white rounded-lg p-4 shadow sheets-card">
         <div class="text-sm text-gray-500">今日儲值</div>
         <div class="text-2xl font-bold text-green-600" id="stat-today-added">-</div>
       </div>
@@ -45,7 +45,7 @@
     <!-- 搜尋 -->
     <div class="bg-white rounded-lg p-4 shadow mb-6">
       <div class="flex gap-4">
-        <input type="text" id="search-input" placeholder="搜尋 LINE User ID 或顯示名稱..." 
+        <input type="text" id="search-input" placeholder="搜尋 LINE User ID 或顯示名稱..."
                class="flex-1 border rounded px-4 py-2" onkeyup="searchUsers()">
         <button onclick="searchUsers()" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded">
           🔍 搜尋
@@ -64,7 +64,7 @@
             <tr>
               <th class="px-4 py-3 text-left text-sm font-medium text-gray-600">用戶</th>
               <th class="px-4 py-3 text-center text-sm font-medium text-gray-600">備註/轉帳碼</th>
-              <th class="px-4 py-3 text-center text-sm font-medium text-gray-600">代幣餘額</th>
+              <th class="px-4 py-3 text-center text-sm font-medium text-gray-600">張數餘額</th>
               <th class="px-4 py-3 text-center text-sm font-medium text-gray-600">貼圖</th>
               <th class="px-4 py-3 text-center text-sm font-medium text-gray-600">加入日期</th>
               <th class="px-4 py-3 text-center text-sm font-medium text-gray-600">操作</th>
@@ -78,10 +78,10 @@
     </div>
   </main>
 
-  <!-- 調整代幣 Modal -->
+  <!-- 調整張數 Modal -->
   <div id="adjust-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
     <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-      <h3 class="text-lg font-bold mb-4">💰 調整代幣</h3>
+      <h3 class="text-lg font-bold mb-4">💰 調整張數</h3>
       <input type="hidden" id="adjust-user-id">
       <div class="mb-4">
         <label class="block text-sm font-medium text-gray-700 mb-1">用戶</label>
@@ -95,19 +95,19 @@
       <div class="mb-4">
         <label class="block text-sm font-medium text-gray-700 mb-1">調整類型</label>
         <select id="adjust-type" class="w-full border rounded px-3 py-2">
-          <option value="add">➕ 增加代幣（儲值）</option>
-          <option value="deduct">➖ 扣除代幣</option>
+          <option value="add">➕ 增加張數（儲值）</option>
+          <option value="deduct">➖ 扣除張數</option>
           <option value="set">📝 設定為指定數量</option>
         </select>
       </div>
       <div class="mb-4">
         <label class="block text-sm font-medium text-gray-700 mb-1">數量</label>
-        <input type="number" id="adjust-amount" class="w-full border rounded px-3 py-2" min="1" value="70">
+        <input type="number" id="adjust-amount" class="w-full border rounded px-3 py-2" min="1" value="140">
         <div class="mt-2 flex gap-2 flex-wrap">
-          <button onclick="setAmount(70)" class="px-3 py-1 bg-gray-100 rounded text-sm hover:bg-gray-200">70 (NT$300)</button>
-          <button onclick="setAmount(130)" class="px-3 py-1 bg-gray-100 rounded text-sm hover:bg-gray-200">130 (NT$500)</button>
+          <button onclick="setAmount(140)" class="px-3 py-1 bg-gray-100 rounded text-sm hover:bg-gray-200">140 (NT$300)</button>
+          <button onclick="setAmount(260)" class="px-3 py-1 bg-gray-100 rounded text-sm hover:bg-gray-200">260 (NT$500)</button>
         </div>
-        <p class="text-xs text-gray-500 mt-2">⚠️ 代幣有效期限：30 天</p>
+        <p class="text-xs text-gray-500 mt-2">⚠️ 張數有效期限：30 天</p>
       </div>
       <div class="mb-4">
         <label class="block text-sm font-medium text-gray-700 mb-1">備註（選填）</label>
