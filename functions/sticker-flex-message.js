@@ -884,7 +884,6 @@ async function getExpressionTemplates() {
 async function generateExpressionSelectionFlexMessage() {
   const templates = await getExpressionTemplates();
   const displayExpressions = templates.slice(0, 24);
-  const displayExpressions = expressions.slice(0, 24); // LINE 限制最多 24 個
 
   // 將表情轉換為按鈕（每行 2 個）
   const buttonRows = [];
