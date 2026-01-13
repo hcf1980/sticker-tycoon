@@ -18,9 +18,9 @@ function generateConfirmationMessage(data) {
     ? `🌍 場景：${data.customSceneDescription.substring(0, 20)}${data.customSceneDescription.length > 20 ? '...' : ''}`
     : `🌍 場景：${scene.emoji} ${scene.name}`;
 
-  // 計算張數消耗（每 6 張 = 3 張）
+  // 計算張數消耗（生成幾張就扣幾張）
   const stickerCount = data.count || 6;
-  const tokenCost = Math.ceil(stickerCount / 6) * 3;
+  const tokenCost = stickerCount;
 
   return {
     type: 'flex',

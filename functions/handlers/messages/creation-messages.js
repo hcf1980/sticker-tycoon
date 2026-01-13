@@ -1,21 +1,19 @@
 const { LineStickerSpecs } = require('../../sticker-styles');
 
 /**
- * 生成數量選擇訊息（6宮格批次生成優化版）
- * 每 6 張 = 1 次 API = 3 張
+ * 生成數量選擇訊息
+ * 生成幾張就扣幾張
  */
 function generateCountSelectionMessage(_expressions) {
   const validCounts = LineStickerSpecs.validCounts; // [6, 12, 18]
 
   // Quick Reply 項目（包含張數消耗說明）
   const quickReplyItems = validCounts.map(count => {
-    const apiCalls = count / 6;
-    const tokenCost = apiCalls * 3;  // 每次API調用消耗3張
     return {
       type: 'action',
       action: {
         type: 'message',
-        label: `${count}張 (${tokenCost}張)`,
+        label: `${count}張 (${count}張)`,
         text: `數量:${count}`
       }
     };
@@ -43,18 +41,10 @@ function generateCountSelectionMessage(_expressions) {
           },
           {
             type: 'text',
-            text: '🎨 6宮格批次生成特價！',
+            text: '🎨 生成幾張就扣幾張！',
             size: 'sm',
             color: '#FF6B6B',
             margin: 'xs',
-            weight: 'bold'
-          },
-          {
-            type: 'text',
-            text: '💰 每6張僅需 3 張',
-            size: 'xs',
-            color: '#28A745',
-            margin: 'sm',
             weight: 'bold'
           },
           { type: 'separator', margin: 'lg' },
@@ -83,7 +73,7 @@ function generateCountSelectionMessage(_expressions) {
                   },
                   {
                     type: 'text',
-                    text: '3 張',
+                    text: '6 張',
                     size: 'xxs',
                     color: '#28A745',
                     align: 'center',
@@ -118,7 +108,7 @@ function generateCountSelectionMessage(_expressions) {
                   },
                   {
                     type: 'text',
-                    text: '6 張',
+                    text: '12 張',
                     size: 'xxs',
                     color: '#28A745',
                     align: 'center',
@@ -153,7 +143,7 @@ function generateCountSelectionMessage(_expressions) {
                   },
                   {
                     type: 'text',
-                    text: '9 張',
+                    text: '18 張',
                     size: 'xxs',
                     color: '#28A745',
                     align: 'center',

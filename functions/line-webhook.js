@@ -457,14 +457,14 @@ async function handleCreationFlow(replyToken, userId, text, stage, state) {
         const count = parseInt(text.replace('數量:', ''));
         message = await handleCountSelection(userId, count);
       } else {
-        message = { 
-          type: 'text', 
+        message = {
+          type: 'text',
           text: '⚠️ 請點擊上方按鈕選擇數量！',
           quickReply: {
             items: [
-              { type: 'action', action: { type: 'message', label: '6張 (3張)', text: '數量:6' } },
-              { type: 'action', action: { type: 'message', label: '12張 (6張)', text: '數量:12' } },
-              { type: 'action', action: { type: 'message', label: '18張 (9張)', text: '數量:18' } },
+              { type: 'action', action: { type: 'message', label: '6張 (6張)', text: '數量:6' } },
+              { type: 'action', action: { type: 'message', label: '12張 (12張)', text: '數量:12' } },
+              { type: 'action', action: { type: 'message', label: '18張 (18張)', text: '數量:18' } },
               { type: 'action', action: { type: 'message', label: '❌ 取消', text: '取消' } }
             ]
           }
@@ -600,7 +600,7 @@ async function handleConfirmGeneration(replyToken, userId, state) {
     });
   }
 
-  // 計算需要的張數數量（6宮格批次生成：每6張只需3張）
+  // 計算需要的張數數量（生成幾張就扣幾張）
   const stickerCount = tempData.count || 6;
 
   // 每次「確認生成」都重新抽樣表情，並短期避免重複
@@ -615,7 +615,7 @@ async function handleConfirmGeneration(replyToken, userId, state) {
   tempData.expressions = selectedExpressions;
   tempData.recentExpressions = nextRecent;
   const apiCalls = Math.ceil(stickerCount / 6);  // 每次API調用生成6張
-  const tokenCost = apiCalls * 3;  // 每次API調用消耗3張
+  const tokenCost = stickerCount;  // 生成幾張就扣幾張
 
   // ✅ 檢查張數是否足夠（但不扣除！等生成成功後再扣）
   const tokenBalance = await getUserTokenBalance(userId);

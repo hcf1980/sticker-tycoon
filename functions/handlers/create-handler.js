@@ -557,9 +557,9 @@ async function handleCountSelection(userId, count) {
       text: '⚠️ 請選擇有效的數量！',
       quickReply: {
         items: [
-          { type: 'action', action: { type: 'message', label: '6張 (3張)', text: '數量:6' } },
-          { type: 'action', action: { type: 'message', label: '12張 (6張)', text: '數量:12' } },
-          { type: 'action', action: { type: 'message', label: '18張 (9張)', text: '數量:18' } },
+          { type: 'action', action: { type: 'message', label: '6張 (6張)', text: '數量:6' } },
+          { type: 'action', action: { type: 'message', label: '12張 (12張)', text: '數量:12' } },
+          { type: 'action', action: { type: 'message', label: '18張 (18張)', text: '數量:18' } },
           { type: 'action', action: { type: 'message', label: '❌ 取消', text: '取消' } }
         ]
       }
