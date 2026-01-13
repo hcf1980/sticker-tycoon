@@ -552,14 +552,14 @@ async function handleCountSelection(userId, count) {
   console.log(`📊 用戶 ${userId} 選擇數量：${count}`);
   
   if (!LineStickerSpecs.validCounts.includes(count)) {
-    return { 
-      type: 'text', 
+    return {
+      type: 'text',
       text: '⚠️ 請選擇有效的數量！',
       quickReply: {
         items: [
-          { type: 'action', action: { type: 'message', label: '6張 (3代幣)', text: '數量:6' } },
-          { type: 'action', action: { type: 'message', label: '12張 (6代幣)', text: '數量:12' } },
-          { type: 'action', action: { type: 'message', label: '18張 (9代幣)', text: '數量:18' } },
+          { type: 'action', action: { type: 'message', label: '6張 (3張)', text: '數量:6' } },
+          { type: 'action', action: { type: 'message', label: '12張 (6張)', text: '數量:12' } },
+          { type: 'action', action: { type: 'message', label: '18張 (9張)', text: '數量:18' } },
           { type: 'action', action: { type: 'message', label: '❌ 取消', text: '取消' } }
         ]
       }

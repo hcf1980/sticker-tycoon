@@ -83,7 +83,7 @@ function generateCountSelectionMessage(_expressions) {
                   },
                   {
                     type: 'text',
-                    text: '3 代幣',
+                    text: '3 張',
                     size: 'xxs',
                     color: '#28A745',
                     align: 'center',
@@ -118,7 +118,7 @@ function generateCountSelectionMessage(_expressions) {
                   },
                   {
                     type: 'text',
-                    text: '6 代幣',
+                    text: '6 張',
                     size: 'xxs',
                     color: '#28A745',
                     align: 'center',
@@ -153,7 +153,7 @@ function generateCountSelectionMessage(_expressions) {
                   },
                   {
                     type: 'text',
-                    text: '9 代幣',
+                    text: '9 張',
                     size: 'xxs',
                     color: '#28A745',
                     align: 'center',
