@@ -134,18 +134,18 @@ function generateCouponRedeemPromptFlexMessage() {
         backgroundColor: '#06C755'
       },
       body: {
-        type: 'box',
+            type: 'box',
         layout: 'vertical',
         spacing: 'md',
-        contents: [
-          {
+            contents: [
+              {
             type: 'text',
             text: '請直接輸入你的兌換碼',
             weight: 'bold',
             size: 'md',
             color: '#111827'
-          },
-          {
+              },
+              {
             type: 'text',
             text: '優惠碼為限時活動，請留意期限。',
             size: 'sm',
@@ -163,11 +163,11 @@ function generateCouponRedeemPromptFlexMessage() {
         paddingAll: '16px'
       },
       footer: {
-        type: 'box',
-        layout: 'vertical',
+            type: 'box',
+            layout: 'vertical',
         spacing: 'sm',
-        contents: [
-          {
+            contents: [
+              {
             type: 'button',
             style: 'secondary',
             height: 'sm',
@@ -221,8 +221,8 @@ function generateCouponRedeemResultFlexMessage({
         backgroundColor: color
       },
       body: {
-        type: 'box',
-        layout: 'vertical',
+            type: 'box',
+            layout: 'vertical',
         spacing: 'md',
         contents: [
           {
@@ -247,22 +247,22 @@ function generateCouponRedeemResultFlexMessage({
         spacing: 'sm',
         contents: [
           {
-            type: 'button',
+    type: 'button',
             style: 'primary',
-            height: 'sm',
-            action: {
-              type: 'message',
+    height: 'sm',
+    action: {
+      type: 'message',
               label: '查詢張數',
               text: '代幣'
-            },
+    },
             color: '#06C755'
           },
           {
             type: 'button',
             style: 'secondary',
             height: 'sm',
-            action: {
-              type: 'message',
+    action: {
+      type: 'message',
               label: '創建貼圖',
               text: '創建貼圖'
             }
@@ -278,15 +278,15 @@ function generateCouponRedeemResultFlexMessage({
  * 教學第一部分 Flex Message
  */
 function generateTutorialPart1FlexMessage() {
-  return {
+        return {
     type: 'flex',
     altText: '功能說明 - 第一部分',
     contents: {
-      type: 'bubble',
+    type: 'bubble',
       hero: {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
+      type: 'box',
+      layout: 'vertical',
+      contents: [
           {
             type: 'text',
             text: '📸 功能說明',
@@ -306,32 +306,32 @@ function generateTutorialPart1FlexMessage() {
         ],
         paddingAll: '20px',
         backgroundColor: '#06C755'
-      },
+    },
       body: {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
-          {
-            type: 'text',
+      type: 'box',
+      layout: 'vertical',
+      contents: [
+        {
+          type: 'text',
             text: '🎨 三步驟創建專屬貼圖',
-            weight: 'bold',
+          weight: 'bold',
             size: 'md',
             margin: 'md'
-          },
-          {
-            type: 'box',
-            layout: 'vertical',
+        },
+        {
+          type: 'box',
+          layout: 'vertical',
             margin: 'lg',
             spacing: 'sm',
-            contents: [
-              {
+          contents: [
+            {
                 type: 'text',
                 text: '1️⃣ 輸入貼圖組名稱',
                 size: 'sm',
                 color: '#111827',
                 wrap: true
-              },
-              {
+        },
+        {
                 type: 'text',
                 text: '2️⃣ 上傳一張清晰大頭照',
                 size: 'sm',
@@ -339,7 +339,7 @@ function generateTutorialPart1FlexMessage() {
                 wrap: true
               },
               {
-                type: 'text',
+            type: 'text',
                 text: '3️⃣ 選擇風格、構圖、表情',
                 size: 'sm',
                 color: '#111827',
@@ -373,18 +373,18 @@ function generateTutorialPart1FlexMessage() {
             color: '#666666',
             wrap: true
           }
-        ],
+      ],
         paddingAll: '20px'
-      },
+    },
       footer: {
-        type: 'box',
-        layout: 'vertical',
+      type: 'box',
+      layout: 'vertical',
         spacing: 'sm',
-        contents: [
-          {
-            type: 'button',
-            style: 'primary',
-            height: 'sm',
+      contents: [
+        {
+          type: 'button',
+          style: 'primary',
+          height: 'sm',
             action: {
               type: 'message',
               label: '下一頁：我的貼圖',
@@ -401,11 +401,11 @@ function generateTutorialPart1FlexMessage() {
               label: '🎨 立即創建',
               text: '創建貼圖'
             }
-          }
+        }
         ],
         paddingAll: '20px'
       }
-    }
+  }
   };
 }
 
@@ -417,11 +417,11 @@ function generateTutorialPart2FlexMessage() {
     type: 'flex',
     altText: '功能說明 - 第二部分',
     contents: {
-      type: 'bubble',
+    type: 'bubble',
       hero: {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
+      type: 'box',
+      layout: 'vertical',
+      contents: [
           {
             type: 'text',
             text: '📁 功能說明',
@@ -441,11 +441,11 @@ function generateTutorialPart2FlexMessage() {
         ],
         paddingAll: '20px',
         backgroundColor: '#06C755'
-      },
-      body: {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
+    },
+    body: {
+      type: 'box',
+      layout: 'vertical',
+      contents: [
           {
             type: 'text',
             text: '📦 管理你的貼圖作品',
@@ -487,7 +487,7 @@ function generateTutorialPart2FlexMessage() {
                 color: '#111827',
                 wrap: true
               }
-            ]
+      ]
           },
           {
             type: 'separator',
@@ -512,14 +512,14 @@ function generateTutorialPart2FlexMessage() {
         paddingAll: '20px'
       },
       footer: {
-        type: 'box',
-        layout: 'vertical',
+      type: 'box',
+      layout: 'vertical',
         spacing: 'sm',
-        contents: [
-          {
-            type: 'button',
-            style: 'primary',
-            height: 'sm',
+      contents: [
+        {
+          type: 'button',
+          style: 'primary',
+          height: 'sm',
             action: {
               type: 'message',
               label: '下一頁：早安圖',
@@ -552,11 +552,11 @@ function generateTutorialPart3FlexMessage() {
     type: 'flex',
     altText: '功能說明 - 第三部分',
     contents: {
-      type: 'bubble',
+    type: 'bubble',
       hero: {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
+      type: 'box',
+      layout: 'vertical',
+      contents: [
           {
             type: 'text',
             text: '🌅 功能說明',
@@ -576,25 +576,25 @@ function generateTutorialPart3FlexMessage() {
         ],
         paddingAll: '20px',
         backgroundColor: '#06C755'
-      },
+    },
       body: {
-        type: 'box',
-        layout: 'vertical',
-        contents: [
-          {
-            type: 'text',
+      type: 'box',
+      layout: 'vertical',
+      contents: [
+        {
+          type: 'text',
             text: '🌅 每日早安圖',
-            weight: 'bold',
+          weight: 'bold',
             size: 'md',
             margin: 'md'
-          },
-          {
-            type: 'box',
-            layout: 'vertical',
+        },
+        {
+          type: 'box',
+          layout: 'vertical',
             margin: 'lg',
             spacing: 'sm',
-            contents: [
-              {
+          contents: [
+            {
                 type: 'text',
                 text: '📅 每日自動更新',
                 size: 'sm',
@@ -607,9 +607,9 @@ function generateTutorialPart3FlexMessage() {
                 size: 'sm',
                 color: '#111827',
                 wrap: true
-              },
-              {
-                type: 'text',
+        },
+        {
+          type: 'text',
                 text: '💬 可分享給好友',
                 size: 'sm',
                 color: '#111827',
@@ -639,22 +639,22 @@ function generateTutorialPart3FlexMessage() {
           {
             type: 'text',
             text: '• 早安圖每日凌晨自動更新\n• 結合當日節氣與祝福語\n• 可分享給好友或群組',
-            size: 'xs',
-            color: '#666666',
+          size: 'xs',
+          color: '#666666',
             wrap: true
           }
-        ],
+      ],
         paddingAll: '20px'
-      },
+    },
       footer: {
-        type: 'box',
-        layout: 'vertical',
+      type: 'box',
+      layout: 'vertical',
         spacing: 'sm',
-        contents: [
-          {
-            type: 'button',
-            style: 'primary',
-            height: 'sm',
+      contents: [
+        {
+          type: 'button',
+          style: 'primary',
+          height: 'sm',
             action: {
               type: 'message',
               label: '🌅 查看早安圖',
@@ -818,10 +818,10 @@ function generateStyleSelectionFlexMessage(styles) {
         paddingAll: '20px'
       },
       footer: {
-        type: 'box',
-        layout: 'vertical',
-        spacing: 'sm',
-        contents: [
+            type: 'box',
+            layout: 'vertical',
+            spacing: 'sm',
+            contents: [
           {
             type: 'button',
             style: 'secondary',
@@ -858,7 +858,7 @@ function generateStyleSelectionFlexMessage(styles) {
  * 生成表情選擇 Flex Message
  */
 function generateExpressionSelectionFlexMessage() {
-  const expressions = DefaultExpressions || [];
+  const expressions = Object.values(DefaultExpressions || {});
   const displayExpressions = expressions.slice(0, 24); // LINE 限制最多 24 個
 
   // 將表情轉換為按鈕（每行 2 個）
@@ -877,9 +877,9 @@ function generateExpressionSelectionFlexMessage() {
     }));
 
     buttonRows.push({
-      type: 'box',
+            type: 'box',
       layout: 'horizontal',
-      spacing: 'sm',
+            spacing: 'sm',
       contents: row.length === 2 ? row : [...row, { type: 'filler' }]
     });
   }
@@ -892,7 +892,7 @@ function generateExpressionSelectionFlexMessage() {
       hero: {
         type: 'box',
         layout: 'vertical',
-        contents: [
+            contents: [
           {
             type: 'text',
             text: '😀 選擇表情模板',
@@ -914,9 +914,9 @@ function generateExpressionSelectionFlexMessage() {
         backgroundColor: '#06C755'
       },
       body: {
-        type: 'box',
-        layout: 'vertical',
-        spacing: 'sm',
+            type: 'box',
+            layout: 'vertical',
+            spacing: 'sm',
         contents: buttonRows.length > 0 ? buttonRows : [
           {
             type: 'text',
@@ -941,7 +941,7 @@ function generateExpressionSelectionFlexMessage() {
               type: 'message',
               label: '❌ 取消',
               text: '取消'
-            }
+          }
           }
         ],
         paddingAll: '20px'

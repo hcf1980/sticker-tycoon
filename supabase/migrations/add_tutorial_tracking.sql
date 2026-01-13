@@ -1,4 +1,3 @@
 -- Add tutorial tracking column to users table
--- This allows the system to track when a user was last shown the tutorial.
 ALTER TABLE public.users
 ADD COLUMN IF NOT EXISTS tutorial_shown_at TIMESTAMPTZ;
