@@ -883,27 +883,26 @@ async function getExpressionTemplates() {
  */
 async function generateExpressionSelectionFlexMessage() {
   const templates = await getExpressionTemplates();
-  const displayExpressions = templates.slice(0, 24);
 
   // 將表情轉換為按鈕（每行 2 個）
   const buttonRows = [];
-  for (let i = 0; i < displayExpressions.length; i += 2) {
-    const row = displayExpressions.slice(i, i + 2).map(expr => ({
+  for (let i = 0; i < templates.length; i += 2) {
+    const row = templates.slice(i, i + 2).map(expr => ({
       type: 'button',
       style: 'primary',
       height: 'sm',
       action: {
         type: 'message',
         label: `${expr.emoji} ${expr.name}`,
-        text: `表情:${expr.id}`
+        text: `表情模板:${expr.id}`
       },
       color: '#06C755'
     }));
 
     buttonRows.push({
-            type: 'box',
+      type: 'box',
       layout: 'horizontal',
-            spacing: 'sm',
+      spacing: 'sm',
       contents: row.length === 2 ? row : [...row, { type: 'filler' }]
     });
   }
@@ -916,7 +915,7 @@ async function generateExpressionSelectionFlexMessage() {
       hero: {
         type: 'box',
         layout: 'vertical',
-            contents: [
+        contents: [
           {
             type: 'text',
             text: '😀 選擇表情模板',
@@ -938,9 +937,9 @@ async function generateExpressionSelectionFlexMessage() {
         backgroundColor: '#06C755'
       },
       body: {
-            type: 'box',
-            layout: 'vertical',
-            spacing: 'sm',
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'sm',
         contents: buttonRows.length > 0 ? buttonRows : [
           {
             type: 'text',
@@ -965,21 +964,31 @@ async function generateExpressionSelectionFlexMessage() {
               type: 'message',
               label: '❌ 取消',
               text: '取消'
-          }
+            }
           }
         ],
         paddingAll: '20px'
       }
     },
     quickReply: {
-      items: displayExpressions.slice(0, 5).map(expr => ({
-        type: 'action',
-        action: {
-          type: 'message',
-          label: `${expr.emoji} ${expr.name}`,
-          text: `表情:${expr.id}`
+      items: [
+        ...templates.slice(0, 6).map(expr => ({
+          type: 'action',
+          action: {
+            type: 'message',
+            label: `${expr.emoji} ${expr.name}`,
+            text: `表情模板:${expr.id}`
+          }
+        })),
+        {
+          type: 'action',
+          action: {
+            type: 'message',
+            label: '❌ 取消',
+            text: '取消'
+          }
         }
-      }))
+      ]
     }
   };
 }
