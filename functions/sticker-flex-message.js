@@ -857,8 +857,33 @@ function generateStyleSelectionFlexMessage(styles) {
 /**
  * 生成表情選擇 Flex Message
  */
-function generateExpressionSelectionFlexMessage() {
-  const expressions = Object.values(DefaultExpressions || {});
+async function getExpressionTemplates() {
+  try {
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase
+      .from('expression_template_settings')
+      .select('*')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true });
+
+    if (error) throw error;
+
+    if (data && data.length > 0) {
+      return data.map(t => ({ id: t.template_id, name: t.name, emoji: t.emoji }));
+    }
+  } catch (error) {
+    console.error('從資料庫讀取表情模板失敗:', error);
+  }
+  // Fallback to default if DB fails
+  return Object.values(DefaultExpressions || {});
+}
+
+/**
+ * 生成表情選擇 Flex Message
+ */
+async function generateExpressionSelectionFlexMessage() {
+  const templates = await getExpressionTemplates();
+  const displayExpressions = templates.slice(0, 24);
   const displayExpressions = expressions.slice(0, 24); // LINE 限制最多 24 個
 
   // 將表情轉換為按鈕（每行 2 個）
