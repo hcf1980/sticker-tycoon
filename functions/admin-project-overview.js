@@ -56,8 +56,27 @@ function getFunctionsInfo() {
 
 // 從 netlify.toml 讀取 redirects 和 functions 配置
 function getNetlifyConfig() {
-  const configPath = path.join(process.cwd(), 'netlify.toml');
-  const configContent = fs.readFileSync(configPath, 'utf-8');
+  // Netlify Functions 執行時的 process.cwd() 通常是 /var/task（functions bundle 根目錄），不會包含專案根目錄檔案。
+  // 因此優先使用環境變數注入（NETLIFY_TOML_CONTENT），若無則嘗試讀取同層的 netlify.toml（本地/特殊環境）。
+  const envContent = process.env.NETLIFY_TOML_CONTENT;
+  const configContent = envContent || (() => {
+    const candidates = [
+      path.join(__dirname, 'netlify.toml'),
+      path.join(process.cwd(), 'netlify.toml')
+    ];
+
+    for (const p of candidates) {
+      try {
+        if (fs.existsSync(p)) {
+          return fs.readFileSync(p, 'utf-8');
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    return '';
+  })();
 
   // 簡單解析 netlify.toml 中的 functions 配置
   const functionConfigs = [];
