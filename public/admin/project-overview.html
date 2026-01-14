@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>專案總覽 - 貼圖大亨 Admin</title>
+
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/logo-192.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <link href="/tech-theme.css" rel="stylesheet" />
+
+  <!-- Netlify Identity -->
+  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+</head>
+<body class="tech-bg min-h-screen">
+  <nav class="admin-nav">
+    <div class="container mx-auto px-4 py-4">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center gap-3">
+          <div class="relative">
+            <img src="/logo-192.png" alt="貼圖大亨 Logo" class="w-10 h-10 rounded-lg" />
+            <div class="absolute -inset-1 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-lg blur opacity-30"></div>
+          </div>
+          <div>
+            <h1 class="text-xl font-bold text-white">貼圖大亨</h1>
+            <p class="text-xs text-cyan-400">專案總覽</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-4">
+          <a href="/admin/" class="text-gray-400 hover:text-cyan-400 transition text-sm">← 返回管理首頁</a>
+          <button id="identity-login" class="btn-neon-outline px-4 py-2 text-sm">登入</button>
+          <button id="identity-logout" class="text-gray-400 hover:text-red-400 transition text-sm hidden">登出</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container mx-auto p-6">
+    <div class="mb-8">
+      <h2 class="text-2xl font-bold text-white mb-2">🧭 專案架構總覽</h2>
+      <p class="text-gray-400">登入（Netlify Identity / admin role）後，即可查看完整專案地圖、Functions 與 API 路由。</p>
+    </div>
+
+    <div id="auth-required" class="glass-card p-6">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h3 class="text-white font-bold text-lg">需要登入</h3>
+          <p class="text-gray-400 text-sm mt-1">此頁面使用 Netlify Identity 驗證，且必須具備 <span class="tag-purple text-xs px-2 py-1 rounded-full">admin</span> 權限。</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="auth-open-login" class="btn-neon-solid px-5 py-2 text-sm">開啟登入視窗</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="content" class="hidden">
+      <div class="glass-card p-4 mb-6">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div>
+            <h3 class="text-white font-bold">摘要</h3>
+            <p class="text-gray-400 text-sm">最後更新：<span id="last-updated" class="text-gray-300">-</span></p>
+            <p class="text-gray-400 text-sm">登入帳號：<span id="identity-email" class="text-gray-300">-</span> <span id="identity-roles" class="ml-2"></span></p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="refresh" class="btn-neon-solid px-4 py-2 text-sm">刷新</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div class="stat-card">
+          <div class="value" id="stat-functions">-</div>
+          <div class="text-gray-400 text-sm mt-1">Functions</div>
+          <div class="text-gray-500 text-xs mt-2" id="stat-functions-meta">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="value" id="stat-endpoints">-</div>
+          <div class="text-gray-400 text-sm mt-1">API Redirects</div>
+          <div class="text-gray-500 text-xs mt-2" id="stat-endpoints-meta">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="value" id="stat-schedules">-</div>
+          <div class="text-gray-400 text-sm mt-1">Schedules</div>
+          <div class="text-gray-500 text-xs mt-2" id="stat-schedules-meta">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="value" id="stat-supabase">-</div>
+          <div class="text-gray-400 text-sm mt-1">Supabase</div>
+          <div class="text-gray-500 text-xs mt-2" id="stat-supabase-meta">-</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <section class="glass-card p-5 lg:col-span-1">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-white font-bold text-lg">模組</h3>
+            <span class="tag-tech text-xs px-2 py-1 rounded-full" id="module-count">-</span>
+          </div>
+          <div id="modules" class="space-y-2"></div>
+        </section>
+
+        <section class="glass-card p-5 lg:col-span-2">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+            <div>
+              <h3 class="text-white font-bold text-lg">明細</h3>
+              <p class="text-gray-400 text-sm" id="details-title">選取左側模組以查看內容</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <input id="search" class="input-tech" style="max-width: 260px" placeholder="搜尋 function / endpoint..." />
+              <button id="clear-search" class="btn-neon-outline px-3 py-2 text-sm">清除</button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 gap-6">
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <h4 class="text-white font-semibold">Functions</h4>
+                <span class="tag-purple text-xs px-2 py-1 rounded-full" id="functions-count">-</span>
+              </div>
+              <div class="overflow-auto" style="max-height: 360px">
+                <table class="w-full text-sm">
+                  <thead class="text-gray-400">
+                    <tr>
+                      <th class="text-left py-2">名稱</th>
+                      <th class="text-left py-2">類型</th>
+                      <th class="text-left py-2">Timeout</th>
+                      <th class="text-left py-2">Schedule</th>
+                      <th class="text-left py-2">Endpoint</th>
+                    </tr>
+                  </thead>
+                  <tbody id="functions-table" class="text-gray-200"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <h4 class="text-white font-semibold">API Redirects</h4>
+                <span class="tag-tech text-xs px-2 py-1 rounded-full" id="redirects-count">-</span>
+              </div>
+              <div class="overflow-auto" style="max-height: 280px">
+                <table class="w-full text-sm">
+                  <thead class="text-gray-400">
+                    <tr>
+                      <th class="text-left py-2">From</th>
+                      <th class="text-left py-2">To</th>
+                      <th class="text-left py-2">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="redirects-table" class="text-gray-200"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <footer class="py-6 text-center border-t border-white/10 mt-10">
+    <p class="text-gray-500 text-sm">貼圖大亨 Admin © 2025</p>
+  </footer>
+
+  <script>
+    const state = {
+      overview: null,
+      selectedModuleKey: 'all',
+      searchText: ''
+    };
+
+    function safeText(value) {
+      return String(value ?? '');
+    }
+
+    function setText(id, value) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = value;
+    }
+
+    function setHtml(id, html) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.innerHTML = html;
+    }
+
+    function show(elId) {
+      const el = document.getElementById(elId);
+      if (el) el.classList.remove('hidden');
+    }
+
+    function hide(elId) {
+      const el = document.getElementById(elId);
+      if (el) el.classList.add('hidden');
+    }
+
+    function createTag(text, cls) {
+      return `<span class="${cls} text-xs px-2 py-1 rounded-full">${safeText(text)}</span>`;
+    }
+
+    function getModuleDefinitions() {
+      return [
+        { key: 'all', title: '全部', hint: '查看整體專案', match: () => true, tag: 'tag-tech' },
+        { key: 'admin', title: 'Admin APIs', hint: '管理後台 API', match: (f) => f.name.startsWith('admin-') || f.name.startsWith('youtuber-'), tag: 'tag-purple' },
+        { key: 'web-api', title: 'Web API', hint: '提供給 Web 前端的 API', match: (f) => f.name.startsWith('web-api-'), tag: 'tag-cyan' },
+        { key: 'background', title: '背景任務', hint: 'Background / Schedule functions', match: (f) => f.isBackground || !!f.schedule, tag: 'tag-green' },
+        { key: 'sticker', title: '貼圖生成', hint: '生成/處理/打包貼圖', match: (f) => ['ai-generator', 'sticker-generator-enhanced', 'image-processor', 'pack-for-line', 'download-pack', 'grid-generator'].includes(f.name) || f.name.includes('sticker') || f.name.includes('image'), tag: 'tag-yellow' },
+        { key: 'line', title: 'LINE Bot', hint: 'Webhook / RichMenu / 互動', match: (f) => f.name.includes('line') || f.name.includes('rich-menu'), tag: 'tag-pink' }
+      ];
+    }
+
+    function filterFunctions() {
+      const overview = state.overview;
+      if (!overview) return [];
+
+      const all = overview.functions?.list || [];
+      const modules = getModuleDefinitions();
+      const selected = modules.find((m) => m.key === state.selectedModuleKey) || modules[0];
+
+      const byModule = all.filter((f) => selected.match(f));
+
+      const q = state.searchText.trim().toLowerCase();
+      if (!q) return byModule;
+
+      return byModule.filter((f) => {
+        const hay = `${f.name} ${f.endpoint} ${f.filename}`.toLowerCase();
+        return hay.includes(q);
+      });
+    }
+
+    function filterRedirects() {
+      const overview = state.overview;
+      if (!overview) return [];
+
+      const redirects = overview.apiEndpoints?.list || [];
+      const q = state.searchText.trim().toLowerCase();
+      if (!q) return redirects;
+
+      return redirects.filter((r) => {
+        const hay = `${r.from} ${r.to} ${r.status}`.toLowerCase();
+        return hay.includes(q);
+      });
+    }
+
+    function renderModules() {
+      const modules = getModuleDefinitions();
+      setText('module-count', `${modules.length}`);
+
+      const html = modules
+        .map((m) => {
+          const active = m.key === state.selectedModuleKey;
+          const classes = active
+            ? 'border border-cyan-500/50 bg-cyan-500/10'
+            : 'border border-white/10 hover:border-cyan-500/30 hover:bg-white/5';
+
+          return `
+            <button data-module="${m.key}" class="w-full text-left rounded-xl px-4 py-3 transition ${classes}">
+              <div class="flex items-center justify-between">
+                <div>
+                  <div class="text-white font-semibold">${safeText(m.title)}</div>
+                  <div class="text-gray-400 text-xs mt-1">${safeText(m.hint)}</div>
+                </div>
+                ${createTag(m.key.toUpperCase(), m.tag)}
+              </div>
+            </button>
+          `;
+        })
+        .join('');
+
+      setHtml('modules', html);
+
+      document.querySelectorAll('[data-module]')
+        .forEach((btn) => {
+          btn.addEventListener('click', () => {
+            state.selectedModuleKey = btn.getAttribute('data-module') || 'all';
+            renderAll();
+          });
+        });
+    }
+
+    function renderFunctionsTable() {
+      const rows = filterFunctions();
+      setText('functions-count', `${rows.length}`);
+
+      const tbody = rows
+        .map((f) => {
+          const kind = f.isBackground ? 'Background' : 'HTTP';
+          const kindTag = f.isBackground ? 'tag-green' : 'tag-tech';
+          const timeout = f.timeoutSeconds != null ? `${f.timeoutSeconds}s` : '-';
+          const schedule = f.schedule || '-';
+
+          return `
+            <tr class="border-t border-white/5">
+              <td class="py-2 pr-3 font-medium text-white">${safeText(f.name)}</td>
+              <td class="py-2 pr-3">${createTag(kind, kindTag)}</td>
+              <td class="py-2 pr-3 text-gray-300">${safeText(timeout)}</td>
+              <td class="py-2 pr-3 text-gray-300">${safeText(schedule)}</td>
+              <td class="py-2 pr-3">
+                <a class="text-cyan-300 hover:text-cyan-200" href="${safeText(f.endpoint)}" target="_blank" rel="noreferrer">${safeText(f.endpoint)}</a>
+              </td>
+            </tr>
+          `;
+        })
+        .join('');
+
+      setHtml('functions-table', tbody || `<tr><td class="py-4 text-gray-400" colspan="5">無資料</td></tr>`);
+
+      const allCount = state.overview?.functions?.count ?? 0;
+      const bgCount = (state.overview?.functions?.list || []).filter((f) => f.isBackground).length;
+      setText('stat-functions', `${allCount}`);
+      setText('stat-functions-meta', `背景任務 ${bgCount}`);
+    }
+
+    function renderRedirectsTable() {
+      const rows = filterRedirects();
+      setText('redirects-count', `${rows.length}`);
+
+      const tbody = rows
+        .map((r) => {
+          return `
+            <tr class="border-t border-white/5">
+              <td class="py-2 pr-3 text-gray-200">${safeText(r.from)}</td>
+              <td class="py-2 pr-3 text-gray-200">${safeText(r.to)}</td>
+              <td class="py-2 pr-3">${createTag(r.status, 'tag-purple')}</td>
+            </tr>
+          `;
+        })
+        .join('');
+
+      setHtml('redirects-table', tbody || `<tr><td class="py-4 text-gray-400" colspan="3">無資料</td></tr>`);
+
+      const apiCount = state.overview?.apiEndpoints?.count ?? 0;
+      setText('stat-endpoints', `${apiCount}`);
+      setText('stat-endpoints-meta', `可用路由 ${apiCount}`);
+    }
+
+    function renderHealth() {
+      const supabase = state.overview?.health?.supabase;
+      if (!supabase) {
+        setText('stat-supabase', '-');
+        setText('stat-supabase-meta', '-');
+        return;
+      }
+
+      if (!supabase.isConfigured) {
+        setText('stat-supabase', '未設定');
+        setText('stat-supabase-meta', '缺少 SUPABASE_URL / SERVICE KEY');
+        return;
+      }
+
+      setText('stat-supabase', supabase.isHealthy ? 'OK' : '異常');
+      const bad = (supabase.checks || []).filter((c) => !c.isOk);
+      setText('stat-supabase-meta', bad.length === 0 ? '檢查通過' : `異常 ${bad.length} 項`);
+    }
+
+    function renderSchedules() {
+      const schedules = (state.overview?.functions?.list || []).filter((f) => !!f.schedule);
+      setText('stat-schedules', `${schedules.length}`);
+      setText('stat-schedules-meta', schedules.length === 0 ? '無排程' : '已設定');
+    }
+
+    function renderIdentity() {
+      setText('last-updated', state.overview?.meta?.lastUpdated || '-');
+      setText('identity-email', state.overview?.identity?.email || '-');
+
+      const roles = state.overview?.identity?.roles || [];
+      const roleTags = roles.length
+        ? roles.map((r) => createTag(r, 'tag-purple')).join(' ')
+        : createTag('no-roles', 'tag-tech');
+      setHtml('identity-roles', roleTags);
+    }
+
+    function renderDetailsTitle() {
+      const modules = getModuleDefinitions();
+      const selected = modules.find((m) => m.key === state.selectedModuleKey) || modules[0];
+
+      const q = state.searchText.trim();
+      const suffix = q ? `（搜尋：${q}）` : '';
+      setText('details-title', `${selected.title}${suffix}`);
+    }
+
+    function renderAll() {
+      renderModules();
+      renderDetailsTitle();
+      renderIdentity();
+      renderFunctionsTable();
+      renderRedirectsTable();
+      renderSchedules();
+      renderHealth();
+
+      hide('auth-required');
+      show('content');
+    }
+
+    async function fetchOverview() {
+      if (!window.netlifyIdentity) {
+        throw new Error('Netlify Identity widget 未載入');
+      }
+
+      const user = window.netlifyIdentity.currentUser();
+      if (!user) {
+        throw new Error('尚未登入');
+      }
+
+      const token = await user.jwt();
+      const res = await fetch('/.netlify/functions/admin-project-overview', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`讀取失敗（${res.status}）：${text}`);
+      }
+
+      return await res.json();
+    }
+
+    async function refresh() {
+      try {
+        const overview = await fetchOverview();
+        state.overview = overview;
+        renderAll();
+      } catch (err) {
+        console.error(err);
+        hide('content');
+        show('auth-required');
+      }
+    }
+
+    function updateAuthButtons() {
+      const user = window.netlifyIdentity?.currentUser();
+      const loginBtn = document.getElementById('identity-login');
+      const logoutBtn = document.getElementById('identity-logout');
+
+      if (!loginBtn || !logoutBtn) return;
+
+      if (user) {
+        loginBtn.classList.add('hidden');
+        logoutBtn.classList.remove('hidden');
+      } else {
+        loginBtn.classList.remove('hidden');
+        logoutBtn.classList.add('hidden');
+      }
+    }
+
+    function wireEvents() {
+      document.getElementById('refresh')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        refresh();
+      });
+
+      document.getElementById('auth-open-login')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.netlifyIdentity?.open();
+      });
+
+      document.getElementById('identity-login')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.netlifyIdentity?.open();
+      });
+
+      document.getElementById('identity-logout')?.addEventListener('click', async (e) => {
+        e.preventDefault();
+        await window.netlifyIdentity?.logout();
+        updateAuthButtons();
+        hide('content');
+        show('auth-required');
+      });
+
+      document.getElementById('search')?.addEventListener('input', (e) => {
+        state.searchText = e.target.value;
+        renderDetailsTitle();
+        renderFunctionsTable();
+        renderRedirectsTable();
+      });
+
+      document.getElementById('clear-search')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        state.searchText = '';
+        const input = document.getElementById('search');
+        if (input) input.value = '';
+        renderDetailsTitle();
+        renderFunctionsTable();
+        renderRedirectsTable();
+      });
+
+      window.netlifyIdentity?.on('init', () => {
+        updateAuthButtons();
+        refresh();
+      });
+
+      window.netlifyIdentity?.on('login', () => {
+        updateAuthButtons();
+        refresh();
+        window.netlifyIdentity?.close();
+      });
+
+      window.netlifyIdentity?.on('logout', () => {
+        updateAuthButtons();
+        hide('content');
+        show('auth-required');
+      });
+    }
+
+    function init() {
+      if (!window.netlifyIdentity) {
+        console.error('Netlify Identity widget 未載入');
+        return;
+      }
+
+      window.netlifyIdentity.init();
+      wireEvents();
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  </script>
+</body>
+</html>
