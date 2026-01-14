@@ -176,7 +176,7 @@ exports.handler = async function handler(event, context) {
         lastUpdated: new Date().toISOString(),
         environment: process.env.NODE_ENV || 'development'
       },
-      identity: getIdentitySummary(context),
+      identity: null,
       runtime: {
         nodeVersion: process.version,
         uptimeSeconds: Math.floor(process.uptime())
