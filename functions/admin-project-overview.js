@@ -26,22 +26,10 @@ const headers = {
   'Content-Type': 'application/json'
 };
 
-function isAdminUser(context) {
-  const user = context?.clientContext?.user;
-  if (!user) return false;
-
-  const roles = user?.app_metadata?.roles;
-  return Array.isArray(roles) && roles.includes('admin');
-}
-
-function getIdentitySummary(context) {
-  const user = context?.clientContext?.user;
-  if (!user) return null;
-
-  return {
-    email: user?.email ?? null,
-    roles: Array.isArray(user?.app_metadata?.roles) ? user.app_metadata.roles : []
-  };
+// NOTE: 目前此 API 未做後端身份驗證。
+// 若要加強安全性，建議改回 Netlify Identity（context.clientContext.user）或改為 server-side session/token。
+function getIdentitySummary() {
+  return null;
 }
 
 // 讀取 functions 目錄下的檔案資訊
@@ -172,13 +160,6 @@ exports.handler = async function handler(event, context) {
     return { statusCode: 204, headers, body: '' };
   }
 
-  if (!isAdminUser(context)) {
-    return {
-      statusCode: 403,
-      headers,
-      body: JSON.stringify({ error: 'Forbidden' })
-    };
-  }
 
   try {
     const db = getSupabase();
