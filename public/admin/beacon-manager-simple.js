@@ -3,12 +3,24 @@ const SUPABASE_URL = 'https://dpuxmetnpghlfgrmthnv.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwdXhtZXRucGdobGZncm10aG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNDMwNzcsImV4cCI6MjA3OTgxOTA3N30._fleTY6Pw4myjEIjtAxkYYm6L8MfPeKq915zn68pM_8';
 
 // 初始化 Supabase
-const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-// 檢查登入
-if (localStorage.getItem('adminLoggedIn') !== 'true') {
-  window.location.href = '/admin/login.html';
+let db = null;
+try {
+  db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  console.log('✅ Supabase 初始化成功');
+} catch (error) {
+  console.error('❌ Supabase 初始化失敗:', error);
 }
+
+// 檢查登入 - 使用 setTimeout 避免立即跳轉
+setTimeout(() => {
+  const isLoggedIn = localStorage.getItem('adminLoggedIn');
+  console.log('檢查登入狀態:', isLoggedIn);
+
+  if (isLoggedIn !== 'true') {
+    console.log('未登入，跳轉到登入頁面');
+    window.location.href = '/admin/login.html';
+  }
+}, 100);
 
 // 登出
 document.getElementById('logoutBtn')?.addEventListener('click', () => {
