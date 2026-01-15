@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LINE Beacon 管理 - 貼圖大亨</title>
+
+  <!-- Favicons -->
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="192x192" href="/logo-192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="/tech-theme.css" rel="stylesheet">
+  
+  <!-- Supabase 配置 -->
+  <script type="application/json" id="supabase-config">
+  {
+    "url": "https://dpuxmetnpghlfgrmthnv.supabase.co",
+    "anonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwdXhtZXRucGdobGZncm10aG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNDMwNzcsImV4cCI6MjA3OTgxOTA3N30._fleTY6Pw4myjEIjtAxkYYm6L8MfPeKq915zn68pM_8"
+  }
+  </script>
+
+  <style>
+    .beacon-card {
+      background: linear-gradient(135deg, rgba(6, 182, 212, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+      border: 1px solid rgba(6, 182, 212, 0.3);
+      border-radius: 12px;
+      padding: 1.5rem;
+      transition: all 0.3s ease;
+    }
+    .beacon-card:hover {
+      border-color: rgba(6, 182, 212, 0.6);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(6, 182, 212, 0.2);
+    }
+    .stat-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: rgba(6, 182, 212, 0.1);
+      border: 1px solid rgba(6, 182, 212, 0.3);
+      border-radius: 8px;
+      font-size: 0.875rem;
+    }
+  </style>
+</head>
+<body class="tech-bg min-h-screen">
+  <!-- Navigation -->
+  <nav class="admin-nav">
+    <div class="container mx-auto px-4 py-4">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center gap-3">
+          <div class="relative">
+            <img src="/logo-192.png" alt="貼圖大亨 Logo" class="w-10 h-10 rounded-lg">
+            <div class="absolute -inset-1 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-lg blur opacity-30"></div>
+          </div>
+          <div>
+            <h1 class="text-xl font-bold text-white">LINE Beacon 管理</h1>
+            <p class="text-xs text-cyan-400">管理 Beacon 設備與觸發動作</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-4">
+          <a href="/admin/index.html" class="text-gray-400 hover:text-cyan-400 transition text-sm">← 返回後台</a>
+          <button id="logoutBtn" class="text-gray-400 hover:text-red-400 transition text-sm">登出</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container mx-auto p-6">
+    <!-- Header with Actions -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+      <div>
+        <h2 class="text-2xl font-bold text-white mb-2">📡 Beacon 設備管理</h2>
+        <p class="text-gray-400">管理 LINE Beacon 設備、查看觸發記錄與統計</p>
+      </div>
+      <button id="addBeaconBtn" class="btn-neon-solid px-6 py-3">
+        ➕ 新增 Beacon 設備
+      </button>
+    </div>
+
+    <!-- Statistics Summary -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      <div class="stat-card">
+        <div class="value" id="stat-total-devices">-</div>
+        <div class="text-gray-400 text-sm mt-1">總設備數</div>
+      </div>
+      <div class="stat-card">
+        <div class="value" id="stat-active-devices">-</div>
+        <div class="text-gray-400 text-sm mt-1">啟用中</div>
+      </div>
+      <div class="stat-card">
+        <div class="value" id="stat-today-events">-</div>
+        <div class="text-gray-400 text-sm mt-1">今日觸發次數</div>
+      </div>
+      <div class="stat-card">
+        <div class="value" id="stat-today-users">-</div>
+        <div class="text-gray-400 text-sm mt-1">今日觸發用戶</div>
+      </div>
+    </div>
+
+    <!-- Beacon Devices List -->
+    <div class="glass-card p-6 mb-8">
+      <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+        <span>📱</span> Beacon 設備列表
+      </h3>
+      <div id="beaconList" class="space-y-4">
+        <div class="text-center py-8">
+          <div class="loader-tech mx-auto mb-4"></div>
+          <p class="text-gray-400">載入中...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Events -->
+    <div class="glass-card p-6">
+      <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+        <span>📊</span> 最近觸發記錄
+      </h3>
+      <div id="recentEvents" class="space-y-2">
+        <div class="text-center py-8">
+          <div class="loader-tech mx-auto mb-4"></div>
+          <p class="text-gray-400">載入中...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.38.0/dist/umd/supabase.js"></script>
+  <script src="/admin/supabase-admin-client.js"></script>
+  <script src="/admin/beacon-manager.js"></script>
+</body>
+</html>
+

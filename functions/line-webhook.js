@@ -22,6 +22,7 @@ const {
   addCancelButtonToFlex
 } = require('./creation-flow-manager');
 const { getMorningGreeting, forceGenerateMorningGreeting } = require('./morning-greeting');
+const { handleBeaconEvent } = require('./beacon-handler');
 
 // LINE Bot 設定 - 延遲初始化
 let client = null;
@@ -1069,6 +1070,35 @@ function invalidPostback(replyToken) {
 }
 
 /**
+ * 處理 Beacon 事件
+ */
+async function handleBeaconWebhookEvent(replyToken, userId, beaconData) {
+  console.log(`📡 處理 Beacon 事件: userId=${userId}, hwid=${beaconData.hwid}, type=${beaconData.type}`);
+
+  try {
+    // 呼叫 Beacon 處理器
+    const result = await handleBeaconEvent(userId, beaconData);
+
+    if (!result.success) {
+      console.log(`⚠️ Beacon 處理失敗: ${result.message}`);
+      return;
+    }
+
+    // 根據動作類型發送訊息
+    if (result.action === 'message' && result.data) {
+      const messageData = typeof result.data === 'string' ? JSON.parse(result.data) : result.data;
+      await getLineClient().replyMessage(replyToken, messageData);
+    } else if (result.action === 'none') {
+      // 無動作，不回應
+      console.log('📡 Beacon 事件已記錄，無設定動作');
+    }
+
+  } catch (error) {
+    console.error('❌ 處理 Beacon 事件失敗:', error);
+  }
+}
+
+/**
  * Netlify Function Handler
  */
 exports.handler = async function(event, context) {
@@ -1138,6 +1168,13 @@ exports.handler = async function(event, context) {
           } else if (ev.message.type === 'image') {
             await handleImageMessage(replyToken, userId, ev.message.id);
           }
+        }
+
+        // 處理 Beacon 事件
+        if (ev.type === 'beacon') {
+          await handleBeaconWebhookEvent(replyToken, userId, ev.beacon);
+          globalMonitor.end(`event_${ev.type}_${userId}`);
+          return;
         }
 
         globalMonitor.end(`event_${ev.type}_${userId}`);
