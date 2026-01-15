@@ -15,35 +15,62 @@ LEFT JOIN beacon_devices bd ON ba.hwid = bd.hwid
 WHERE bd.hwid IS NULL
 ON CONFLICT (hwid) DO NOTHING;
 
--- ===== 步驟 2：處理 event_type 到 trigger_type 的遷移 =====
-DO $$ 
+-- ===== 步驟 2：處理舊欄位到新欄位的遷移 =====
+DO $$
 BEGIN
-  -- 如果兩個欄位都存在，先遷移資料
+  -- 處理 event_type -> trigger_type
   IF EXISTS (
-    SELECT 1 FROM information_schema.columns 
+    SELECT 1 FROM information_schema.columns
     WHERE table_name = 'beacon_actions' AND column_name = 'event_type'
-  ) AND EXISTS (
-    SELECT 1 FROM information_schema.columns 
-    WHERE table_name = 'beacon_actions' AND column_name = 'trigger_type'
   ) THEN
+    -- 如果 trigger_type 不存在，先建立
+    IF NOT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_name = 'beacon_actions' AND column_name = 'trigger_type'
+    ) THEN
+      ALTER TABLE beacon_actions ADD COLUMN trigger_type VARCHAR(20);
+    END IF;
+
+    -- 遷移資料
     UPDATE beacon_actions
     SET trigger_type = event_type
     WHERE trigger_type IS NULL AND event_type IS NOT NULL;
-    RAISE NOTICE '✅ 已將 event_type 資料遷移到 trigger_type';
+
+    -- 刪除舊欄位
+    ALTER TABLE beacon_actions DROP COLUMN event_type;
+    RAISE NOTICE '✅ 已將 event_type 遷移到 trigger_type 並刪除舊欄位';
   END IF;
 
-  -- 刪除 event_type 欄位
+  -- 處理 action_type 欄位（舊版欄位，新版不需要）
   IF EXISTS (
-    SELECT 1 FROM information_schema.columns 
-    WHERE table_name = 'beacon_actions' AND column_name = 'event_type'
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'beacon_actions' AND column_name = 'action_type'
   ) THEN
-    ALTER TABLE beacon_actions DROP COLUMN event_type;
-    RAISE NOTICE '✅ 已刪除 event_type 欄位';
+    ALTER TABLE beacon_actions DROP COLUMN action_type;
+    RAISE NOTICE '✅ 已刪除 action_type 欄位（舊版）';
+  END IF;
+
+  -- 處理 action_data 欄位（舊版欄位，新版不需要）
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'beacon_actions' AND column_name = 'action_data'
+  ) THEN
+    ALTER TABLE beacon_actions DROP COLUMN action_data;
+    RAISE NOTICE '✅ 已刪除 action_data 欄位（舊版）';
+  END IF;
+
+  -- 處理 priority 欄位（舊版欄位，新版不需要）
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'beacon_actions' AND column_name = 'priority'
+  ) THEN
+    ALTER TABLE beacon_actions DROP COLUMN priority;
+    RAISE NOTICE '✅ 已刪除 priority 欄位（舊版）';
   END IF;
 
   -- 確保 trigger_type 欄位存在
   IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns 
+    SELECT 1 FROM information_schema.columns
     WHERE table_name = 'beacon_actions' AND column_name = 'trigger_type'
   ) THEN
     ALTER TABLE beacon_actions ADD COLUMN trigger_type VARCHAR(20);
