@@ -3,139 +3,78 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LINE Beacon 管理 - 貼圖大亨</title>
-
-  <!-- Favicons -->
-  <link rel="icon" type="image/x-icon" href="/favicon.ico">
-  <link rel="icon" type="image/png" sizes="192x192" href="/logo-192.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-
-  <!-- Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
+  <title>LINE Beacon 管理</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <link href="/tech-theme.css" rel="stylesheet">
-  
-  <!-- Supabase 配置 -->
-  <script type="application/json" id="supabase-config">
-  {
-    "url": "https://dpuxmetnpghlfgrmthnv.supabase.co",
-    "anonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwdXhtZXRucGdobGZncm10aG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQyNDMwNzcsImV4cCI6MjA3OTgxOTA3N30._fleTY6Pw4myjEIjtAxkYYm6L8MfPeKq915zn68pM_8"
-  }
-  </script>
-
   <style>
-    .beacon-card {
-      background: linear-gradient(135deg, rgba(6, 182, 212, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
-      border: 1px solid rgba(6, 182, 212, 0.3);
-      border-radius: 12px;
-      padding: 1.5rem;
-      transition: all 0.3s ease;
-    }
-    .beacon-card:hover {
-      border-color: rgba(6, 182, 212, 0.6);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 16px rgba(6, 182, 212, 0.2);
-    }
-    .stat-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.5rem 1rem;
-      background: rgba(6, 182, 212, 0.1);
-      border: 1px solid rgba(6, 182, 212, 0.3);
-      border-radius: 8px;
-      font-size: 0.875rem;
-    }
+    input,textarea,select{background:rgba(30,41,59,0.9)!important;border:1px solid rgba(99,179,237,0.3)!important;color:#fff!important;padding:12px!important;border-radius:8px!important;width:100%!important}
+    input:focus,textarea:focus,select:focus{border-color:#63b3ed!important;box-shadow:0 0 0 3px rgba(99,179,237,0.2)!important}
+    input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.4)!important}
   </style>
 </head>
-<body class="tech-bg min-h-screen">
-  <!-- Navigation -->
-  <nav class="admin-nav">
-    <div class="container mx-auto px-4 py-4">
-      <div class="flex justify-between items-center">
-        <div class="flex items-center gap-3">
-          <div class="relative">
-            <img src="/logo-192.png" alt="貼圖大亨 Logo" class="w-10 h-10 rounded-lg">
-            <div class="absolute -inset-1 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-lg blur opacity-30"></div>
-          </div>
-          <div>
-            <h1 class="text-xl font-bold text-white">LINE Beacon 管理</h1>
-            <p class="text-xs text-cyan-400">管理 Beacon 設備與觸發動作</p>
-          </div>
-        </div>
-        <div class="flex items-center gap-4">
-          <a href="/admin/index.html" class="text-gray-400 hover:text-cyan-400 transition text-sm">← 返回後台</a>
-          <button id="logoutBtn" class="text-gray-400 hover:text-red-400 transition text-sm">登出</button>
-        </div>
+<body class="tech-bg min-h-screen text-white">
+  <nav class="border-b border-gray-700 bg-gray-900/50">
+    <div class="container mx-auto px-4 py-4 flex justify-between">
+      <h1 class="text-xl font-bold">📡 LINE Beacon 管理</h1>
+      <div class="flex gap-4">
+        <a href="/admin/index.html" class="text-cyan-400 hover:text-cyan-300">← 返回</a>
+        <button id="logoutBtn" class="text-red-400 hover:text-red-300">登出</button>
       </div>
     </div>
   </nav>
-
+  
   <div class="container mx-auto p-6">
-    <!-- Header with Actions -->
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-      <div>
-        <h2 class="text-2xl font-bold text-white mb-2">📡 Beacon 設備管理</h2>
-        <p class="text-gray-400">管理 LINE Beacon 設備、查看觸發記錄與統計</p>
-      </div>
-      <button id="addBeaconBtn" class="btn-neon-solid px-6 py-3">
-        ➕ 新增 Beacon 設備
-      </button>
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold">設備列表</h2>
+      <button id="addBeaconBtn" class="bg-cyan-600 hover:bg-cyan-700 px-6 py-2 rounded-lg">➕ 新增設備</button>
     </div>
+    
+    <div id="devicesContainer" class="space-y-4"></div>
+  </div>
 
-    <!-- Statistics Summary -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-      <div class="stat-card">
-        <div class="value" id="stat-total-devices">-</div>
-        <div class="text-gray-400 text-sm mt-1">總設備數</div>
-      </div>
-      <div class="stat-card">
-        <div class="value" id="stat-active-devices">-</div>
-        <div class="text-gray-400 text-sm mt-1">啟用中</div>
-      </div>
-      <div class="stat-card">
-        <div class="value" id="stat-today-events">-</div>
-        <div class="text-gray-400 text-sm mt-1">今日觸發次數</div>
-      </div>
-      <div class="stat-card">
-        <div class="value" id="stat-today-users">-</div>
-        <div class="text-gray-400 text-sm mt-1">今日觸發用戶</div>
-      </div>
-    </div>
-
-    <!-- Beacon Devices List -->
-    <div class="glass-card p-6 mb-8">
-      <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
-        <span>📱</span> Beacon 設備列表
-      </h3>
-      <div id="beaconList" class="space-y-4">
-        <div class="text-center py-8">
-          <div class="loader-tech mx-auto mb-4"></div>
-          <p class="text-gray-400">載入中...</p>
+  <!-- 新增/編輯 Modal -->
+  <div id="deviceModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+    <div class="bg-gray-900 border border-cyan-500/30 rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <h3 id="modalTitle" class="text-xl font-bold mb-4">新增 Beacon 設備</h3>
+      <form id="deviceForm" class="space-y-4">
+        <div>
+          <label class="block text-sm mb-2">設備名稱 <span class="text-red-500">*</span></label>
+          <input type="text" name="device_name" required placeholder="例：辦公室入口 Beacon">
         </div>
-      </div>
-    </div>
-
-    <!-- Recent Events -->
-    <div class="glass-card p-6">
-      <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
-        <span>📊</span> 最近觸發記錄
-      </h3>
-      <div id="recentEvents" class="space-y-2">
-        <div class="text-center py-8">
-          <div class="loader-tech mx-auto mb-4"></div>
-          <p class="text-gray-400">載入中...</p>
+        <div>
+          <label class="block text-sm mb-2">HWID (Hardware ID) <span class="text-red-500">*</span></label>
+          <input type="text" name="hwid" required placeholder="10位16進制字元" pattern="[0-9a-fA-F]{10}" maxlength="10">
+          <small class="text-gray-400">必須是 10 位 16 進制字元</small>
         </div>
-      </div>
+        <div>
+          <label class="block text-sm mb-2">Vendor Key</label>
+          <input type="text" name="vendor_key" placeholder="8位16進制字元" pattern="[0-9a-fA-F]{8}" maxlength="8">
+        </div>
+        <div>
+          <label class="block text-sm mb-2">Lot Key</label>
+          <input type="text" name="lot_key" placeholder="16位16進制字元" pattern="[0-9a-fA-F]{16}" maxlength="16">
+        </div>
+        <div>
+          <label class="block text-sm mb-2">位置</label>
+          <input type="text" name="location" placeholder="例：台北辦公室一樓">
+        </div>
+        <div>
+          <label class="block text-sm mb-2">說明</label>
+          <textarea name="description" rows="3" placeholder="設備說明..."></textarea>
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="checkbox" name="is_active" checked id="is_active">
+          <label for="is_active">啟用此設備</label>
+        </div>
+        <div class="flex gap-3 pt-4">
+          <button type="submit" class="bg-cyan-600 hover:bg-cyan-700 px-6 py-2 rounded-lg flex-1">💾 儲存</button>
+          <button type="button" id="closeModal" class="bg-gray-700 hover:bg-gray-600 px-6 py-2 rounded-lg">✕ 取消</button>
+        </div>
+      </form>
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.38.0/dist/umd/supabase.js"></script>
-  <script src="/admin/supabase-admin-client.js"></script>
-  <script src="/admin/beacon-manager.js"></script>
+  <script src="/admin/beacon-manager-simple.js"></script>
 </body>
 </html>
-
