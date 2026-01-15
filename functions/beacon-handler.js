@@ -27,7 +27,7 @@ function getSupabaseClient() {
  * @param {string} userId - LINE User ID
  * @param {object} beaconData - Beacon 事件資料
  * @param {string} beaconData.hwid - Hardware ID
- * @param {string} beaconData.type - 'enter' or 'leave'
+ * @param {string} beaconData.type - 'enter' or 'leave' or 'stay'
  * @param {string} beaconData.dm - Device Message (optional)
  * @returns {Promise<object>} 處理結果
  */
@@ -36,6 +36,9 @@ async function handleBeaconEvent(userId, beaconData) {
   const { hwid, type, dm } = beaconData;
 
   console.log(`📡 Beacon 事件: userId=${userId}, hwid=${hwid}, type=${type}`);
+
+  let eventId = null;
+  let isFriend = false;
 
   try {
     // 1. 檢查 Beacon 設備是否已註冊且啟用
@@ -48,63 +51,161 @@ async function handleBeaconEvent(userId, beaconData) {
 
     if (deviceError || !device) {
       console.log(`⚠️ Beacon 設備未註冊或未啟用: ${hwid}`);
+
+      // 仍然記錄事件（用於除錯）
+      await supabase.from('beacon_events').insert({
+        user_id: userId,
+        hwid: hwid,
+        event_type: type,
+        device_message: dm || null,
+        timestamp: Date.now(),
+        is_friend: false,
+        message_sent: false,
+        error_message: 'Beacon 設備未註冊或未啟用'
+      });
+
       return {
         success: false,
         message: 'Beacon 設備未註冊或未啟用'
       };
     }
 
-    // 2. 記錄事件
-    const { error: eventError } = await supabase
+    // 2. 檢查用戶是否為好友
+    try {
+      const { data: userData } = await supabase
+        .from('users')
+        .select('is_friend')
+        .eq('user_id', userId)
+        .single();
+
+      isFriend = userData?.is_friend || false;
+      console.log(`👤 用戶好友狀態: ${isFriend ? '已加入' : '未加入'}`);
+    } catch (error) {
+      console.log('⚠️ 無法取得用戶好友狀態:', error.message);
+    }
+
+    // 3. 取得對應的動作設定（新版結構：使用 trigger_type 和 message_id）
+    const { data: actions, error: actionsError } = await supabase
+      .from('beacon_actions')
+      .select(`
+        *,
+        beacon_messages (
+          id,
+          template_name,
+          message_type,
+          message_content,
+          target_audience
+        )
+      `)
+      .eq('hwid', hwid)
+      .eq('trigger_type', type)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
+
+    if (actionsError) {
+      console.error('❌ 取得 Beacon 動作失敗:', actionsError);
+    }
+
+    let selectedAction = null;
+    let selectedMessage = null;
+
+    // 4. 根據好友狀態篩選適合的動作
+    if (actions && actions.length > 0) {
+      for (const action of actions) {
+        const message = action.beacon_messages;
+        if (!message) continue;
+
+        const targetAudience = message.target_audience || 'all';
+
+        // 檢查目標對象是否符合
+        if (targetAudience === 'all' ||
+            (targetAudience === 'friends' && isFriend) ||
+            (targetAudience === 'non_friends' && !isFriend)) {
+          selectedAction = action;
+          selectedMessage = message;
+          break;
+        }
+      }
+    }
+
+    // 5. 記錄事件
+    const { data: eventData, error: eventError } = await supabase
       .from('beacon_events')
       .insert({
         user_id: userId,
         hwid: hwid,
         event_type: type,
         device_message: dm || null,
-        timestamp: Date.now()
-      });
+        timestamp: Date.now(),
+        is_friend: isFriend,
+        message_sent: !!selectedMessage,
+        action_id: selectedAction?.id || null,
+        message_id: selectedMessage?.id || null
+      })
+      .select()
+      .single();
 
     if (eventError) {
       console.error('❌ 記錄 Beacon 事件失敗:', eventError);
+    } else {
+      eventId = eventData?.id;
+      console.log(`✅ Beacon 事件已記錄: eventId=${eventId}`);
     }
 
-    // 3. 更新統計資料
+    // 6. 更新統計資料
     await updateBeaconStatistics(hwid, type, userId);
 
-    // 4. 取得對應的動作設定
-    const { data: actions, error: actionsError } = await supabase
-      .from('beacon_actions')
-      .select('*')
-      .eq('hwid', hwid)
-      .eq('event_type', type)
-      .eq('is_active', true)
-      .order('priority', { ascending: false });
+    // 7. 返回要發送的訊息
+    if (selectedMessage) {
+      console.log(`📤 準備發送訊息: ${selectedMessage.template_name} (${selectedMessage.message_type})`);
 
-    if (actionsError) {
-      console.error('❌ 取得 Beacon 動作失敗:', actionsError);
-      return { success: false, message: '取得動作設定失敗' };
-    }
+      let messageData;
+      if (selectedMessage.message_type === 'text') {
+        messageData = {
+          type: 'text',
+          text: selectedMessage.message_content
+        };
+      } else {
+        // Flex Message 或其他類型
+        try {
+          messageData = JSON.parse(selectedMessage.message_content);
+        } catch (e) {
+          console.error('❌ 解析訊息內容失敗:', e);
+          messageData = {
+            type: 'text',
+            text: selectedMessage.message_content
+          };
+        }
+      }
 
-    // 5. 執行動作（返回最高優先級的動作）
-    if (actions && actions.length > 0) {
-      const action = actions[0]; // 取最高優先級
       return {
         success: true,
-        action: action.action_type,
-        data: action.action_data,
-        device: device
+        action: 'message',
+        data: messageData,
+        device: device,
+        eventId: eventId
       };
     }
 
+    console.log('📡 無符合條件的動作設定');
     return {
       success: true,
       action: 'none',
-      message: '無設定動作'
+      message: '無符合條件的動作設定',
+      eventId: eventId
     };
 
   } catch (error) {
     console.error('❌ 處理 Beacon 事件失敗:', error);
+
+    // 記錄錯誤
+    if (eventId) {
+      await supabase
+        .from('beacon_events')
+        .update({ error_message: error.message })
+        .eq('id', eventId);
+    }
+
     return {
       success: false,
       message: error.message
