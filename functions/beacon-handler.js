@@ -108,8 +108,9 @@ async function handleBeaconEvent(userId, beaconData) {
 
     let selectedAction = null;
     let selectedMessage = null;
+    let skipReason = null;
 
-    // 4. 根據好友狀態篩選適合的動作
+    // 4. 根據好友狀態和觸發限制篩選適合的動作
     if (actions && actions.length > 0) {
       for (const action of actions) {
         const message = action.beacon_messages;
@@ -118,13 +119,52 @@ async function handleBeaconEvent(userId, beaconData) {
         const targetAudience = message.target_audience || 'all';
 
         // 檢查目標對象是否符合
-        if (targetAudience === 'all' ||
-            (targetAudience === 'friends' && isFriend) ||
-            (targetAudience === 'non_friends' && !isFriend)) {
-          selectedAction = action;
-          selectedMessage = message;
-          break;
+        const audienceMatch = targetAudience === 'all' ||
+                             (targetAudience === 'friends' && isFriend) ||
+                             (targetAudience === 'non_friends' && !isFriend);
+
+        if (!audienceMatch) {
+          console.log(`⏭️ 跳過動作 ${action.action_name}: 目標對象不符 (需要: ${targetAudience}, 用戶: ${isFriend ? 'friend' : 'non_friend'})`);
+          continue;
         }
+
+        // 檢查每日觸發次數限制
+        const dailyLimit = action.daily_limit || 2;
+        const { data: dailyCheck } = await supabase
+          .rpc('check_beacon_daily_limit', {
+            p_user_id: userId,
+            p_hwid: hwid,
+            p_action_id: action.id
+          })
+          .single();
+
+        if (dailyCheck && !dailyCheck.can_trigger) {
+          console.log(`⏭️ 跳過動作 ${action.action_name}: ${dailyCheck.message}`);
+          skipReason = dailyCheck.message;
+          continue;
+        }
+
+        // 檢查冷卻時間
+        const cooldownMinutes = action.cooldown_minutes || 60;
+        const { data: cooldownCheck } = await supabase
+          .rpc('check_beacon_cooldown', {
+            p_user_id: userId,
+            p_hwid: hwid,
+            p_action_id: action.id
+          })
+          .single();
+
+        if (cooldownCheck && !cooldownCheck.can_trigger) {
+          console.log(`⏭️ 跳過動作 ${action.action_name}: ${cooldownCheck.message}`);
+          skipReason = cooldownCheck.message;
+          continue;
+        }
+
+        // 所有檢查都通過，選擇此動作
+        selectedAction = action;
+        selectedMessage = message;
+        console.log(`✅ 選擇動作: ${action.action_name} (每日限制: ${dailyLimit}次, 冷卻: ${cooldownMinutes}分鐘)`);
+        break;
       }
     }
 
@@ -140,7 +180,8 @@ async function handleBeaconEvent(userId, beaconData) {
         is_friend: isFriend,
         message_sent: !!selectedMessage,
         action_id: selectedAction?.id || null,
-        message_id: selectedMessage?.id || null
+        message_id: selectedMessage?.id || null,
+        error_message: skipReason || null
       })
       .select()
       .single();
@@ -149,7 +190,10 @@ async function handleBeaconEvent(userId, beaconData) {
       console.error('❌ 記錄 Beacon 事件失敗:', eventError);
     } else {
       eventId = eventData?.id;
-      console.log(`✅ Beacon 事件已記錄: eventId=${eventId}`);
+      console.log(`✅ Beacon 事件已記錄: eventId=${eventId}, message_sent=${!!selectedMessage}`);
+      if (skipReason) {
+        console.log(`ℹ️ 跳過原因: ${skipReason}`);
+      }
     }
 
     // 6. 更新統計資料
@@ -187,11 +231,12 @@ async function handleBeaconEvent(userId, beaconData) {
       };
     }
 
-    console.log('📡 無符合條件的動作設定');
+    const noActionMessage = skipReason || '無符合條件的動作設定';
+    console.log(`📡 ${noActionMessage}`);
     return {
       success: true,
       action: 'none',
-      message: '無符合條件的動作設定',
+      message: noActionMessage,
       eventId: eventId
     };
 
