@@ -15,6 +15,9 @@ try {
 let allDevices = [];
 let allActions = [];
 let allMessages = [];
+let currentEditingDeviceId = null;
+let currentEditingActionId = null;
+let currentEditingMessageId = null;
 
 // Tab 切換
 document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -115,6 +118,7 @@ async function loadStatistics() {
 
 // 新增設備按鈕
 document.getElementById('addBeaconBtn')?.addEventListener('click', () => {
+  currentEditingDeviceId = null;
   document.getElementById('deviceModal').classList.remove('hidden');
   document.getElementById('deviceForm').reset();
   document.getElementById('modalTitle').textContent = '新增 Beacon 設備';
@@ -122,6 +126,7 @@ document.getElementById('addBeaconBtn')?.addEventListener('click', () => {
 
 // 新增觸發動作按鈕
 document.getElementById('addActionBtn')?.addEventListener('click', async () => {
+  currentEditingActionId = null;
   // 載入設備列表到下拉選單
   await loadDeviceOptions();
   await loadMessageOptions();
@@ -131,6 +136,7 @@ document.getElementById('addActionBtn')?.addEventListener('click', async () => {
 
 // 新增推送訊息按鈕
 document.getElementById('addMessageBtn')?.addEventListener('click', () => {
+  currentEditingMessageId = null;
   document.getElementById('messageModal').classList.remove('hidden');
   document.getElementById('messageForm').reset();
 });
@@ -182,19 +188,34 @@ document.getElementById('deviceForm')?.addEventListener('submit', async (e) => {
   };
 
   try {
-    const { data, error } = await db
-      .from('beacon_devices')
-      .insert([deviceData])
-      .select();
+    let result;
+    if (currentEditingDeviceId) {
+      // 更新現有設備
+      result = await db
+        .from('beacon_devices')
+        .update(deviceData)
+        .eq('id', currentEditingDeviceId)
+        .select();
 
-    if (error) throw error;
+      if (result.error) throw result.error;
+      alert('✅ 設備已更新！');
+    } else {
+      // 新增設備
+      result = await db
+        .from('beacon_devices')
+        .insert([deviceData])
+        .select();
 
-    alert('✅ 設備已新增！');
+      if (result.error) throw result.error;
+      alert('✅ 設備已新增！');
+    }
+
     document.getElementById('deviceModal').classList.add('hidden');
+    currentEditingDeviceId = null;
     loadAllData();
   } catch (error) {
     console.error('Error:', error);
-    alert('❌ 新增失敗: ' + error.message);
+    alert('❌ 操作失敗: ' + error.message);
   }
 });
 
@@ -213,19 +234,34 @@ document.getElementById('actionForm')?.addEventListener('submit', async (e) => {
   };
 
   try {
-    const { data, error } = await db
-      .from('beacon_actions')
-      .insert([actionData])
-      .select();
+    let result;
+    if (currentEditingActionId) {
+      // 更新現有動作
+      result = await db
+        .from('beacon_actions')
+        .update(actionData)
+        .eq('id', currentEditingActionId)
+        .select();
 
-    if (error) throw error;
+      if (result.error) throw result.error;
+      alert('✅ 觸發動作已更新！');
+    } else {
+      // 新增動作
+      result = await db
+        .from('beacon_actions')
+        .insert([actionData])
+        .select();
 
-    alert('✅ 觸發動作已新增！');
+      if (result.error) throw result.error;
+      alert('✅ 觸發動作已新增！');
+    }
+
     document.getElementById('actionModal').classList.add('hidden');
+    currentEditingActionId = null;
     loadAllData();
   } catch (error) {
     console.error('Error:', error);
-    alert('❌ 新增失敗: ' + error.message);
+    alert('❌ 操作失敗: ' + error.message);
   }
 });
 
@@ -244,19 +280,34 @@ document.getElementById('messageForm')?.addEventListener('submit', async (e) => 
   };
 
   try {
-    const { data, error } = await db
-      .from('beacon_messages')
-      .insert([messageData])
-      .select();
+    let result;
+    if (currentEditingMessageId) {
+      // 更新現有訊息
+      result = await db
+        .from('beacon_messages')
+        .update(messageData)
+        .eq('id', currentEditingMessageId)
+        .select();
 
-    if (error) throw error;
+      if (result.error) throw result.error;
+      alert('✅ 推送訊息模板已更新！');
+    } else {
+      // 新增訊息
+      result = await db
+        .from('beacon_messages')
+        .insert([messageData])
+        .select();
 
-    alert('✅ 推送訊息模板已新增！');
+      if (result.error) throw result.error;
+      alert('✅ 推送訊息模板已新增！');
+    }
+
     document.getElementById('messageModal').classList.add('hidden');
+    currentEditingMessageId = null;
     loadAllData();
   } catch (error) {
     console.error('Error:', error);
-    alert('❌ 新增失敗: ' + error.message);
+    alert('❌ 操作失敗: ' + error.message);
   }
 });
 
@@ -289,10 +340,16 @@ async function loadDevices() {
               ${device.description ? `<p class="text-gray-400 mt-2">${escapeHtml(device.description)}</p>` : ''}
             </div>
           </div>
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-3">
             <span class="px-3 py-1 rounded text-sm ${device.is_active ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'}">
               ${device.is_active ? '✅ 啟用中' : '⏸️ 已停用'}
             </span>
+            <button onclick="editDevice('${device.id}')" class="text-blue-400 hover:text-blue-300 px-3 py-1 rounded border border-blue-500/30 hover:bg-blue-500/10">
+              ✏️ 編輯
+            </button>
+            <button onclick="deleteDevice('${device.id}', '${escapeHtml(device.device_name)}')" class="text-red-400 hover:text-red-300 px-3 py-1 rounded border border-red-500/30 hover:bg-red-500/10">
+              🗑️ 刪除
+            </button>
           </div>
         </div>
       </div>
@@ -336,10 +393,16 @@ async function loadActions() {
               ${action.description ? `<p class="text-gray-400 mt-2">${escapeHtml(action.description)}</p>` : ''}
             </div>
           </div>
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-3">
             <span class="px-3 py-1 rounded text-sm ${action.is_active ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'}">
               ${action.is_active ? '✅ 啟用中' : '⏸️ 已停用'}
             </span>
+            <button onclick="editAction('${action.id}')" class="text-blue-400 hover:text-blue-300 px-3 py-1 rounded border border-blue-500/30 hover:bg-blue-500/10">
+              ✏️ 編輯
+            </button>
+            <button onclick="deleteAction('${action.id}', '${escapeHtml(action.action_name)}')" class="text-red-400 hover:text-red-300 px-3 py-1 rounded border border-red-500/30 hover:bg-red-500/10">
+              🗑️ 刪除
+            </button>
           </div>
         </div>
       </div>
@@ -381,10 +444,16 @@ async function loadMessages() {
               ${msg.description ? `<p class="text-gray-400 mt-2">${escapeHtml(msg.description)}</p>` : ''}
             </div>
           </div>
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-3">
             <span class="px-3 py-1 rounded text-sm ${msg.is_active ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'}">
               ${msg.is_active ? '✅ 啟用中' : '⏸️ 已停用'}
             </span>
+            <button onclick="editMessage('${msg.id}')" class="text-blue-400 hover:text-blue-300 px-3 py-1 rounded border border-blue-500/30 hover:bg-blue-500/10">
+              ✏️ 編輯
+            </button>
+            <button onclick="deleteMessage('${msg.id}', '${escapeHtml(msg.template_name)}')" class="text-red-400 hover:text-red-300 px-3 py-1 rounded border border-red-500/30 hover:bg-red-500/10">
+              🗑️ 刪除
+            </button>
           </div>
         </div>
       </div>
@@ -430,4 +499,142 @@ function getTargetAudienceText(audience) {
     'non_friends': '👤 未加入好友'
   };
   return audiences[audience] || audience;
+}
+
+// 編輯設備
+window.editDevice = async function(deviceId) {
+  const device = allDevices.find(d => d.id === deviceId);
+  if (!device) {
+    alert('找不到設備資料');
+    return;
+  }
+
+  currentEditingDeviceId = deviceId;
+
+  // 填充表單
+  const form = document.getElementById('deviceForm');
+  form.elements['device_name'].value = device.device_name;
+  form.elements['hwid'].value = device.hwid;
+  form.elements['vendor_key'].value = device.vendor_key || '';
+  form.elements['lot_key'].value = device.lot_key || '';
+  form.elements['location'].value = device.location || '';
+  form.elements['description'].value = device.description || '';
+  form.elements['is_active'].checked = device.is_active;
+
+  document.getElementById('modalTitle').textContent = '編輯 Beacon 設備';
+  document.getElementById('deviceModal').classList.remove('hidden');
+}
+
+// 刪除設備
+window.deleteDevice = async function(deviceId, deviceName) {
+  if (!confirm(`確定要刪除設備「${deviceName}」嗎？\n\n⚠️ 此操作無法復原！`)) {
+    return;
+  }
+
+  try {
+    const { error } = await db
+      .from('beacon_devices')
+      .delete()
+      .eq('id', deviceId);
+
+    if (error) throw error;
+
+    alert('✅ 設備已刪除！');
+    loadAllData();
+  } catch (error) {
+    console.error('Error:', error);
+    alert('❌ 刪除失敗: ' + error.message);
+  }
+}
+
+// 編輯觸發動作
+window.editAction = async function(actionId) {
+  const action = allActions.find(a => a.id === actionId);
+  if (!action) {
+    alert('找不到動作資料');
+    return;
+  }
+
+  currentEditingActionId = actionId;
+
+  // 載入選項
+  await loadDeviceOptions();
+  await loadMessageOptions();
+
+  // 填充表單
+  const form = document.getElementById('actionForm');
+  form.elements['action_name'].value = action.action_name;
+  form.elements['hwid'].value = action.hwid;
+  form.elements['trigger_type'].value = action.trigger_type;
+  form.elements['message_id'].value = action.message_id;
+  form.elements['description'].value = action.description || '';
+  form.elements['is_active'].checked = action.is_active;
+
+  document.getElementById('actionModal').classList.remove('hidden');
+}
+
+// 刪除觸發動作
+window.deleteAction = async function(actionId, actionName) {
+  if (!confirm(`確定要刪除觸發動作「${actionName}」嗎？\n\n⚠️ 此操作無法復原！`)) {
+    return;
+  }
+
+  try {
+    const { error } = await db
+      .from('beacon_actions')
+      .delete()
+      .eq('id', actionId);
+
+    if (error) throw error;
+
+    alert('✅ 觸發動作已刪除！');
+    loadAllData();
+  } catch (error) {
+    console.error('Error:', error);
+    alert('❌ 刪除失敗: ' + error.message);
+  }
+}
+
+// 編輯推送訊息
+window.editMessage = async function(messageId) {
+  const message = allMessages.find(m => m.id === messageId);
+  if (!message) {
+    alert('找不到訊息資料');
+    return;
+  }
+
+  currentEditingMessageId = messageId;
+
+  // 填充表單
+  const form = document.getElementById('messageForm');
+  form.elements['template_name'].value = message.template_name;
+  form.elements['message_type'].value = message.message_type;
+  form.elements['message_content'].value = message.message_content;
+  form.elements['target_audience'].value = message.target_audience;
+  form.elements['description'].value = message.description || '';
+  form.elements['is_active'].checked = message.is_active;
+
+  document.getElementById('messageModal').classList.remove('hidden');
+}
+
+// 刪除推送訊息
+window.deleteMessage = async function(messageId, templateName) {
+  if (!confirm(`確定要刪除推送訊息模板「${templateName}」嗎？\n\n⚠️ 此操作無法復原！`)) {
+    return;
+  }
+
+  try {
+    const { error } = await db
+      .from('beacon_messages')
+      .delete()
+      .eq('id', messageId);
+
+    if (error) throw error;
+
+    alert('✅ 推送訊息模板已刪除！');
+    loadAllData();
+  } catch (error) {
+    console.error('Error:', error);
+    alert('❌ 刪除失敗: ' + error.message);
+  }
 }
