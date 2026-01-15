@@ -94,11 +94,13 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS update_beacon_devices_updated_at ON beacon_devices;
 CREATE TRIGGER update_beacon_devices_updated_at
   BEFORE UPDATE ON beacon_devices
   FOR EACH ROW
   EXECUTE FUNCTION update_beacon_updated_at();
 
+DROP TRIGGER IF EXISTS update_beacon_actions_updated_at ON beacon_actions;
 CREATE TRIGGER update_beacon_actions_updated_at
   BEFORE UPDATE ON beacon_actions
   FOR EACH ROW
