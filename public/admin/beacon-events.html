@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Beacon 事件記錄</title>
+
+  <!-- Netlify Identity Widget -->
+  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="/tech-theme.css" rel="stylesheet">
+  <style>
+    input,select{background:rgba(30,41,59,0.9)!important;border:1px solid rgba(99,179,237,0.3)!important;color:#fff!important;padding:8px 12px!important;border-radius:6px!important}
+    input:focus,select:focus{border-color:#63b3ed!important;box-shadow:0 0 0 3px rgba(99,179,237,0.2)!important}
+    .event-row:hover{background:rgba(99,179,237,0.1)!important}
+  </style>
+</head>
+<body class="tech-bg min-h-screen text-white">
+  <nav class="border-b border-gray-700 bg-gray-900/50">
+    <div class="container mx-auto px-4 py-4 flex justify-between">
+      <h1 class="text-xl font-bold">📊 Beacon 事件記錄</h1>
+      <div class="flex gap-4">
+        <a href="/admin/beacon-manager.html" class="text-cyan-400 hover:text-cyan-300">← 返回管理</a>
+        <button id="logoutBtn" class="text-red-400 hover:text-red-300">登出</button>
+      </div>
+    </div>
+  </nav>
+  
+  <div class="container mx-auto p-6">
+    <!-- 統計卡片 -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div class="bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 rounded-lg p-4">
+        <div class="text-sm text-gray-400 mb-1">總觸發次數</div>
+        <div class="text-3xl font-bold text-white" id="totalEvents">0</div>
+      </div>
+      <div class="bg-gradient-to-br from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-lg p-4">
+        <div class="text-sm text-gray-400 mb-1">今日觸發</div>
+        <div class="text-3xl font-bold text-white" id="todayEvents">0</div>
+      </div>
+      <div class="bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 rounded-lg p-4">
+        <div class="text-sm text-gray-400 mb-1">好友觸發</div>
+        <div class="text-3xl font-bold text-white" id="friendEvents">0</div>
+      </div>
+      <div class="bg-gradient-to-br from-orange-500/20 to-red-500/20 border border-orange-500/30 rounded-lg p-4">
+        <div class="text-sm text-gray-400 mb-1">非好友觸發</div>
+        <div class="text-3xl font-bold text-white" id="nonFriendEvents">0</div>
+      </div>
+    </div>
+
+    <!-- 篩選器 -->
+    <div class="bg-gray-800/50 border border-cyan-500/30 rounded-lg p-4 mb-6">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div>
+          <label class="block text-sm text-gray-400 mb-2">設備篩選</label>
+          <select id="filterDevice" class="w-full">
+            <option value="">全部設備</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm text-gray-400 mb-2">事件類型</label>
+          <select id="filterEventType" class="w-full">
+            <option value="">全部類型</option>
+            <option value="enter">進入範圍</option>
+            <option value="leave">離開範圍</option>
+            <option value="stay">停留範圍</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm text-gray-400 mb-2">好友狀態</label>
+          <select id="filterFriend" class="w-full">
+            <option value="">全部</option>
+            <option value="true">已加入好友</option>
+            <option value="false">未加入好友</option>
+          </select>
+        </div>
+        <div class="flex items-end">
+          <button id="refreshBtn" class="bg-cyan-600 hover:bg-cyan-700 px-6 py-2 rounded-lg w-full">
+            🔄 重新整理
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 事件列表 -->
+    <div class="bg-gray-800/50 border border-cyan-500/30 rounded-lg overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead class="bg-gray-900/50 border-b border-gray-700">
+            <tr>
+              <th class="px-4 py-3 text-left text-sm font-semibold text-gray-300">時間</th>
+              <th class="px-4 py-3 text-left text-sm font-semibold text-gray-300">設備</th>
+              <th class="px-4 py-3 text-left text-sm font-semibold text-gray-300">事件類型</th>
+              <th class="px-4 py-3 text-left text-sm font-semibold text-gray-300">用戶 ID</th>
+              <th class="px-4 py-3 text-left text-sm font-semibold text-gray-300">好友狀態</th>
+              <th class="px-4 py-3 text-left text-sm font-semibold text-gray-300">推送訊息</th>
+            </tr>
+          </thead>
+          <tbody id="eventsTableBody" class="divide-y divide-gray-700">
+            <tr>
+              <td colspan="6" class="px-4 py-8 text-center text-gray-400">載入中...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 分頁 -->
+    <div class="flex justify-between items-center mt-6">
+      <div class="text-sm text-gray-400">
+        顯示 <span id="showingCount">0</span> 筆記錄
+      </div>
+      <div class="flex gap-2">
+        <button id="prevBtn" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg disabled:opacity-50" disabled>
+          ← 上一頁
+        </button>
+        <button id="nextBtn" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg disabled:opacity-50" disabled>
+          下一頁 →
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/admin/beacon-events.js"></script>
+</body>
+</html>
+
