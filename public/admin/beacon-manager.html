@@ -29,15 +29,62 @@
   </nav>
   
   <div class="container mx-auto p-6">
-    <div class="flex justify-between items-center mb-6">
-      <h2 class="text-2xl font-bold">設備列表</h2>
-      <button id="addBeaconBtn" class="bg-cyan-600 hover:bg-cyan-700 px-6 py-2 rounded-lg">➕ 新增設備</button>
+    <!-- 統計儀表板 -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div class="bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 rounded-lg p-4">
+        <div class="text-sm text-gray-400 mb-1">總設備數</div>
+        <div class="text-3xl font-bold text-white" id="totalDevices">0</div>
+      </div>
+      <div class="bg-gradient-to-br from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-lg p-4">
+        <div class="text-sm text-gray-400 mb-1">今日觸發次數</div>
+        <div class="text-3xl font-bold text-white" id="todayTriggers">0</div>
+      </div>
+      <div class="bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 rounded-lg p-4">
+        <div class="text-sm text-gray-400 mb-1">已加入好友推送</div>
+        <div class="text-3xl font-bold text-white" id="friendPushes">0</div>
+      </div>
+      <div class="bg-gradient-to-br from-orange-500/20 to-red-500/20 border border-orange-500/30 rounded-lg p-4">
+        <div class="text-sm text-gray-400 mb-1">未加入好友推送</div>
+        <div class="text-3xl font-bold text-white" id="nonFriendPushes">0</div>
+      </div>
     </div>
-    
-    <div id="devicesContainer" class="space-y-4"></div>
+
+    <!-- Tab 切換 -->
+    <div class="flex gap-4 mb-6 border-b border-gray-700">
+      <button class="tab-btn active px-4 py-2 text-cyan-400 border-b-2 border-cyan-400" data-tab="devices">📡 設備管理</button>
+      <button class="tab-btn px-4 py-2 text-gray-400 hover:text-cyan-400" data-tab="actions">⚡ 觸發動作</button>
+      <button class="tab-btn px-4 py-2 text-gray-400 hover:text-cyan-400" data-tab="messages">💬 推送訊息</button>
+    </div>
+
+    <!-- 設備管理 Tab -->
+    <div id="devicesTab" class="tab-content">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold">設備列表</h2>
+        <button id="addBeaconBtn" class="bg-cyan-600 hover:bg-cyan-700 px-6 py-2 rounded-lg">➕ 新增設備</button>
+      </div>
+      <div id="devicesContainer" class="space-y-4"></div>
+    </div>
+
+    <!-- 觸發動作 Tab -->
+    <div id="actionsTab" class="tab-content hidden">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold">觸發動作設定</h2>
+        <button id="addActionBtn" class="bg-cyan-600 hover:bg-cyan-700 px-6 py-2 rounded-lg">➕ 新增動作</button>
+      </div>
+      <div id="actionsContainer" class="space-y-4"></div>
+    </div>
+
+    <!-- 推送訊息 Tab -->
+    <div id="messagesTab" class="tab-content hidden">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold">推送訊息模板</h2>
+        <button id="addMessageBtn" class="bg-cyan-600 hover:bg-cyan-700 px-6 py-2 rounded-lg">➕ 新增模板</button>
+      </div>
+      <div id="messagesContainer" class="space-y-4"></div>
+    </div>
   </div>
 
-  <!-- 新增/編輯 Modal -->
+  <!-- 設備 Modal -->
   <div id="deviceModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
     <div class="bg-gray-900 border border-cyan-500/30 rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
       <h3 id="modalTitle" class="text-xl font-bold mb-4">新增 Beacon 設備</h3>
@@ -73,7 +120,98 @@
         </div>
         <div class="flex gap-3 pt-4">
           <button type="submit" class="bg-cyan-600 hover:bg-cyan-700 px-6 py-2 rounded-lg flex-1">💾 儲存</button>
-          <button type="button" id="closeModal" class="bg-gray-700 hover:bg-gray-600 px-6 py-2 rounded-lg">✕ 取消</button>
+          <button type="button" class="close-modal bg-gray-700 hover:bg-gray-600 px-6 py-2 rounded-lg">✕ 取消</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 觸發動作 Modal -->
+  <div id="actionModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+    <div class="bg-gray-900 border border-cyan-500/30 rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <h3 class="text-xl font-bold mb-4">新增觸發動作</h3>
+      <form id="actionForm" class="space-y-4">
+        <div>
+          <label class="block text-sm mb-2">動作名稱 <span class="text-red-500">*</span></label>
+          <input type="text" name="action_name" required placeholder="例：歡迎訊息">
+        </div>
+        <div>
+          <label class="block text-sm mb-2">選擇設備 <span class="text-red-500">*</span></label>
+          <select name="hwid" required id="actionDeviceSelect">
+            <option value="">請選擇設備</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm mb-2">觸發類型 <span class="text-red-500">*</span></label>
+          <select name="trigger_type" required>
+            <option value="enter">進入範圍 (Enter)</option>
+            <option value="leave">離開範圍 (Leave)</option>
+            <option value="stay">停留範圍 (Stay)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm mb-2">選擇推送訊息 <span class="text-red-500">*</span></label>
+          <select name="message_id" required id="actionMessageSelect">
+            <option value="">請選擇訊息模板</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm mb-2">說明</label>
+          <textarea name="description" rows="3" placeholder="動作說明..."></textarea>
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="checkbox" name="is_active" checked id="action_is_active">
+          <label for="action_is_active">啟用此動作</label>
+        </div>
+        <div class="flex gap-3 pt-4">
+          <button type="submit" class="bg-cyan-600 hover:bg-cyan-700 px-6 py-2 rounded-lg flex-1">💾 儲存</button>
+          <button type="button" class="close-modal bg-gray-700 hover:bg-gray-600 px-6 py-2 rounded-lg">✕ 取消</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 推送訊息 Modal -->
+  <div id="messageModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+    <div class="bg-gray-900 border border-cyan-500/30 rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <h3 class="text-xl font-bold mb-4">新增推送訊息模板</h3>
+      <form id="messageForm" class="space-y-4">
+        <div>
+          <label class="block text-sm mb-2">模板名稱 <span class="text-red-500">*</span></label>
+          <input type="text" name="template_name" required placeholder="例：歡迎訊息">
+        </div>
+        <div>
+          <label class="block text-sm mb-2">訊息類型 <span class="text-red-500">*</span></label>
+          <select name="message_type" required>
+            <option value="text">純文字訊息</option>
+            <option value="flex">Flex Message (卡片)</option>
+            <option value="image">圖片訊息</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm mb-2">訊息內容 <span class="text-red-500">*</span></label>
+          <textarea name="message_content" required rows="6" placeholder="輸入訊息內容或 JSON..."></textarea>
+          <small class="text-gray-400">純文字直接輸入，Flex Message 請輸入 JSON 格式</small>
+        </div>
+        <div>
+          <label class="block text-sm mb-2">目標對象</label>
+          <select name="target_audience">
+            <option value="all">所有用戶</option>
+            <option value="friends">已加入好友</option>
+            <option value="non_friends">未加入好友</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm mb-2">說明</label>
+          <textarea name="description" rows="2" placeholder="模板說明..."></textarea>
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="checkbox" name="is_active" checked id="message_is_active">
+          <label for="message_is_active">啟用此模板</label>
+        </div>
+        <div class="flex gap-3 pt-4">
+          <button type="submit" class="bg-cyan-600 hover:bg-cyan-700 px-6 py-2 rounded-lg flex-1">💾 儲存</button>
+          <button type="button" class="close-modal bg-gray-700 hover:bg-gray-600 px-6 py-2 rounded-lg">✕ 取消</button>
         </div>
       </form>
     </div>
