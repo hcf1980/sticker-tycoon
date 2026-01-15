@@ -62,8 +62,9 @@ document.getElementById('nextBtn')?.addEventListener('click', () => {
 
 // 載入所有資料
 async function loadAllData() {
+  // 先載入設備，再載入其他資料
+  await loadDevices();
   await Promise.all([
-    loadDevices(),
     loadStatistics(),
     loadEvents()
   ]);
@@ -137,18 +138,24 @@ async function loadStatistics() {
 // 載入事件記錄
 async function loadEvents() {
   try {
-    const { data, error } = await db
+    // 先載入事件
+    const { data: events, error: eventsError } = await db
       .from('beacon_events')
-      .select(`
-        *,
-        beacon_devices!inner(device_name, hwid)
-      `)
+      .select('*')
       .order('created_at', { ascending: false })
       .limit(500); // 最多載入 500 筆
 
-    if (error) throw error;
+    if (eventsError) throw eventsError;
 
-    allEvents = data || [];
+    // 手動關聯設備資料
+    allEvents = (events || []).map(event => {
+      const device = allDevices.find(d => d.hwid === event.hwid);
+      return {
+        ...event,
+        beacon_devices: device || { device_name: '未知設備', hwid: event.hwid }
+      };
+    });
+
     currentPage = 0;
     renderEvents();
 
