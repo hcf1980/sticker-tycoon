@@ -11,39 +11,7 @@ try {
   console.error('❌ Supabase 初始化失敗:', error);
 }
 
-// 檢查登入 - 使用 Netlify Identity
-function checkAuth() {
-  // 等待 Netlify Identity 載入
-  if (typeof netlifyIdentity === 'undefined') {
-    console.log('等待 Netlify Identity 載入...');
-    setTimeout(checkAuth, 200);
-    return;
-  }
-
-  netlifyIdentity.init();
-  const user = netlifyIdentity.currentUser();
-
-  if (!user) {
-    console.log('未登入，跳轉到登入頁面');
-    window.location.href = '/admin/login.html';
-    return;
-  }
-
-  // 檢查 admin 角色
-  const roles = user.app_metadata?.roles || [];
-  if (!roles.includes('admin')) {
-    alert('權限不足，需要 admin 角色');
-    netlifyIdentity.logout();
-    window.location.href = '/admin/login.html';
-    return;
-  }
-
-  console.log('✅ 已登入:', user.email);
-  // 開始載入資料
-  loadDevices();
-}
-
-// 登出
+// 登出按鈕
 document.getElementById('logoutBtn')?.addEventListener('click', () => {
   if (typeof netlifyIdentity !== 'undefined') {
     netlifyIdentity.logout();
@@ -51,8 +19,11 @@ document.getElementById('logoutBtn')?.addEventListener('click', () => {
   window.location.href = '/admin/login.html';
 });
 
-// 執行檢查
-checkAuth();
+// 頁面載入後直接載入資料
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('✅ Beacon Manager 載入完成');
+  loadDevices();
+});
 
 // 新增設備按鈕
 document.getElementById('addBeaconBtn')?.addEventListener('click', () => {
