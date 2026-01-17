@@ -13,7 +13,7 @@
 | [DEMO_GALLERY_SUMMARY.md](./DEMO_GALLERY_SUMMARY.md) | 示範圖集功能完整說明 |
 | [HOMEPAGE_GALLERY_FEATURE.md](./HOMEPAGE_GALLERY_FEATURE.md) | 首頁圖集功能 |
 | [GRID_GENERATOR_GUIDE.md](./GRID_GENERATOR_GUIDE.md) | 網格生成器使用指南 |
-| [TOKEN_SYSTEM_STATUS.md](./TOKEN_SYSTEM_STATUS.md) | 代幣系統狀態說明 |
+| [TOKEN_SYSTEM_STATUS.md](./TOKEN_SYSTEM_STATUS.md) | 張數系統狀態說明 |
 
 ### 整合指南
 

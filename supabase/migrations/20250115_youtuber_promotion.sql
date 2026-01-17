@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS youtuber_promotions (
   filming_plan TEXT NOT NULL,
   status TEXT DEFAULT 'pending',  -- pending, approved, rejected, completed
   approval_reason TEXT,  -- 審核原因/備註
-  tokens_awarded INTEGER DEFAULT 0,  -- 已發放代幣
+  tokens_awarded INTEGER DEFAULT 0,  -- 已發放張數
   video_url TEXT,  -- 上傳的影片連結
   video_title TEXT,  -- 影片標題
   video_approval_status TEXT DEFAULT 'pending',  -- pending, approved, rejected

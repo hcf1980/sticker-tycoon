@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * 執行代幣制度改革遷移腳本
+ * 執行張數制度改革遷移腳本
  * 
- * 用途：將資料庫註解從「代幣」改為「張數」
+ * 用途：將資料庫註解從「張數」改為「張數」
  * 安全：只更新註解，不修改數據
  */
 
@@ -24,7 +24,7 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 async function executeMigration() {
-  console.log('🚀 開始執行代幣制度改革遷移...\n');
+  console.log('🚀 開始執行張數制度改革遷移...\n');
 
   try {
     // 讀取 SQL 遷移檔案

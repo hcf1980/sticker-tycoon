@@ -121,16 +121,16 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // 計算所需代幣
-    const tokensRequired = Math.ceil(count / 6) * 3;  // 每 6 張 = 3 代幣
+    // 計算所需張數
+    const tokensRequired = Math.ceil(count / 6) * 3;  // 每 6 張 = 3 張數
 
-    // 檢查代幣餘額
+    // 檢查張數餘額
     if (user.sticker_credits < tokensRequired) {
       return {
         statusCode: 400,
         headers,
         body: JSON.stringify({ 
-          error: `代幣不足！需要 ${tokensRequired} 代幣，目前餘額 ${user.sticker_credits}`,
+          error: `張數不足！需要 ${tokensRequired} 張數，目前餘額 ${user.sticker_credits}`,
           needTokens: tokensRequired,
           currentTokens: user.sticker_credits,
           buyTokensUrl: 'https://line.me/R/ti/p/@YOUR_BOT_ID'  // LINE Bot 購買連結
@@ -199,7 +199,7 @@ exports.handler = async (event, context) => {
       throw taskError;
     }
 
-    // 扣除代幣
+    // 扣除張數
     const deductResult = await deductUserTokens(
       userId,
       tokensRequired,
@@ -208,7 +208,7 @@ exports.handler = async (event, context) => {
     );
 
     if (!deductResult.success) {
-      // 代幣扣除失敗，刪除已創建的記錄
+      // 張數扣除失敗，刪除已創建的記錄
       await supabase.from('sticker_sets').delete().eq('set_id', setId);
       await supabase.from('generation_tasks').delete().eq('task_id', taskId);
 
@@ -220,7 +220,7 @@ exports.handler = async (event, context) => {
     }
 
     console.log(`✅ 貼圖組創建成功: ${name} (${setId})`);
-    console.log(`   用戶: ${userId}, 代幣: ${tokensRequired}, 餘額: ${deductResult.balance}`);
+    console.log(`   用戶: ${userId}, 張數: ${tokensRequired}, 餘額: ${deductResult.balance}`);
 
     return {
       statusCode: 201,

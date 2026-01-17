@@ -475,17 +475,17 @@
           <div class="count-option" data-count="6" onclick="selectCount(6)">
             <div class="count-number">6</div>
             <div class="count-label">張貼圖</div>
-            <div class="count-tokens">🪙 3 代幣</div>
+            <div class="count-tokens">3 張數</div>
           </div>
           <div class="count-option selected" data-count="12" onclick="selectCount(12)">
             <div class="count-number">12</div>
             <div class="count-label">張貼圖</div>
-            <div class="count-tokens">🪙 6 代幣</div>
+            <div class="count-tokens">6 張數</div>
           </div>
           <div class="count-option" data-count="18" onclick="selectCount(18)">
             <div class="count-number">18</div>
             <div class="count-label">張貼圖</div>
-            <div class="count-tokens">🪙 9 代幣</div>
+            <div class="count-tokens">9 張數</div>
           </div>
         </div>
       </div>
@@ -769,14 +769,14 @@
           <span class="confirm-value">${formData.count} 張</span>
         </div>
         <div class="confirm-item">
-          <span class="confirm-label">所需代幣</span>
+          <span class="confirm-label">所需張數</span>
           <span class="confirm-value" style="color: ${hasEnoughTokens ? 'var(--accent)' : 'var(--error)'}">
-            🪙 ${tokensRequired} 代幣
+            ${tokensRequired} 張數
           </span>
         </div>
         <div class="confirm-item">
           <span class="confirm-label">您的餘額</span>
-          <span class="confirm-value">🪙 ${currentUser.credits} 代幣</span>
+          <span class="confirm-value">${currentUser.credits} 張數</span>
         </div>
       `;
 

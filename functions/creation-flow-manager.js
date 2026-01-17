@@ -1,6 +1,6 @@
 /**
  * Creation Flow Manager
- * 管理創建流程：超時檢查、取消按鈕、代幣延遲扣除
+ * 管理創建流程：超時檢查、取消按鈕、張數延遲扣除
  */
 
 const { updateConversationState, ConversationStage } = require('./conversation-state');

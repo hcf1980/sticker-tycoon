@@ -2,7 +2,7 @@
 
 ## 📋 目錄
 1. [交易流程說明](#交易流程說明)
-2. [代幣儲值方案](#代幣儲值方案)
+2. [張數儲值方案](#張數儲值方案)
 3. [技術架構](#技術架構)
 4. [資料庫設計](#資料庫設計)
 5. [API 實作](#api-實作)
@@ -17,7 +17,7 @@
 ```
 用戶端                    您的後端                LINE Pay API               Supabase
   │                         │                         │                          │
-  │  1. 點擊「購買代幣」    │                         │                          │
+  │  1. 點擊「購買張數」    │                         │                          │
   │ ────────────────────> │                         │                          │
   │                         │  2. 建立訂單記錄        │                          │
   │                         │ ─────────────────────────────────────────────> │
@@ -41,7 +41,7 @@
   │                         │ ──────────────────────> │                          │
   │                         │  10. 交易確認成功       │                          │
   │                         │ <────────────────────── │                          │
-  │                         │  11. 更新訂單狀態 + 發放代幣                        │
+  │                         │  11. 更新訂單狀態 + 發放張數                        │
   │                         │ ─────────────────────────────────────────────> │
   │                         │                         │                          │
   │  12. 顯示購買成功       │                         │                          │
@@ -103,7 +103,7 @@
 ┌─────────────────────────────────────────────────────────────┐
 │                       LINE Bot / LIFF                        │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
-│  │ 代幣查詢     │  │ 購買代幣     │  │ 交易記錄     │     │
+│  │ 張數查詢     │  │ 購買張數     │  │ 交易記錄     │     │
 │  └──────────────┘  └──────────────┘  └──────────────┘     │
 └───────────────────────────┬─────────────────────────────────┘
                             │
@@ -111,9 +111,9 @@
 │                   Netlify Functions                          │
 │  ┌──────────────────────────────────────────────────────┐  │
 │  │  payment-request.js  (建立付款請求)                  │  │
-│  │  payment-confirm.js  (確認付款並發放代幣)            │  │
+│  │  payment-confirm.js  (確認付款並發放張數)            │  │
 │  │  payment-cancel.js   (取消付款處理)                  │  │
-│  │  get-tokens.js       (查詢代幣餘額)                  │  │
+│  │  get-tokens.js       (查詢張數餘額)                  │  │
 │  │  get-token-transactions.js (查詢交易記錄)            │  │
 │  └──────────────────────────────────────────────────────┘  │
 └───────┬─────────────────────────┬────────────────────────────┘
@@ -174,9 +174,9 @@ CREATE TABLE IF NOT EXISTS orders (
   -- 商品資訊
   package_id TEXT NOT NULL,                -- 方案 ID：starter, value, popular, deluxe
   package_name TEXT NOT NULL,              -- 方案名稱
-  token_amount INTEGER NOT NULL,           -- 代幣數量
-  bonus_tokens INTEGER DEFAULT 0,          -- 贈送代幣
-  total_tokens INTEGER NOT NULL,           -- 總代幣數（含贈送）
+  token_amount INTEGER NOT NULL,           -- 張數數量
+  bonus_tokens INTEGER DEFAULT 0,          -- 贈送張數
+  total_tokens INTEGER NOT NULL,           -- 總張數數（含贈送）
 
   -- 付款資訊
   amount INTEGER NOT NULL,                 -- 金額（台幣）
@@ -189,7 +189,7 @@ CREATE TABLE IF NOT EXISTS orders (
   -- 狀態追蹤
   status TEXT DEFAULT 'pending',           -- pending, paid, cancelled, expired, refunded
   paid_at TIMESTAMP WITH TIME ZONE,        -- 付款完成時間
-  tokens_issued BOOLEAN DEFAULT FALSE,     -- 代幣是否已發放
+  tokens_issued BOOLEAN DEFAULT FALSE,     -- 張數是否已發放
 
   -- 時間戳記
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -205,19 +205,19 @@ CREATE INDEX idx_orders_transaction_id ON orders(transaction_id);
 CREATE INDEX idx_orders_created_at ON orders(created_at);
 ```
 
-### 4.2 代幣帳本表（token_ledger）
+### 4.2 張數帳本表（token_ledger）
 
-用於追蹤代幣有效期和 FIFO 扣款：
+用於追蹤張數有效期和 FIFO 扣款：
 
 ```sql
--- 代幣帳本表（追蹤每筆代幣的有效期）
+-- 張數帳本表（追蹤每筆張數的有效期）
 CREATE TABLE IF NOT EXISTS token_ledger (
   id BIGSERIAL PRIMARY KEY,
   user_id TEXT NOT NULL,                      -- LINE user ID
 
-  -- 代幣資訊
-  tokens INTEGER NOT NULL,                    -- 代幣數量（正數=入帳，負數=扣款）
-  remaining_tokens INTEGER NOT NULL,          -- 剩餘可用代幣
+  -- 張數資訊
+  tokens INTEGER NOT NULL,                    -- 張數數量（正數=入帳，負數=扣款）
+  remaining_tokens INTEGER NOT NULL,          -- 剩餘可用張數
 
   -- 來源追蹤
   source_type TEXT NOT NULL,                  -- purchase, bonus, referral, admin, initial
@@ -241,7 +241,7 @@ CREATE INDEX idx_token_ledger_expires_at ON token_ledger(expires_at);
 CREATE INDEX idx_token_ledger_remaining ON token_ledger(user_id, remaining_tokens)
   WHERE remaining_tokens > 0 AND is_expired = FALSE;
 
--- 自動標記過期代幣的觸發器
+-- 自動標記過期張數的觸發器
 CREATE OR REPLACE FUNCTION mark_expired_tokens()
 RETURNS void AS $$
 BEGIN
@@ -270,7 +270,7 @@ CREATE INDEX IF NOT EXISTS idx_token_transactions_order_id ON token_transactions
 CREATE INDEX IF NOT EXISTS idx_token_transactions_expires_at ON token_transactions(expires_at);
 
 -- 添加註解
-COMMENT ON COLUMN token_transactions.expires_at IS '代幣到期時間（購買後365天）';
+COMMENT ON COLUMN token_transactions.expires_at IS '張數到期時間（購買後365天）';
 COMMENT ON COLUMN token_transactions.order_id IS '關聯的訂單 ID';
 ```
 
@@ -463,18 +463,18 @@ exports.handler = async function(event) {
 };
 ```
 
-### 5.2 確認付款並發放代幣（payment-confirm.js）
+### 5.2 確認付款並發放張數（payment-confirm.js）
 
 ```javascript
 /**
- * 確認 LINE Pay 付款並發放代幣
+ * 確認 LINE Pay 付款並發放張數
  *
  * 流程：
  * 1. 接收 LINE Pay 回調
  * 2. 呼叫 Confirm API 確認交易
  * 3. 更新訂單狀態
- * 4. 發放代幣到用戶帳戶（含 365 天有效期）
- * 5. 記錄交易和代幣帳本
+ * 4. 發放張數到用戶帳戶（含 365 天有效期）
+ * 5. 記錄交易和張數帳本
  */
 
 const crypto = require('crypto');
@@ -499,14 +499,14 @@ function generateSignature(uri, body, nonce) {
 }
 
 /**
- * 發放代幣（含有效期追蹤）
+ * 發放張數（含有效期追蹤）
  */
 async function issueTokensWithExpiry(supabase, userId, tokens, orderId, packageName) {
   // 計算到期時間（365天後）
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + 365);
 
-  // 1. 更新用戶代幣餘額
+  // 1. 更新用戶張數餘額
   const { data: user, error: userError } = await supabase
     .from('users')
     .select('sticker_credits')
@@ -526,7 +526,7 @@ async function issueTokensWithExpiry(supabase, userId, tokens, orderId, packageN
     })
     .eq('line_user_id', userId);
 
-  // 2. 記錄代幣帳本（用於 FIFO 扣款和過期管理）
+  // 2. 記錄張數帳本（用於 FIFO 扣款和過期管理）
   await supabase
     .from('token_ledger')
     .insert([{
@@ -549,7 +549,7 @@ async function issueTokensWithExpiry(supabase, userId, tokens, orderId, packageN
       amount: tokens,
       balance_after: newBalance,
       transaction_type: 'purchase',
-      description: `購買${packageName}（${tokens}代幣）`,
+      description: `購買${packageName}（${tokens}張數）`,
       reference_id: orderId,
       order_id: orderId,
       expires_at: expiresAt.toISOString()
@@ -646,7 +646,7 @@ exports.handler = async function(event) {
         })
         .eq('order_id', orderId);
 
-      // 4. 發放代幣（含有效期）
+      // 4. 發放張數（含有效期）
       await issueTokensWithExpiry(
         supabase,
         order.user_id,
@@ -655,7 +655,7 @@ exports.handler = async function(event) {
         order.package_name
       );
 
-      console.log(`✅ 訂單 ${orderId} 付款成功，已發放 ${order.total_tokens} 代幣給用戶 ${order.user_id}`);
+      console.log(`✅ 訂單 ${orderId} 付款成功，已發放 ${order.total_tokens} 張數給用戶 ${order.user_id}`);
 
       // 5. 返回成功頁面
       return {
@@ -758,7 +758,7 @@ function generateSuccessPage(order) {
       <div class="container">
         <div class="success-icon">✅</div>
         <h1>購買成功！</h1>
-        <p>代幣已成功儲值到您的帳戶</p>
+        <p>張數已成功儲值到您的帳戶</p>
 
         <div class="info">
           <div class="info-item">
@@ -775,7 +775,7 @@ function generateSuccessPage(order) {
           </div>
         </div>
 
-        <div class="tokens">🎫 ${order.total_tokens} 代幣</div>
+        <div class="tokens">🎫 ${order.total_tokens} 張數</div>
         <div class="expiry">⏰ 有效期限：購買日起 365 天</div>
 
         <a href="line://app/" class="btn">返回貼圖大亨</a>
@@ -875,26 +875,26 @@ function generateErrorPage(errorMessage) {
 ✅ 定期清理過期的 pending 訂單
 ✅ 防止惡意佔用訂單編號
 
-### 6.4 代幣發放安全
+### 6.4 張數發放安全
 
-✅ 只有在 LINE Pay 確認成功後才發放代幣
+✅ 只有在 LINE Pay 確認成功後才發放張數
 ✅ 使用 `tokens_issued` 標記防止重複發放
-✅ 所有代幣變動都記錄在交易日誌中
+✅ 所有張數變動都記錄在交易日誌中
 
 ---
 
 ## 7. 前端整合（LINE Bot / LIFF）
 
-### 7.1 購買代幣流程（LINE Bot）
+### 7.1 購買張數流程（LINE Bot）
 
-在 `line-webhook.js` 中添加處理「購買代幣」的訊息：
+在 `line-webhook.js` 中添加處理「購買張數」的訊息：
 
 ```javascript
-// 當用戶發送「購買代幣」或「儲值」時
+// 當用戶發送「購買張數」或「儲值」時
 if (message.text.includes('購買') || message.text.includes('儲值')) {
   return [{
     type: 'flex',
-    altText: '代幣儲值方案',
+    altText: '張數儲值方案',
     contents: generateTokenPackagesFlex()
   }];
 }
@@ -911,7 +911,7 @@ function generateTokenPackagesFlex() {
           layout: 'vertical',
           contents: [
             { type: 'text', text: '入門包', weight: 'bold', size: 'xl', color: '#667eea' },
-            { type: 'text', text: '30 代幣', size: 'md', color: '#666', margin: 'md' },
+            { type: 'text', text: '30 張數', size: 'md', color: '#666', margin: 'md' },
             { type: 'text', text: 'NT$ 99', size: 'xxl', weight: 'bold', margin: 'lg' },
             { type: 'text', text: '⏰ 有效期 365 天', size: 'xs', color: '#ff9800', margin: 'sm' }
           ]
@@ -947,7 +947,7 @@ function generateTokenPackagesFlex() {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>購買代幣</title>
+  <title>購買張數</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
 <body>
@@ -994,7 +994,7 @@ function generateTokenPackagesFlex() {
 
 ---
 
-## 8. 代幣有效期管理
+## 8. 張數有效期管理
 
 ### 8.1 自動過期檢查（Cron Job）
 
@@ -1002,7 +1002,7 @@ function generateTokenPackagesFlex() {
 
 ```javascript
 /**
- * 定期檢查並標記過期代幣
+ * 定期檢查並標記過期張數
  *
  * 使用 Netlify Scheduled Functions 或外部 Cron 服務（如 EasyCron）
  * 建議執行頻率：每天 00:00
@@ -1015,7 +1015,7 @@ exports.handler = async function() {
     const supabase = getSupabaseClient();
     const now = new Date().toISOString();
 
-    // 1. 標記過期的代幣帳本
+    // 1. 標記過期的張數帳本
     const { data: expiredLedgers, error } = await supabase
       .from('token_ledger')
       .update({
@@ -1028,7 +1028,7 @@ exports.handler = async function() {
 
     if (error) throw error;
 
-    console.log(`✅ 已標記 ${expiredLedgers?.length || 0} 筆過期代幣`);
+    console.log(`✅ 已標記 ${expiredLedgers?.length || 0} 筆過期張數`);
 
     // 2. 重新計算受影響用戶的餘額
     if (expiredLedgers && expiredLedgers.length > 0) {
@@ -1048,7 +1048,7 @@ exports.handler = async function() {
     };
 
   } catch (error) {
-    console.error('檢查過期代幣失敗:', error);
+    console.error('檢查過期張數失敗:', error);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: error.message })
@@ -1057,10 +1057,10 @@ exports.handler = async function() {
 };
 
 /**
- * 重新計算用戶餘額（基於未過期的代幣）
+ * 重新計算用戶餘額（基於未過期的張數）
  */
 async function recalculateUserBalance(supabase, userId) {
-  // 計算所有未過期代幣的剩餘數量
+  // 計算所有未過期張數的剩餘數量
   const { data: ledgers } = await supabase
     .from('token_ledger')
     .select('remaining_tokens')
@@ -1078,7 +1078,7 @@ async function recalculateUserBalance(supabase, userId) {
     })
     .eq('line_user_id', userId);
 
-  console.log(`📊 用戶 ${userId} 餘額已更新為 ${totalBalance} 代幣`);
+  console.log(`📊 用戶 ${userId} 餘額已更新為 ${totalBalance} 張數`);
 }
 ```
 
@@ -1088,7 +1088,7 @@ async function recalculateUserBalance(supabase, userId) {
 
 ```javascript
 /**
- * 提醒用戶即將到期的代幣（到期前 30 天）
+ * 提醒用戶即將到期的張數（到期前 30 天）
  *
  * 執行頻率：每天 09:00
  */
@@ -1100,7 +1100,7 @@ exports.handler = async function() {
   try {
     const supabase = getSupabaseClient();
 
-    // 查詢 30 天內即將到期的代幣
+    // 查詢 30 天內即將到期的張數
     const thirtyDaysLater = new Date();
     thirtyDaysLater.setDate(thirtyDaysLater.getDate() + 30);
 
@@ -1135,7 +1135,7 @@ exports.handler = async function() {
       const expiryDate = new Date(info.earliestExpiry).toLocaleDateString('zh-TW');
       const message = {
         type: 'text',
-        text: `⚠️ 代幣到期提醒\n\n您有 ${info.tokens} 代幣即將於 ${expiryDate} 到期！\n\n請盡快使用，過期代幣將無法退款。\n\n💡 輸入「創建貼圖」開始使用`
+        text: `⚠️ 張數到期提醒\n\n您有 ${info.tokens} 張數即將於 ${expiryDate} 到期！\n\n請盡快使用，過期張數將無法退款。\n\n💡 輸入「創建貼圖」開始使用`
       };
 
       await sendLineMessage(userId, [message]);
@@ -1163,19 +1163,19 @@ exports.handler = async function() {
 
 ---
 
-## 9. FIFO 代幣扣款邏輯
+## 9. FIFO 張數扣款邏輯
 
 更新 `supabase-client.js` 中的 `deductTokens` 函數以支持 FIFO：
 
 ```javascript
 /**
- * 扣除代幣（FIFO：優先扣除最早到期的代幣）
+ * 扣除張數（FIFO：優先扣除最早到期的張數）
  */
 async function deductTokens(lineUserId, amount, description, referenceId = null) {
   try {
     const supabase = getSupabaseClient();
 
-    // 1. 查詢所有可用代幣（未過期且有剩餘），按到期時間排序
+    // 1. 查詢所有可用張數（未過期且有剩餘），按到期時間排序
     const { data: availableLedgers, error: ledgerError } = await supabase
       .from('token_ledger')
       .select('*')
@@ -1186,7 +1186,7 @@ async function deductTokens(lineUserId, amount, description, referenceId = null)
 
     if (ledgerError) throw ledgerError;
 
-    // 計算總可用代幣
+    // 計算總可用張數
     const totalAvailable = availableLedgers?.reduce(
       (sum, l) => sum + l.remaining_tokens, 0
     ) || 0;
@@ -1195,11 +1195,11 @@ async function deductTokens(lineUserId, amount, description, referenceId = null)
       return {
         success: false,
         balance: totalAvailable,
-        error: `代幣不足！目前餘額 ${totalAvailable}，需要 ${amount} 代幣`
+        error: `張數不足！目前餘額 ${totalAvailable}，需要 ${amount} 張數`
       };
     }
 
-    // 2. 從最早到期的代幣開始扣除（FIFO）
+    // 2. 從最早到期的張數開始扣除（FIFO）
     let remaining = amount;
     const updates = [];
 
@@ -1217,7 +1217,7 @@ async function deductTokens(lineUserId, amount, description, referenceId = null)
       remaining -= deduct;
     }
 
-    // 3. 批次更新代幣帳本
+    // 3. 批次更新張數帳本
     for (const update of updates) {
       await supabase
         .from('token_ledger')
@@ -1253,7 +1253,7 @@ async function deductTokens(lineUserId, amount, description, referenceId = null)
     return { success: true, balance: newBalance };
 
   } catch (error) {
-    console.error('扣除代幣失敗:', error);
+    console.error('扣除張數失敗:', error);
     return { success: false, balance: 0, error: error.message };
   }
 }
@@ -1283,46 +1283,46 @@ async function deductTokens(lineUserId, amount, description, referenceId = null)
 - [ ] `payment-request.js` (建立付款請求)
 - [ ] `payment-confirm.js` (確認付款)
 - [ ] `payment-cancel.js` (取消處理)
-- [ ] `check-expired-tokens.js` (定期檢查過期代幣)
+- [ ] `check-expired-tokens.js` (定期檢查過期張數)
 - [ ] `notify-expiring-tokens.js` (到期提醒)
 
 ### 10.4 前端整合
 
-- [ ] LINE Bot 購買代幣訊息
+- [ ] LINE Bot 購買張數訊息
 - [ ] LIFF 付款頁面
 - [ ] 成功/失敗回調頁面
 
 ### 10.5 測試項目
 
 - [ ] Sandbox 環境測試付款流程
-- [ ] 確認代幣正確發放
+- [ ] 確認張數正確發放
 - [ ] 驗證有效期計算正確
 - [ ] 測試 FIFO 扣款邏輯
-- [ ] 測試過期代幣自動失效
+- [ ] 測試過期張數自動失效
 - [ ] 測試重複付款防護
 
 ---
 
 ## 11. 常見問題 FAQ
 
-### Q1: 為什麼採用代幣制度而非直接付款？
+### Q1: 為什麼採用張數制度而非直接付款？
 
-**A:** 代幣制度有以下優勢：
+**A:** 張數制度有以下優勢：
 - 降低小額交易的手續費成本
 - 可推出優惠方案（買多送多）
-- 簡化功能定價（統一代幣單位）
+- 簡化功能定價（統一張數單位）
 - 提高用戶留存率
 - 方便實現推薦獎勵機制
 
-### Q2: 代幣為什麼設定 365 天有效期？
+### Q2: 張數為什麼設定 365 天有效期？
 
 **A:**
 - 符合台灣消費者保護法相關規定
 - 鼓勵用戶定期使用服務
-- 防止長期閒置代幣造成財務負擔
+- 防止長期閒置張數造成財務負擔
 - 業界常見做法（如遊戲點數、電信儲值）
 
-### Q3: 過期代幣可以退款嗎？
+### Q3: 過期張數可以退款嗎？
 
 **A:**
 - ❌ 原則上不可退款（購買時已明確告知有效期）
@@ -1333,16 +1333,16 @@ async function deductTokens(lineUserId, amount, description, referenceId = null)
 
 **A:**
 FIFO (First In, First Out) 表示「先進先出」：
-- 使用代幣時，系統會優先扣除最早到期的代幣
-- 確保用戶的代幣不會因為閒置而過期
-- 例如：2024/01/01 購買的代幣會比 2024/02/01 購買的先被使用
+- 使用張數時，系統會優先扣除最早到期的張數
+- 確保用戶的張數不會因為閒置而過期
+- 例如：2024/01/01 購買的張數會比 2024/02/01 購買的先被使用
 
-### Q5: 如何查詢代幣有效期？
+### Q5: 如何查詢張數有效期？
 
 **A:**
-在 LINE Bot 中輸入「代幣查詢」或「my tokens」，會顯示：
+在 LINE Bot 中輸入「張數查詢」或「my tokens」，會顯示：
 - 總餘額
-- 各批代幣的到期時間
+- 各批張數的到期時間
 - 最近交易記錄
 
 ### Q6: LINE Pay 需要多久審核？
@@ -1365,26 +1365,26 @@ FIFO (First In, First Out) 表示「先進先出」：
 ### 12.1 訂閱制（未來功能）
 
 可考慮推出月費/年費訂閱：
-- 月費 $299：每月 120 代幣 + 10% 折扣
-- 年費 $2,999：每年 1,500 代幣 + 20% 折扣 + 專屬風格
+- 月費 $299：每月 120 張數 + 10% 折扣
+- 年費 $2,999：每年 1,500 張數 + 20% 折扣 + 專屬風格
 
-### 12.2 代幣贈送功能
+### 12.2 張數贈送功能
 
-- 朋友間可互相贈送代幣
+- 朋友間可互相贈送張數
 - 需額外實作轉讓記錄和審計機制
 - 防止濫用（限制每日轉讓上限）
 
 ### 12.3 企業方案
 
-- 大量購買優惠（如 10,000 代幣）
-- 團隊共享代幣池
+- 大量購買優惠（如 10,000 張數）
+- 團隊共享張數池
 - 統一發票和管理後台
 
-### 12.4 代幣回饋機制
+### 12.4 張數回饋機制
 
-- 每日簽到獎勵：1 代幣
+- 每日簽到獎勵：1 張數
 - 完成任務獎勵：如「分享貼圖到社群」
-- 評價系統獎勵：留下評價獲得代幣
+- 評價系統獎勵：留下評價獲得張數
 
 ---
 

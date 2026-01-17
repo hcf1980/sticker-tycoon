@@ -541,7 +541,7 @@ async function handleCustomScene(userId, description) {
 
 /**
  * 生成數量選擇訊息（6宮格批次生成優化版）
- * 每 6 張 = 1 次 API = 3 代幣
+ * 每 6 張 = 1 次 API = 3 張數
  */
 // generateCountSelectionMessage 已移至 ./messages/creation-messages
 

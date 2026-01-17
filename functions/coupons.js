@@ -1,6 +1,6 @@
 /**
  * Coupons API (User-facing)
- * - 兌換優惠券：輸入 redeem code 後立即加代幣
+ * - 兌換優惠券：輸入 redeem code 後立即加張數
  *
  * 安全性：
  * - 使用 SUPABASE_SERVICE_ROLE_KEY 執行（server-only）
@@ -96,7 +96,7 @@ async function redeem(event) {
     return json(200, { success: false, error: '兌換碼無效或已過期', code: status });
   }
 
-  // 加代幣：走既有統一 addTokens（會寫 users.sticker_credits + token_ledger(30天) + token_transactions）
+  // 加張數：走既有統一 addTokens（會寫 users.sticker_credits + token_ledger(30天) + token_transactions）
   const addRes = await addTokens(
     userId,
     campaign.token_amount,
@@ -112,7 +112,7 @@ async function redeem(event) {
       .update({ status: 'token_grant_failed' })
       .eq('id', redemption.id);
 
-    return json(500, { success: false, error: '代幣發放失敗，請聯繫客服', code: 'token_grant_failed' });
+    return json(500, { success: false, error: '張數發放失敗，請聯繫客服', code: 'token_grant_failed' });
   }
 
   return json(200, {

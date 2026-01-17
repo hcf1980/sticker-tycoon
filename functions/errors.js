@@ -32,12 +32,12 @@ class AppError extends Error {
 }
 
 /**
- * 代幣不足錯誤
+ * 張數不足錯誤
  */
 class TokenInsufficientError extends AppError {
   constructor(required, available, userId = null) {
     super(
-      `代幣不足：需要 ${required}，目前只有 ${available}`,
+      `張數不足：需要 ${required}，目前只有 ${available}`,
       'TOKEN_INSUFFICIENT',
       400,
       { required, available, userId }

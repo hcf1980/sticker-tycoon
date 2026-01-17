@@ -156,7 +156,7 @@
             <div>
               <label class="block text-sm text-gray-300 mb-1">贈送張數</label>
               <input id="tokenAmountInput" type="number" min="1" value="20" class="w-full px-4 py-2 rounded-lg bg-white text-black border border-gray-300 focus:outline-none focus:ring-2 focus:ring-cyan-500/50" />
-              <p class="text-xs text-gray-500 mt-1">依你的需求：有效期固定 30 天（沿用既有 token_ledger 規則）</p>
+              <p class="text-xs text-gray-500 mt-1">依你的需求：有效期固定 30 天（沿用既有張數帳本規則）</p>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -678,8 +678,18 @@
           body: JSON.stringify(payload)
         });
 
-        const data = await res.json();
-        if (!data.success) throw new Error(data.error || 'create failed');
+        const rawText = await res.text();
+        let data;
+        try {
+          data = rawText ? JSON.parse(rawText) : {};
+        } catch {
+          data = { success: false, error: rawText || 'Invalid JSON response' };
+        }
+
+        if (!res.ok || !data.success) {
+          const detail = data?.details ? `\n${JSON.stringify(data.details)}` : '';
+          throw new Error(`${data.error || 'create failed'} (HTTP ${res.status})${detail}`);
+        }
 
         // 若使用者勾選未啟用，額外 set-active
         if (!el('isActiveInput').checked) {

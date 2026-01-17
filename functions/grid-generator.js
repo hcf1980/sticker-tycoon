@@ -9,11 +9,11 @@
  * - 智能判斷最佳裁切方式，確保每格接近正方形
  * - 自動裁切成 6 張獨立貼圖（370×320）
  * - 每張內容區 350×300，留白 10px
- * - 每 6 張消耗 3 代幣
+ * - 每 6 張消耗 3 張數
  *
  * 套餐選項：
- * - 基本：6 張 = 3 代幣（1 次 API）
- * - 標準：12 張 = 6 代幣（2 次 API）
+ * - 基本：6 張 = 3 張數（1 次 API）
+ * - 標準：12 張 = 6 張數（2 次 API）
  */
 
 const sharp = require('sharp');
@@ -913,7 +913,7 @@ async function generate6StickersBatch(photoBase64, style, expressions, character
       characterID
     }));
 
-    console.log(`🎉 6宮格批次生成完成！消耗 3 代幣`);
+    console.log(`🎉 6宮格批次生成完成！消耗 3 張數`);
     return results;
 
   } catch (error) {

@@ -1,11 +1,11 @@
-# 🔄 代幣制度改革執行方案
+# 🔄 張數制度改革執行方案
 
 ## 📋 改革概述
 
 ### 現有制度問題
-- ❌ 代幣（token）作為虛擬貨幣容易讓用戶混淆
-- ❌ 計價方式複雜（6張=3代幣，不直觀）
-- ❌ 用戶不清楚代幣與實際張數的對應關係
+- ❌ 張數（token）作為虛擬貨幣容易讓用戶混淆
+- ❌ 計價方式複雜（6張=3張數，不直觀）
+- ❌ 用戶不清楚張數與實際張數的對應關係
 
 ### 新制度優勢
 - ✅ **直觀明確**：購買「張數」直接對應生成張數
@@ -14,7 +14,7 @@
 
 ---
 
-## 💰 新代幣（張數）制度
+## 💰 新張數（張數）制度
 
 ### 1. 商品定價（以「張數」為單位）
 
@@ -36,7 +36,7 @@
 - **代上傳服務**（協助上架 LINE Store）= 扣除 **20 張**
 
 ### 3. 新用戶福利
-- 🎁 新用戶註冊贈送：**40 張**（舊用戶代幣直接轉換為張數）
+- 🎁 新用戶註冊贈送：**40 張**（舊用戶張數直接轉換為張數）
 - 👥 推薦好友獎勵：推薦人與被推薦人各得 **10 張**（上限 30 次）
 
 ---
@@ -48,28 +48,28 @@
 #### 1.1 欄位重命名（語義層面）
 ```sql
 -- users 表：sticker_credits 欄位保持不變，但語義改為「張數」
-COMMENT ON COLUMN users.sticker_credits IS '可用張數（原為代幣，現改為貼圖張數）';
+COMMENT ON COLUMN users.sticker_credits IS '可用張數（原為張數，現改為貼圖張數）';
 
 -- token_ledger 表：欄位名稱保持，但語義改為「張數」
 COMMENT ON TABLE token_ledger IS '張數帳本表（追蹤每筆張數的有效期和剩餘數量）';
-COMMENT ON COLUMN token_ledger.tokens IS '該筆張數的原始數量（原為代幣）';
+COMMENT ON COLUMN token_ledger.tokens IS '該筆張數的原始數量（原為張數）';
 COMMENT ON COLUMN token_ledger.remaining_tokens IS '該筆張數的剩餘可用數量';
 
 -- token_transactions 表：保持不變
-COMMENT ON TABLE token_transactions IS '張數交易記錄表（原為代幣交易）';
+COMMENT ON TABLE token_transactions IS '張數交易記錄表（原為張數交易）';
 ```
 
 #### 1.2 現有用戶數據轉換
 ```sql
--- 📌 策略：現有代幣數直接轉換為張數（1:1 對應）
--- 舉例：用戶有 40 代幣 → 轉換後有 40 張
+-- 📌 策略：現有張數數直接轉換為張數（1:1 對應）
+-- 舉例：用戶有 40 張數 → 轉換後有 40 張
 -- 無需執行任何 UPDATE，數值保持不變，僅改變語義
 ```
 
 **轉換邏輯說明**：
-- 原有 40 代幣 = 現在 40 張
-- 原有 70 代幣 = 現在 70 張
-- 原有 130 代幣 = 現在 130 張
+- 原有 40 張數 = 現在 40 張
+- 原有 70 張數 = 現在 70 張
+- 原有 130 張數 = 現在 130 張
 
 **優勢**：
 ✅ 無需修改任何數值
@@ -89,7 +89,7 @@ COMMENT ON TABLE token_transactions IS '張數交易記錄表（原為代幣交�
 
 2. `functions/sticker-generator-worker-background.js`
    - 修改 `tokenCost` 計算邏輯
-   - 舊：`Math.ceil(count / 6) * 3`（每6張=3代幣）
+   - 舊：`Math.ceil(count / 6) * 3`（每6張=3張數）
    - 新：`count`（生成幾張就扣幾張）
 
 3. `functions/pack-for-line.js`
@@ -97,7 +97,7 @@ COMMENT ON TABLE token_transactions IS '張數交易記錄表（原為代幣交�
 
 4. `functions/grid-generator.js`
    - 修改 `GRID_CONFIG.tokensPerBatch`
-   - 舊：每6張 = 3代幣
+   - 舊：每6張 = 3張數
    - 新：每6張 = 6張數
 
 ##### 使用者介面檔案（顯示文字）
@@ -111,7 +111,7 @@ COMMENT ON TABLE token_transactions IS '張數交易記錄表（原為代幣交�
 10. `docs/TOKEN_SYSTEM_STATUS.md`
 
 ##### LINE Bot 回覆訊息
-11. `functions/services/command-service.js` - 代幣查詢命令
+11. `functions/services/command-service.js` - 張數查詢命令
 12. `functions/handlers/*` - 各種對話處理器
 
 ---
@@ -122,35 +122,35 @@ COMMENT ON TABLE token_transactions IS '張數交易記錄表（原為代幣交�
 
 | 舊文案 | 新文案 |
 |--------|--------|
-| 代幣 | 張數 / 張 |
+| 張數 | 張數 / 張 |
 | token / tokens | stickers / sheets |
 | 💰 | 🎫 |
-| 代幣餘額 | 剩餘張數 |
-| 購買代幣 | 購買張數 |
-| 代幣不足 | 張數不足 |
-| 消耗 X 代幣 | 消耗 X 張 |
-| 扣除 X 代幣 | 扣除 X 張 |
+| 張數餘額 | 剩餘張數 |
+| 購買張數 | 購買張數 |
+| 張數不足 | 張數不足 |
+| 消耗 X 張數 | 消耗 X 張 |
+| 扣除 X 張數 | 扣除 X 張 |
 
 #### 3.2 關鍵頁面文案示例
 
 **購買方案頁面**（token-guide.html）：
 ```
-舊：基礎包 - 70 代幣 - NT$ 300
+舊：基礎包 - 70 張數 - NT$ 300
 新：基礎包 - 140 張 - NT$ 300
 
-舊：生成 6 張貼圖 = 3 代幣
+舊：生成 6 張貼圖 = 3 張數
 新：生成 6 張貼圖 = 6 張
 
-舊：下載服務 = 40 代幣
+舊：下載服務 = 40 張數
 新：下載服務 = 60 張
 ```
 
 **LINE Bot 回覆訊息**：
 ```
-舊：💰 您的代幣餘額：40 代幣
+舊：💰 您的張數餘額：40 張數
 新：🎫 您的剩餘張數：40 張
 
-舊：❌ 代幣不足！需要 3 代幣，您只有 1 代幣
+舊：❌ 張數不足！需要 3 張數，您只有 1 張數
 新：❌ 張數不足！需要 6 張，您只有 1 張
 ```
 
@@ -188,7 +188,7 @@ COMMENT ON TABLE token_transactions IS '張數交易記錄表（原為代幣交�
 2. **程式錯誤**：扣除邏輯修改可能導致錯誤
    - **應對**：充分測試，灰度發布
 
-3. **歷史資料**：舊交易記錄顯示「代幣」
+3. **歷史資料**：舊交易記錄顯示「張數」
    - **應對**：保持歷史記錄不變，僅更新新記錄
 
 ---

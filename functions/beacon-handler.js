@@ -37,6 +37,18 @@ async function handleBeaconEvent(userId, beaconData) {
 
   console.log(`📡 Beacon 事件: userId=${userId}, hwid=${hwid}, type=${type}`);
 
+  // 全域節流：同一用戶（不分 hwid / action / enter/leave/stay）每天僅推送一次
+  // 以台灣時區（Asia/Taipei）的「日」做切分
+  const now = new Date();
+  const taipeiDateString = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Taipei',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(now); // e.g. 2026-01-17
+
+  const globalDailyKey = `${userId}:${taipeiDateString}`;
+
   let eventId = null;
   let isFriend = false;
 
@@ -61,6 +73,7 @@ async function handleBeaconEvent(userId, beaconData) {
         timestamp: Date.now(),
         is_friend: false,
         message_sent: false,
+        global_daily_key: globalDailyKey,
         error_message: 'Beacon 設備未註冊或未啟用'
       });
 
@@ -179,6 +192,7 @@ async function handleBeaconEvent(userId, beaconData) {
         timestamp: Date.now(),
         is_friend: isFriend,
         message_sent: !!selectedMessage,
+        global_daily_key: globalDailyKey,
         action_id: selectedAction?.id || null,
         message_id: selectedMessage?.id || null,
         error_message: skipReason || null
@@ -199,8 +213,42 @@ async function handleBeaconEvent(userId, beaconData) {
     // 6. 更新統計資料
     await updateBeaconStatistics(hwid, type, userId);
 
-    // 7. 返回要發送的訊息
+    // 7. 返回要發送的訊息（送出前做「全域每日一次」節流）
     if (selectedMessage) {
+      try {
+        const { data: todaySentEvent, error: todaySentError } = await supabase
+          .from('beacon_events')
+          .select('id')
+          .eq('global_daily_key', globalDailyKey)
+          .eq('message_sent', true)
+          .order('timestamp', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (todaySentError) {
+          console.log('⚠️ 全域節流查詢失敗（忽略不中斷推送）:', todaySentError.message);
+        } else if (todaySentEvent) {
+          const skipMessage = '今日已推送過 Beacon 訊息（同一用戶一天僅一次）';
+          console.log(`⏭️ ${skipMessage} global_daily_key=${globalDailyKey}`);
+
+          if (eventId) {
+            await supabase
+              .from('beacon_events')
+              .update({ message_sent: false, error_message: skipMessage })
+              .eq('id', eventId);
+          }
+
+          return {
+            success: true,
+            action: 'none',
+            message: skipMessage,
+            eventId: eventId
+          };
+        }
+      } catch (error) {
+        console.log('⚠️ 全域節流處理失敗（忽略不中斷推送）:', error.message);
+      }
+
       console.log(`📤 準備發送訊息: ${selectedMessage.template_name} (${selectedMessage.message_type})`);
 
       let messageData;

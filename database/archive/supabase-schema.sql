@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS users (
   line_user_id TEXT UNIQUE NOT NULL,
   display_name TEXT,
   picture_url TEXT,
-  sticker_credits INTEGER DEFAULT 40,  -- 免費生成額度（每張貼圖消耗1代幣）
+  sticker_credits INTEGER DEFAULT 40,  -- 免費生成額度（每張貼圖消耗1張數）
   is_premium BOOLEAN DEFAULT FALSE,
   admin_nickname TEXT,  -- 管理員備註名稱
   transfer_code TEXT,  -- 轉帳後五碼
@@ -82,15 +82,15 @@ CREATE TABLE IF NOT EXISTS referrals (
   id BIGSERIAL PRIMARY KEY,
   referrer_id TEXT NOT NULL,  -- 推薦人 LINE user ID
   referee_id TEXT NOT NULL UNIQUE,  -- 被推薦人 LINE user ID（每人只能被推薦一次）
-  referrer_tokens INTEGER DEFAULT 10,  -- 推薦人獲得代幣
-  referee_tokens INTEGER DEFAULT 10,  -- 被推薦人獲得代幣
+  referrer_tokens INTEGER DEFAULT 10,  -- 推薦人獲得張數
+  referee_tokens INTEGER DEFAULT 10,  -- 被推薦人獲得張數
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_referrals_referrer ON referrals(referrer_id);
 CREATE INDEX IF NOT EXISTS idx_referrals_referee ON referrals(referee_id);
 
--- 2.1 代幣交易記錄表
+-- 2.1 張數交易記錄表
 CREATE TABLE IF NOT EXISTS token_transactions (
   id BIGSERIAL PRIMARY KEY,
   user_id TEXT NOT NULL,  -- LINE user ID
@@ -128,7 +128,7 @@ CREATE TABLE IF NOT EXISTS sticker_sets (
   main_image_url TEXT,  -- 主要圖片 URL
   tab_image_url TEXT,  -- 聊天室標籤圖片 URL
   zip_url TEXT,  -- 完整貼圖包下載 URL
-  tokens_used INTEGER DEFAULT 0,  -- 此貼圖組消耗的代幣數
+  tokens_used INTEGER DEFAULT 0,  -- 此貼圖組消耗的張數數
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -261,7 +261,7 @@ CREATE TABLE IF NOT EXISTS youtuber_promotions (
   channel_description TEXT NOT NULL,
   filming_plan TEXT NOT NULL,
   status TEXT DEFAULT 'pending',  -- pending, approved, rejected, completed
-  tokens_awarded INTEGER DEFAULT 0,  -- 已發放代幣
+  tokens_awarded INTEGER DEFAULT 0,  -- 已發放張數
   video_url TEXT,  -- 上傳的影片連結
   admin_notes TEXT,  -- 管理員備註
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),

@@ -111,7 +111,7 @@ async function handleTextMessage(replyToken, userId, text) {
     }
 
     // 2. 優先處理全局命令（即使在創建流程中也可以使用）
-    const globalCommands = ['分享給好友', '推薦好友', '我的推薦碼', '推薦碼', '邀請好友', '查詢進度', '我的貼圖', '貼圖列表', '張數', '餘額', '我的張數', '查詢張數', '代幣', '我的代幣', '查詢代幣'];
+    const globalCommands = ['分享給好友', '推薦好友', '我的推薦碼', '推薦碼', '邀請好友', '查詢進度', '我的貼圖', '貼圖列表', '張數', '餘額', '我的張數', '查詢張數'];
     const couponCommands = ['輸入優惠碼', '優惠碼', '兌換碼', '活動碼'];
 
     // 優惠碼兌換流程（兩步）：先觸發，下一句輸入兌換碼
@@ -214,17 +214,17 @@ async function handleTextMessage(replyToken, userId, text) {
     }
 
     // 張數查詢（保留舊關鍵字相容性）
-    if (text === '代幣' || text === '餘額' || text === '我的代幣' || text === '查詢代幣' || text === '張數' || text === '我的張數' || text === '查詢張數') {
+    if (text === '張數' || text === '餘額' || text === '我的張數' || text === '查詢張數') {
       return await handleTokenQuery(replyToken, userId);
     }
 
     // 購買張數
-    if (text === '購買代幣' || text === '購買張數' || text === '儲值' || text === '買代幣') {
+    if (text === '購買張數' || text === '儲值') {
       return await handlePurchaseInfo(replyToken);
     }
 
     // 購買說明
-    if (text === '購買說明' || text === '代幣說明' || text === '張數說明' || text === '使用說明' || text === '說明') {
+    if (text === '購買說明' || text === '張數說明' || text === '使用說明' || text === '說明') {
       return await handlePurchaseGuide(replyToken);
     }
 

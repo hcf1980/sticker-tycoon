@@ -57,7 +57,7 @@ describe('errors.js', () => {
   // TokenInsufficientError 測試
   // ============================================
   describe('TokenInsufficientError', () => {
-    test('應該包含代幣資訊', () => {
+    test('應該包含張數資訊', () => {
       const error = new TokenInsufficientError(30, 10, 'user-123');
 
       expect(error.code).toBe('TOKEN_INSUFFICIENT');

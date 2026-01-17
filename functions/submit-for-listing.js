@@ -6,7 +6,7 @@
 const { v4: uuidv4 } = require('uuid');
 const { getSupabaseClient, getUploadQueue, getUserTokenBalance, deductTokens } = require('./supabase-client');
 
-const LISTING_COST = 40;  // 代上架所需代幣
+const LISTING_COST = 40;  // 代上架所需張數
 
 exports.handler = async function(event) {
   // CORS
@@ -75,7 +75,7 @@ exports.handler = async function(event) {
         body: JSON.stringify({ success: false, error: '張數扣除失敗：' + deductResult.error })
       };
     }
-    console.log(`💰 用戶 ${userId} 扣除 ${LISTING_COST} 代幣用於代上架，剩餘 ${deductResult.balance}`);
+    console.log(`💰 用戶 ${userId} 扣除 ${LISTING_COST} 張數用於代上架，剩餘 ${deductResult.balance}`);
 
     // 產生申請編號
     const applicationId = `ST${Date.now().toString(36).toUpperCase()}`;

@@ -42,8 +42,8 @@ ngrok http 8888
    - 檢查 `SUPABASE_URL` 和 `SUPABASE_SERVICE_ROLE_KEY`
    - 確認 Supabase 專案是否暫停
 
-3. **代幣不足**
-   - 用戶代幣餘額是否足夠
+3. **張數不足**
+   - 用戶張數餘額是否足夠
 
 #### 診斷步驟
 ```bash
@@ -139,15 +139,15 @@ SELECT * FROM storage.buckets;
 
 ---
 
-### 6. 代幣系統問題
+### 6. 張數系統問題
 
 #### 診斷查詢
 ```sql
--- 查詢用戶代幣餘額
+-- 查詢用戶張數餘額
 SELECT line_user_id, sticker_credits FROM users 
 WHERE line_user_id = 'USER_LINE_ID';
 
--- 查詢代幣交易記錄
+-- 查詢張數交易記錄
 SELECT * FROM token_transactions 
 WHERE user_id = 'USER_LINE_ID' 
 ORDER BY created_at DESC LIMIT 10;
@@ -256,7 +256,7 @@ checkDatabase();
 3. **用戶活躍度**
    - DAU (Daily Active Users)
    - 貼圖生成數量
-   - 代幣消耗
+   - 張數消耗
 
 4. **資料庫效能**
    - 查詢時間 < 100ms

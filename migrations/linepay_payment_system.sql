@@ -2,7 +2,7 @@
 -- LINE Pay 付款系統 - 資料庫遷移腳本
 -- 版本：v1.0
 -- 日期：2024-01-XX
--- 功能：訂單管理、代幣有效期追蹤、FIFO 扣款
+-- 功能：訂單管理、張數有效期追蹤、FIFO 扣款
 -- ============================================
 
 -- 1. 訂單表（追蹤 LINE Pay 交易）
@@ -14,9 +14,9 @@ CREATE TABLE IF NOT EXISTS orders (
   -- 商品資訊
   package_id TEXT NOT NULL,                -- 方案 ID：starter, value, popular, deluxe
   package_name TEXT NOT NULL,              -- 方案名稱：入門包、超值包、熱門包、豪華包
-  token_amount INTEGER NOT NULL,           -- 代幣數量（不含贈送）
-  bonus_tokens INTEGER DEFAULT 0,          -- 贈送代幣
-  total_tokens INTEGER NOT NULL,           -- 總代幣數（token_amount + bonus_tokens）
+  token_amount INTEGER NOT NULL,           -- 張數數量（不含贈送）
+  bonus_tokens INTEGER DEFAULT 0,          -- 贈送張數
+  total_tokens INTEGER NOT NULL,           -- 總張數數（token_amount + bonus_tokens）
   
   -- 付款資訊
   amount INTEGER NOT NULL,                 -- 金額（台幣，單位：元）
@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS orders (
   -- 狀態追蹤
   status TEXT DEFAULT 'pending',           -- pending, paid, cancelled, expired, refunded
   paid_at TIMESTAMP WITH TIME ZONE,        -- 付款完成時間
-  tokens_issued BOOLEAN DEFAULT FALSE,     -- 代幣是否已發放（防止重複發放）
+  tokens_issued BOOLEAN DEFAULT FALSE,     -- 張數是否已發放（防止重複發放）
   
   -- 時間戳記
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -50,19 +50,19 @@ CREATE INDEX IF NOT EXISTS idx_orders_expires_at ON orders(expires_at) WHERE sta
 COMMENT ON TABLE orders IS 'LINE Pay 訂單記錄表';
 COMMENT ON COLUMN orders.order_id IS '訂單編號（格式：TKNXXXXXX）';
 COMMENT ON COLUMN orders.status IS '訂單狀態：pending=待付款, paid=已付款, cancelled=已取消, expired=已過期, refunded=已退款';
-COMMENT ON COLUMN orders.tokens_issued IS '代幣發放標記（防止重複發放）';
+COMMENT ON COLUMN orders.tokens_issued IS '張數發放標記（防止重複發放）';
 COMMENT ON COLUMN orders.expires_at IS '訂單過期時間（建立後 15 分鐘）';
 
 -- ============================================
 
--- 2. 代幣帳本表（追蹤每筆代幣的有效期，支援 FIFO 扣款）
+-- 2. 張數帳本表（追蹤每筆張數的有效期，支援 FIFO 扣款）
 CREATE TABLE IF NOT EXISTS token_ledger (
   id BIGSERIAL PRIMARY KEY,
   user_id TEXT NOT NULL,                      -- LINE user ID
   
-  -- 代幣資訊
-  tokens INTEGER NOT NULL,                    -- 代幣數量（入帳時的數量）
-  remaining_tokens INTEGER NOT NULL,          -- 剩餘可用代幣（會隨消耗減少）
+  -- 張數資訊
+  tokens INTEGER NOT NULL,                    -- 張數數量（入帳時的數量）
+  remaining_tokens INTEGER NOT NULL,          -- 剩餘可用張數（會隨消耗減少）
   
   -- 來源追蹤
   source_type TEXT NOT NULL,                  -- purchase(購買), bonus(贈送), referral(推薦), admin(管理員), initial(初始)
@@ -82,22 +82,22 @@ CREATE TABLE IF NOT EXISTS token_ledger (
   CONSTRAINT chk_remaining_tokens CHECK (remaining_tokens >= 0 AND remaining_tokens <= tokens)
 );
 
--- 代幣帳本索引
+-- 張數帳本索引
 CREATE INDEX IF NOT EXISTS idx_token_ledger_user_id ON token_ledger(user_id);
 CREATE INDEX IF NOT EXISTS idx_token_ledger_expires_at ON token_ledger(expires_at);
 CREATE INDEX IF NOT EXISTS idx_token_ledger_source_order ON token_ledger(source_order_id);
 
 -- 重要：用於 FIFO 扣款的複合索引
--- 查詢「特定用戶的未過期且有剩餘代幣的記錄，按到期時間排序」
+-- 查詢「特定用戶的未過期且有剩餘張數的記錄，按到期時間排序」
 CREATE INDEX IF NOT EXISTS idx_token_ledger_fifo ON token_ledger(user_id, expires_at) 
   WHERE remaining_tokens > 0 AND is_expired = FALSE;
 
--- 代幣帳本註解
-COMMENT ON TABLE token_ledger IS '代幣帳本表（追蹤每筆代幣的有效期和剩餘數量）';
-COMMENT ON COLUMN token_ledger.tokens IS '該筆代幣的原始數量';
-COMMENT ON COLUMN token_ledger.remaining_tokens IS '該筆代幣的剩餘可用數量（扣款時遞減）';
-COMMENT ON COLUMN token_ledger.source_type IS '代幣來源類型';
-COMMENT ON COLUMN token_ledger.expires_at IS '代幣到期時間（購買/取得後 365 天）';
+-- 張數帳本註解
+COMMENT ON TABLE token_ledger IS '張數帳本表（追蹤每筆張數的有效期和剩餘數量）';
+COMMENT ON COLUMN token_ledger.tokens IS '該筆張數的原始數量';
+COMMENT ON COLUMN token_ledger.remaining_tokens IS '該筆張數的剩餘可用數量（扣款時遞減）';
+COMMENT ON COLUMN token_ledger.source_type IS '張數來源類型';
+COMMENT ON COLUMN token_ledger.expires_at IS '張數到期時間（購買/取得後 365 天）';
 COMMENT ON COLUMN token_ledger.is_expired IS '是否已過期（由定時任務自動更新）';
 
 -- ============================================
@@ -114,12 +114,12 @@ CREATE INDEX IF NOT EXISTS idx_token_transactions_order_id ON token_transactions
 CREATE INDEX IF NOT EXISTS idx_token_transactions_expires_at ON token_transactions(expires_at);
 
 -- 添加註解
-COMMENT ON COLUMN token_transactions.expires_at IS '代幣到期時間（購買後 365 天）';
+COMMENT ON COLUMN token_transactions.expires_at IS '張數到期時間（購買後 365 天）';
 COMMENT ON COLUMN token_transactions.order_id IS '關聯的訂單 ID（若為購買產生）';
 
 -- ============================================
 
--- 4. 自動標記過期代幣的函數
+-- 4. 自動標記過期張數的函數
 CREATE OR REPLACE FUNCTION mark_expired_tokens()
 RETURNS INTEGER AS $$
 DECLARE
@@ -134,17 +134,17 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION mark_expired_tokens() IS '標記所有已過期的代幣（由 Cron Job 定期執行）';
+COMMENT ON FUNCTION mark_expired_tokens() IS '標記所有已過期的張數（由 Cron Job 定期執行）';
 
 -- ============================================
 
--- 5. 重新計算用戶餘額的函數（基於未過期的代幣）
+-- 5. 重新計算用戶餘額的函數（基於未過期的張數）
 CREATE OR REPLACE FUNCTION recalculate_user_balance(p_user_id TEXT)
 RETURNS INTEGER AS $$
 DECLARE
   total_balance INTEGER;
 BEGIN
-  -- 計算所有未過期代幣的剩餘數量總和
+  -- 計算所有未過期張數的剩餘數量總和
   SELECT COALESCE(SUM(remaining_tokens), 0)
   INTO total_balance
   FROM token_ledger
@@ -152,7 +152,7 @@ BEGIN
     AND is_expired = FALSE 
     AND remaining_tokens > 0;
   
-  -- 更新用戶表中的代幣餘額
+  -- 更新用戶表中的張數餘額
   UPDATE users
   SET sticker_credits = total_balance, updated_at = NOW()
   WHERE line_user_id = p_user_id;
@@ -161,7 +161,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION recalculate_user_balance(TEXT) IS '重新計算用戶的代幣餘額（基於未過期的代幣）';
+COMMENT ON FUNCTION recalculate_user_balance(TEXT) IS '重新計算用戶的張數餘額（基於未過期的張數）';
 
 -- ============================================
 
@@ -231,7 +231,7 @@ INSERT INTO orders (
 -- 4. 監控指標：
 --    - 訂單轉換率: SELECT COUNT(*) FILTER (WHERE status='paid') * 100.0 / COUNT(*) FROM orders;
 --    - 平均訂單金額: SELECT AVG(amount) FROM orders WHERE status='paid';
---    - 代幣使用率: 查詢 token_transactions 的消耗記錄
+--    - 張數使用率: 查詢 token_transactions 的消耗記錄
 -- 
 -- ============================================
 

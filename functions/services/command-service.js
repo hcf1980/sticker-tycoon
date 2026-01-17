@@ -58,7 +58,7 @@ async function handleTokenQuery(userId) {
     });
   }
 
-  text += '\n\n💡 輸入「購買代幣」查看儲值方案';
+  text += '\n\n💡 輸入「購買張數」查看儲值方案';
   text += '\n📖 輸入「購買說明」查看詳細說明';
 
   return {
@@ -68,7 +68,7 @@ async function handleTokenQuery(userId) {
 }
 
 /**
- * 處理「購買代幣」命令
+ * 處理「購買張數」命令
  */
 function handlePurchaseInfo() {
   logger.info('處理購買張數命令');

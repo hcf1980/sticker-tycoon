@@ -69,13 +69,13 @@
         </div>
 
         <button type="submit" class="btn btn-primary btn-block btn-lg" id="submit-btn">
-          <span id="btn-text">🎁 註冊並獲得 40 代幣</span>
+          <span id="btn-text">🎁 註冊並獲得 40 張數</span>
           <span id="btn-loading" style="display: none;">註冊中...</span>
         </button>
       </form>
 
       <p style="text-align: center; color: var(--text-secondary); margin-top: 15px; font-size: 0.85rem;">
-        註冊即可獲得 <span style="color: var(--accent);">40 代幣</span>，可製作約 80 張貼圖！
+        註冊即可獲得 <span style="color: var(--accent);">40 張數</span>，可製作約 80 張貼圖！
       </p>
 
       <div class="auth-divider">
@@ -149,7 +149,7 @@
       if (result.success) {
         if (result.data.session) {
           // 自動登入成功
-          showAlert('success', '註冊成功！獲得 40 代幣，正在跳轉...');
+          showAlert('success', '註冊成功！獲得 40 張數，正在跳轉...');
           setTimeout(() => {
             window.location.href = 'dashboard.html';
           }, 1500);

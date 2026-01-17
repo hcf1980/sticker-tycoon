@@ -115,7 +115,7 @@
           document.getElementById('stat-credits').textContent = profileData.user.credits || 0;
           document.getElementById('stat-referrals').textContent = profileData.user.referralCount || 0;
 
-          // 顯示代幣提示（如果餘額低）
+          // 顯示張數提示（如果餘額低）
           if (profileData.user.credits < 10) {
             document.getElementById('token-alert').style.display = 'flex';
           }

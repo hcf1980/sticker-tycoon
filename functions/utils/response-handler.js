@@ -104,7 +104,7 @@ function createResponseHandler(lineClient) {
       // 自定義錯誤，使用友善的錯誤訊息
       switch (error.code) {
         case 'TOKEN_INSUFFICIENT':
-          errorMessage = `❌ 代幣不足\n\n您目前有 ${error.details.current} 代幣\n需要 ${error.details.required} 代幣\n\n輸入「購買代幣」進行儲值`;
+          errorMessage = `❌ 張數不足\n\n您目前有 ${error.details.current} 張數\n需要 ${error.details.required} 張數\n\n輸入「購買張數」進行儲值`;
           break;
         case 'VALIDATION_ERROR':
           errorMessage = `❌ 輸入格式錯誤\n\n${error.message}`;

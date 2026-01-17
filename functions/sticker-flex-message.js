@@ -253,7 +253,7 @@ function generateCouponRedeemResultFlexMessage({
     action: {
       type: 'message',
               label: '查詢張數',
-              text: '代幣'
+              text: '張數'
     },
             color: '#06C755'
           },

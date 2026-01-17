@@ -108,7 +108,7 @@ async function createWebUser(authUserId, email, displayName = null) {
       email: email.toLowerCase(),
       display_name: displayName || email.split('@')[0],
       user_type: UserType.WEB,
-      sticker_credits: 40,  // 初始 40 代幣
+      sticker_credits: 40,  // 初始 40 張數
       referral_code: referralCode,
       created_at: now.toISOString(),
       updated_at: now.toISOString()
@@ -133,7 +133,7 @@ async function createWebUser(authUserId, email, displayName = null) {
       throw error;
     }
 
-    // 記錄初始代幣到 token_ledger
+    // 記錄初始張數到 token_ledger
     if (data) {
       await supabase
         .from('token_ledger')
@@ -156,7 +156,7 @@ async function createWebUser(authUserId, email, displayName = null) {
           amount: 40,
           balance_after: 40,
           transaction_type: 'initial',
-          description: '新用戶贈送 40 代幣',
+          description: '新用戶贈送 40 張數',
           expires_at: expiresAt.toISOString()
         }]);
     }
@@ -229,7 +229,7 @@ async function mergeUsers(webAuthUserId, lineUser) {
 
     if (webError) {throw webError;}
 
-    // 2. 合併代幣餘額
+    // 2. 合併張數餘額
     const mergedCredits = (webUser.sticker_credits || 0) + (lineUser.sticker_credits || 0);
 
     // 3. 合併推薦次數
@@ -257,7 +257,7 @@ async function mergeUsers(webAuthUserId, lineUser) {
       .update({ user_id: webAuthUserId })
       .eq('user_id', lineUser.line_user_id);
 
-    // 6. 轉移代幣帳本
+    // 6. 轉移張數帳本
     await supabase
       .from('token_ledger')
       .update({ user_id: webAuthUserId })
@@ -288,7 +288,7 @@ async function mergeUsers(webAuthUserId, lineUser) {
       .eq('id', lineUser.id);
 
     console.log(`✅ 用戶合併成功: LINE ${lineUser.line_user_id} -> Web ${webAuthUserId}`);
-    console.log(`   代幣: ${webUser.sticker_credits} + ${lineUser.sticker_credits} = ${mergedCredits}`);
+    console.log(`   張數: ${webUser.sticker_credits} + ${lineUser.sticker_credits} = ${mergedCredits}`);
 
     return {
       success: true,
@@ -338,7 +338,7 @@ function generateReferralCode() {
 }
 
 /**
- * 取得用戶代幣餘額（統一接口）
+ * 取得用戶張數餘額（統一接口）
  */
 async function getUserTokenBalance(userId) {
   try {
@@ -363,19 +363,19 @@ async function getUserTokenBalance(userId) {
 
     return data?.sticker_credits || 0;
   } catch (error) {
-    console.error('取得代幣餘額失敗:', error);
+    console.error('取得張數餘額失敗:', error);
     return 0;
   }
 }
 
 /**
- * 扣除代幣（統一接口，支援 FIFO）
+ * 扣除張數（統一接口，支援 FIFO）
  */
 async function deductUserTokens(userId, amount, description, referenceId = null) {
   try {
     const supabase = getSupabaseClient();
 
-    // 1. 查詢所有可用代幣（FIFO）
+    // 1. 查詢所有可用張數（FIFO）
     const { data: availableLedgers, error: ledgerError } = await supabase
       .from('token_ledger')
       .select('*')
@@ -394,7 +394,7 @@ async function deductUserTokens(userId, amount, description, referenceId = null)
       return {
         success: false,
         balance: totalAvailable,
-        error: `代幣不足！目前餘額 ${totalAvailable}，需要 ${amount} 代幣`
+        error: `張數不足！目前餘額 ${totalAvailable}，需要 ${amount} 張數`
       };
     }
 
@@ -446,7 +446,7 @@ async function deductUserTokens(userId, amount, description, referenceId = null)
 
     return { success: true, balance: newBalance };
   } catch (error) {
-    console.error('扣除代幣失敗:', error);
+    console.error('扣除張數失敗:', error);
     return { success: false, balance: 0, error: error.message };
   }
 }

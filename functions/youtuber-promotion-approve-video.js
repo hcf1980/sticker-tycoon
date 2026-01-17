@@ -1,6 +1,6 @@
 /**
  * YouTuber 推廣計畫 - 審核影片 API
- * 批准或拒絕影片，並發放完成獎勵（250 代幣）
+ * 批准或拒絕影片，並發放完成獎勵（250 張數）
  */
 
 const { createClient } = require('@supabase/supabase-js');
@@ -108,7 +108,7 @@ exports.handler = async (event, context) => {
       throw updateError;
     }
 
-    // 如果批准影片，發放完成獎勵 250 枚代幣
+    // 如果批准影片，發放完成獎勵 250 枚張數
     if (approved) {
       const completionTokens = 250;
       
@@ -124,11 +124,11 @@ exports.handler = async (event, context) => {
       }
 
       if (user) {
-        // 用戶存在，發放代幣
+        // 用戶存在，發放張數
         const currentBalance = user.sticker_credits || 0;
         const newBalance = currentBalance + completionTokens;
 
-        // 更新用戶代幣
+        // 更新用戶張數
         const { error: tokenUpdateError } = await sb
           .from('users')
           .update({
@@ -138,7 +138,7 @@ exports.handler = async (event, context) => {
           .eq('line_user_id', application.line_id);
 
         if (tokenUpdateError) {
-          console.error('❌ 更新代幣失敗:', tokenUpdateError);
+          console.error('❌ 更新張數失敗:', tokenUpdateError);
         } else {
           // 記錄交易
           await sb.from('token_transactions').insert([{
@@ -150,7 +150,7 @@ exports.handler = async (event, context) => {
             admin_note: `頻道：${application.channel_name}，影片：${application.video_url}`
           }]);
 
-          console.log(`✅ 已發放 ${completionTokens} 代幣給 ${user.display_name || application.line_id}`);
+          console.log(`✅ 已發放 ${completionTokens} 張數給 ${user.display_name || application.line_id}`);
         }
       } else {
         console.warn(`⚠️ 找不到用戶 ${application.line_id}`);
@@ -162,7 +162,7 @@ exports.handler = async (event, context) => {
       headers,
       body: JSON.stringify({
         success: true,
-        message: approved ? '✅ 已批准影片並發放 250 代幣' : '✅ 已拒絕影片'
+        message: approved ? '✅ 已批准影片並發放 250 張數' : '✅ 已拒絕影片'
       })
     };
 

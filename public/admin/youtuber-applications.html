@@ -276,7 +276,7 @@
       if (app.status === 'pending') {
         actions.innerHTML = `
           <button onclick="approveApplication()" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg">
-            ✅ 批准（發放 50 代幣）
+            ✅ 批准（發放 50 張數）
           </button>
           <button onclick="rejectApplication()" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg">
             ❌ 拒絕
@@ -285,7 +285,7 @@
       } else if (app.status === 'approved' && app.video_url && app.video_approval_status === 'pending') {
         actions.innerHTML = `
           <button onclick="approveVideo()" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg">
-            ✅ 批准影片（發放 250 代幣）
+            ✅ 批准影片（發放 250 張數）
           </button>
           <button onclick="rejectVideo()" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg">
             ❌ 拒絕影片
@@ -294,9 +294,9 @@
       } else {
         let statusInfo = '';
         if (app.status === 'completed') {
-          statusInfo = '<p class="text-green-600 font-bold mb-4">✅ 已完成（已發放 300 代幣）</p>';
+          statusInfo = '<p class="text-green-600 font-bold mb-4">✅ 已完成（已發放 300 張數）</p>';
         } else if (app.status === 'approved') {
-          statusInfo = '<p class="text-blue-600 font-bold mb-4">✅ 已批准（已發放 50 代幣，等待影片提交）</p>';
+          statusInfo = '<p class="text-blue-600 font-bold mb-4">✅ 已批准（已發放 50 張數，等待影片提交）</p>';
         } else if (app.status === 'rejected') {
           statusInfo = '<p class="text-red-600 font-bold mb-4">❌ 已拒絕</p>';
         }
@@ -329,7 +329,7 @@
         const data = await response.json();
 
         if (response.ok) {
-          alert(data.message || '✅ 已批准申請並發放 50 代幣');
+          alert(data.message || '✅ 已批准申請並發放 50 張數');
           closeModal();
           loadApplications();
         } else {
@@ -394,7 +394,7 @@
         const data = await response.json();
 
         if (response.ok) {
-          alert(data.message || '✅ 已批准影片並發放 250 代幣');
+          alert(data.message || '✅ 已批准影片並發放 250 張數');
           closeModal();
           loadApplications();
         } else {

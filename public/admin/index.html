@@ -159,7 +159,7 @@
           <span class="text-3xl">🎬</span>
         </div>
         <h3 class="text-lg font-bold text-white mb-2">YouTuber 推廣管理</h3>
-        <p class="text-gray-400 text-sm">審核 YouTuber 申請、發放代幣獎勵</p>
+        <p class="text-gray-400 text-sm">審核 YouTuber 申請、發放張數獎勵</p>
         <div class="mt-3" id="youtuber-badges">
           <span class="tag-purple text-xs" id="youtuber-pending-count">載入中...</span>
         </div>
@@ -211,6 +211,62 @@
       </a>
     </div>
 
+    <!-- Facebook 貼文生成器 -->
+    <div class="glass-card p-4 mb-8">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div>
+          <h3 class="text-white font-bold">Facebook 貼文生成</h3>
+          <p class="text-gray-400 text-sm">一鍵產出不同角度的貼文，逐步引導用戶在 LINE 內完成貼圖製作與上架</p>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-2">
+          <input id="fbAdminApiKeyInput" type="password" placeholder="ADMIN_API_KEY（必填）" class="w-full sm:w-72 px-4 py-2 rounded-lg bg-white text-black border border-gray-300 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50" />
+          <button id="fbSaveAdminKeyBtn" class="btn-neon-solid px-4 py-2 text-sm">保存</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 mt-4">
+        <div class="glass-card p-3">
+          <label class="block text-sm text-gray-300 mb-1">語氣</label>
+          <select id="fbToneSelect" class="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50">
+            <option value="friendly">親切</option>
+            <option value="professional">專業</option>
+            <option value="funny">幽默</option>
+            <option value="story">故事感</option>
+          </select>
+        </div>
+
+        <div class="glass-card p-3">
+          <label class="block text-sm text-gray-300 mb-1">CTA</label>
+          <select id="fbCtaSelect" class="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50">
+            <option value="line">引導加入官方帳號</option>
+            <option value="comment">引導留言</option>
+            <option value="dm">引導私訊</option>
+            <option value="link">引導點擊連結</option>
+          </select>
+        </div>
+
+        <div class="glass-card p-3">
+          <label class="block text-sm text-gray-300 mb-1">網站/官方帳號連結（選填）</label>
+          <input id="fbLinksInput" class="w-full px-4 py-2 rounded-lg bg-white text-black border border-gray-300 focus:outline-none focus:ring-2 focus:ring-cyan-500/50" placeholder="例：https://your-site.com | https://line.me/R/ti/p/@sticker-tycoon" />
+          <p class="text-xs text-gray-500 mt-1">格式：網站 | 官方帳號（用 | 分隔）</p>
+        </div>
+      </div>
+
+      <div class="mt-4">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div class="flex gap-2">
+            <button id="fbGenerateBtn" class="btn-neon-solid px-4 py-2">生成貼文</button>
+            <button id="fbRegenerateBtn" class="btn-neon px-4 py-2" disabled>換一篇（不同角度）</button>
+            <button id="fbCopyBtn" class="btn-neon px-4 py-2" disabled>複製</button>
+          </div>
+          <div class="text-xs text-gray-500" id="fbMetaText">尚未生成</div>
+        </div>
+
+        <textarea id="fbPostOutput" rows="8" class="mt-3 w-full px-4 py-3 rounded-lg bg-white text-black border border-gray-300 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50" placeholder="生成的 Facebook 貼文會顯示在這裡"></textarea>
+        <p class="text-xs text-gray-500 mt-2">提示：系統會自動輪替不同宣傳角度，避免永遠只講同一個賣點。</p>
+      </div>
+    </div>
+
     <!-- Stats Section -->
     <div class="mb-8">
       <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
@@ -249,6 +305,127 @@
   <script src="/admin/supabase-admin-client.js"></script>
   <script>
     // 頁面載入時檢查
+    // Facebook Post Generator Logic
+    (function() {
+      const el = (id) => document.getElementById(id);
+
+      const state = {
+        adminApiKey: localStorage.getItem('fbAdminApiKey') || '',
+        lastUsedTopics: [],
+        isGenerating: false,
+      };
+
+      const apiKeyInput = el('fbAdminApiKeyInput');
+      const saveKeyBtn = el('fbSaveAdminKeyBtn');
+      const toneSelect = el('fbToneSelect');
+      const ctaSelect = el('fbCtaSelect');
+      const linksInput = el('fbLinksInput');
+      const generateBtn = el('fbGenerateBtn');
+      const regenerateBtn = el('fbRegenerateBtn');
+      const copyBtn = el('fbCopyBtn');
+      const metaText = el('fbMetaText');
+      const outputTextarea = el('fbPostOutput');
+
+      function updateButtons() {
+        generateBtn.disabled = state.isGenerating;
+        regenerateBtn.disabled = state.isGenerating || state.lastUsedTopics.length === 0;
+        copyBtn.disabled = state.isGenerating || !outputTextarea.value;
+        generateBtn.textContent = state.isGenerating ? '生成中...' : '生成貼文';
+        regenerateBtn.textContent = state.isGenerating ? '生成中...' : '換一篇（不同角度）';
+      }
+
+      async function handleGenerate(isRegenerate = false) {
+        if (!state.adminApiKey) {
+          alert('請先輸入並保存 ADMIN_API_KEY');
+          return;
+        }
+
+        state.isGenerating = true;
+        updateButtons();
+        metaText.textContent = '正在與 AI 溝通...';
+
+        const [websiteUrl, officialLineUrl] = (linksInput.value || '').split('|').map(s => s.trim());
+
+        try {
+          const res = await fetch('/.netlify/functions/admin-facebook-posts?action=generate', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Admin-Api-Key': state.adminApiKey
+            },
+            body: JSON.stringify({
+              tone: toneSelect.value,
+              ctaStyle: ctaSelect.value,
+              websiteUrl: websiteUrl || window.location.origin,
+              officialLineUrl: officialLineUrl || '',
+              excludeTopicKeys: isRegenerate ? state.lastUsedTopics : [],
+            })
+          });
+
+          const data = await res.json();
+
+          if (!res.ok || !data.success) {
+            throw new Error(data.error || '生成失敗');
+          }
+
+          outputTextarea.value = data.post;
+          metaText.textContent = `✅ 本次主題：${data.topic.label} | 語氣：${toneSelect.options[toneSelect.selectedIndex].text}`;
+          
+          if (!state.lastUsedTopics.includes(data.topic.key)) {
+            state.lastUsedTopics.push(data.topic.key);
+            // Keep last 3 topics to ensure variety
+            if (state.lastUsedTopics.length > 3) {
+              state.lastUsedTopics.shift();
+            }
+          }
+
+        } catch (e) {
+          metaText.textContent = `❌ 錯誤：${e.message}`;
+          outputTextarea.value = '';
+        } finally {
+          state.isGenerating = false;
+          updateButtons();
+        }
+      }
+
+      saveKeyBtn.addEventListener('click', () => {
+        const key = apiKeyInput.value.trim();
+        if (!key) {
+          alert('請輸入 ADMIN_API_KEY');
+          return;
+        }
+        localStorage.setItem('fbAdminApiKey', key);
+        state.adminApiKey = key;
+        alert('✅ 已保存');
+      });
+
+      generateBtn.addEventListener('click', () => handleGenerate(false));
+      regenerateBtn.addEventListener('click', () => handleGenerate(true));
+
+      copyBtn.addEventListener('click', async () => {
+        if (!outputTextarea.value) return;
+        try {
+          await navigator.clipboard.writeText(outputTextarea.value);
+          alert('✅ 已複製到剪貼簿');
+        } catch (e) {
+          alert('複製失敗');
+        }
+      });
+
+      // Init
+      if (state.adminApiKey) {
+        apiKeyInput.value = state.adminApiKey;
+      }
+
+      // 預設填入官方帳號連結（可自行覆蓋）
+      if (!linksInput.value) {
+        linksInput.value = `${window.location.origin} | https://line.me/R/ti/p/@sticker-tycoon`;
+      }
+
+      updateButtons();
+
+    })();
+
     if (!checkAdminAuth()) {
       document.body.innerHTML = `
         <div class="tech-bg min-h-screen flex items-center justify-center">

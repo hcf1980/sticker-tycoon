@@ -54,7 +54,6 @@ BEGIN
   FROM beacon_events
   WHERE user_id = p_user_id
     AND hwid = p_hwid
-    AND action_id = p_action_id
     AND message_sent = true
     AND DATE(created_at) = CURRENT_DATE;
 
@@ -108,7 +107,6 @@ BEGIN
   FROM beacon_events
   WHERE user_id = p_user_id
     AND hwid = p_hwid
-    AND action_id = p_action_id
     AND message_sent = true;
 
   -- 如果從未觸發過，可以觸發

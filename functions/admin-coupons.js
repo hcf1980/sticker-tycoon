@@ -10,6 +10,8 @@
 const { z } = require('zod');
 const { getSupabaseClient } = require('./supabase-client');
 const { generateImage } = require('./utils/ai-api-client');
+const sharp = require('sharp');
+const path = require('path');
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
@@ -73,25 +75,33 @@ function buildCouponPosterPrompt({
 }) {
   const safeSlogan = slogan || '貼圖大亨 Sticker Tycoon';
 
-  return `Design a stylish coupon poster image for a product called "Sticker Tycoon".
+  return `Design a coupon poster that looks like an official LINE promotional banner.
 
-Visual style:
-- LINE brand friendly: dominant LINE green (#06C755) + white, with soft rounded chat-bubble shapes and sticker-like badges
-- Sticker Tycoon brand: keep subtle neon tech accents (cyan/purple glow) and a small "Sticker Tycoon" brand corner label
-- premium, modern, bold, high-contrast, clean layout
-- poster composition, shareable on LINE
+Overall style:
+- strict official LINE style, clean and minimal
+- dominant LINE green (#06C755) + white background, high contrast
+- rounded rectangles, chat-bubble motifs, simple sticker-like badges
+- flat design, no heavy neon, no complex textures
+- modern, clear, high readability, consistent spacing and grid
 
-Text layout (must be big, clear, highly readable, no misspelling):
-- Title: ${name}
-- Reward: +${tokenAmount} 代幣
-- Redeem code: ${redeemCode}
-- Activate period: ${activateStartAt} ~ ${activateEndAt}
+Layout requirements (must be big, clear, highly readable, no misspelling):
+- Top area: Title: ${name}
+- Middle highlight badge: +${tokenAmount} 張 (make it prominent)
+- Redeem code block: ${redeemCode} (monospace-like, very readable)
+- Validity: ${activateStartAt} ~ ${activateEndAt}
 - Brand slogan: ${safeSlogan}
+
+QR placeholder (IMPORTANT):
+- Reserve a fixed white square placeholder for a QR code at the BOTTOM-RIGHT corner.
+- Placeholder must be a perfect square with clear margin from edges.
+- Size about 220x220 px in a 1024x768 canvas.
+- The placeholder must be empty/blank (no pattern), with a thin LINE-green border.
+- Add a small caption under the square: "掃描加入官方帳號".
 
 Other constraints:
 - no watermark
-- no QR code
-- no characters, focus on typographic poster
+- no characters, no faces
+- no QR code inside the placeholder (we will overlay a real QR later)
 - size: 1024x768 (4:3 poster)
 `;
 }
@@ -109,31 +119,60 @@ function parseDataUrl(dataUrl) {
 }
 
 async function persistCouponImageAndUpdateCampaign(supabase, campaignId, imageUrl) {
-  let publicUrl = imageUrl;
+  let finalImageBuffer;
 
   if (isDataUrl(imageUrl)) {
-    const { buffer } = parseDataUrl(imageUrl);
-    const bucket = 'coupons';
-    const filePath = `campaigns/${campaignId}.png`;
+    const { buffer: baseImageBuffer } = parseDataUrl(imageUrl);
+    const qrCodePath = path.resolve(__dirname, '../../public/line-qr.png');
+    const qrCodeSize = 200;
+    const margin = 24;
 
     try {
-      await supabase.storage.createBucket(bucket, { public: true });
-    } catch (_) {
-      // ignore
+      finalImageBuffer = await sharp(baseImageBuffer)
+        .composite([
+          {
+            input: await sharp(qrCodePath).resize(qrCodeSize, qrCodeSize).toBuffer(),
+            top: 768 - qrCodeSize - margin,
+            left: 1024 - qrCodeSize - margin
+          }
+        ])
+        .png()
+        .toBuffer();
+    } catch (e) {
+      console.error('❌ QR Code 合成失敗:', e.message);
+      // 如果合成失敗，仍然使用原圖，避免中斷流程
+      finalImageBuffer = baseImageBuffer;
     }
-
-    const { error: uploadError } = await supabase.storage
-      .from(bucket)
-      .upload(filePath, buffer, {
-        contentType: 'image/png',
-        upsert: true
-      });
-
-    if (uploadError) throw uploadError;
-
-    const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(filePath);
-    publicUrl = urlData.publicUrl;
+  } else {
+    console.warn('⚠️ 圖片非 data URL，無法合成 QR Code，將直接使用原圖');
+    // 如果是 URL，理論上也可以下載後再合成，但目前 AI Client 都回 data URL，暫不處理此分支
+    finalImageBuffer = Buffer.from([]); // or download and process
   }
+
+  if (!finalImageBuffer || finalImageBuffer.length === 0) {
+    throw new Error('無法取得圖片 buffer');
+  }
+
+  const bucket = 'coupons';
+  const filePath = `campaigns/${campaignId}.png`;
+
+  try {
+    await supabase.storage.createBucket(bucket, { public: true });
+  } catch (_) {
+    // bucket already exists
+  }
+
+  const { error: uploadError } = await supabase.storage
+    .from(bucket)
+    .upload(filePath, finalImageBuffer, {
+      contentType: 'image/png',
+      upsert: true
+    });
+
+  if (uploadError) throw uploadError;
+
+  const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(filePath);
+  const publicUrl = urlData.publicUrl;
 
   const { data: updated, error: updateError } = await supabase
     .from('coupon_campaigns')
@@ -145,6 +184,7 @@ async function persistCouponImageAndUpdateCampaign(supabase, campaignId, imageUr
   if (updateError) throw updateError;
   return updated;
 }
+
 
 async function createCampaign(event) {
   requireAdmin(event);
@@ -478,6 +518,25 @@ exports.handler = async function handler(event) {
   } catch (error) {
     console.error('Admin Coupons API error:', error);
     const statusCode = error.statusCode || 500;
-    return json(statusCode, { error: error.message || 'Internal error' });
+
+    const details = (() => {
+      const original = error?.originalError;
+      if (original && typeof original === 'object') {
+        return {
+          code: original.code,
+          details: original.details,
+          hint: original.hint,
+          message: original.message
+        };
+      }
+      return null;
+    })();
+
+    return json(statusCode, {
+      success: false,
+      error: error.message || 'Internal error',
+      statusCode,
+      details
+    });
   }
 };

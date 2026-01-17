@@ -53,7 +53,7 @@ async function createGenerationTask(userId, setData) {
         character_id: characterId,                  // 🆕 角色一致性 ID
         framing: setData.framing || 'halfbody',     // 構圖選擇（全身/半身/大頭/特寫）
         status: 'generating',
-        tokens_used: tokenCost  // ✅ 修正：記錄實際消耗的代幣數（而非貼圖數量）
+        tokens_used: tokenCost  // ✅ 修正：記錄實際消耗的張數數（而非貼圖數量）
       }]);
 
     if (setError) throw setError;
@@ -200,7 +200,7 @@ async function executeGeneration(taskId, setId) {
 
       if (useGridMode === 'auto') {
         const batchCount = Math.ceil(actualCount / 6);
-        console.log(`🎨 使用 6宮格批次模式（${actualCount}張 = ${batchCount}次API，每6張=3代幣）`);
+        console.log(`🎨 使用 6宮格批次模式（${actualCount}張 = ${batchCount}次API，每6張=3張數）`);
       } else {
         console.log(`📌 使用傳統模式（${actualCount}張，少於6張）`);
       }
@@ -349,8 +349,8 @@ async function executeGeneration(taskId, setId) {
 
     await updateStickerSetStatus(setId, 'failed');
 
-    // ✅ 生成失敗時，不扣除代幣
-    console.log(`💰 生成失敗，未扣除代幣`);
+    // ✅ 生成失敗時，不扣除張數
+    console.log(`💰 生成失敗，未扣除張數`);
 
     throw error;
   }

@@ -66,7 +66,7 @@ exports.handler = async (event, context) => {
         };
       }
 
-      // 取得代幣明細
+      // 取得張數明細
       const supabase = getSupabaseClient();
       const { data: tokenLedger } = await supabase
         .from('token_ledger')

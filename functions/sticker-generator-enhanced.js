@@ -10,7 +10,7 @@
  *
  * 6宮格系統（v2）：
  * - 每次 API 生成 3列×2行 = 6 張
- * - 每 6 張 = 3 代幣
+ * - 每 6 張 = 3 張數
  * - 套餐：6/12/18 張
  */
 
@@ -71,7 +71,7 @@ async function generateStickersIntelligent(photoBase64, style, expressions, opti
     });
   }
 
-  console.log(`🎨 使用 6宮格批次模式（每6張=3代幣）`);
+  console.log(`🎨 使用 6宮格批次模式（每6張=3張數）`);
   return await generateGridMode(photoBase64, style, expressions, {
     userId,
     setId,
@@ -131,7 +131,7 @@ async function generateTraditionalMode(photoBase64, style, expressions, options)
 
 /**
  * 🎨 6宮格模式：批次生成（3列×2行）
- * 每次 API 生成 6 張，每 6 張消耗 3 代幣
+ * 每次 API 生成 6 張，每 6 張消耗 3 張數
  */
 async function generateGridMode(photoBase64, style, expressions, options) {
   const { userId, setId, characterID, sceneConfig, framingId } = options;

@@ -86,8 +86,8 @@ convert favicon-16.png favicon-32.png favicon-48.png favicon.ico
 ### 主要頁面
 - ✅ `index.html` - 首頁 (已添加 logo 顯示在 header 和 footer)
 - ✅ `demo-gallery.html` - 示範圖集
-- ✅ `token-guide.html` - 代幣購買說明
-- ✅ `token-guide-mobile.html` - 代幣購買說明 (手機版)
+- ✅ `token-guide.html` - 張數購買說明
+- ✅ `token-guide-mobile.html` - 張數購買說明 (手機版)
 - ✅ `youtuber-promotion.html` - YouTuber 推廣計畫
 - ✅ `queue.html` - 待上傳佇列
 - ✅ `select-stickers.html` - 選擇貼圖
