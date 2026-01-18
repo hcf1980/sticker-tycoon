@@ -90,7 +90,7 @@
       <div class="btn-row">
         <button class="btn btn-danger" onclick="showClearModal()">🗑️ 清空</button>
         <button class="btn btn-secondary" id="downloadBtn" disabled onclick="showDownloadConfirm()">📥 自行上架<br><small style="font-size:0.7rem;opacity:0.8;">扣 60 張</small></button>
-        <button class="btn btn-primary" id="submitBtn" disabled onclick="showSubmitModal()">🚀 免費代上架<br><small style="font-size:0.7rem;opacity:0.9;">扣 20 張</small></button>
+        <button class="btn btn-primary" id="submitBtn" disabled onclick="showSubmitModal()">🚀 專人代上架<br><small style="font-size:0.7rem;opacity:0.9;">（共 60 張）</small></button>
       </div>
     </div>
   </div>
@@ -134,12 +134,12 @@
     </div>
   </div>
 
-  <!-- 免費代上架彈窗 -->
+  <!-- 專人代上架彈窗 -->
   <div class="modal" id="submitModal">
     <div class="modal-content" style="max-width:450px;text-align:left;">
-      <h3 style="text-align:center;margin-bottom:20px;">🚀 免費代上架服務</h3>
+      <h3 style="text-align:center;margin-bottom:20px;">🚀 專人代上架服務</h3>
       <div style="background:#fff3e0;padding:12px;border-radius:8px;font-size:0.85rem;margin-bottom:15px;border:2px solid #ffcc80;">
-        🎫 <strong>消耗張數：</strong><span style="color:#d32f2f;font-weight:bold;font-size:1.1rem;">20 張</span><br>
+        🎫 <strong>消耗張數：</strong><span style="color:#d32f2f;font-weight:bold;font-size:1.1rem;">60 張</span><br>
         <span style="font-size:0.8rem;color:#666;">您目前有 <strong id="submitTokens">-</strong> 張</span>
       </div>
       <p style="background:#e8f5e9;padding:12px;border-radius:8px;font-size:0.85rem;margin-bottom:15px;">
@@ -195,7 +195,7 @@
     let selectedPrice = 30;
     let userTokens = 0;
     const DOWNLOAD_COST = 60;  // 下載所需張數
-    const LISTING_COST = 20;   // 代上架所需張數
+    const LISTING_COST = 60;   // 下載 + 代上架所需張數
 
     async function loadQueue() {
       if (!userId) { showEmpty('請從 LINE 開啟此頁面'); return; }

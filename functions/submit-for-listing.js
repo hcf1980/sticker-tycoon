@@ -6,7 +6,7 @@
 const { v4: uuidv4 } = require('uuid');
 const { getSupabaseClient, getUploadQueue, getUserTokenBalance, deductTokens } = require('./supabase-client');
 
-const LISTING_COST = 40;  // 代上架所需張數
+const LISTING_COST = 60;  // 下載 + 代上架所需張數
 
 exports.handler = async function(event) {
   // CORS

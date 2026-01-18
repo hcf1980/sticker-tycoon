@@ -2776,7 +2776,7 @@ function generateDemoGalleryFromDB(items) {
 
 🎁 新用戶免費送 40 張
 📸 上傳照片就能生成貼圖
-🚀 1-3 天免費代上架 LINE 貼圖小舖
+🚀 代上架服務免費（下載 + 代上架共 60 張）
 
 👉 點擊加入：${lineOALink}`;
 
