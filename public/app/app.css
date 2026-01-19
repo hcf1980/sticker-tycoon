@@ -4,31 +4,39 @@
  */
 
 /* 字體引入 */
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Orbitron:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
 
 /* CSS 變數 */
 :root {
-  --primary: #00d4ff;
-  --primary-dark: #0099cc;
-  --secondary: #ff00ff;
-  --accent: #00ff88;
-  --bg-dark: #0a0e17;
-  --bg-card: #141b2d;
-  --bg-input: #1a2235;
-  --text-primary: #ffffff;
-  --text-secondary: #8892a4;
-  --border-color: #2a3548;
-  --success: #00ff88;
-  --warning: #ffaa00;
-  --error: #ff4466;
-  --gradient-primary: linear-gradient(135deg, #00d4ff 0%, #ff00ff 100%);
-  --gradient-card: linear-gradient(135deg, rgba(20, 27, 45, 0.9) 0%, rgba(10, 14, 23, 0.9) 100%);
-  --shadow-glow: 0 0 30px rgba(0, 212, 255, 0.3);
-  --shadow-card: 0 10px 40px rgba(0, 0, 0, 0.4);
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 20px;
+  /* LINE 深色主題色彩 */
+  --primary: #00c300; /* LINE 綠 */
+  --primary-dark: #00a500;
+  --secondary: #7e57c2; /* 紫色作為次要色 */
+  --accent: #00c300; /* 使用 LINE 綠作為強調色 */
+  --bg-dark: #1a1a1a; /* 深灰背景 */
+  --bg-card: #2a2a2a; /* 卡片背景 */
+  --bg-input: #333333; /* 輸入框背景 */
+  --text-primary: #ffffff; /* 主要文字 */
+  --text-secondary: #a0a0a0; /* 次要文字 */
+  --border-color: #3d3d3d; /* 邊框顏色 */
+  --success: #4caf50; /* 成功訊息 */
+  --warning: #ff9800; /* 警告 */
+  --error: #f44336; /* 錯誤 */
+  
+  /* 漸層與陰影 */
+  --gradient-primary: linear-gradient(135deg, #00c300 0%, #00a500 100%); /* LINE 綠漸層 */
+  --gradient-card: linear-gradient(135deg, #2a2a2a 0%, #1f1f1f 100%);
+  --shadow-glow: 0 0 20px rgba(0, 195, 0, 0.2); /* 柔和的綠色光暈 */
+  --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.25);
+  
+  /* 圓角 */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
   --radius-full: 9999px;
+  
+  /* 過渡效果 */
+  --transition: all 0.2s ease;
 }
 
 /* 基本重置 */
