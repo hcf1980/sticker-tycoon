@@ -59,7 +59,7 @@ exports.handler = async (event, context) => {
     }
 
     const { email, password } = data.body;
-    const { displayName } = JSON.parse(event.body || '{}');
+    const { displayName } = data.body;
     // 檢查 Email 是否已存在
     const existingUser = await getUserByEmail(email);
     if (existingUser) {

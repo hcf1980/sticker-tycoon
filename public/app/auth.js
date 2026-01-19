@@ -259,9 +259,38 @@ async function requireAuth() {
 }
 
 // 導出到全域
+/**
+ * LINE / Mini App 登入（免帳密）
+ * 前端需先取得 LINE access token，再呼叫 /api/auth/line-login
+ */
+async function loginWithLine(lineAccessToken) {
+  try {
+    const response = await fetch(`/api/auth/line-login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${lineAccessToken}`
+      },
+      body: JSON.stringify({})
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'LINE 登入失敗');
+    }
+
+    saveAuthData(data.session, data.user);
+    return { success: true, data };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
 window.StickerAuth = {
   register,
   login,
+  loginWithLine,
   logout,
   isLoggedIn,
   getCurrentUser,

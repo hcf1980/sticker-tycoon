@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sticker Tycoon Mini App</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/app/app.css" />
+</head>
+<body>
+  <div class="auth-page">
+    <div class="auth-card card animate-fadeIn">
+      <div class="auth-header">
+        <div class="auth-logo">🎨 Sticker Tycoon</div>
+        <h1 class="auth-title">Mini App 啟動中</h1>
+        <p class="auth-subtitle">正在透過 LINE 驗證身分並登入…</p>
+      </div>
+
+      <div id="alert-container"></div>
+
+      <div style="margin-top: 16px;" class="btn btn-secondary btn-block" id="retry-btn" hidden>
+        重新嘗試
+      </div>
+    </div>
+  </div>
+
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="/app/auth.js"></script>
+  <script>
+    const alertContainer = document.getElementById('alert-container');
+    const retryBtn = document.getElementById('retry-btn');
+
+    function showAlert(type, message) {
+      alertContainer.innerHTML = `
+        <div class="alert alert-${type}">
+          ${type === 'error' ? '❌' : '✅'} ${message}
+        </div>
+      `;
+    }
+
+    function setRetryVisible(isVisible) {
+      retryBtn.hidden = !isVisible;
+    }
+
+    async function start() {
+      try {
+        // 如果已登入（已有 supabase session），直接跳轉
+        if (window.StickerAuth && window.StickerAuth.isLoggedIn()) {
+          window.location.href = '/app/dashboard.html';
+          return;
+        }
+
+        if (!window.liff) {
+          throw new Error('LIFF SDK 載入失敗');
+        }
+
+        // 這裡的 LIFF_ID 需由管理者在 Console 建立後提供
+        // 目前先用 query string 方式支援：/miniapp/?liffId=xxxx
+        const url = new URL(window.location.href);
+        const liffId = url.searchParams.get('liffId');
+
+        if (!liffId) {
+          throw new Error('缺少 liffId（請在 Mini App Endpoint URL 後加上 ?liffId=你的LIFF_ID）');
+        }
+
+        await liff.init({ liffId });
+
+        if (!liff.isLoggedIn()) {
+          // 會導向 LINE 的授權頁
+          liff.login({ redirectUri: window.location.href });
+          return;
+        }
+
+        const accessToken = liff.getAccessToken();
+        if (!accessToken) {
+          throw new Error('取得 LINE access token 失敗');
+        }
+
+        const result = await window.StickerAuth.loginWithLine(accessToken);
+        if (!result.success) {
+          throw new Error(result.error || 'LINE 登入失敗');
+        }
+
+        window.location.href = '/app/dashboard.html';
+      } catch (error) {
+        console.error(error);
+        showAlert('error', error.message || '啟動失敗');
+        setRetryVisible(true);
+      }
+    }
+
+    retryBtn.addEventListener('click', () => {
+      setRetryVisible(false);
+      alertContainer.innerHTML = '';
+      start();
+    });
+
+    start();
+  </script>
+</body>
+</html>
