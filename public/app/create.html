@@ -571,47 +571,79 @@
         (currentUser.displayName || currentUser.email).charAt(0).toUpperCase();
     }
 
+    let creationOptions = null;
+
     async function initOptions() {
-      // 風格選項
-      const styles = await window.StickerAPI.getStyleList();
+      const options = await window.StickerAPI.getCreationOptions();
+      creationOptions = options;
+
+      // 風格（DB）
+      const styles = options.styles || [];
+      if (styles.length === 0) {
+        throw new Error('風格設定尚未建立，請先在後台/資料庫設定 style_settings');
+      }
+
+      if (!formData.style || !styles.some(s => s.id === formData.style)) {
+        formData.style = styles[0].id;
+      }
+
       document.getElementById('style-options').innerHTML = styles.map(s => `
         <div class="option-card ${s.id === formData.style ? 'selected' : ''}" 
              data-value="${s.id}" onclick="selectStyle('${s.id}')">
-          <div class="option-icon">${s.icon}</div>
+          <div class="option-icon">${s.emoji || '🎨'}</div>
           <div class="option-name">${s.name}</div>
-          <div class="option-desc">${s.description}</div>
+          <div class="option-desc">${s.description || ''}</div>
         </div>
       `).join('');
 
-      // 構圖選項
-      const framings = await window.StickerAPI.getFramingOptions();
+      // 構圖（DB）
+      const framings = options.framings || [];
+      if (framings.length === 0) {
+        throw new Error('構圖設定尚未建立，請先在後台/資料庫設定 framing_settings');
+      }
+
+      if (!formData.framingId || !framings.some(f => f.id === formData.framingId)) {
+        formData.framingId = framings[0].id;
+      }
+
       document.getElementById('framing-options').innerHTML = framings.map(f => `
         <div class="option-card ${f.id === formData.framingId ? 'selected' : ''}" 
              data-value="${f.id}" onclick="selectFraming('${f.id}')">
-          <div class="option-name">${f.name}</div>
-          <div class="option-desc">${f.description}</div>
+          <div class="option-name">${f.emoji ? `${f.emoji} ` : ''}${f.name}</div>
+          <div class="option-desc">${f.description || ''}</div>
         </div>
       `).join('');
 
-      // 場景選項
-      const scenes = await window.StickerAPI.getSceneOptions();
+      // 裝飾風格/場景（DB，含 custom）
+      const scenes = options.scenes || [];
+      if (scenes.length === 0) {
+        throw new Error('裝飾風格設定尚未建立，請先在後台/資料庫設定 scene_settings');
+      }
+
+      if (!formData.sceneId || !scenes.some(s => s.id === formData.sceneId)) {
+        formData.sceneId = scenes[0].id;
+      }
+
       document.getElementById('scene-options').innerHTML = scenes.map(s => `
         <div class="option-card ${s.id === formData.sceneId ? 'selected' : ''}" 
              data-value="${s.id}" onclick="selectScene('${s.id}')">
-          <div class="option-name">${s.name}</div>
-          <div class="option-desc">${s.description}</div>
+          <div class="option-name">${s.emoji ? `${s.emoji} ` : ''}${s.id === 'custom' ? `${s.name}（無限延伸）` : s.name}</div>
+          <div class="option-desc">${s.description || ''}</div>
         </div>
       `).join('');
 
-      // 表情模板
-      const templates = await window.StickerAPI.getExpressionTemplates();
-      document.getElementById('expression-templates').innerHTML = Object.entries(templates).map(([key, t]) => `
-        <span class="expression-template-btn" onclick="selectExpressionTemplate('${key}')">${t.name}</span>
+      // 表情模板（DB），後續會洗牌隨機選
+      const templates = options.expressionTemplates || [];
+      if (templates.length === 0) {
+        throw new Error('表情模板尚未建立，請先在後台/資料庫設定 expression_template_settings');
+      }
+
+      document.getElementById('expression-templates').innerHTML = templates.map(t => `
+        <span class="expression-template-btn" onclick="selectExpressionTemplate('${t.id}')">${t.emoji ? `${t.emoji} ` : ''}${t.name}</span>
       `).join('');
 
-      // 預設表情
-      formData.expressions = templates.daily.expressions.slice(0, 12);
-      updateExpressionList();
+      // 預設：挑第一個模板，洗牌後依 count 取用
+      await selectExpressionTemplate(templates[0].id);
     }
 
     function selectStyle(styleId) {
@@ -635,18 +667,40 @@
       });
     }
 
-    async function selectExpressionTemplate(templateKey) {
-      const templates = await window.StickerAPI.getExpressionTemplates();
-      const template = templates[templateKey];
-      if (template) {
-        formData.expressions = [...template.expressions];
-        // 根據數量調整
-        while (formData.expressions.length < formData.count) {
-          formData.expressions.push(formData.expressions[formData.expressions.length % template.expressions.length]);
-        }
-        formData.expressions = formData.expressions.slice(0, formData.count);
-        updateExpressionList();
+    function shuffleArray(array) {
+      const shuffled = [...array];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
       }
+      return shuffled;
+    }
+
+    async function selectExpressionTemplate(templateId) {
+      if (!creationOptions || !Array.isArray(creationOptions.expressionTemplates)) {
+        throw new Error('表情模板尚未載入');
+      }
+
+      const template = creationOptions.expressionTemplates.find(t => t.id === templateId);
+      if (!template || !Array.isArray(template.expressions) || template.expressions.length === 0) {
+        throw new Error('表情模板內容無效');
+      }
+
+      const shuffledExpressions = shuffleArray(template.expressions);
+      formData.expressions = shuffledExpressions.slice(0, formData.count);
+
+      // 若模板表情不足，則循環補滿（避免 count 變動後長度不足）
+      while (formData.expressions.length < formData.count) {
+        formData.expressions.push(shuffledExpressions[formData.expressions.length % shuffledExpressions.length]);
+      }
+      formData.expressions = formData.expressions.slice(0, formData.count);
+
+      // 更新模板選取樣式
+      document.querySelectorAll('#expression-templates .expression-template-btn').forEach(btn => {
+        btn.classList.toggle('selected', btn.textContent.includes(template.name));
+      });
+
+      updateExpressionList();
     }
 
     function selectCount(count) {
@@ -744,7 +798,7 @@
     }
 
     function updateConfirmSummary() {
-      const tokensRequired = Math.ceil(formData.count / 6) * 3;
+      const tokensRequired = formData.count;
       const hasEnoughTokens = currentUser.credits >= tokensRequired;
 
       document.getElementById('confirm-summary').innerHTML = `

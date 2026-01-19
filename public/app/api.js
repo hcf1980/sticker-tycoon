@@ -239,6 +239,20 @@ async function getFramingOptions() {
   ];
 }
 
+/**
+ * 取得創建貼圖選項（從資料庫動態載入）
+ */
+async function getCreationOptions() {
+  const response = await window.StickerAuth.authFetch(`${API_BASE}/web-api-creation-options`);
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || '取得創建選項失敗');
+  }
+
+  return data;
+}
+
 // 導出到全域
 window.StickerAPI = {
   getUserProfile,
@@ -250,6 +264,7 @@ window.StickerAPI = {
   startGeneration,
   getGenerationStatus,
   pollGenerationStatus,
+  getCreationOptions,
   getStyleList,
   getExpressionTemplates,
   getSceneOptions,
