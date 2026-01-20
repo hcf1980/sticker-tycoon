@@ -864,7 +864,7 @@ async function getExpressionTemplates() {
       .from('expression_template_settings')
       .select('*')
       .eq('is_active', true)
-      .order('display_order', { ascending: true });
+      .order('template_id', { ascending: true });
 
     if (error) throw error;
 
