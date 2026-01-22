@@ -298,20 +298,20 @@ async function handleTextMessage(replyToken, userId, text) {
     }
 
     // 4. 處理特殊指令格式
-    if (text.startsWith('風格:')) {
-      const styleId = text.replace('風格:', '');
+    if (text.startsWith('繪畫風格:')) {
+      const styleId = text.replace('繪畫風格:', '');
       const message = await handleStyleSelection(userId, styleId);
       return getLineClient().replyMessage(replyToken, message);
     }
 
-    if (text.startsWith('構圖:')) {
-      const framingId = text.replace('構圖:', '');
+    if (text.startsWith('人物大小:')) {
+      const framingId = text.replace('人物大小:', '');
       const message = await handleFramingSelection(userId, framingId);
       return getLineClient().replyMessage(replyToken, message);
     }
 
-    if (text.startsWith('表情模板:')) {
-      const templateId = text.replace('表情模板:', '');
+    if (text.startsWith('問侯話語:')) {
+      const templateId = text.replace('問侯話語:', '');
       const message = await handleExpressionTemplate(userId, templateId);
       return getLineClient().replyMessage(replyToken, message);
     }
@@ -381,9 +381,9 @@ async function handleCreationFlow(replyToken, userId, text, stage, state) {
       message = await handleNaming(userId, text);
       break;
     case ConversationStage.STYLING:
-      // 處理風格選擇（可能是按鈕點擊 "風格:xxx" 或直接輸入）
-      if (text.startsWith('風格:')) {
-        const styleId = text.replace('風格:', '');
+      // 處理風格選擇（可能是按鈕點擊 "繪畫風格:xxx" 或直接輸入）
+      if (text.startsWith('繪畫風格:')) {
+        const styleId = text.replace('繪畫風格:', '');
         message = await handleStyleSelection(userId, styleId);
       } else {
         message = { 
@@ -399,8 +399,8 @@ async function handleCreationFlow(replyToken, userId, text, stage, state) {
       break;
     case ConversationStage.FRAMING:
       // 處理構圖選擇
-      if (text.startsWith('構圖:')) {
-        const framingId = text.replace('構圖:', '');
+      if (text.startsWith('人物大小:')) {
+        const framingId = text.replace('人物大小:', '');
         message = await handleFramingSelection(userId, framingId);
       } else {
         message = { 
@@ -416,8 +416,8 @@ async function handleCreationFlow(replyToken, userId, text, stage, state) {
       break;
     case ConversationStage.EXPRESSIONS:
       // 處理表情選擇
-      if (text.startsWith('表情模板:')) {
-        const templateId = text.replace('表情模板:', '');
+      if (text.startsWith('問侯話語:')) {
+        const templateId = text.replace('問侯話語:', '');
         message = await handleExpressionTemplate(userId, templateId);
       } else {
         message = { 
@@ -433,8 +433,8 @@ async function handleCreationFlow(replyToken, userId, text, stage, state) {
       break;
     case ConversationStage.SCENE_SELECT:
       // 處理場景選擇
-      if (text.startsWith('場景:')) {
-        const sceneId = text.replace('場景:', '');
+      if (text.startsWith('穿著場合:')) {
+        const sceneId = text.replace('穿著場合:', '');
         message = await handleSceneSelection(userId, sceneId);
       } else {
         message = { 

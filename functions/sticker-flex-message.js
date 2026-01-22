@@ -24,7 +24,7 @@ function generateWelcomeFlexMessage() {
             text: '🎨 貼圖大亨',
             weight: 'bold',
             size: 'xxl',
-            color: '#FF6B6B',
+            color: '#06C755',
             align: 'center'
           },
           {
@@ -766,7 +766,7 @@ function generateStyleSelectionFlexMessage(styles) {
         label: `${styleEmoji} ${styleName}`,
         text: `繪畫風格:${styleId}`
       },
-      color: '#FF6B6B' // 統一使用粉色
+      color: '#06C755' // 統一使用粉色
     };
   });
 
@@ -798,7 +798,7 @@ function generateStyleSelectionFlexMessage(styles) {
           }
         ],
         paddingAll: '20px',
-        backgroundColor: '#FF6B6B' // 主題色改為粉色
+        backgroundColor: '#06C755' // 主題色改為粉色
       },
       body: {
         type: 'box',
@@ -887,7 +887,7 @@ async function generateExpressionSelectionFlexMessage() {
       label: `${template.emoji} ${template.name}`,
       text: `問侯話語:${template.id}`
     },
-    color: '#FF6B6B'
+    color: '#06C755'
   }));
 
   return {
@@ -918,7 +918,7 @@ async function generateExpressionSelectionFlexMessage() {
           }
         ],
         paddingAll: '20px',
-        backgroundColor: '#FF6B6B'
+        backgroundColor: '#06C755'
       },
       body: {
         type: 'box',
