@@ -331,7 +331,7 @@ async function executeGeneration(taskId, setId) {
     return {
       success: true,
       setId,
-      imageCount: processedImages.filter(p => p.status === 'completed').length
+      imageCount: uploadedCount
     };
 
   } catch (error) {
