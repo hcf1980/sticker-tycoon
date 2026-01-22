@@ -2,8 +2,8 @@
  * AI API Client with Fallback
  * 統一的 AI API 調用模組，支援主模型 + 備用模型自動切換
  *
- * newapi.pockgo.com 的 OpenAI 相容層在 /v1/chat/completions 上會要求使用 `contents`（而非標準的 `messages`）。
- * 因此這裡做「messages → contents」自動轉換，並在必要時 fallback。
+ * newapi.pockgo.com 的 /v1/chat/completions 在不同情境下可能要求 `messages` 或 `contents`。
+ * 這裡做雙格式自動 fallback：先試 messages，再試 contents；若回傳明確指出缺哪個欄位則立即切換。
  *
  * 環境變數設定（Netlify）：
  * - AI_IMAGE_API_KEY: API 金鑰
@@ -53,7 +53,6 @@ function extractUrlFromText(text) {
 
 /**
  * 從 Chat Completions 回應中提取圖片
- * 支援多種回應格式
  */
 function extractImageFromResponse(response) {
   const data = response?.data;
@@ -112,25 +111,29 @@ function extractImageFromResponse(response) {
 }
 
 /**
- * pockgo 的 /v1/chat/completions 會要求 `contents`
- * 這裡把標準 messages 轉為 contents，盡量保留圖片/文字順序。
+ * 將標準 messages 縮減為 pockgo 可能接受的 contents 形式
  */
 function messagesToContents(messages) {
   const firstUser = messages?.find(m => m?.role === 'user');
   const content = firstUser?.content;
 
-  // 1) 如果 user.content 本來就是 array（包含 image_url/text），直接當作 contents
   if (Array.isArray(content)) {
     return content;
   }
 
-  // 2) 如果 user.content 是字串，轉成 text content item
   if (typeof content === 'string') {
     return [{ type: 'text', text: content }];
   }
 
-  // 3) fallback：把整包 messages stringify 當成 text（避免空 contents）
   return [{ type: 'text', text: JSON.stringify(messages) }];
+}
+
+function isMissingField(errorMsg, fieldName) {
+  return typeof errorMsg === 'string' && errorMsg.includes(`field ${fieldName} is required`);
+}
+
+function isContentsRequired(errorMsg) {
+  return typeof errorMsg === 'string' && errorMsg.includes('contents is required');
 }
 
 /**
@@ -156,12 +159,11 @@ async function callChatWithFallback(messages, options = {}) {
 
   const contents = messagesToContents(messages);
 
-  // 嘗試策略：
-  // A) 送 contents（pockgo 需求）
-  // B) 若某些供應商反而要 messages，再 fallback
+  // 重要：你的 log 顯示有時候會明確要求 messages（field messages is required）
+  // 因此預設先試 messages，再試 contents。
   const requestBodyCandidates = [
-    { kind: 'contents', build: modelName => ({ model: modelName, contents, max_tokens: maxTokens }) },
-    { kind: 'messages', build: modelName => ({ model: modelName, messages, max_tokens: maxTokens }) }
+    { kind: 'messages', build: modelName => ({ model: modelName, messages, max_tokens: maxTokens }) },
+    { kind: 'contents', build: modelName => ({ model: modelName, contents, max_tokens: maxTokens }) }
   ];
 
   for (const model of models) {
@@ -210,12 +212,19 @@ async function callChatWithFallback(messages, options = {}) {
             console.error(`   🔎 API response data: ${JSON.stringify(error.response.data).substring(0, 2000)}`);
           }
 
-          // 如果明確是「contents is required」且我們不是用 contents payload，改用 contents 版本
-          if (typeof errorMsg === 'string' && errorMsg.includes('contents is required')) {
-            if (candidate.kind !== 'contents') {
-              console.log('   🔁 偵測到 contents is required，改用 contents payload 再試...');
-              break;
+          // 立即切換策略：如果缺 messages，就不要再重試 contents；反之亦然。
+          if (isMissingField(errorMsg, 'messages')) {
+            if (candidate.kind !== 'messages') {
+              console.log('   🔁 偵測到 field messages is required，改用 messages payload...');
             }
+            break;
+          }
+
+          if (isContentsRequired(errorMsg)) {
+            if (candidate.kind !== 'contents') {
+              console.log('   🔁 偵測到 contents is required，改用 contents payload...');
+            }
+            break;
           }
 
           // 429 或 5xx 才等候重試
@@ -228,7 +237,6 @@ async function callChatWithFallback(messages, options = {}) {
             }
           }
 
-          // 其他錯誤：本 candidate 的 retries 用完就換下一個 candidate / 下一個模型
           break;
         }
       }
