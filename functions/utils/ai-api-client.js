@@ -2,7 +2,8 @@
  * AI API Client with Fallback
  * 統一的 AI API 調用模組，支援主模型 + 備用模型自動切換
  *
- * 目前（newapi.pockgo.com）圖片生成採用 Chat Completions 形式。
+ * newapi.pockgo.com 的 OpenAI 相容層在 /v1/chat/completions 上會要求使用 `contents`（而非標準的 `messages`）。
+ * 因此這裡做「messages → contents」自動轉換，並在必要時 fallback。
  *
  * 環境變數設定（Netlify）：
  * - AI_IMAGE_API_KEY: API 金鑰
@@ -38,15 +39,12 @@ function delay(ms) {
  * 從文字中提取圖片 URL
  */
 function extractUrlFromText(text) {
-  // Markdown 圖片格式: ![alt](url)
   const markdownMatch = text.match(/!\[.*?\]\((https?:\/\/[^\s\)]+)\)/);
   if (markdownMatch) return markdownMatch[1];
 
-  // 直接圖片 URL（帶副檔名）
   const urlMatch = text.match(/(https?:\/\/[^\s]+\.(png|jpg|jpeg|webp|gif))/i);
   if (urlMatch) return urlMatch[1];
 
-  // 任何 https URL
   const anyUrlMatch = text.match(/(https?:\/\/[^\s\)\]"']+)/);
   if (anyUrlMatch) return anyUrlMatch[1];
 
@@ -74,16 +72,13 @@ function extractImageFromResponse(response) {
 
   const content = message.content;
 
-  // content 可能是陣列
   if (Array.isArray(content)) {
     for (const item of content) {
-      // image_url 格式
       if (item?.type === 'image_url' && item.image_url) {
         const url = item.image_url.url || item.image_url;
         if (typeof url === 'string' && url.length > 0) return url;
       }
 
-      // image 格式
       if (item?.type === 'image' && item.image) {
         if (item.image.url) return item.image.url;
         if (item.image.data) {
@@ -92,14 +87,12 @@ function extractImageFromResponse(response) {
         }
       }
 
-      // inline_data 格式 (Gemini)
       if (item.inline_data || item.inlineData) {
         const inlineData = item.inline_data || item.inlineData;
         const mimeType = inlineData.mime_type || inlineData.mimeType || 'image/png';
         return `data:${mimeType};base64,${inlineData.data}`;
       }
 
-      // text 裡可能包含 URL
       if (item?.type === 'text' && typeof item.text === 'string') {
         const url = extractUrlFromText(item.text);
         if (url) return url;
@@ -107,7 +100,6 @@ function extractImageFromResponse(response) {
     }
   }
 
-  // content 可能是字串
   if (typeof content === 'string') {
     if (content.startsWith('data:image')) return content;
     if (content.startsWith('http')) return content;
@@ -117,6 +109,28 @@ function extractImageFromResponse(response) {
 
   console.log('🔍 無法解析的 message.content:', JSON.stringify(content).substring(0, 800));
   throw new Error('無法從回應中提取圖片');
+}
+
+/**
+ * pockgo 的 /v1/chat/completions 會要求 `contents`
+ * 這裡把標準 messages 轉為 contents，盡量保留圖片/文字順序。
+ */
+function messagesToContents(messages) {
+  const firstUser = messages?.find(m => m?.role === 'user');
+  const content = firstUser?.content;
+
+  // 1) 如果 user.content 本來就是 array（包含 image_url/text），直接當作 contents
+  if (Array.isArray(content)) {
+    return content;
+  }
+
+  // 2) 如果 user.content 是字串，轉成 text content item
+  if (typeof content === 'string') {
+    return [{ type: 'text', text: content }];
+  }
+
+  // 3) fallback：把整包 messages stringify 當成 text（避免空 contents）
+  return [{ type: 'text', text: JSON.stringify(messages) }];
 }
 
 /**
@@ -140,68 +154,87 @@ async function callChatWithFallback(messages, options = {}) {
 
   let lastError = null;
 
+  const contents = messagesToContents(messages);
+
+  // 嘗試策略：
+  // A) 送 contents（pockgo 需求）
+  // B) 若某些供應商反而要 messages，再 fallback
+  const requestBodyCandidates = [
+    { kind: 'contents', build: modelName => ({ model: modelName, contents, max_tokens: maxTokens }) },
+    { kind: 'messages', build: modelName => ({ model: modelName, messages, max_tokens: maxTokens }) }
+  ];
+
   for (const model of models) {
     console.log(`🤖 嘗試 ${model.label}: ${model.name}`);
 
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        console.log(`   📤 請求 ${attempt}/${maxRetries}...`);
+    for (const candidate of requestBodyCandidates) {
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          console.log(`   📤 請求 ${attempt}/${maxRetries}...`);
 
-        const requestBody = {
-          model: model.name,
-          messages,
-          max_tokens: maxTokens
-        };
+          const requestBody = candidate.build(model.name);
 
-        console.log(`   🧾 Endpoint: /v1/chat/completions`);
-        console.log(`   🧾 Request keys: ${Object.keys(requestBody).sort().join(', ')}`);
-
-        const response = await axios.post(
-          `${AI_API_URL}/v1/chat/completions`,
-          requestBody,
-          {
-            headers: {
-              'Authorization': `Bearer ${AI_API_KEY}`,
-              'Content-Type': 'application/json'
-            },
-            timeout
+          console.log(`   🧾 Endpoint: /v1/chat/completions`);
+          console.log(`   🧾 Payload kind: ${candidate.kind}`);
+          console.log(`   🧾 Request keys: ${Object.keys(requestBody).sort().join(', ')}`);
+          if (Array.isArray(requestBody.contents)) {
+            console.log(`   🧾 contents items: ${requestBody.contents.length}`);
           }
-        );
 
-        console.log(`   ✅ ${model.label} 成功！(狀態: ${response.status})`);
-        return {
-          response,
-          modelUsed: model.name,
-          isFallback: model.name === AI_MODEL_FALLBACK
-        };
+          const response = await axios.post(
+            `${AI_API_URL}/v1/chat/completions`,
+            requestBody,
+            {
+              headers: {
+                'Authorization': `Bearer ${AI_API_KEY}`,
+                'Content-Type': 'application/json'
+              },
+              timeout
+            }
+          );
 
-      } catch (error) {
-        lastError = error;
-        const statusCode = error.response?.status;
-        const errorMsg = error.response?.data?.error?.message || error.message;
+          console.log(`   ✅ ${model.label} 成功！(狀態: ${response.status})`);
+          return {
+            response,
+            modelUsed: model.name,
+            isFallback: model.name === AI_MODEL_FALLBACK
+          };
 
-        console.error(`   ❌ ${model.label} 失敗 (${attempt}/${maxRetries}): ${statusCode || 'N/A'} - ${errorMsg}`);
-        if (error.response?.data) {
-          console.error(`   🔎 API response data: ${JSON.stringify(error.response.data).substring(0, 2000)}`);
-        }
+        } catch (error) {
+          lastError = error;
+          const statusCode = error.response?.status;
+          const errorMsg = error.response?.data?.error?.message || error.message;
 
-        // 429 或 5xx 才等候重試
-        if (statusCode === 429 || (statusCode >= 500 && statusCode < 600)) {
-          if (attempt < maxRetries) {
-            const waitTime = RETRY_DELAY * attempt;
-            console.log(`   ⏳ 等待 ${waitTime / 1000} 秒後重試...`);
-            await delay(waitTime);
-            continue;
+          console.error(`   ❌ ${model.label} 失敗 (${attempt}/${maxRetries}) [${candidate.kind}]: ${statusCode || 'N/A'} - ${errorMsg}`);
+          if (error.response?.data) {
+            console.error(`   🔎 API response data: ${JSON.stringify(error.response.data).substring(0, 2000)}`);
           }
-        }
 
-        // 其他錯誤，直接跳到下一個模型
-        if (attempt === maxRetries) {
-          console.log(`   🔄 切換到下一個模型...`);
+          // 如果明確是「contents is required」且我們不是用 contents payload，改用 contents 版本
+          if (typeof errorMsg === 'string' && errorMsg.includes('contents is required')) {
+            if (candidate.kind !== 'contents') {
+              console.log('   🔁 偵測到 contents is required，改用 contents payload 再試...');
+              break;
+            }
+          }
+
+          // 429 或 5xx 才等候重試
+          if (statusCode === 429 || (statusCode >= 500 && statusCode < 600)) {
+            if (attempt < maxRetries) {
+              const waitTime = RETRY_DELAY * attempt;
+              console.log(`   ⏳ 等待 ${waitTime / 1000} 秒後重試...`);
+              await delay(waitTime);
+              continue;
+            }
+          }
+
+          // 其他錯誤：本 candidate 的 retries 用完就換下一個 candidate / 下一個模型
           break;
         }
       }
     }
+
+    console.log(`   🔄 切換到下一個模型...`);
   }
 
   throw new Error(`所有 AI 模型都失敗: ${lastError?.message || '未知錯誤'}`);
@@ -232,9 +265,7 @@ async function generateImage(prompt, options = {}) {
  * 🖼️ 使用照片生成圖片（Chat 形式）
  */
 async function generateImageFromPhoto(photoBase64, prompt, options = {}) {
-  const dataUrl = photoBase64?.startsWith('data:')
-    ? photoBase64
-    : `data:image/jpeg;base64,${photoBase64}`;
+  const dataUrl = photoBase64?.startsWith('data:') ? photoBase64 : `data:image/jpeg;base64,${photoBase64}`;
 
   const messages = [
     {
