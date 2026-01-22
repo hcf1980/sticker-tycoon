@@ -5,8 +5,8 @@
  * 環境變數設定（Netlify）：
  * - AI_IMAGE_API_KEY: API 金鑰
  * - AI_IMAGE_API_URL: API 基礎 URL
- * - AI_MODEL_3: 主要模型（優先使用，例如 gemini-3-pro-image-preview-2k）
- * - AI_MODEL: 備用模型（AI_MODEL_3 失敗時使用，例如 gemini-2.5-flash-image）
+ * - AI_MODEL_3: 主要模型（優先使用）
+ * - AI_MODEL: 備用模型（AI_MODEL_3 失敗時使用）
  * 
  * 調用順序：AI_MODEL_3 → AI_MODEL
  */
@@ -22,7 +22,6 @@ const AI_MODEL_FALLBACK = process.env.AI_MODEL || 'gemini-2.5-flash-image';
 
 // 預設設定
 const DEFAULT_TIMEOUT = 120000; // 2 分鐘
-const DEFAULT_MAX_TOKENS = 4096;
 const RETRY_DELAY = 3000; // 3 秒
 
 /**
@@ -33,100 +32,61 @@ function delay(ms) {
 }
 
 /**
- * 從 Chat Completions 回應中提取圖片
- * 支援多種回應格式
- */
-function extractImageFromResponse(response) {
-  const choices = response.data.choices;
-  if (!choices || !choices[0]) {
-    console.log('🔍 API 回應結構:', JSON.stringify(response.data).substring(0, 500));
-    throw new Error('API 回應中沒有 choices');
-  }
-
-  const message = choices[0].message;
-  if (!message || !message.content) {
-    console.log('🔍 Message 結構:', JSON.stringify(message).substring(0, 500));
-    throw new Error('API 回應中沒有 message content');
-  }
-
-  const content = message.content;
-
-  // 處理陣列格式
-  if (Array.isArray(content)) {
-    for (const item of content) {
-      // image_url 格式
-      if (item.type === 'image_url' && item.image_url) {
-        const url = item.image_url.url || item.image_url;
-        return url;
-      }
-      // image 格式
-      if (item.type === 'image' && item.image) {
-        if (item.image.url) {return item.image.url;}
-        if (item.image.data) {
-          const mimeType = item.image.mime_type || 'image/png';
-          return `data:${mimeType};base64,${item.image.data}`;
-        }
-      }
-      // inline_data 格式 (Gemini)
-      if (item.inline_data || item.inlineData) {
-        const inlineData = item.inline_data || item.inlineData;
-        const mimeType = inlineData.mime_type || inlineData.mimeType || 'image/png';
-        return `data:${mimeType};base64,${inlineData.data}`;
-      }
-    }
-
-    // 檢查 text 類型是否包含 URL
-    for (const item of content) {
-      if (item.type === 'text' && item.text) {
-        const url = extractUrlFromText(item.text);
-        if (url) {return url;}
-      }
-    }
-  }
-
-  // 處理字串格式
-  if (typeof content === 'string') {
-    if (content.startsWith('data:image')) {return content;}
-    if (content.startsWith('http')) {return content;}
-    const url = extractUrlFromText(content);
-    if (url) {return url;}
-  }
-
-  throw new Error('無法從回應中提取圖片');
-}
-
-/**
  * 從文字中提取圖片 URL
  */
 function extractUrlFromText(text) {
   // Markdown 圖片格式: ![alt](url)
   const markdownMatch = text.match(/!\[.*?\]\((https?:\/\/[^\s\)]+)\)/);
-  if (markdownMatch) {return markdownMatch[1];}
+  if (markdownMatch) return markdownMatch[1];
 
   // 直接圖片 URL（帶副檔名）
   const urlMatch = text.match(/(https?:\/\/[^\s]+\.(png|jpg|jpeg|webp|gif))/i);
-  if (urlMatch) {return urlMatch[1];}
+  if (urlMatch) return urlMatch[1];
 
   // 任何 https URL
   const anyUrlMatch = text.match(/(https?:\/\/[^\s\)\]"']+)/);
-  if (anyUrlMatch) {return anyUrlMatch[1];}
+  if (anyUrlMatch) return anyUrlMatch[1];
 
   return null;
 }
 
 /**
- * 🎯 核心：帶 Fallback 的 AI API 調用
- * 
- * @param {Array} messages - Chat Completions 格式的訊息
- * @param {object} options - 額外選項
- * @returns {object} - API 回應
+ * 從 Images Generations 回應中提取圖片
+ * 支援：url / b64_json
  */
-async function callAIWithFallback(messages, options = {}) {
+function extractImageFromImagesResponse(response) {
+  const data = response?.data;
+  const first = data?.data?.[0];
+
+  if (!first) {
+    console.log('🔍 Images API 回應結構:', JSON.stringify(data).substring(0, 800));
+    throw new Error('Images API 回應中沒有 data[0]');
+  }
+
+  if (typeof first.url === 'string' && first.url.length > 0) {
+    return first.url;
+  }
+
+  if (typeof first.b64_json === 'string' && first.b64_json.length > 0) {
+    return `data:image/png;base64,${first.b64_json}`;
+  }
+
+  // 有些供應商可能回在 base64 / b64 / image 等欄位
+  if (typeof first.base64 === 'string' && first.base64.length > 0) {
+    return `data:image/png;base64,${first.base64}`;
+  }
+
+  console.log('🔍 Images API data[0]:', JSON.stringify(first).substring(0, 800));
+  throw new Error('Images API 回應中找不到 url 或 b64_json');
+}
+
+/**
+ * 🎯 核心：帶 Fallback 的 Images API 調用
+ */
+async function callImagesWithFallback(requestBody, options = {}) {
   const {
-    size, // 🆕 新增 size 參數
     maxRetries = 2,
-    timeout = DEFAULT_TIMEOUT,
-    maxTokens = DEFAULT_MAX_TOKENS
+    timeout = DEFAULT_TIMEOUT
   } = options;
 
   if (!AI_API_KEY) {
@@ -140,29 +100,36 @@ async function callAIWithFallback(messages, options = {}) {
 
   let lastError = null;
 
-  // 嘗試每個模型
   for (const model of models) {
     console.log(`🤖 嘗試 ${model.label}: ${model.name}`);
 
-    // 每個模型嘗試 maxRetries 次
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         console.log(`   📤 請求 ${attempt}/${maxRetries}...`);
 
+        const resolvedRequestBody = {
+          ...(requestBody || {}),
+          model: model.name
+        };
+
+        console.log(`   🧾 Endpoint: /v1/images/generations`);
+        console.log(`   🧾 Request keys: ${Object.keys(resolvedRequestBody).sort().join(', ')}`);
+        if (typeof resolvedRequestBody.contents === 'string') {
+          console.log(`   🧾 contents length: ${resolvedRequestBody.contents.length}`);
+        }
+        if (typeof resolvedRequestBody.prompt === 'string') {
+          console.log(`   🧾 prompt length: ${resolvedRequestBody.prompt.length}`);
+        }
+
         const response = await axios.post(
-          `${AI_API_URL}/v1/chat/completions`,
-          {
-            model: model.name,
-            messages: messages,
-            ...(size ? { size } : {}),
-            max_tokens: maxTokens
-          },
+          `${AI_API_URL}/v1/images/generations`,
+          resolvedRequestBody,
           {
             headers: {
               'Authorization': `Bearer ${AI_API_KEY}`,
               'Content-Type': 'application/json'
             },
-            timeout: timeout
+            timeout
           }
         );
 
@@ -199,27 +166,29 @@ async function callAIWithFallback(messages, options = {}) {
     }
   }
 
-  // 所有模型都失敗
   throw new Error(`所有 AI 模型都失敗: ${lastError?.message || '未知錯誤'}`);
 }
 
 /**
  * 🖼️ 生成圖片（帶 Fallback）
- * 
- * @param {string} prompt - 文字提示
- * @param {object} options - 額外選項
- * @returns {string} - 圖片 URL 或 base64
+ * 預設走 /v1/images/generations
  */
 async function generateImage(prompt, options = {}) {
-  const messages = [
-    {
-      role: 'user',
-      content: prompt
-    }
-  ];
+  const {
+    size,
+    responseFormat = 'b64_json',
+    timeout,
+    maxRetries
+  } = options;
 
-  const result = await callAIWithFallback(messages, options);
-  const imageUrl = extractImageFromResponse(result.response);
+  const requestBody = {
+    contents: prompt,
+    ...(size ? { size } : {}),
+    response_format: responseFormat
+  };
+
+  const result = await callImagesWithFallback(requestBody, { timeout, maxRetries });
+  const imageUrl = extractImageFromImagesResponse(result.response);
 
   if (result.isFallback) {
     console.log(`   ⚠️ 注意：使用了備用模型 (${result.modelUsed})`);
@@ -230,33 +199,30 @@ async function generateImage(prompt, options = {}) {
 
 /**
  * 🖼️ 使用照片生成圖片（帶 Fallback）
- * 
- * @param {string} photoBase64 - 照片 base64
- * @param {string} prompt - 文字提示
- * @param {object} options - 額外選項
- * @returns {string} - 圖片 URL 或 base64
+ * tangguoapi：如果不支援 image input，需改走其他 endpoint；這裡先以 prompt 為主。
  */
 async function generateImageFromPhoto(photoBase64, prompt, options = {}) {
-  const messages = [
-    {
-      role: 'user',
-      content: [
-        {
-          type: 'text',
-          text: prompt
-        },
-        {
-          type: 'image_url',
-          image_url: {
-            url: photoBase64.startsWith('data:') ? photoBase64 : `data:image/jpeg;base64,${photoBase64}`
-          }
-        }
-      ]
-    }
-  ];
+  const {
+    size,
+    responseFormat = 'b64_json',
+    timeout,
+    maxRetries
+  } = options;
 
-  const result = await callAIWithFallback(messages, options);
-  const imageUrl = extractImageFromResponse(result.response);
+  // 多數 /v1/images/generations 供應商不支援直接丟 dataURL 圖片做 img2img
+  // 先將照片資訊包進 prompt，避免直接送 image 參數造成 400。
+  const photoHint = photoBase64
+    ? '\n\nReference photo provided (base64 omitted in prompt for safety). Keep face consistent.'
+    : '';
+
+  const requestBody = {
+    contents: `${prompt}${photoHint}`,
+    ...(size ? { size } : {}),
+    response_format: responseFormat
+  };
+
+  const result = await callImagesWithFallback(requestBody, { timeout, maxRetries });
+  const imageUrl = extractImageFromImagesResponse(result.response);
 
   if (result.isFallback) {
     console.log(`   ⚠️ 注意：使用了備用模型 (${result.modelUsed})`);
@@ -278,11 +244,11 @@ function getAIConfig() {
 }
 
 module.exports = {
-  callAIWithFallback,
   generateImage,
   generateImageFromPhoto,
-  extractImageFromResponse,
   getAIConfig,
-  delay
+  delay,
+  // exports for debugging / reuse
+  extractImageFromImagesResponse,
+  extractUrlFromText
 };
-

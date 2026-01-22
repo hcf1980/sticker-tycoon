@@ -3,7 +3,8 @@
  * 處理登入、註冊、Token 管理
  */
 
-const API_BASE = '/.netlify/functions';
+window.__STICKER_API_BASE__ = window.__STICKER_API_BASE__ || '/.netlify/functions';
+const API_BASE = window.__STICKER_API_BASE__;
 
 // Token 儲存鍵
 const STORAGE_KEYS = {
@@ -140,32 +141,37 @@ function logout() {
  * 刷新 Token
  */
 async function refreshToken() {
-  const refreshToken = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
-  
-  if (!refreshToken) {
+  const refreshTokenValue = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+
+  if (!refreshTokenValue) {
     clearAuthData();
-    return false;
+    return { ok: false, reason: 'missing_refresh_token' };
   }
 
   try {
     const response = await fetch(`${API_BASE}/web-api-auth-refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken })
+      body: JSON.stringify({ refreshToken: refreshTokenValue })
     });
 
-    const data = await response.json();
+    const data = await response.json().catch(() => null);
 
     if (!response.ok) {
       clearAuthData();
-      return false;
+      return { ok: false, reason: 'refresh_failed', error: data?.error || 'Refresh 失敗' };
+    }
+
+    if (!data?.session?.accessToken) {
+      clearAuthData();
+      return { ok: false, reason: 'invalid_refresh_response', error: 'Refresh 回傳格式異常' };
     }
 
     saveAuthData(data.session, null);
-    return true;
+    return { ok: true };
   } catch (error) {
     clearAuthData();
-    return false;
+    return { ok: false, reason: 'network_error', error: error?.message || 'Network error' };
   }
 }
 
@@ -191,10 +197,17 @@ async function verifyAndGetUser() {
     if (!response.ok) {
       // Token 可能過期，嘗試刷新
       const refreshed = await refreshToken();
-      if (refreshed) {
+      if (refreshed.ok) {
         return verifyAndGetUser();  // 重試
       }
+
+      // 永久改善：明確提示並導回登入
+      const reasonText = refreshed.error || data?.error || '登入已過期，請重新登入';
+      console.warn('驗證失敗，將導回登入:', { reason: refreshed.reason, reasonText });
       clearAuthData();
+
+      // 避免無限迴圈，帶上原因供登入頁顯示
+      window.location.href = `/app/login.html?reason=${encodeURIComponent(reasonText)}`;
       return null;
     }
 
@@ -227,13 +240,14 @@ async function authFetch(url, options = {}) {
   // 如果 401，嘗試刷新 Token
   if (response.status === 401) {
     const refreshed = await refreshToken();
-    if (refreshed) {
+    if (refreshed.ok) {
       headers['Authorization'] = `Bearer ${getAccessToken()}`;
       response = await fetch(url, { ...options, headers });
     } else {
+      const reasonText = refreshed.error || '登入已過期，請重新登入';
       clearAuthData();
-      window.location.href = '/app/login.html';
-      throw new Error('登入已過期，請重新登入');
+      window.location.href = `/app/login.html?reason=${encodeURIComponent(reasonText)}`;
+      throw new Error(reasonText);
     }
   }
 

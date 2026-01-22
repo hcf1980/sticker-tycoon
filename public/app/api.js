@@ -3,7 +3,8 @@
  * 封裝所有 API 呼叫
  */
 
-const API_BASE = '/.netlify/functions';
+window.__STICKER_API_BASE__ = window.__STICKER_API_BASE__ || '/.netlify/functions';
+const API_BASE = window.__STICKER_API_BASE__;
 
 /**
  * 取得用戶資料
