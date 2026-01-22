@@ -146,6 +146,9 @@ async function callImagesWithFallback(requestBody, options = {}) {
         const errorMsg = error.response?.data?.error?.message || error.message;
 
         console.error(`   ❌ ${model.label} 失敗 (${attempt}/${maxRetries}): ${statusCode || 'N/A'} - ${errorMsg}`);
+        if (error.response?.data) {
+          console.error(`   🔎 API response data: ${JSON.stringify(error.response.data).substring(0, 2000)}`);
+        }
 
         // 如果是 429 (Rate Limit) 或 5xx 錯誤，等待後重試
         if (statusCode === 429 || (statusCode >= 500 && statusCode < 600)) {
