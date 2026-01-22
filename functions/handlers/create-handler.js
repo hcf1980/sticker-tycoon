@@ -14,36 +14,36 @@ const { getActiveStyles, getStyleById } = require('./messages/style-settings-mes
 const { loadFramingSettings, loadSceneSettings } = require('../style-settings-loader');
 
 /**
- * 從資料庫取得構圖設定（優先資料庫，否則使用預設）
+ * 從資料庫取得人物大小設定（優先資料庫，否則使用預設）
  */
 async function getActiveFramingTemplates() {
   try {
     const dbFraming = await loadFramingSettings();
     if (dbFraming && Object.keys(dbFraming).length > 0) {
-      console.log('📐 使用資料庫構圖設定');
+      console.log('📐 使用資料庫人物大小設定');
       return dbFraming;
     }
   } catch (error) {
-    console.error('讀取資料庫構圖設定失敗:', error);
+    console.error('讀取資料庫人物大小設定失敗:', error);
   }
-  console.log('📐 使用預設構圖設定');
+  console.log('📐 使用預設人物大小設定');
   return FramingTemplates;
 }
 
 /**
- * 從資料庫取得裝飾風格設定（優先資料庫，否則使用預設）
+ * 從資料庫取得裝飾繪畫風格設定（優先資料庫，否則使用預設）
  */
 async function getActiveSceneTemplates() {
   try {
     const dbScenes = await loadSceneSettings();
     if (dbScenes && Object.keys(dbScenes).length > 0) {
-      console.log('🎨 使用資料庫裝飾風格設定');
+      console.log('🎨 使用資料庫裝飾繪畫風格設定');
       return dbScenes;
     }
   } catch (error) {
-    console.error('讀取資料庫裝飾風格設定失敗:', error);
+    console.error('讀取資料庫裝飾繪畫風格設定失敗:', error);
   }
-  console.log('🎨 使用預設裝飾風格設定');
+  console.log('🎨 使用預設裝飾繪畫風格設定');
   return SceneTemplates;
 }
 
@@ -98,10 +98,10 @@ async function handlePhotoUpload(userId, photoResult) {
     photoBase64: photoResult.base64
   };
 
-  // 進入風格選擇階段
+  // 進入繪畫風格選擇階段
   await updateConversationState(userId, ConversationStage.STYLING, tempData);
 
-  // 從資料庫讀取風格設定
+  // 從資料庫讀取繪畫風格設定
   const styles = await getActiveStyles();
   return generateStyleSelectionFlexMessage(styles);
 }
@@ -152,17 +152,17 @@ async function handleNaming(userId, name) {
 }
 
 /**
- * 處理風格選擇
+ * 處理繪畫風格選擇
  */
 async function handleStyleSelection(userId, styleId) {
-  console.log(`🎨 用戶 ${userId} 選擇風格：${styleId}`);
+  console.log(`🎨 用戶 ${userId} 選擇繪畫風格：${styleId}`);
 
-  // 從資料庫讀取風格設定
+  // 從資料庫讀取繪畫風格設定
   const style = await getStyleById(styleId);
   if (!style) {
     return {
       type: 'text',
-      text: '⚠️ 請選擇有效的風格！',
+      text: '⚠️ 請選擇有效的繪畫風格！',
       quickReply: {
         items: [
           { type: 'action', action: { type: 'message', label: '❌ 取消', text: '取消' } }
@@ -175,7 +175,7 @@ async function handleStyleSelection(userId, styleId) {
   const state = await getConversationState(userId);
   const tempData = { ...state.temp_data, style: styleId };
 
-  // 如果有照片，進入構圖選擇；否則進入角色描述
+  // 如果有照片，進入人物大小選擇；否則進入角色描述
   if (tempData.photoUrl) {
     await updateConversationState(userId, ConversationStage.FRAMING, tempData);
     return generateFramingSelectionMessage(style, getActiveFramingTemplates);
@@ -184,7 +184,7 @@ async function handleStyleSelection(userId, styleId) {
     await updateConversationState(userId, ConversationStage.CHARACTER, tempData);
     return {
       type: 'text',
-      text: `✅ 已選擇「${style.emoji} ${style.name}」風格\n\n` +
+      text: `✅ 已選擇「${style.emoji} ${style.name}」繪畫風格\n\n` +
             '👤 描述你的角色\n\n' +
             '請詳細描述你想要的角色特徵，例如：\n\n' +
             '• 「一隻圓滾滾的白色小熊，有粉紅色的臉頰和小小的黑眼睛」\n\n' +
@@ -205,12 +205,12 @@ async function handleStyleSelection(userId, styleId) {
 // generateFramingSelectionMessage 已移至 ./messages/framing-messages.js
 
 /**
- * 處理構圖選擇
+ * 處理人物大小選擇
  */
 async function handleFramingSelection(userId, framingId) {
-  console.log(`🖼️ 用戶 ${userId} 選擇構圖：${framingId}`);
+  console.log(`🖼️ 用戶 ${userId} 選擇人物大小：${framingId}`);
 
-  // 從資料庫取得構圖設定
+  // 從資料庫取得人物大小設定
   const framingTemplates = await getActiveFramingTemplates();
   const framing = framingTemplates[framingId];
 
@@ -218,11 +218,11 @@ async function handleFramingSelection(userId, framingId) {
     const framingOptions = Object.values(framingTemplates);
     return {
       type: 'text',
-      text: '⚠️ 請選擇有效的構圖選項！',
+      text: '⚠️ 請選擇有效的人物大小選項！',
       quickReply: {
         items: framingOptions.map(f => ({
           type: 'action',
-          action: { type: 'message', label: `${f.emoji} ${f.name}`, text: `構圖:${f.id}` }
+          action: { type: 'message', label: `${f.emoji} ${f.name}`, text: `人物大小:${f.id}` }
         }))
       }
     };
@@ -356,10 +356,10 @@ async function handleExpressionTemplate(userId, templateId) {
 }
 
 /**
- * 生成裝飾風格選擇 Flex Message（從資料庫讀取裝飾風格設定）
+ * 生成裝飾繪畫風格選擇 Flex Message（從資料庫讀取裝飾繪畫風格設定）
  */
 async function generateSceneSelectionFlexMessage() {
-  // 從資料庫取得裝飾風格設定
+  // 從資料庫取得裝飾繪畫風格設定
   const sceneTemplates = await getActiveSceneTemplates();
   const scenes = Object.values(sceneTemplates);
 
@@ -368,7 +368,7 @@ async function generateSceneSelectionFlexMessage() {
   const customScene = scenes.find(s => s.id === 'custom') || {
     id: 'custom',
     emoji: '✏️',
-    name: '自訂風格'
+    name: '自訂繪畫風格'
   };
 
   // 分成兩行顯示（不包含 custom）
@@ -381,7 +381,7 @@ async function generateSceneSelectionFlexMessage() {
     action: {
       type: 'message',
       label: `${scene.emoji} ${scene.name}`,
-      text: `場景:${scene.id}`
+      text: `穿著場合:${scene.id}`
     }
   }));
   quickReplyItems.push({
@@ -391,7 +391,7 @@ async function generateSceneSelectionFlexMessage() {
 
   return {
     type: 'flex',
-    altText: '選擇裝飾風格',
+    altText: '選擇穿著場合',
     contents: {
       type: 'bubble',
       size: 'mega',
@@ -399,7 +399,7 @@ async function generateSceneSelectionFlexMessage() {
         type: 'box',
         layout: 'vertical',
         contents: [
-          { type: 'text', text: '🎨 選擇裝飾風格', weight: 'bold', size: 'lg', color: '#FF6B6B' },
+          { type: 'text', text: '🎨 選擇穿著場合', weight: 'bold', size: 'lg', color: '#FF6B6B' },
           { type: 'text', text: '為貼圖加入 POP 文字與裝飾元素', size: 'xs', color: '#888888', margin: 'sm' },
           { type: 'text', text: '（愛心、星星、對話框等）', size: 'xxs', color: '#AAAAAA', margin: 'xs' },
           { type: 'separator', margin: 'lg' },
@@ -415,7 +415,7 @@ async function generateSceneSelectionFlexMessage() {
               action: {
                 type: 'message',
                 label: `${scene.emoji} ${scene.name}`,
-                text: `場景:${scene.id}`
+                text: `穿著場合:${scene.id}`
               }
             }))
           },
@@ -431,11 +431,11 @@ async function generateSceneSelectionFlexMessage() {
               action: {
                 type: 'message',
                 label: `${scene.emoji} ${scene.name}`,
-                text: `場景:${scene.id}`
+                text: `穿著場合:${scene.id}`
               }
             }))
           }] : []),
-          // 自訂風格（無限延伸）- 強調色
+          // 自訂繪畫風格（無限延伸）- 強調色
           {
             type: 'button',
             style: 'primary',
@@ -443,7 +443,7 @@ async function generateSceneSelectionFlexMessage() {
             action: {
               type: 'message',
               label: `${customScene.emoji} ${customScene.name}（無限延伸）`,
-              text: `場景:${customScene.id}`
+              text: `穿著場合:${customScene.id}`
             },
             margin: 'lg',
             color: '#FF6B6B'
@@ -458,19 +458,19 @@ async function generateSceneSelectionFlexMessage() {
 }
 
 /**
- * 處理裝飾風格選擇
+ * 處理裝飾繪畫風格選擇
  */
 async function handleSceneSelection(userId, sceneId) {
-  console.log(`🎨 用戶 ${userId} 選擇裝飾風格：${sceneId}`);
+  console.log(`🎨 用戶 ${userId} 選擇穿著場合：${sceneId}`);
 
-  // 從資料庫取得裝飾風格設定
+  // 從資料庫取得裝飾繪畫風格設定
   const sceneTemplates = await getActiveSceneTemplates();
   const scene = sceneTemplates[sceneId];
 
   if (!scene) {
     return { 
       type: 'text', 
-      text: '⚠️ 請選擇有效的裝飾風格！',
+      text: '⚠️ 請選擇有效的裝飾繪畫風格！',
       quickReply: {
         items: [
           { type: 'action', action: { type: 'message', label: '❌ 取消', text: '取消' } }
@@ -481,25 +481,25 @@ async function handleSceneSelection(userId, sceneId) {
 
   const state = await getConversationState(userId);
 
-  // 如果是自訂風格，進入自訂描述階段
+  // 如果是自訂繪畫風格，進入自訂描述階段
   if (sceneId === 'custom') {
     await updateConversationState(userId, ConversationStage.CUSTOM_SCENE, state.temp_data);
     return {
       type: 'text',
-      text: '✏️ 請描述你想要的風格\n\n' +
-            '🔥 熱門風格範例：\n' +
+      text: '✏️ 請描述你想要的繪畫風格\n\n' +
+            '🔥 熱門繪畫風格範例：\n' +
             '• 「宮崎駿吉卜力水彩風」\n' +
             '• 「Q版大頭公仔 chibi」\n' +
-            '• 「Nanana Banana 香蕉人風格」\n' +
+            '• 「Nanana Banana 香蕉人繪畫風格」\n' +
             '• 「像素風 pixel art」\n' +
             '• 「賽博龐克霓虹風」\n\n' +
-            '💡 直接複製或輸入你想要的風格描述！',
+            '💡 直接複製或輸入你想要的繪畫風格描述！',
       quickReply: {
         items: [
-          { type: 'action', action: { type: 'message', label: '🎨 宮崎駿風', text: '宮崎駿吉卜力水彩風格，溫暖柔和的色調' } },
+          { type: 'action', action: { type: 'message', label: '🎨 宮崎駿風', text: '宮崎駿吉卜力水彩繪畫風格，溫暖柔和的色調' } },
           { type: 'action', action: { type: 'message', label: '🎀 Q版大頭', text: 'Q版大頭公仔 chibi style，超可愛大眼睛' } },
-          { type: 'action', action: { type: 'message', label: '🍌 香蕉人風', text: 'Nanana Banana 香蕉人風格，黃色系可愛' } },
-          { type: 'action', action: { type: 'message', label: '👾 像素風', text: '像素風 pixel art 8-bit 復古遊戲風格' } },
+          { type: 'action', action: { type: 'message', label: '🍌 香蕉人風', text: 'Nanana Banana 香蕉人繪畫風格，黃色系可愛' } },
+          { type: 'action', action: { type: 'message', label: '👾 像素風', text: '像素風 pixel art 8-bit 復古遊戲繪畫風格' } },
           { type: 'action', action: { type: 'message', label: '💜 賽博龐克', text: '賽博龐克霓虹風，紫色藍色發光效果' } },
           { type: 'action', action: { type: 'message', label: '❌ 取消', text: '取消' } }
         ]
@@ -507,7 +507,7 @@ async function handleSceneSelection(userId, sceneId) {
     };
   }
 
-  // 直接保存裝飾風格並進入數量選擇
+  // 直接保存裝飾繪畫風格並進入數量選擇
   const tempData = { ...state.temp_data, scene: sceneId, sceneConfig: scene };
   await updateConversationState(userId, ConversationStage.COUNT_SELECT, tempData);
 
@@ -515,17 +515,17 @@ async function handleSceneSelection(userId, sceneId) {
 }
 
 /**
- * 處理自訂裝飾風格描述
+ * 處理自訂裝飾繪畫風格描述
  */
 async function handleCustomScene(userId, description) {
-  console.log(`✏️ 用戶 ${userId} 自訂裝飾風格：${description}`);
+  console.log(`✏️ 用戶 ${userId} 自訂裝飾繪畫風格：${description}`);
 
   const state = await getConversationState(userId);
 
-  // 建立自訂裝飾風格配置
+  // 建立自訂裝飾繪畫風格配置
   const customScene = {
     id: 'custom',
-    name: '自訂風格',
+    name: '自訂繪畫風格',
     emoji: '✏️',
     description: description,
     decorationStyle: description,

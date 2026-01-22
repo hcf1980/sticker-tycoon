@@ -1,5 +1,5 @@
 /**
- * 風格設定管理 JavaScript
+ * 繪畫繪畫風格管理 JavaScript
  */
 
 let currentEditingStyle = null;
@@ -50,7 +50,7 @@ function calculateStyleCharCount(style) {
   return fields.join('').length;
 }
 
-// 載入風格設定
+// 載入繪畫風格
 async function loadStyles() {
   const container = document.getElementById('styles-list');
   container.innerHTML = '<div class="text-center text-gray-500 py-8">載入中...</div>';
@@ -67,9 +67,9 @@ async function loadStyles() {
       // 如果沒有資料，顯示初始化按鈕
       container.innerHTML = `
         <div class="text-center py-8">
-          <p class="text-gray-500 mb-4">尚未初始化風格設定</p>
+          <p class="text-gray-500 mb-4">尚未初始化繪畫風格</p>
           <button onclick="initializeStyles()" class="bg-pink-500 text-white px-6 py-3 rounded-lg hover:bg-pink-600">
-            🎨 初始化風格設定
+            🎨 初始化繪畫風格
           </button>
         </div>
       `;
@@ -97,9 +97,9 @@ async function loadStyles() {
               <span class="text-xs bg-pink-100 text-pink-700 px-2 py-1 rounded font-bold">${charCount} 字元</span>
             </div>
             <p class="text-sm text-gray-600 mb-2">${style.description || ''}</p>
-            <div class="text-xs text-gray-500">
-              <div>核心風格: ${(style.core_style || '').substring(0, 80)}...</div>
-              <div>色彩方案: ${style.color_palette || ''}</div>
+            <div class="flex flex-wrap gap-2 mt-2 text-xs">
+              <span class="bg-pink-100 text-pink-800 px-2 py-1 rounded-full font-medium">核心: ${(style.core_style || '').substring(0, 50)}...</span>
+              <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded-full font-medium">色彩: ${style.color_palette || 'N/A'}</span>
             </div>
           </div>
           <button onclick="editStyle('${style.style_id}')" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 ml-4">
@@ -120,7 +120,7 @@ async function loadStyles() {
   }
 }
 
-// 載入構圖設定
+// 載入人物大小
 async function loadFraming() {
   const container = document.getElementById('framing-list');
   container.innerHTML = '<div class="text-center text-gray-500 py-8">載入中...</div>';
@@ -136,9 +136,9 @@ async function loadFraming() {
     if (!data || data.length === 0) {
       container.innerHTML = `
         <div class="text-center py-8">
-          <p class="text-gray-500 mb-4">尚未初始化構圖設定</p>
+          <p class="text-gray-500 mb-4">尚未初始化人物大小</p>
           <button onclick="initializeFraming()" class="bg-pink-500 text-white px-6 py-3 rounded-lg hover:bg-pink-600">
-            🖼️ 初始化構圖設定
+            🖼️ 初始化人物大小
           </button>
         </div>
       `;
@@ -155,9 +155,9 @@ async function loadFraming() {
               <span class="text-xs bg-gray-200 px-2 py-1 rounded">${framing.framing_id}</span>
             </div>
             <p class="text-sm text-gray-600 mb-2">${framing.description || ''}</p>
-            <div class="text-xs text-gray-500">
-              <div>頭部大小: ${framing.head_size_percentage || 'N/A'}%</div>
-              <div>焦點: ${(framing.character_focus || '').substring(0, 60)}...</div>
+            <div class="flex flex-wrap gap-2 mt-2 text-xs">
+              <span class="bg-pink-100 text-pink-800 px-2 py-1 rounded-full font-medium">頭部: ${framing.head_size_percentage || 'N/A'}%</span>
+              <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded-full font-medium">焦點: ${(framing.character_focus || '').substring(0, 50)}...</span>
             </div>
           </div>
           <button onclick="editFraming('${framing.framing_id}')" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 ml-4">
@@ -173,7 +173,7 @@ async function loadFraming() {
   }
 }
 
-// 載入裝飾風格設定
+// 載入裝飾繪畫風格
 async function loadScenes() {
   const container = document.getElementById('scenes-list');
   container.innerHTML = '<div class="text-center text-gray-500 py-8">載入中...</div>';
@@ -189,9 +189,9 @@ async function loadScenes() {
     if (!data || data.length === 0) {
       container.innerHTML = `
         <div class="text-center py-8">
-          <p class="text-gray-500 mb-4">尚未初始化裝飾風格設定</p>
+          <p class="text-gray-500 mb-4">尚未初始化裝飾繪畫風格</p>
           <button onclick="initializeScenes()" class="bg-pink-500 text-white px-6 py-3 rounded-lg hover:bg-pink-600">
-            🎀 初始化裝飾風格設定
+            🎀 初始化裝飾繪畫風格
           </button>
         </div>
       `;
@@ -217,7 +217,7 @@ async function loadScenes() {
     `).join('');
 
   } catch (error) {
-    console.error('載入裝飾風格失敗:', error);
+    console.error('載入穿著場合失敗:', error);
     container.innerHTML = `<div class="text-center text-red-500 py-8">載入失敗: ${error.message}</div>`;
   }
 }
@@ -410,7 +410,7 @@ function generateFramingEditForm(framing) {
   `;
 }
 
-// 編輯裝飾風格
+// 編輯穿著場合
 async function editScene(sceneId) {
   try {
     const { data, error } = await supabase
@@ -424,16 +424,16 @@ async function editScene(sceneId) {
     currentEditingStyle = data;
     currentEditingType = 'scene';
 
-    document.getElementById('modal-title').textContent = `編輯裝飾風格: ${data.name}`;
+    document.getElementById('modal-title').textContent = `編輯穿著場合: ${data.name}`;
     document.getElementById('modal-content').innerHTML = generateSceneEditForm(data);
     document.getElementById('edit-modal').classList.remove('hidden');
     document.getElementById('edit-modal').classList.add('flex');
   } catch (error) {
-    alert('載入裝飾風格失敗: ' + error.message);
+    alert('載入穿著場合失敗: ' + error.message);
   }
 }
 
-// 生成裝飾風格編輯表單
+// 生成穿著場合編輯表單
 function generateSceneEditForm(scene) {
   return `
     <div class="space-y-4">
@@ -443,8 +443,8 @@ function generateSceneEditForm(scene) {
           <div class="flex items-center gap-2">
             <span class="text-2xl">🎨</span>
             <div>
-              <h4 class="font-bold text-purple-900">AI 裝飾風格提取器</h4>
-              <p class="text-xs text-purple-600">上傳圖片，AI 自動分析並填入裝飾風格參數</p>
+              <h4 class="font-bold text-purple-900">AI 穿著場合提取器</h4>
+              <p class="text-xs text-purple-600">上傳圖片，AI 自動分析並填入穿著場合參數</p>
             </div>
           </div>
         </div>
@@ -468,7 +468,7 @@ function generateSceneEditForm(scene) {
       </div>
 
       <div>
-        <label class="block text-sm font-bold mb-2">裝飾風格 ID</label>
+        <label class="block text-sm font-bold mb-2">穿著場合 ID</label>
         <input type="text" value="${scene.scene_id}" disabled class="w-full p-2 border rounded bg-gray-100">
       </div>
 
@@ -488,7 +488,7 @@ function generateSceneEditForm(scene) {
       </div>
 
       <div>
-        <label class="block text-sm font-bold mb-2">裝飾風格描述</label>
+        <label class="block text-sm font-bold mb-2">穿著場合描述</label>
         <textarea id="edit-decoration-style" class="w-full p-2 border rounded font-mono text-sm" rows="2">${scene.decoration_style || ''}</textarea>
       </div>
 
@@ -665,9 +665,9 @@ function logout() {
   window.location.href = '/admin/login.html';
 }
 
-// 初始化風格設定
+// 初始化繪畫風格
 async function initializeStyles() {
-  if (!confirm('確定要初始化風格設定嗎？這將從程式碼中讀取預設值並寫入資料庫。')) return;
+  if (!confirm('確定要初始化繪畫風格嗎？這將從程式碼中讀取預設值並寫入資料庫。')) return;
 
   const defaultStyles = [
     {
@@ -791,16 +791,16 @@ async function initializeStyles() {
 
     if (error) throw error;
 
-    alert('✅ 風格設定初始化成功！已載入全部 9 種風格');
+    alert('✅ 繪畫風格初始化成功！已載入全部 9 種風格');
     loadStyles();
   } catch (error) {
     alert('初始化失敗: ' + error.message);
   }
 }
 
-// 初始化構圖設定
+// 初始化人物大小
 async function initializeFraming() {
-  if (!confirm('確定要初始化構圖設定嗎？')) return;
+  if (!confirm('確定要初始化人物大小嗎？')) return;
 
   const defaultFraming = [
     {
@@ -848,16 +848,16 @@ async function initializeFraming() {
 
     if (error) throw error;
 
-    alert('✅ 構圖設定初始化成功！已載入全部 4 種構圖');
+    alert('✅ 人物大小初始化成功！已載入全部 4 種構圖');
     loadFraming();
   } catch (error) {
     alert('初始化失敗: ' + error.message);
   }
 }
 
-// 初始化裝飾風格設定
+// 初始化裝飾繪畫風格
 async function initializeScenes() {
-  if (!confirm('確定要初始化裝飾風格設定嗎？')) return;
+  if (!confirm('確定要初始化裝飾繪畫風格嗎？')) return;
 
   const defaultScenes = [
     {
@@ -927,7 +927,7 @@ async function initializeScenes() {
       scene_id: 'custom',
       name: '自訂風格',
       emoji: '✏️',
-      description: '自己描述想要的裝飾風格',
+      description: '自己描述想要的穿著場合',
       decoration_style: '',
       decoration_elements: [],
       pop_text_style: ''
@@ -941,14 +941,14 @@ async function initializeScenes() {
 
     if (error) throw error;
 
-    alert('✅ 裝飾風格設定初始化成功！已載入全部 8 種裝飾風格');
+    alert('✅ 裝飾繪畫風格初始化成功！已載入全部 8 種穿著場合');
     loadScenes();
   } catch (error) {
     alert('初始化失敗: ' + error.message);
   }
 }
 
-// 匯出風格設定
+// 匯出繪畫風格
 async function exportStyles() {
   try {
     const { data, error } = await supabase
@@ -967,7 +967,7 @@ async function exportStyles() {
     a.click();
     URL.revokeObjectURL(url);
 
-    alert('✅ 風格設定已匯出！');
+    alert('✅ 繪畫風格已匯出！');
   } catch (error) {
     alert('匯出失敗: ' + error.message);
   }
@@ -1162,12 +1162,12 @@ function fileToBase64(file) {
 }
 
 // ============================================
-// 🎨 裝飾風格圖片分析功能
+// 🎨 穿著場合圖片分析功能
 // ============================================
 
 let sceneImageFile = null;
 
-// 監聽裝飾風格圖片選擇
+// 監聽穿著場合圖片選擇
 document.addEventListener('DOMContentLoaded', () => {
   // 延遲綁定，因為這個元素在 Modal 打開後才存在
   document.addEventListener('change', (e) => {
@@ -1178,7 +1178,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /**
- * 處理裝飾風格圖片選擇
+ * 處理穿著場合圖片選擇
  */
 function handleSceneImageSelect(event) {
   const file = event.target.files[0];
@@ -1201,7 +1201,7 @@ function handleSceneImageSelect(event) {
 }
 
 /**
- * 分析裝飾風格圖片
+ * 分析穿著場合圖片
  */
 async function analyzeSceneImage() {
   if (!sceneImageFile) {
@@ -1217,7 +1217,7 @@ async function analyzeSceneImage() {
     analyzeBtn.textContent = '🔄 分析中...';
     statusDiv.classList.remove('hidden');
     statusDiv.className = 'mt-2 text-sm text-blue-600 font-medium';
-    statusDiv.textContent = '🤖 AI 正在分析裝飾風格...';
+    statusDiv.textContent = '🤖 AI 正在分析穿著場合...';
 
     // 壓縮圖片（降低 API 成本）
     const compressedBase64 = await compressImage(sceneImageFile, 800, 0.7);
@@ -1260,7 +1260,7 @@ async function analyzeSceneImage() {
 
     // 顯示成功訊息
     statusDiv.className = 'mt-2 text-sm text-green-600 font-medium';
-    statusDiv.textContent = '✅ 分析完成！裝飾風格參數已自動填入，請檢查並調整';
+    statusDiv.textContent = '✅ 分析完成！穿著場合參數已自動填入，請檢查並調整';
 
     // 5秒後隱藏訊息
     setTimeout(() => {
@@ -1278,10 +1278,10 @@ async function analyzeSceneImage() {
 }
 
 // ============================================
-// 😊 表情模板管理功能
+// 😊 問侯話語管理功能
 // ============================================
 
-// 載入表情模板設定
+// 載入問侯話語設定
 async function loadExpressions() {
   const container = document.getElementById('expressions-list');
   container.innerHTML = '<div class="text-center text-gray-500 py-8">載入中...</div>';
@@ -1297,9 +1297,9 @@ async function loadExpressions() {
     if (!data || data.length === 0) {
       container.innerHTML = `
         <div class="text-center py-8">
-          <p class="text-gray-500 mb-4">尚未初始化表情模板設定</p>
+          <p class="text-gray-500 mb-4">尚未初始化問侯話語設定</p>
           <button onclick="initializeExpressions()" class="bg-pink-500 text-white px-6 py-3 rounded-lg hover:bg-pink-600">
-            😊 初始化表情模板設定
+            😊 初始化問侯話語設定
           </button>
         </div>
       `;
@@ -1340,12 +1340,12 @@ async function loadExpressions() {
     `}).join('');
 
   } catch (error) {
-    console.error('載入表情模板失敗:', error);
+    console.error('載入問侯話語失敗:', error);
     container.innerHTML = `<div class="text-center text-red-500 py-8">載入失敗: ${error.message}</div>`;
   }
 }
 
-// 編輯表情模板
+// 編輯問侯話語
 async function editExpression(templateId) {
   try {
     const { data, error } = await supabase
@@ -1359,16 +1359,16 @@ async function editExpression(templateId) {
     currentEditingStyle = data;
     currentEditingType = 'expression';
 
-    document.getElementById('modal-title').textContent = `編輯表情模板: ${data.name}`;
+    document.getElementById('modal-title').textContent = `編輯問侯話語: ${data.name}`;
     document.getElementById('modal-content').innerHTML = generateExpressionEditForm(data);
     document.getElementById('edit-modal').classList.remove('hidden');
     document.getElementById('edit-modal').classList.add('flex');
   } catch (error) {
-    alert('載入表情模板失敗: ' + error.message);
+    alert('載入問侯話語失敗: ' + error.message);
   }
 }
 
-// 生成表情模板編輯表單
+// 生成問侯話語編輯表單
 function generateExpressionEditForm(template) {
   const expressionsText = Array.isArray(template.expressions)
     ? template.expressions.join('\n')
@@ -1406,9 +1406,9 @@ function generateExpressionEditForm(template) {
   `;
 }
 
-// 初始化表情模板設定
+// 初始化問侯話語設定
 async function initializeExpressions() {
-  if (!confirm('確定要初始化表情模板設定嗎？')) return;
+  if (!confirm('確定要初始化問侯話語設定嗎？')) return;
 
   const defaultExpressions = [
     {
@@ -1486,7 +1486,7 @@ async function initializeExpressions() {
 
     if (error) throw error;
 
-    alert('✅ 表情模板設定初始化成功！已載入全部 6 種模板');
+    alert('✅ 問侯話語設定初始化成功！已載入全部 6 種模板');
     loadExpressions();
   } catch (error) {
     alert('初始化失敗: ' + error.message);

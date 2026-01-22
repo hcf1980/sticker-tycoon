@@ -56,7 +56,7 @@ function generateWelcomeFlexMessage() {
             margin: 'lg',
             spacing: 'sm',
             contents: [
-              { type: 'text', text: '1️⃣ 選擇風格 & 描述角色', size: 'sm', color: '#555555' },
+              { type: 'text', text: '1️⃣ 選擇繪畫風格 & 描述角色', size: 'sm', color: '#555555' },
               { type: 'text', text: '2️⃣ AI 自動生成 8-40 張貼圖', size: 'sm', color: '#555555' },
               { type: 'text', text: '3️⃣ 下載並上傳到 LINE Creators', size: 'sm', color: '#555555' }
             ]
@@ -340,7 +340,7 @@ function generateTutorialPart1FlexMessage() {
               },
               {
             type: 'text',
-                text: '3️⃣ 選擇風格、構圖、表情',
+                text: '3️⃣ 選擇繪畫風格、人物大小、問侯話語',
                 size: 'sm',
                 color: '#111827',
                 wrap: true
@@ -744,17 +744,17 @@ async function markTutorialShown(userId) {
  */
 function generateStyleSelectionFlexMessage(styles) {
   if (!styles || !Array.isArray(styles) || styles.length === 0) {
-    // 如果沒有風格，使用預設風格
+    // 如果沒有繪畫風格，使用預設繪畫風格
     styles = Object.values(StickerStyles);
   }
 
-  // 限制最多顯示 12 個風格（LINE Flex Message 限制）
+  // 限制最多顯示 12 個繪畫風格（LINE Flex Message 限制）
   const displayStyles = styles.slice(0, 12);
 
-  // 將風格轉換為按鈕
-  const styleButtons = displayStyles.map((style, index) => {
-    const styleId = style.style_id || style.id || `style_${index}`;
-    const styleName = style.name || style.style_name || '未知風格';
+  // 將繪畫風格轉換為按鈕（單欄）
+  const styleButtons = displayStyles.map((style) => {
+    const styleId = style.style_id || style.id;
+    const styleName = style.name || '未知繪畫風格';
     const styleEmoji = style.emoji || '🎨';
     
     return {
@@ -764,58 +764,51 @@ function generateStyleSelectionFlexMessage(styles) {
       action: {
         type: 'message',
         label: `${styleEmoji} ${styleName}`,
-        text: `風格:${styleId}`
+        text: `繪畫風格:${styleId}`
       },
-      color: index % 2 === 0 ? '#06C755' : '#00B8D4'
+      color: '#FF6B6B' // 統一使用粉色
     };
   });
 
-  // 每行最多 2 個按鈕
-  const buttonRows = [];
-  for (let i = 0; i < styleButtons.length; i += 2) {
-    buttonRows.push({
-      type: 'box',
-      layout: 'horizontal',
-      spacing: 'sm',
-      contents: styleButtons.slice(i, i + 2)
-    });
-  }
-
   return {
     type: 'flex',
-    altText: '選擇貼圖風格',
+    altText: '選擇繪畫風格',
     contents: {
       type: 'bubble',
+      size: 'giga',
       hero: {
         type: 'box',
         layout: 'vertical',
         contents: [
           {
             type: 'text',
-            text: '🎨 選擇貼圖風格',
+            text: '🎨 選擇繪畫風格',
             weight: 'bold',
-            size: 'xxl',
+            size: 'xl',
             color: '#FFFFFF',
             align: 'center'
           },
           {
             type: 'text',
-            text: '請選擇你喜歡的風格',
-            size: 'md',
-            color: '#E6FFE9',
+            text: '請選擇一個你喜歡的繪畫風格',
+            size: 'sm',
+            color: '#FFFFFFE6',
             align: 'center',
             margin: 'sm'
           }
         ],
         paddingAll: '20px',
-        backgroundColor: '#06C755'
+        backgroundColor: '#FF6B6B' // 主題色改為粉色
       },
       body: {
         type: 'box',
         layout: 'vertical',
-        spacing: 'sm',
-        contents: buttonRows,
-        paddingAll: '20px'
+        spacing: 'md', // 增加按鈕間距
+        contents: styleButtons,
+        paddingTop: '20px',
+        paddingBottom: '20px',
+        paddingStart: '20px',
+        paddingEnd: '20px'
       },
       footer: {
             type: 'box',
@@ -846,7 +839,7 @@ function generateStyleSelectionFlexMessage(styles) {
           action: {
             type: 'message',
             label: `${styleEmoji} ${styleName}`,
-            text: `風格:${styleId}`
+            text: `繪畫風格:${styleId}`
           }
         };
       })
@@ -884,72 +877,68 @@ async function getExpressionTemplates() {
 async function generateExpressionSelectionFlexMessage() {
   const templates = await getExpressionTemplates();
 
-  // 將表情轉換為按鈕（每行 2 個）
-  const buttonRows = [];
-  for (let i = 0; i < templates.length; i += 2) {
-    const row = templates.slice(i, i + 2).map(expr => ({
-      type: 'button',
-      style: 'primary',
-      height: 'sm',
-      action: {
-        type: 'message',
-        label: `${expr.emoji} ${expr.name}`,
-        text: `表情模板:${expr.id}`
-      },
-      color: '#06C755'
-    }));
-
-    buttonRows.push({
-      type: 'box',
-      layout: 'horizontal',
-      spacing: 'sm',
-      contents: row.length === 2 ? row : [...row, { type: 'filler' }]
-    });
-  }
+  // 將問侯話語轉換為按鈕（單欄、同色系）
+  const templateButtons = templates.map((template) => ({
+    type: 'button',
+    style: 'primary',
+    height: 'sm',
+    action: {
+      type: 'message',
+      label: `${template.emoji} ${template.name}`,
+      text: `問侯話語:${template.id}`
+    },
+    color: '#FF6B6B'
+  }));
 
   return {
     type: 'flex',
-    altText: '選擇表情模板',
+    altText: '選擇問侯話語',
     contents: {
       type: 'bubble',
+      size: 'giga',
       hero: {
         type: 'box',
         layout: 'vertical',
         contents: [
           {
             type: 'text',
-            text: '😀 選擇表情模板',
+            text: '💬 選擇問侯話語',
             weight: 'bold',
-            size: 'xxl',
+            size: 'xl',
             color: '#FFFFFF',
             align: 'center'
           },
           {
             type: 'text',
-            text: '選擇要生成的表情',
-            size: 'md',
-            color: '#E6FFE9',
+            text: '選擇要生成的問侯話語分類',
+            size: 'sm',
+            color: '#FFFFFFE6',
             align: 'center',
             margin: 'sm'
           }
         ],
         paddingAll: '20px',
-        backgroundColor: '#06C755'
+        backgroundColor: '#FF6B6B'
       },
       body: {
         type: 'box',
         layout: 'vertical',
-        spacing: 'sm',
-        contents: buttonRows.length > 0 ? buttonRows : [
-          {
-            type: 'text',
-            text: '暫無可用表情模板',
-            size: 'sm',
-            color: '#666666',
-            align: 'center'
-          }
-        ],
-        paddingAll: '20px'
+        spacing: 'md',
+        contents: templateButtons.length > 0
+          ? templateButtons
+          : [
+              {
+                type: 'text',
+                text: '暫無可用問侯話語',
+                size: 'sm',
+                color: '#666666',
+                align: 'center'
+              }
+            ],
+        paddingTop: '20px',
+        paddingBottom: '20px',
+        paddingStart: '20px',
+        paddingEnd: '20px'
       },
       footer: {
         type: 'box',
@@ -972,12 +961,12 @@ async function generateExpressionSelectionFlexMessage() {
     },
     quickReply: {
       items: [
-        ...templates.slice(0, 6).map(expr => ({
+        ...templates.slice(0, 6).map((template) => ({
           type: 'action',
           action: {
             type: 'message',
-            label: `${expr.emoji} ${expr.name}`,
-            text: `表情模板:${expr.id}`
+            label: `${template.emoji} ${template.name}`,
+            text: `問侯話語:${template.id}`
           }
         })),
         {

@@ -1,5 +1,5 @@
 /**
- * 生成構圖選擇訊息
+ * 生成人物大小選擇訊息
  */
 async function generateFramingSelectionMessage(style, getActiveFramingTemplates) {
   const framingTemplates = await getActiveFramingTemplates();
@@ -7,7 +7,7 @@ async function generateFramingSelectionMessage(style, getActiveFramingTemplates)
 
   return {
     type: 'flex',
-    altText: '🖼️ 請選擇人物構圖',
+    altText: '🧍 請選擇人物大小',
     contents: {
       type: 'bubble',
       size: 'mega',
@@ -18,7 +18,7 @@ async function generateFramingSelectionMessage(style, getActiveFramingTemplates)
         paddingAll: 'lg',
         contents: [
           { type: 'text', text: `✅ 已選擇「${style.emoji} ${style.name}」`, size: 'md', color: '#FFFFFF', align: 'center' },
-          { type: 'text', text: '🖼️ 選擇人物構圖', size: 'xl', weight: 'bold', color: '#FFFFFF', align: 'center', margin: 'sm' },
+          { type: 'text', text: '🧍 選擇人物大小', size: 'xl', weight: 'bold', color: '#FFFFFF', align: 'center', margin: 'sm' },
         ],
       },
       body: {
@@ -36,7 +36,7 @@ async function generateFramingSelectionMessage(style, getActiveFramingTemplates)
             backgroundColor: '#F8F8F8',
             cornerRadius: 'lg',
             margin: 'md',
-            action: { type: 'message', label: framing.name, text: `構圖:${framing.id}` },
+            action: { type: 'message', label: framing.name, text: `人物大小:${framing.id}` },
             contents: [
               { type: 'text', text: framing.emoji, size: 'xxl', flex: 0 },
               {
@@ -68,7 +68,7 @@ async function generateFramingSelectionMessage(style, getActiveFramingTemplates)
       items: [
         ...framingOptions.map((framing) => ({
           type: 'action',
-          action: { type: 'message', label: `${framing.emoji} ${framing.name}`, text: `構圖:${framing.id}` },
+          action: { type: 'message', label: `${framing.emoji} ${framing.name}`, text: `人物大小:${framing.id}` },
         })),
         { type: 'action', action: { type: 'message', label: '❌ 取消', text: '取消' } },
       ],

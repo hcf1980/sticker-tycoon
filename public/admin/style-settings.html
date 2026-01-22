@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>風格設定管理 - 貼圖大亨</title>
+  <title>繪畫風格管理 - 貼圖大亨</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <!-- Supabase 配置 -->
   <script type="application/json" id="supabase-config">
@@ -28,7 +28,7 @@
   <!-- 導航欄 -->
   <nav class="bg-gradient-to-r from-pink-500 to-orange-400 text-white p-4">
     <div class="container mx-auto flex justify-between items-center">
-      <h1 class="text-2xl font-bold">🎭 風格設定管理</h1>
+      <h1 class="text-2xl font-bold">🎨 繪畫風格管理</h1>
       <div class="flex gap-4">
         <a href="/admin/index.html" class="text-white hover:underline">← 返回後台</a>
         <button onclick="logout()" class="text-white hover:underline">登出</button>
@@ -40,29 +40,29 @@
     <!-- 頁籤切換 -->
     <div class="mb-6 flex gap-2 border-b">
       <button onclick="switchTab('styles')" id="tab-styles" class="px-6 py-3 font-bold border-b-2 border-pink-500 text-pink-500">
-        風格設定
+        繪畫風格
       </button>
       <button onclick="switchTab('framing')" id="tab-framing" class="px-6 py-3 font-bold text-gray-500 hover:text-pink-500">
-        構圖設定
+        人物大小
       </button>
       <button onclick="switchTab('scenes')" id="tab-scenes" class="px-6 py-3 font-bold text-gray-500 hover:text-pink-500">
-        裝飾風格
+        穿著場合
       </button>
       <button onclick="switchTab('expressions')" id="tab-expressions" class="px-6 py-3 font-bold text-gray-500 hover:text-pink-500">
-        表情模板
+        問侯話語
       </button>
     </div>
 
     <!-- 風格設定內容 -->
     <div id="content-styles" class="tab-content">
       <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
-        <h2 class="text-xl font-bold mb-4">🎨 風格列表</h2>
+        <h2 class="text-xl font-bold mb-4">🎨 繪畫風格列表</h2>
         <div class="mb-4">
           <button onclick="loadStyles()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
             🔄 重新載入
           </button>
           <button onclick="initializeStyles()" class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 ml-2">
-            🎨 初始化風格設定
+            🎨 初始化繪畫風格
           </button>
           <button onclick="exportStyles()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 ml-2">
             📥 匯出設定
@@ -74,16 +74,16 @@
       </div>
     </div>
 
-    <!-- 構圖設定內容 -->
+    <!-- 人物大小內容 -->
     <div id="content-framing" class="tab-content hidden">
       <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
-        <h2 class="text-xl font-bold mb-4">🖼️ 構圖列表</h2>
+        <h2 class="text-xl font-bold mb-4">🧍 人物大小列表</h2>
         <div class="mb-4">
           <button onclick="loadFraming()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
             🔄 重新載入
           </button>
           <button onclick="initializeFraming()" class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 ml-2">
-            🖼️ 初始化構圖設定
+            🖼️ 初始化人物大小
           </button>
         </div>
         <div id="framing-list" class="space-y-4">
@@ -92,16 +92,16 @@
       </div>
     </div>
 
-    <!-- 裝飾風格內容 -->
+    <!-- 穿著場合內容 -->
     <div id="content-scenes" class="tab-content hidden">
       <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
-        <h2 class="text-xl font-bold mb-4">🎀 裝飾風格列表</h2>
+        <h2 class="text-xl font-bold mb-4">🎀 穿著場合列表</h2>
         <div class="mb-4">
           <button onclick="loadScenes()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
             🔄 重新載入
           </button>
           <button onclick="initializeScenes()" class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 ml-2">
-            🎀 初始化裝飾風格
+            🎀 初始化穿著場合
           </button>
         </div>
         <div id="scenes-list" class="space-y-4">
@@ -110,16 +110,16 @@
       </div>
     </div>
 
-    <!-- 表情模板內容 -->
+    <!-- 問侯話語內容 -->
     <div id="content-expressions" class="tab-content hidden">
       <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
-        <h2 class="text-xl font-bold mb-4">😊 表情模板列表</h2>
+        <h2 class="text-xl font-bold mb-4">😊 問侯話語列表</h2>
         <div class="mb-4">
           <button onclick="loadExpressions()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
             🔄 重新載入
           </button>
           <button onclick="initializeExpressions()" class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 ml-2">
-            😊 初始化表情模板
+            😊 初始化問侯話語
           </button>
         </div>
         <div id="expressions-list" class="space-y-4">
