@@ -1,13 +1,15 @@
 /**
  * AI API Client with Fallback
  * 統一的 AI API 調用模組，支援主模型 + 備用模型自動切換
- * 
+ *
+ * 目前（newapi.pockgo.com）圖片生成採用 Chat Completions 形式。
+ *
  * 環境變數設定（Netlify）：
  * - AI_IMAGE_API_KEY: API 金鑰
  * - AI_IMAGE_API_URL: API 基礎 URL
  * - AI_MODEL_3: 主要模型（優先使用）
  * - AI_MODEL: 備用模型（AI_MODEL_3 失敗時使用）
- * 
+ *
  * 調用順序：AI_MODEL_3 → AI_MODEL
  */
 
@@ -22,6 +24,7 @@ const AI_MODEL_FALLBACK = process.env.AI_MODEL || 'gemini-2.5-flash-image';
 
 // 預設設定
 const DEFAULT_TIMEOUT = 120000; // 2 分鐘
+const DEFAULT_MAX_TOKENS = 4096;
 const RETRY_DELAY = 3000; // 3 秒
 
 /**
@@ -51,42 +54,79 @@ function extractUrlFromText(text) {
 }
 
 /**
- * 從 Images Generations 回應中提取圖片
- * 支援：url / b64_json
+ * 從 Chat Completions 回應中提取圖片
+ * 支援多種回應格式
  */
-function extractImageFromImagesResponse(response) {
+function extractImageFromResponse(response) {
   const data = response?.data;
-  const first = data?.data?.[0];
+  const choices = data?.choices;
 
-  if (!first) {
-    console.log('🔍 Images API 回應結構:', JSON.stringify(data).substring(0, 800));
-    throw new Error('Images API 回應中沒有 data[0]');
+  if (!choices || !choices[0]) {
+    console.log('🔍 API 回應結構:', JSON.stringify(data).substring(0, 800));
+    throw new Error('API 回應中沒有 choices');
   }
 
-  if (typeof first.url === 'string' && first.url.length > 0) {
-    return first.url;
+  const message = choices[0].message;
+  if (!message || !message.content) {
+    console.log('🔍 Message 結構:', JSON.stringify(message).substring(0, 800));
+    throw new Error('API 回應中沒有 message content');
   }
 
-  if (typeof first.b64_json === 'string' && first.b64_json.length > 0) {
-    return `data:image/png;base64,${first.b64_json}`;
+  const content = message.content;
+
+  // content 可能是陣列
+  if (Array.isArray(content)) {
+    for (const item of content) {
+      // image_url 格式
+      if (item?.type === 'image_url' && item.image_url) {
+        const url = item.image_url.url || item.image_url;
+        if (typeof url === 'string' && url.length > 0) return url;
+      }
+
+      // image 格式
+      if (item?.type === 'image' && item.image) {
+        if (item.image.url) return item.image.url;
+        if (item.image.data) {
+          const mimeType = item.image.mime_type || 'image/png';
+          return `data:${mimeType};base64,${item.image.data}`;
+        }
+      }
+
+      // inline_data 格式 (Gemini)
+      if (item.inline_data || item.inlineData) {
+        const inlineData = item.inline_data || item.inlineData;
+        const mimeType = inlineData.mime_type || inlineData.mimeType || 'image/png';
+        return `data:${mimeType};base64,${inlineData.data}`;
+      }
+
+      // text 裡可能包含 URL
+      if (item?.type === 'text' && typeof item.text === 'string') {
+        const url = extractUrlFromText(item.text);
+        if (url) return url;
+      }
+    }
   }
 
-  // 有些供應商可能回在 base64 / b64 / image 等欄位
-  if (typeof first.base64 === 'string' && first.base64.length > 0) {
-    return `data:image/png;base64,${first.base64}`;
+  // content 可能是字串
+  if (typeof content === 'string') {
+    if (content.startsWith('data:image')) return content;
+    if (content.startsWith('http')) return content;
+    const url = extractUrlFromText(content);
+    if (url) return url;
   }
 
-  console.log('🔍 Images API data[0]:', JSON.stringify(first).substring(0, 800));
-  throw new Error('Images API 回應中找不到 url 或 b64_json');
+  console.log('🔍 無法解析的 message.content:', JSON.stringify(content).substring(0, 800));
+  throw new Error('無法從回應中提取圖片');
 }
 
 /**
- * 🎯 核心：帶 Fallback 的 Images API 調用
+ * 🎯 核心：帶 Fallback 的 Chat Completions 調用
  */
-async function callImagesWithFallback(requestBody, options = {}) {
+async function callChatWithFallback(messages, options = {}) {
   const {
     maxRetries = 2,
-    timeout = DEFAULT_TIMEOUT
+    timeout = DEFAULT_TIMEOUT,
+    maxTokens = DEFAULT_MAX_TOKENS
   } = options;
 
   if (!AI_API_KEY) {
@@ -107,23 +147,18 @@ async function callImagesWithFallback(requestBody, options = {}) {
       try {
         console.log(`   📤 請求 ${attempt}/${maxRetries}...`);
 
-        const resolvedRequestBody = {
-          ...(requestBody || {}),
-          model: model.name
+        const requestBody = {
+          model: model.name,
+          messages,
+          max_tokens: maxTokens
         };
 
-        console.log(`   🧾 Endpoint: /v1/images/generations`);
-        console.log(`   🧾 Request keys: ${Object.keys(resolvedRequestBody).sort().join(', ')}`);
-        if (typeof resolvedRequestBody.contents === 'string') {
-          console.log(`   🧾 contents length: ${resolvedRequestBody.contents.length}`);
-        }
-        if (typeof resolvedRequestBody.prompt === 'string') {
-          console.log(`   🧾 prompt length: ${resolvedRequestBody.prompt.length}`);
-        }
+        console.log(`   🧾 Endpoint: /v1/chat/completions`);
+        console.log(`   🧾 Request keys: ${Object.keys(requestBody).sort().join(', ')}`);
 
         const response = await axios.post(
-          `${AI_API_URL}/v1/images/generations`,
-          resolvedRequestBody,
+          `${AI_API_URL}/v1/chat/completions`,
+          requestBody,
           {
             headers: {
               'Authorization': `Bearer ${AI_API_KEY}`,
@@ -150,7 +185,7 @@ async function callImagesWithFallback(requestBody, options = {}) {
           console.error(`   🔎 API response data: ${JSON.stringify(error.response.data).substring(0, 2000)}`);
         }
 
-        // 如果是 429 (Rate Limit) 或 5xx 錯誤，等待後重試
+        // 429 或 5xx 才等候重試
         if (statusCode === 429 || (statusCode >= 500 && statusCode < 600)) {
           if (attempt < maxRetries) {
             const waitTime = RETRY_DELAY * attempt;
@@ -173,25 +208,18 @@ async function callImagesWithFallback(requestBody, options = {}) {
 }
 
 /**
- * 🖼️ 生成圖片（帶 Fallback）
- * 預設走 /v1/images/generations
+ * 🖼️ 生成圖片（text-to-image，Chat 形式）
  */
 async function generateImage(prompt, options = {}) {
-  const {
-    size,
-    responseFormat = 'b64_json',
-    timeout,
-    maxRetries
-  } = options;
+  const messages = [
+    {
+      role: 'user',
+      content: prompt
+    }
+  ];
 
-  const requestBody = {
-    contents: prompt,
-    ...(size ? { size } : {}),
-    response_format: responseFormat
-  };
-
-  const result = await callImagesWithFallback(requestBody, { timeout, maxRetries });
-  const imageUrl = extractImageFromImagesResponse(result.response);
+  const result = await callChatWithFallback(messages, options);
+  const imageUrl = extractImageFromResponse(result.response);
 
   if (result.isFallback) {
     console.log(`   ⚠️ 注意：使用了備用模型 (${result.modelUsed})`);
@@ -201,31 +229,33 @@ async function generateImage(prompt, options = {}) {
 }
 
 /**
- * 🖼️ 使用照片生成圖片（帶 Fallback）
- * tangguoapi：如果不支援 image input，需改走其他 endpoint；這裡先以 prompt 為主。
+ * 🖼️ 使用照片生成圖片（Chat 形式）
  */
 async function generateImageFromPhoto(photoBase64, prompt, options = {}) {
-  const {
-    size,
-    responseFormat = 'b64_json',
-    timeout,
-    maxRetries
-  } = options;
+  const dataUrl = photoBase64?.startsWith('data:')
+    ? photoBase64
+    : `data:image/jpeg;base64,${photoBase64}`;
 
-  // 多數 /v1/images/generations 供應商不支援直接丟 dataURL 圖片做 img2img
-  // 先將照片資訊包進 prompt，避免直接送 image 參數造成 400。
-  const photoHint = photoBase64
-    ? '\n\nReference photo provided (base64 omitted in prompt for safety). Keep face consistent.'
-    : '';
+  const messages = [
+    {
+      role: 'user',
+      content: [
+        {
+          type: 'image_url',
+          image_url: {
+            url: dataUrl
+          }
+        },
+        {
+          type: 'text',
+          text: prompt
+        }
+      ]
+    }
+  ];
 
-  const requestBody = {
-    contents: `${prompt}${photoHint}`,
-    ...(size ? { size } : {}),
-    response_format: responseFormat
-  };
-
-  const result = await callImagesWithFallback(requestBody, { timeout, maxRetries });
-  const imageUrl = extractImageFromImagesResponse(result.response);
+  const result = await callChatWithFallback(messages, options);
+  const imageUrl = extractImageFromResponse(result.response);
 
   if (result.isFallback) {
     console.log(`   ⚠️ 注意：使用了備用模型 (${result.modelUsed})`);
@@ -247,11 +277,11 @@ function getAIConfig() {
 }
 
 module.exports = {
+  callChatWithFallback,
   generateImage,
   generateImageFromPhoto,
+  extractImageFromResponse,
+  extractUrlFromText,
   getAIConfig,
-  delay,
-  // exports for debugging / reuse
-  extractImageFromImagesResponse,
-  extractUrlFromText
+  delay
 };
