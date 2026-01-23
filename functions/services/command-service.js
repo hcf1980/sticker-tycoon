@@ -22,16 +22,16 @@ const { validator } = require('../utils');
  */
 async function handleMyStickers(userId) {
   logger.info('處理我的貼圖命令', { userId });
-  
+
   const sets = await getUserStickerSets(userId);
-  
+
   if (sets.length === 0) {
     return {
       type: 'text',
       text: '📁 你還沒有創建任何貼圖組\n\n輸入「創建貼圖」開始創建你的第一組貼圖！',
     };
   }
-  
+
   // 生成貼圖列表 Flex Message（帶推薦好友資訊）
   const referralInfo = await getUserReferralInfo(userId);
   return generateStickerListFlexMessage(sets, referralInfo);
@@ -86,77 +86,77 @@ function handlePurchaseInfo() {
     },
   ];
 
-  const bubbles = plans.map(plan => {
+  const bubbles = plans.map((plan) => {
     const costPerSticker = (plan.price / plan.stickers).toFixed(1);
+
     return {
       type: 'bubble',
-      size: 'giga',
+      size: 'mega',
       header: {
         type: 'box',
         layout: 'vertical',
         backgroundColor: '#06C755',
-        paddingAll: 'xl',
+        paddingAll: 'lg',
         contents: [
-          {
-            type: 'box',
-            layout: 'horizontal',
-            contents: [
-              ...(plan.isPopular ? [{
-                type: 'text',
-                text: '🔥 最熱門',
-                color: '#FFFFFF',
-                size: 'sm',
-                weight: 'bold',
-                flex: 0,
-                margin: 'none',
-              }] : []),
-            ],
-          },
+          ...(plan.isPopular
+            ? [
+                {
+                  type: 'box',
+                  layout: 'horizontal',
+                  justifyContent: 'center',
+                  contents: [
+                    {
+                      type: 'text',
+                      text: '🔥 最熱門',
+                      color: '#FFFFFF',
+                      size: 'sm',
+                      weight: 'bold',
+                      flex: 0,
+                    },
+                  ],
+                },
+              ]
+            : []),
           {
             type: 'text',
             text: `NT$ ${plan.price}`,
             color: '#FFFFFF',
-            size: '3xl',
+            size: 'xxl',
             weight: 'bold',
             align: 'center',
-            margin: plan.isPopular ? 'md' : 'none',
+            margin: plan.isPopular ? 'sm' : 'none',
           },
         ],
       },
       body: {
         type: 'box',
         layout: 'vertical',
-        paddingAll: 'xl',
-        spacing: 'xl',
+        paddingAll: 'lg',
+        spacing: 'md',
         contents: [
           {
             type: 'box',
             layout: 'vertical',
             alignItems: 'center',
+            spacing: 'xs',
             contents: [
               {
                 type: 'text',
-                text: `${plan.stickers}`,
-                size: '5xl',
+                text: `${plan.stickers} 張`,
+                size: 'xxl',
                 weight: 'bold',
-                color: '#333333',
-              },
-              {
-                type: 'text',
-                text: '張',
-                size: 'xl',
-                color: '#666666',
-                margin: 'sm',
+                color: '#111827',
               },
             ],
           },
           {
             type: 'separator',
+            margin: 'md',
           },
           {
             type: 'box',
             layout: 'vertical',
-            spacing: 'md',
+            spacing: 'sm',
             contents: [
               {
                 type: 'box',
@@ -166,13 +166,13 @@ function handlePurchaseInfo() {
                   {
                     type: 'text',
                     text: '每張約',
-                    color: '#888888',
+                    color: '#6B7280',
                     size: 'sm',
                   },
                   {
                     type: 'text',
-                    text: `${costPerSticker}`,
-                    color: '#333333',
+                    text: `$${costPerSticker}`,
+                    color: '#111827',
                     size: 'sm',
                     weight: 'bold',
                   },
@@ -186,13 +186,13 @@ function handlePurchaseInfo() {
                   {
                     type: 'text',
                     text: '可製作約',
-                    color: '#888888',
+                    color: '#6B7280',
                     size: 'sm',
                   },
                   {
                     type: 'text',
                     text: `${plan.stickers} 張貼圖`,
-                    color: '#333333',
+                    color: '#111827',
                     size: 'sm',
                     weight: 'bold',
                   },
@@ -200,18 +200,12 @@ function handlePurchaseInfo() {
               },
             ],
           },
-        ],
-      },
-      footer: {
-        type: 'box',
-        layout: 'vertical',
-        paddingAll: 'lg',
-        contents: [
           {
             type: 'button',
             style: 'primary',
             color: '#06C755',
             height: 'sm',
+            margin: 'lg',
             action: {
               type: 'message',
               label: '結帳付款',
@@ -267,7 +261,7 @@ async function handleReferralInfo(userId) {
  */
 async function handleApplyReferralCode(userId, code) {
   logger.info('處理使用推薦碼命令', { userId, code });
-  
+
   // 驗證推薦碼格式
   const validation = validator.validate('referralCode', code);
   if (!validation.success) {
@@ -276,25 +270,25 @@ async function handleApplyReferralCode(userId, code) {
       text: `❌ ${validation.error}\n\n推薦碼格式：6 位大寫英數字\n例如：ABC123`,
     };
   }
-  
+
   try {
     const result = await applyReferralCode(userId, code);
-    
+
     if (result.success) {
       return {
         type: 'text',
         text:
           `🎉 推薦碼使用成功！\n\n` +
-              `✅ 您獲得 ${result.tokens} 張\n` +
-              `💰 目前餘額：${result.balance} 張\n\n` +
-              `感謝您的支持！`,
+          `✅ 您獲得 ${result.tokens} 張\n` +
+          `💰 目前餘額：${result.balance} 張\n\n` +
+          `感謝您的支持！`,
       };
     }
 
-      return {
-        type: 'text',
-        text: `❌ ${result.message}`,
-      };
+    return {
+      type: 'text',
+      text: `❌ ${result.message}`,
+    };
   } catch (error) {
     logger.error('使用推薦碼失敗', { userId, code, error: error.message });
     return {
@@ -309,26 +303,26 @@ async function handleApplyReferralCode(userId, code) {
  */
 async function handleViewStickerSet(userId, setId) {
   logger.info('處理查看貼圖組命令', { userId, setId });
-  
+
   const set = await getStickerSet(setId);
-  
+
   if (!set || set.user_id !== userId) {
     return {
       type: 'text',
       text: '❌ 找不到此貼圖組',
     };
   }
-  
+
   const stickers = await getStickerImages(setId);
-  
+
   return {
     type: 'text',
     text:
       `📦 貼圖組：${set.name}\n\n` +
-          `🎨 風格：${set.style}\n` +
-          `📊 數量：${stickers.length} 張\n` +
-          `📌 狀態：${set.status}\n\n` +
-          `輸入「下載貼圖:${setId}」下載打包`,
+      `🎨 風格：${set.style}\n` +
+      `📊 數量：${stickers.length} 張\n` +
+      `📌 狀態：${set.status}\n\n` +
+      `輸入「下載貼圖:${setId}」下載打包`,
   };
 }
 
@@ -337,18 +331,18 @@ async function handleViewStickerSet(userId, setId) {
  */
 async function handleDeleteStickerSet(userId, setId) {
   logger.info('處理刪除貼圖組命令', { userId, setId });
-  
+
   const set = await getStickerSet(setId);
-  
+
   if (!set || set.user_id !== userId) {
     return {
       type: 'text',
       text: '❌ 找不到此貼圖組',
     };
   }
-  
+
   await deleteStickerSet(setId);
-  
+
   return {
     type: 'text',
     text: `✅ 已刪除貼圖組「${set.name}」`,
