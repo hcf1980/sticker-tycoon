@@ -476,7 +476,16 @@ async function handleTextMessage(replyToken, userId, text) {
         },
       };
 
-      return getLineClient().replyMessage(replyToken, paymentFlex);
+      const qrImageUrl = 'https://sticker-tycoon.netlify.app/images/PayCode.png';
+
+      return getLineClient().replyMessage(replyToken, [
+        paymentFlex,
+        {
+          type: 'image',
+          originalContentUrl: qrImageUrl,
+          previewImageUrl: qrImageUrl,
+        },
+      ]);
     }
 
     if (text.startsWith('數量:')) {

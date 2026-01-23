@@ -214,7 +214,7 @@ function handlePurchaseInfo() {
             height: 'sm',
             action: {
               type: 'message',
-              label: '選擇此方案',
+              label: '結帳付款',
               text: `購買方案:${plan.price}`,
             },
           },
