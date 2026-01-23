@@ -1,0 +1,117 @@
+/* ============================================
+   SaaS Pricing Card Theme for Sticker Tycoon
+   ============================================ */
+
+:root {
+  --saas-bg: #0F172A; /* slate-900 */
+  --saas-card-bg: rgba(30, 41, 59, 0.5); /* slate-800/50 */
+  --saas-border: rgba(56, 189, 248, 0.2); /* sky-400/20 */
+  --saas-border-featured: rgba(34, 211, 238, 0.4); /* cyan-400/40 */
+  --saas-text-primary: #F8FAFC; /* slate-50 */
+  --saas-text-secondary: #94A3B8; /* slate-400 */
+  --saas-text-accent: #22D3EE; /* cyan-400 */
+  --saas-cta-bg: #0EA5E9; /* sky-500 */
+  --saas-cta-hover-bg: #0284C7; /* sky-600 */
+}
+
+.saas-pricing-section {
+  background-color: var(--saas-bg);
+  color: var(--saas-text-primary);
+}
+
+.saas-card {
+  background: var(--saas-card-bg);
+  border: 1px solid var(--saas-border);
+  border-radius: 1.5rem; /* 24px */
+  padding: 2rem; /* 32px */
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease-in-out;
+}
+
+.saas-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 100% 0, rgba(34, 211, 238, 0.05) 0%, transparent 30%);
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.saas-card:hover::before {
+  opacity: 1;
+}
+
+.saas-card.featured {
+  border-color: var(--saas-border-featured);
+  box-shadow: 0 10px 30px -10px rgba(34, 211, 238, 0.1);
+}
+
+.saas-badge {
+  position: absolute;
+  top: 1.5rem; /* 24px */
+  right: 1.5rem; /* 24px */
+  background: rgba(34, 211, 238, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(34, 211, 238, 0.2);
+  color: var(--saas-text-accent);
+  padding: 0.25rem 0.75rem; /* 4px 12px */
+  border-radius: 9999px;
+  font-size: 0.75rem; /* 12px */
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.saas-cta {
+  display: inline-block;
+  width: 100%;
+  padding: 0.75rem 1.5rem; /* 12px 24px */
+  background-color: var(--saas-cta-bg);
+  color: var(--saas-text-primary);
+  border-radius: 0.5rem; /* 8px */
+  text-align: center;
+  font-weight: 600;
+  transition: all 0.2s ease-in-out;
+  transform: translateZ(0); /* Promotes to its own layer for smoother animations */
+}
+
+.saas-cta:hover {
+  background-color: var(--saas-cta-hover-bg);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px -5px rgba(14, 165, 233, 0.4);
+}
+
+.saas-cta:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.saas-card.featured .saas-cta {
+  background-color: var(--saas-text-accent);
+  color: var(--saas-bg);
+}
+
+.saas-card.featured .saas-cta:hover {
+  background-color: #67E8F9; /* cyan-300 */
+  box-shadow: 0 4px 20px -5px rgba(34, 211, 238, 0.5);
+}
+
+.saas-feature-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem; /* 12px */
+}
+
+.saas-feature-list li svg {
+  flex-shrink: 0;
+  width: 1.25rem; /* 20px */
+  height: 1.25rem; /* 20px */
+  color: var(--saas-text-accent);
+}
