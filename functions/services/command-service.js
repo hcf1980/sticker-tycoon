@@ -73,17 +73,163 @@ async function handleTokenQuery(userId) {
 function handlePurchaseInfo() {
   logger.info('處理購買張數命令');
 
+  const plans = [
+    {
+      price: 300,
+      stickers: 140,
+      isPopular: false,
+    },
+    {
+      price: 500,
+      stickers: 260,
+      isPopular: true,
+    },
+  ];
+
+  const bubbles = plans.map(plan => {
+    const costPerSticker = (plan.price / plan.stickers).toFixed(1);
+    return {
+      type: 'bubble',
+      size: 'giga',
+      header: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#06C755',
+        paddingAll: 'xl',
+        contents: [
+          {
+            type: 'box',
+            layout: 'horizontal',
+            contents: [
+              ...(plan.isPopular ? [{
+                type: 'text',
+                text: '🔥 最熱門',
+                color: '#FFFFFF',
+                size: 'sm',
+                weight: 'bold',
+                flex: 0,
+                margin: 'none',
+              }] : []),
+            ],
+          },
+          {
+            type: 'text',
+            text: `NT$ ${plan.price}`,
+            color: '#FFFFFF',
+            size: '3xl',
+            weight: 'bold',
+            align: 'center',
+            margin: plan.isPopular ? 'md' : 'none',
+          },
+        ],
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'xl',
+        spacing: 'xl',
+        contents: [
+          {
+            type: 'box',
+            layout: 'vertical',
+            alignItems: 'center',
+            contents: [
+              {
+                type: 'text',
+                text: `${plan.stickers}`,
+                size: '5xl',
+                weight: 'bold',
+                color: '#333333',
+              },
+              {
+                type: 'text',
+                text: '張',
+                size: 'xl',
+                color: '#666666',
+                margin: 'sm',
+              },
+            ],
+          },
+          {
+            type: 'separator',
+          },
+          {
+            type: 'box',
+            layout: 'vertical',
+            spacing: 'md',
+            contents: [
+              {
+                type: 'box',
+                layout: 'horizontal',
+                justifyContent: 'space-between',
+                contents: [
+                  {
+                    type: 'text',
+                    text: '每張約',
+                    color: '#888888',
+                    size: 'sm',
+                  },
+                  {
+                    type: 'text',
+                    text: `${costPerSticker}`,
+                    color: '#333333',
+                    size: 'sm',
+                    weight: 'bold',
+                  },
+                ],
+              },
+              {
+                type: 'box',
+                layout: 'horizontal',
+                justifyContent: 'space-between',
+                contents: [
+                  {
+                    type: 'text',
+                    text: '可製作約',
+                    color: '#888888',
+                    size: 'sm',
+                  },
+                  {
+                    type: 'text',
+                    text: `${plan.stickers} 張貼圖`,
+                    color: '#333333',
+                    size: 'sm',
+                    weight: 'bold',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'lg',
+        contents: [
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#06C755',
+            height: 'sm',
+            action: {
+              type: 'message',
+              label: '選擇此方案',
+              text: `購買方案:${plan.price}`,
+            },
+          },
+        ],
+      },
+    };
+  });
+
   return {
-    type: 'text',
-    text:
-      '💳 張數儲值方案\n\n' +
-          '方案一：NT$ 300 → 70 張\n' +
-          '方案二：NT$ 500 → 130 張 ⭐推薦\n' +
-          '方案三：NT$ 1000 → 300 張\n\n' +
-          '💰 付款方式：\n' +
-          '請使用以下帳號轉帳後\n' +
-          '提供轉帳後五碼給管理員\n\n' +
-          '📞 聯絡管理員購買',
+    type: 'flex',
+    altText: '請選擇購買方案',
+    contents: {
+      type: 'carousel',
+      contents: bubbles,
+    },
   };
 }
 

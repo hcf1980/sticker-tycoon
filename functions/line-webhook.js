@@ -316,6 +316,169 @@ async function handleTextMessage(replyToken, userId, text) {
       return getLineClient().replyMessage(replyToken, message);
     }
 
+    // 購買方案（由「購買張數」Flex 按鈕觸發）
+    if (text.startsWith('購買方案:')) {
+      const priceText = text.replace('購買方案:', '').trim();
+      const price = Number(priceText);
+
+      const planConfigMap = {
+        300: { price: 300, tokens: 140 },
+        500: { price: 500, tokens: 260 },
+      };
+
+      const selectedPlan = planConfigMap[price];
+      if (!selectedPlan) {
+        return getLineClient().replyMessage(replyToken, {
+          type: 'text',
+          text: '⚠️ 找不到此方案，請重新輸入「購買張數」選擇一次。',
+        });
+      }
+
+      // 付款資訊（可改為環境變數 / DB 設定）
+      const bankName = '連線商業銀行';
+      const bankCode = '824';
+      const bankAccount = '111000196474';
+      const accountName = '梁勝喜';
+
+      const paymentFlex = {
+        type: 'flex',
+        altText: '付款方式（銀行轉帳）',
+        contents: {
+          type: 'bubble',
+          size: 'giga',
+          header: {
+            type: 'box',
+            layout: 'vertical',
+            backgroundColor: '#06C755',
+            paddingAll: 'xl',
+            contents: [
+              {
+                type: 'text',
+                text: '💳 付款方式',
+                size: 'xl',
+                weight: 'bold',
+                color: '#FFFFFF',
+                align: 'center',
+              },
+              {
+                type: 'text',
+                text: `你已選擇：NT$ ${selectedPlan.price}（${selectedPlan.tokens} 張）`,
+                size: 'sm',
+                color: '#FFFFFFE6',
+                align: 'center',
+                margin: 'md',
+                wrap: true,
+              },
+            ],
+          },
+          body: {
+            type: 'box',
+            layout: 'vertical',
+            paddingAll: 'xl',
+            spacing: 'lg',
+            contents: [
+              {
+                type: 'box',
+                layout: 'vertical',
+                backgroundColor: '#F3F4F6',
+                cornerRadius: 'lg',
+                paddingAll: 'lg',
+                spacing: 'sm',
+                contents: [
+                  { type: 'text', text: '🏦 銀行轉帳', weight: 'bold', size: 'md', color: '#111827' },
+                  {
+                    type: 'box',
+                    layout: 'baseline',
+                    contents: [
+                      { type: 'text', text: '銀行', size: 'sm', color: '#6B7280', flex: 2 },
+                      { type: 'text', text: `${bankName}（${bankCode}）`, size: 'sm', color: '#111827', flex: 5, wrap: true },
+                    ],
+                  },
+                  {
+                    type: 'box',
+                    layout: 'baseline',
+                    contents: [
+                      { type: 'text', text: '帳號', size: 'sm', color: '#6B7280', flex: 2 },
+                      { type: 'text', text: bankAccount, size: 'sm', color: '#111827', flex: 5, wrap: true },
+                    ],
+                  },
+                  {
+                    type: 'box',
+                    layout: 'baseline',
+                    contents: [
+                      { type: 'text', text: '戶名', size: 'sm', color: '#6B7280', flex: 2 },
+                      { type: 'text', text: accountName, size: 'sm', color: '#111827', flex: 5, wrap: true },
+                    ],
+                  },
+                ],
+              },
+              {
+                type: 'box',
+                layout: 'vertical',
+                backgroundColor: '#FFF7ED',
+                cornerRadius: 'lg',
+                paddingAll: 'lg',
+                spacing: 'sm',
+                contents: [
+                  { type: 'text', text: '📝 付款步驟', weight: 'bold', size: 'md', color: '#9A3412' },
+                  { type: 'text', text: '1. 依照上方資訊完成轉帳', size: 'sm', color: '#9A3412', wrap: true },
+                  { type: 'text', text: '2. 截圖轉帳明細', size: 'sm', color: '#9A3412', wrap: true },
+                  { type: 'text', text: '3. 將截圖傳送給我們', size: 'sm', color: '#9A3412', wrap: true },
+                  { type: 'text', text: '4. 客服確認後立即入帳', size: 'sm', color: '#9A3412', wrap: true },
+                ],
+              },
+              {
+                type: 'box',
+                layout: 'vertical',
+                backgroundColor: '#FEE2E2',
+                cornerRadius: 'lg',
+                paddingAll: 'lg',
+                contents: [
+                  {
+                    type: 'text',
+                    text: '⚡ 請在轉帳備註填寫你的 LINE 名稱，以加速對帳！',
+                    size: 'sm',
+                    weight: 'bold',
+                    color: '#991B1B',
+                    wrap: true,
+                  },
+                ],
+              },
+            ],
+          },
+          footer: {
+            type: 'box',
+            layout: 'vertical',
+            paddingAll: 'lg',
+            spacing: 'sm',
+            contents: [
+              {
+                type: 'button',
+                style: 'primary',
+                color: '#06C755',
+                height: 'sm',
+                action: { type: 'message', label: '我已完成轉帳', text: '我已轉帳' },
+              },
+              {
+                type: 'button',
+                style: 'secondary',
+                height: 'sm',
+                action: { type: 'message', label: '返回方案選擇', text: '購買張數' },
+              },
+              {
+                type: 'button',
+                style: 'secondary',
+                height: 'sm',
+                action: { type: 'message', label: '取消', text: '取消' },
+              },
+            ],
+          },
+        },
+      };
+
+      return getLineClient().replyMessage(replyToken, paymentFlex);
+    }
+
     if (text.startsWith('數量:')) {
       const count = parseInt(text.replace('數量:', ''));
       const message = await handleCountSelection(userId, count);
