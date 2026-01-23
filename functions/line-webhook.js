@@ -208,11 +208,6 @@ async function handleTextMessage(replyToken, userId, text) {
       return await handleForceRegenerateMorningGreeting(replyToken, userId);
     }
 
-    // 重新生成早安圖 (Admin/Debug command)
-    if (text === '重新生成早安圖') {
-      return await handleForceRegenerateMorningGreeting(replyToken, userId);
-    }
-
     // 張數查詢（保留舊關鍵字相容性）
     if (text === '張數' || text === '餘額' || text === '我的張數' || text === '查詢張數') {
       return await handleTokenQuery(replyToken, userId);
@@ -316,176 +311,18 @@ async function handleTextMessage(replyToken, userId, text) {
       return getLineClient().replyMessage(replyToken, message);
     }
 
-    // 購買方案（由「購買張數」Flex 按鈕觸發）
+    // 結帳（由購買張數方案的「結帳」按鈕觸發）
+    if (text.startsWith('結帳:')) {
+      const priceText = text.replace('結帳:', '').trim();
+      const price = Number(priceText);
+      return await handleCheckout(replyToken, price);
+    }
+
+    // 購買方案（舊版，保留向後兼容）
     if (text.startsWith('購買方案:')) {
       const priceText = text.replace('購買方案:', '').trim();
       const price = Number(priceText);
-
-      const planConfigMap = {
-        300: { price: 300, tokens: 140 },
-        500: { price: 500, tokens: 260 },
-      };
-
-      const selectedPlan = planConfigMap[price];
-      if (!selectedPlan) {
-        return getLineClient().replyMessage(replyToken, {
-          type: 'text',
-          text: '⚠️ 找不到此方案，請重新輸入「購買張數」選擇一次。',
-        });
-      }
-
-      // 付款資訊（可改為環境變數 / DB 設定）
-      const bankName = '連線商業銀行';
-      const bankCode = '824';
-      const bankAccount = '111000196474';
-      const accountName = '梁勝喜';
-
-      const paymentFlex = {
-        type: 'flex',
-        altText: '付款方式（銀行轉帳）',
-        contents: {
-          type: 'bubble',
-          size: 'giga',
-          header: {
-            type: 'box',
-            layout: 'vertical',
-            backgroundColor: '#06C755',
-            paddingAll: 'xl',
-            contents: [
-              {
-                type: 'text',
-                text: '💳 付款方式',
-                size: 'xl',
-                weight: 'bold',
-                color: '#FFFFFF',
-                align: 'center',
-              },
-              {
-                type: 'text',
-                text: `你已選擇：NT$ ${selectedPlan.price}（${selectedPlan.tokens} 張）`,
-                size: 'sm',
-                color: '#FFFFFFE6',
-                align: 'center',
-                margin: 'md',
-                wrap: true,
-              },
-            ],
-          },
-          body: {
-            type: 'box',
-            layout: 'vertical',
-            paddingAll: 'xl',
-            spacing: 'lg',
-            contents: [
-              {
-                type: 'box',
-                layout: 'vertical',
-                backgroundColor: '#F3F4F6',
-                cornerRadius: 'lg',
-                paddingAll: 'lg',
-                spacing: 'sm',
-                contents: [
-                  { type: 'text', text: '🏦 銀行轉帳', weight: 'bold', size: 'md', color: '#111827' },
-                  {
-                    type: 'box',
-                    layout: 'baseline',
-                    contents: [
-                      { type: 'text', text: '銀行', size: 'sm', color: '#6B7280', flex: 2 },
-                      { type: 'text', text: `${bankName}（${bankCode}）`, size: 'sm', color: '#111827', flex: 5, wrap: true },
-                    ],
-                  },
-                  {
-                    type: 'box',
-                    layout: 'baseline',
-                    contents: [
-                      { type: 'text', text: '帳號', size: 'sm', color: '#6B7280', flex: 2 },
-                      { type: 'text', text: bankAccount, size: 'sm', color: '#111827', flex: 5, wrap: true },
-                    ],
-                  },
-                  {
-                    type: 'box',
-                    layout: 'baseline',
-                    contents: [
-                      { type: 'text', text: '戶名', size: 'sm', color: '#6B7280', flex: 2 },
-                      { type: 'text', text: accountName, size: 'sm', color: '#111827', flex: 5, wrap: true },
-                    ],
-                  },
-                ],
-              },
-              {
-                type: 'box',
-                layout: 'vertical',
-                backgroundColor: '#FFF7ED',
-                cornerRadius: 'lg',
-                paddingAll: 'lg',
-                spacing: 'sm',
-                contents: [
-                  { type: 'text', text: '📝 付款步驟', weight: 'bold', size: 'md', color: '#9A3412' },
-                  { type: 'text', text: '1. 依照上方資訊完成轉帳', size: 'sm', color: '#9A3412', wrap: true },
-                  { type: 'text', text: '2. 截圖轉帳明細', size: 'sm', color: '#9A3412', wrap: true },
-                  { type: 'text', text: '3. 將截圖傳送給我們', size: 'sm', color: '#9A3412', wrap: true },
-                  { type: 'text', text: '4. 客服確認後立即入帳', size: 'sm', color: '#9A3412', wrap: true },
-                ],
-              },
-              {
-                type: 'box',
-                layout: 'vertical',
-                backgroundColor: '#FEE2E2',
-                cornerRadius: 'lg',
-                paddingAll: 'lg',
-                contents: [
-                  {
-                    type: 'text',
-                    text: '⚡ 請在轉帳備註填寫你的 LINE 名稱，以加速對帳！',
-                    size: 'sm',
-                    weight: 'bold',
-                    color: '#991B1B',
-                    wrap: true,
-                  },
-                ],
-              },
-            ],
-          },
-          footer: {
-            type: 'box',
-            layout: 'vertical',
-            paddingAll: 'lg',
-            spacing: 'sm',
-            contents: [
-              {
-                type: 'button',
-                style: 'primary',
-                color: '#06C755',
-                height: 'sm',
-                action: { type: 'message', label: '我已完成轉帳', text: '我已轉帳' },
-              },
-              {
-                type: 'button',
-                style: 'secondary',
-                height: 'sm',
-                action: { type: 'message', label: '返回方案選擇', text: '購買張數' },
-              },
-              {
-                type: 'button',
-                style: 'secondary',
-                height: 'sm',
-                action: { type: 'message', label: '取消', text: '取消' },
-              },
-            ],
-          },
-        },
-      };
-
-      const qrImageUrl = 'https://sticker-tycoon.netlify.app/images/PayCode.png';
-
-      return getLineClient().replyMessage(replyToken, [
-        paymentFlex,
-        {
-          type: 'image',
-          originalContentUrl: qrImageUrl,
-          previewImageUrl: qrImageUrl,
-        },
-      ]);
+      return await handleCheckout(replyToken, price);
     }
 
     if (text.startsWith('數量:')) {
@@ -3174,22 +3011,24 @@ async function handleTokenQuery(replyToken, userId) {
 }
 
 /**
- * 處理購買張數資訊 - 美化版 Carousel
+ * 處理購買張數資訊 - 美化版 Carousel with 結帳按鈕
  */
 async function handlePurchaseInfo(replyToken) {
   // 方案卡片生成函數
   const createPlanBubble = (price, tokens, bonus, isPopular = false) => {
+    const headerColor = isPopular ? '#06C755' : '#00B900';
     const perToken = (price / tokens).toFixed(1);
+    const perTokenRounded = perToken.endsWith('.0') ? perToken.slice(0, -2) : perToken;
     return {
       type: 'bubble',
       size: 'kilo',
       header: {
         type: 'box',
         layout: 'vertical',
-        backgroundColor: isPopular ? '#FF6B6B' : '#4A90D9',
+        backgroundColor: headerColor,
         paddingAll: 'lg',
         contents: [
-          ...(isPopular ? [{ type: 'text', text: '🔥 最熱門', size: 'xs', color: '#FFEEEE', align: 'center' }] : []),
+          ...(isPopular ? [{ type: 'text', text: '🔥 最熱門', size: 'xs', color: '#FFFFFF', align: 'center' }] : []),
           { type: 'text', text: `NT$ ${price}`, size: 'xxl', weight: 'bold', color: '#FFFFFF', align: 'center' }
         ]
       },
@@ -3216,7 +3055,8 @@ async function handlePurchaseInfo(replyToken) {
             margin: 'lg',
             contents: [
               { type: 'text', text: '每張約', size: 'sm', color: '#888888', flex: 1 },
-              { type: 'text', text: `$${perToken}`, size: 'sm', weight: 'bold', color: '#333333', align: 'end' }
+              { type: 'text', text: `${perTokenRounded}`, size: 'sm', weight: 'bold', color: '#333333', align: 'end' }
+
             ]
           },
           {
@@ -3226,6 +3066,23 @@ async function handlePurchaseInfo(replyToken) {
               { type: 'text', text: '可製作約', size: 'sm', color: '#888888', flex: 1 },
               { type: 'text', text: `${tokens} 張貼圖`, size: 'sm', weight: 'bold', color: '#333333', align: 'end' }
             ]
+          }
+        ]
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        paddingAll: 'md',
+        contents: [
+          {
+            type: 'button',
+            style: 'primary',
+            color: isPopular ? '#06C755' : '#00B900',
+            action: {
+              type: 'message',
+              label: '結帳付款',
+              text: `結帳:${price}`
+            }
           }
         ]
       }
@@ -3245,7 +3102,29 @@ async function handlePurchaseInfo(replyToken) {
     }
   };
 
-  // 付款資訊卡片
+  // 只返回方案輪播，讓用戶選擇並點擊結帳
+  return getLineClient().replyMessage(replyToken, planCarousel);
+}
+
+/**
+ * 處理結帳 - 顯示付款方式和說明
+ */
+async function handleCheckout(replyToken, price) {
+  // 驗證價格
+  const planConfigMap = {
+    300: { price: 300, tokens: 140 },
+    500: { price: 500, tokens: 260 },
+  };
+
+  const selectedPlan = planConfigMap[price];
+  if (!selectedPlan) {
+    return getLineClient().replyMessage(replyToken, {
+      type: 'text',
+      text: '⚠️ 找不到此方案，請重新輸入「購買張數」選擇一次。',
+    });
+  }
+
+  // 付款資訊
   const paymentInfo = {
     type: 'flex',
     altText: '💳 付款方式',
@@ -3255,11 +3134,27 @@ async function handlePurchaseInfo(replyToken) {
       header: {
         type: 'box',
         layout: 'vertical',
-        backgroundColor: '#2D9CDB',
-        paddingAll: 'lg',
+        backgroundColor: '#06C755',
+        paddingAll: 'xl',
         contents: [
-          { type: 'text', text: '💳 付款方式', size: 'lg', weight: 'bold', color: '#FFFFFF', align: 'center' }
-        ]
+          {
+            type: 'text',
+            text: '💳 付款方式',
+            size: 'xl',
+            weight: 'bold',
+            color: '#FFFFFF',
+            align: 'center',
+          },
+          {
+            type: 'text',
+            text: `你已選擇：NT$ ${selectedPlan.price}（${selectedPlan.tokens} 張）`,
+            size: 'sm',
+            color: '#FFFFFFE6',
+            align: 'center',
+            margin: 'md',
+            wrap: true,
+          },
+        ],
       },
       body: {
         type: 'box',
@@ -3315,7 +3210,7 @@ async function handlePurchaseInfo(replyToken) {
             contents: [
               { type: 'text', text: '📝 付款步驟', size: 'md', weight: 'bold', color: '#333333' },
               { type: 'separator', margin: 'md' },
-              { type: 'text', text: '1️⃣ 選擇方案並轉帳', size: 'sm', color: '#666666', margin: 'md' },
+              { type: 'text', text: '1️⃣ 轉帳到上方帳戶', size: 'sm', color: '#666666', margin: 'md' },
               { type: 'text', text: '2️⃣ 截圖轉帳明細', size: 'sm', color: '#666666', margin: 'sm' },
               { type: 'text', text: '3️⃣ 傳送截圖給我們', size: 'sm', color: '#666666', margin: 'sm' },
               { type: 'text', text: '4️⃣ 客服確認後立即入帳', size: 'sm', color: '#666666', margin: 'sm' }
@@ -3347,7 +3242,7 @@ async function handlePurchaseInfo(replyToken) {
     }
   };
 
-  // QR Code 圖片（添加 Quick Reply）
+  // QR Code 圖片
   const qrMessage = {
     type: 'image',
     originalContentUrl: 'https://sticker-tycoon.netlify.app/payment-qr.png',
@@ -3398,7 +3293,7 @@ async function handlePurchaseInfo(replyToken) {
     }
   };
 
-  return getLineClient().replyMessage(replyToken, [planCarousel, paymentInfo, qrMessage]);
+  return getLineClient().replyMessage(replyToken, [paymentInfo, qrMessage]);
 }
 
 /**

@@ -13,6 +13,7 @@
     "setup:richmenu": "node scripts/setup-rich-menu.js",
     "generate:richmenu-image": "node scripts/generate-rich-menu-image.js",
     "lint": "eslint functions/**/*.js",
+    "lint:all": "eslint functions/**/*.js public/**/*.js",
     "lint:fix": "eslint functions/**/*.js --fix",
     "format": "prettier --write \"functions/**/*.js\"",
     "format:check": "prettier --check \"functions/**/*.js\""

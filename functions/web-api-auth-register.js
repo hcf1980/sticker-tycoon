@@ -20,17 +20,26 @@ function getSupabaseAuthClient() {
 }
 
 exports.handler = async (event, context) => {
-  // 設定 CORS
+  const preflight = require('./utils/cors').handleCorsPreflight(event, {
+    allowMethods: 'POST, OPTIONS'
+  });
+  if (preflight) {
+    return preflight;
+  }
+
   const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    ...require('./utils/cors').buildCorsHeaders(event, {
+      allowMethods: 'POST, OPTIONS'
+    })
   };
 
-  // 處理 CORS preflight
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '' };
+  if (!headers['Access-Control-Allow-Origin']) {
+    return {
+      statusCode: 403,
+      headers,
+      body: JSON.stringify({ error: 'CORS blocked' })
+    };
   }
 
   if (event.httpMethod !== 'POST') {

@@ -18,15 +18,26 @@ function getSupabaseAuthClient() {
 }
 
 exports.handler = async (event, context) => {
+  const preflight = require('./utils/cors').handleCorsPreflight(event, {
+    allowMethods: 'GET, POST, OPTIONS'
+  });
+  if (preflight) {
+    return preflight;
+  }
+
   const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    ...require('./utils/cors').buildCorsHeaders(event, {
+      allowMethods: 'GET, POST, OPTIONS'
+    })
   };
 
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '' };
+  if (!headers['Access-Control-Allow-Origin']) {
+    return {
+      statusCode: 403,
+      headers,
+      body: JSON.stringify({ error: 'CORS blocked' })
+    };
   }
 
   try {

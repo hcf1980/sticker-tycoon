@@ -39,7 +39,17 @@ function getSupabaseAdminClient() {
 }
 
 function getOrigin(event) {
-  return event.headers.origin || event.headers.Origin || '*';
+  const origin = event.headers.origin || event.headers.Origin;
+  if (!origin) return null;
+
+  const allowed = new Set(
+    (process.env.WEB_ALLOWED_ORIGINS || 'http://localhost:8888,http://localhost:3000')
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean)
+  );
+
+  return allowed.has(origin) ? origin : null;
 }
 
 async function getLineProfile(lineAccessToken) {
@@ -68,16 +78,26 @@ function buildLinePassword(lineUserId) {
 }
 
 exports.handler = async (event) => {
-  const origin = getOrigin(event);
+  const preflight = require('./utils/cors').handleCorsPreflight(event, {
+    allowMethods: 'POST, OPTIONS'
+  });
+  if (preflight) {
+    return preflight;
+  }
+
   const headers = {
-    'Access-Control-Allow-Origin': origin,
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    ...require('./utils/cors').buildCorsHeaders(event, {
+      allowMethods: 'POST, OPTIONS'
+    })
   };
 
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '' };
+  if (!headers['Access-Control-Allow-Origin']) {
+    return {
+      statusCode: 403,
+      headers,
+      body: JSON.stringify({ error: 'CORS blocked' })
+    };
   }
 
   if (event.httpMethod !== 'POST') {

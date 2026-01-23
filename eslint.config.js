@@ -13,9 +13,9 @@ module.exports = [
     ],
   },
   {
-    files: ['functions/**/*.js', 'scripts/**/*.js'],
+    files: ['functions/**/*.js', 'scripts/**/*.js', 'public/**/*.js'],
     languageOptions: {
-      ecmaVersion: 2021,
+      ecmaVersion: 2023,
       sourceType: 'commonjs',
       globals: {
         ...globals.node,

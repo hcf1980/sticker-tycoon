@@ -40,13 +40,19 @@ function delay(ms) {
  */
 function extractUrlFromText(text) {
   const markdownMatch = text.match(/!\[.*?\]\((https?:\/\/[^\s\)]+)\)/);
-  if (markdownMatch) return markdownMatch[1];
+  if (markdownMatch) {
+    return markdownMatch[1];
+  }
 
   const urlMatch = text.match(/(https?:\/\/[^\s]+\.(png|jpg|jpeg|webp|gif))/i);
-  if (urlMatch) return urlMatch[1];
+  if (urlMatch) {
+    return urlMatch[1];
+  }
 
   const anyUrlMatch = text.match(/(https?:\/\/[^\s\)\]"']+)/);
-  if (anyUrlMatch) return anyUrlMatch[1];
+  if (anyUrlMatch) {
+    return anyUrlMatch[1];
+  }
 
   return null;
 }
@@ -75,11 +81,15 @@ function extractImageFromResponse(response) {
     for (const item of content) {
       if (item?.type === 'image_url' && item.image_url) {
         const url = item.image_url.url || item.image_url;
-        if (typeof url === 'string' && url.length > 0) return url;
+        if (typeof url === 'string' && url.length > 0) {
+          return url;
+        }
       }
 
       if (item?.type === 'image' && item.image) {
-        if (item.image.url) return item.image.url;
+        if (item.image.url) {
+          return item.image.url;
+        }
         if (item.image.data) {
           const mimeType = item.image.mime_type || 'image/png';
           return `data:${mimeType};base64,${item.image.data}`;
@@ -94,16 +104,24 @@ function extractImageFromResponse(response) {
 
       if (item?.type === 'text' && typeof item.text === 'string') {
         const url = extractUrlFromText(item.text);
-        if (url) return url;
+        if (url) {
+          return url;
+        }
       }
     }
   }
 
   if (typeof content === 'string') {
-    if (content.startsWith('data:image')) return content;
-    if (content.startsWith('http')) return content;
+    if (content.startsWith('data:image')) {
+      return content;
+    }
+    if (content.startsWith('http')) {
+      return content;
+    }
     const url = extractUrlFromText(content);
-    if (url) return url;
+    if (url) {
+      return url;
+    }
   }
 
   console.log('🔍 無法解析的 message.content:', JSON.stringify(content).substring(0, 800));
