@@ -3016,9 +3016,16 @@ async function handleTokenQuery(replyToken, userId) {
 async function handlePurchaseInfo(replyToken) {
   // 方案卡片生成函數
   const createPlanBubble = (price, tokens, bonus, isPopular = false) => {
-    const headerColor = isPopular ? '#06C755' : '#00B900';
+    const headerColor = isPopular ? '#06C755' : '#0A7A2E';
     const perToken = (price / tokens).toFixed(1);
     const perTokenRounded = perToken.endsWith('.0') ? perToken.slice(0, -2) : perToken;
+
+    const detailText = isPopular
+      ? '最划算：單張成本更低，適合長期大量生成'
+      : '入門首選：小額體驗，適合第一次先買來試做';
+
+    const headerTopLabel = isPopular ? '🔥 最熱門' : '入門方案';
+
     return {
       type: 'bubble',
       size: 'kilo',
@@ -3027,8 +3034,9 @@ async function handlePurchaseInfo(replyToken) {
         layout: 'vertical',
         backgroundColor: headerColor,
         paddingAll: 'lg',
+        spacing: 'sm',
         contents: [
-          ...(isPopular ? [{ type: 'text', text: '🔥 最熱門', size: 'xs', color: '#FFFFFF', align: 'center' }] : []),
+          { type: 'text', text: headerTopLabel, size: 'sm', color: '#FFFFFF', align: 'center', weight: 'bold' },
           { type: 'text', text: `NT$ ${price}`, size: 'xxl', weight: 'bold', color: '#FFFFFF', align: 'center' }
         ]
       },
@@ -3043,9 +3051,8 @@ async function handlePurchaseInfo(replyToken) {
             layout: 'vertical',
             alignItems: 'center',
             contents: [
-              { type: 'text', text: '🎫', size: '3xl' },
-              { type: 'text', text: `${tokens} 張`, size: 'xl', weight: 'bold', color: '#333333', margin: 'sm' },
-              ...(bonus > 0 ? [{ type: 'text', text: `含贈送 ${bonus} 張`, size: 'xs', color: '#FF6B6B', margin: 'xs' }] : [])
+              { type: 'text', text: `${tokens} 張`, size: 'xxl', weight: 'bold', color: '#111827' },
+              { type: 'text', text: detailText, size: 'xs', color: '#6B7280', wrap: true, align: 'center', margin: 'sm' }
             ]
           },
           { type: 'separator', margin: 'lg' },
@@ -3054,17 +3061,16 @@ async function handlePurchaseInfo(replyToken) {
             layout: 'horizontal',
             margin: 'lg',
             contents: [
-              { type: 'text', text: '每張約', size: 'sm', color: '#888888', flex: 1 },
-              { type: 'text', text: `${perTokenRounded}`, size: 'sm', weight: 'bold', color: '#333333', align: 'end' }
-
+              { type: 'text', text: '每張約', size: 'sm', color: '#6B7280', flex: 1 },
+              { type: 'text', text: `${perTokenRounded}`, size: 'sm', weight: 'bold', color: '#111827', align: 'end' }
             ]
           },
           {
             type: 'box',
             layout: 'horizontal',
             contents: [
-              { type: 'text', text: '可製作約', size: 'sm', color: '#888888', flex: 1 },
-              { type: 'text', text: `${tokens} 張貼圖`, size: 'sm', weight: 'bold', color: '#333333', align: 'end' }
+              { type: 'text', text: '可製作約', size: 'sm', color: '#6B7280', flex: 1 },
+              { type: 'text', text: `${tokens} 張貼圖`, size: 'sm', weight: 'bold', color: '#111827', align: 'end' }
             ]
           }
         ]
@@ -3077,7 +3083,7 @@ async function handlePurchaseInfo(replyToken) {
           {
             type: 'button',
             style: 'primary',
-            color: isPopular ? '#06C755' : '#00B900',
+            color: headerColor,
             action: {
               type: 'message',
               label: '結帳付款',
