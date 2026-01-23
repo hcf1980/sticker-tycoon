@@ -10,8 +10,8 @@
   --saas-text-primary: #F8FAFC; /* slate-50 */
   --saas-text-secondary: #94A3B8; /* slate-400 */
   --saas-text-accent: #22D3EE; /* cyan-400 */
-  --saas-cta-bg: #0EA5E9; /* sky-500 */
-  --saas-cta-hover-bg: #0284C7; /* sky-600 */
+  --saas-cta-bg: #22D3EE; /* cyan-400 */
+  --saas-cta-hover-bg: #67E8F9; /* cyan-300 */
 }
 
 .saas-pricing-section {
@@ -99,7 +99,7 @@
 }
 
 .saas-card.featured .saas-cta:hover {
-  background-color: #67E8F9; /* cyan-300 */
+  background-color: var(--saas-cta-hover-bg);
   box-shadow: 0 4px 20px -5px rgba(34, 211, 238, 0.5);
 }
 
@@ -113,5 +113,5 @@
   flex-shrink: 0;
   width: 1.25rem; /* 20px */
   height: 1.25rem; /* 20px */
-  color: var(--saas-text-accent);
+  color: rgba(148, 163, 184, 0.9);
 }
