@@ -7,7 +7,7 @@
  */
 
 const { z } = require('zod');
-const { callAIWithFallback } = require('./utils/ai-api-client');
+const { callChatWithFallback } = require('./utils/ai-api-client');
 
 // in-memory rate limit (best-effort; resets on cold start)
 const rateLimitState = new Map();
@@ -179,7 +179,7 @@ async function generatePost(event) {
     ctaStyle: body.ctaStyle
   });
 
-  const result = await callAIWithFallback(
+  const result = await callChatWithFallback(
     [
       {
         role: 'user',
