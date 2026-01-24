@@ -3079,6 +3079,7 @@ async function handlePurchaseInfo(replyToken) {
         type: 'box',
         layout: 'vertical',
         paddingAll: 'md',
+        spacing: 'sm',
         contents: [
           {
             type: 'button',
@@ -3088,6 +3089,15 @@ async function handlePurchaseInfo(replyToken) {
               type: 'message',
               label: '結帳付款',
               text: `結帳:${price}`
+            }
+          },
+          {
+            type: 'button',
+            style: 'secondary',
+            action: {
+              type: 'uri',
+              label: '退換貨/退款政策',
+              uri: `${process.env.URL || 'https://sticker-tycoon.netlify.app'}/token-guide.html#refund-policy`
             }
           }
         ]
