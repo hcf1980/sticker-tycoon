@@ -105,6 +105,145 @@ function generateWelcomeFlexMessage() {
   };
 }
 
+function generateMaintenanceNoticeFlexMessage() {
+  return {
+    type: 'flex',
+    altText: '🛠️ 創建貼圖維護中（4～24 小時）',
+    contents: {
+      type: 'bubble',
+      hero: {
+        type: 'box',
+        layout: 'vertical',
+        contents: [
+          {
+            type: 'text',
+            text: '⚠️ 系統維護中',
+            weight: 'bold',
+            size: 'xl',
+            color: '#FFFFFF'
+          },
+          {
+            type: 'text',
+            text: '「創建貼圖」暫時無法使用',
+            size: 'sm',
+            color: '#FFE4E6',
+            margin: 'sm',
+            wrap: true
+          }
+        ],
+        paddingAll: '16px',
+        backgroundColor: '#DC2626'
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'md',
+        contents: [
+          {
+            type: 'box',
+            layout: 'baseline',
+            contents: [
+              { type: 'text', text: '⏱️', size: 'sm' },
+              {
+                type: 'text',
+                text: '依問題嚴重性可能需要 4～24 小時處理，我們將儘快修復。',
+                size: 'sm',
+                color: '#111827',
+                wrap: true,
+                flex: 1
+              }
+            ]
+          },
+          {
+            type: 'box',
+            layout: 'baseline',
+            contents: [
+              { type: 'text', text: '🧑‍🔧', size: 'sm' },
+              {
+                type: 'text',
+                text: '維修團隊正在處理突發狀況，造成不便敬請見諒。',
+                size: 'sm',
+                color: '#111827',
+                wrap: true,
+                flex: 1
+              }
+            ]
+          },
+          {
+            type: 'separator',
+            margin: 'md'
+          },
+          {
+            type: 'box',
+            layout: 'vertical',
+            spacing: 'sm',
+            margin: 'md',
+            contents: [
+              {
+                type: 'text',
+                text: '✅ 仍可使用',
+                weight: 'bold',
+                size: 'sm',
+                color: '#16A34A'
+              },
+              {
+                type: 'text',
+                text: '我的貼圖 / 下載貼圖 / 查詢進度等功能不受影響，可繼續操作。',
+                size: 'sm',
+                color: '#374151',
+                wrap: true
+              }
+            ]
+          },
+          {
+            type: 'box',
+            layout: 'vertical',
+            margin: 'md',
+            spacing: 'sm',
+            contents: [
+              {
+                type: 'text',
+                text: '我們會在修復後恢復原有狀態，請勿擔心。',
+                size: 'xs',
+                color: '#6B7280',
+                wrap: true
+              }
+            ]
+          }
+        ],
+        paddingAll: '16px'
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'sm',
+        contents: [
+          {
+            type: 'button',
+            style: 'primary',
+            height: 'sm',
+            color: '#111827',
+            action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' }
+          },
+          {
+            type: 'button',
+            style: 'secondary',
+            height: 'sm',
+            action: { type: 'message', label: '📋 查詢進度', text: '查詢進度' }
+          },
+          {
+            type: 'button',
+            style: 'secondary',
+            height: 'sm',
+            action: { type: 'message', label: '📖 功能說明', text: '功能說明' }
+          }
+        ],
+        paddingAll: '16px'
+      }
+    }
+  };
+}
+
 function generateCouponRedeemPromptFlexMessage() {
   return {
     type: 'flex',
@@ -983,6 +1122,7 @@ async function generateExpressionSelectionFlexMessage() {
 }
 
 module.exports = {
+  generateMaintenanceNoticeFlexMessage,
   generateWelcomeFlexMessage,
   generateCouponRedeemPromptFlexMessage,
   generateCouponRedeemResultFlexMessage,
