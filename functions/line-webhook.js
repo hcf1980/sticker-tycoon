@@ -152,21 +152,8 @@ async function handleTextMessage(replyToken, userId, text) {
     if (text === '創建貼圖' || text === '開始' || text === '新增貼圖') {
       // 維護模式：阻擋「創建貼圖」流程，回覆維修公告
       if (String(process.env.MAINTENANCE_MODE || '').toLowerCase() === 'true') {
-        return getLineClient().replyMessage(replyToken, {
-          type: 'text',
-          text:
-            '🛠️ 目前「創建貼圖」功能維護中\n\n' +
-            '維修團隊正在處理突發狀況，造成不便敬請見諒。\n' +
-            '依問題嚴重性可能需要 4～24 小時，我們將儘快修復並恢復原有狀態。\n\n' +
-            '✅ 其他一般功能（例如：我的貼圖、下載貼圖等）不受影響，可繼續操作。',
-          quickReply: {
-            items: [
-              { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
-              { type: 'action', action: { type: 'message', label: '📋 查詢進度', text: '查詢進度' } },
-              { type: 'action', action: { type: 'message', label: '📸 功能說明', text: '功能說明' } }
-            ]
-          }
-        });
+        const { generateMaintenanceNoticeFlexMessage } = require('./sticker-flex-message');
+        return getLineClient().replyMessage(replyToken, generateMaintenanceNoticeFlexMessage());
       }
 
       const message = await handleStartCreate(userId);
