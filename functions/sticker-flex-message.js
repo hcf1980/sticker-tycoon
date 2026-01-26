@@ -6,6 +6,29 @@
 const { StickerStyles, DefaultExpressions, LineStickerSpecs } = require('./sticker-styles');
 const { getSupabaseClient } = require('./supabase-client');
 
+// ============================================
+// Flex Message UI Theme/Tokens
+// 目的：統一創建流程中所有 Flex Message 的視覺風格
+// ============================================
+const flexTheme = {
+  // 尺寸與間距
+  bubbleSize: 'mega', // 'giga' (1000px) 太寬，改為 'mega' (600px)
+  padding: '20px',
+  spacing: 'md',
+
+  // 顏色
+  heroBackgroundColor: '#FF6B6B', // 主題色 (粉紅色)
+  titleColor: '#FFFFFF',
+  subtitleColor: '#FFFFFFE6',
+  primaryButtonColor: '#FF6B6B', // 主按鈕顏色 (粉紅色)
+  secondaryButtonColor: '#EEEEEE', // 次要按鈕/取消按鈕背景色
+  secondaryButtonFontColor: '#333333', // 次要按鈕文字顏色
+
+  // 字級
+  titleSize: 'xl',
+  subtitleSize: 'sm'
+};
+
 /**
  * 歡迎訊息 Flex Message
  */
@@ -24,7 +47,7 @@ function generateWelcomeFlexMessage() {
             text: '🎨 貼圖大亨',
             weight: 'bold',
             size: 'xxl',
-            color: '#06C755',
+            color: flexTheme.primaryButtonColor,
             align: 'center'
           },
           {
@@ -36,7 +59,7 @@ function generateWelcomeFlexMessage() {
             margin: 'sm'
           }
         ],
-        paddingAll: '20px',
+        paddingAll: flexTheme.padding,
         backgroundColor: '#FFF5F5'
       },
       body: {
@@ -69,9 +92,9 @@ function generateWelcomeFlexMessage() {
             type: 'text',
             text: '📋 符合 LINE 官方規格',
             weight: 'bold',
-            size: 'sm',
+            size: flexTheme.subtitleSize,
             margin: 'xl',
-            color: '#06C755'
+            color: flexTheme.primaryButtonColor
           },
           {
             type: 'text',
@@ -80,7 +103,7 @@ function generateWelcomeFlexMessage() {
             color: '#888888'
           }
         ],
-        paddingAll: '20px'
+        paddingAll: flexTheme.padding
       },
       footer: {
         type: 'box',
@@ -96,10 +119,10 @@ function generateWelcomeFlexMessage() {
               label: '🎨 立即創建貼圖',
               text: '創建貼圖'
             },
-            color: '#06C755'
+            color: flexTheme.primaryButtonColor
           }
         ],
-        paddingAll: '20px'
+        paddingAll: flexTheme.padding
       }
     }
   };
@@ -125,7 +148,7 @@ function generateCouponRedeemPromptFlexMessage() {
           {
             type: 'text',
             text: '貼圖大亨活動碼兌換',
-            size: 'sm',
+            size: flexTheme.subtitleSize,
             color: '#E6FFE9',
             margin: 'xs'
           }
@@ -148,14 +171,14 @@ function generateCouponRedeemPromptFlexMessage() {
               {
             type: 'text',
             text: '優惠碼為限時活動，請留意期限。',
-            size: 'sm',
+            size: flexTheme.subtitleSize,
             color: '#374151',
             wrap: true
           },
           {
             type: 'text',
             text: '活動資訊將於官方管道公告，\n參與分享，掌握專屬優惠！',
-            size: 'sm',
+            size: flexTheme.subtitleSize,
             color: '#374151',
             wrap: true
           }
@@ -255,7 +278,7 @@ function generateCouponRedeemResultFlexMessage({
               label: '查詢張數',
               text: '張數'
     },
-            color: '#06C755'
+            color: flexTheme.primaryButtonColor
           },
           {
             type: 'button',
@@ -292,7 +315,7 @@ function generateTutorialPart1FlexMessage() {
             text: '📸 功能說明',
             weight: 'bold',
             size: 'xxl',
-            color: '#FFFFFF',
+            color: flexTheme.titleColor,
             align: 'center'
           },
           {
@@ -304,8 +327,8 @@ function generateTutorialPart1FlexMessage() {
             margin: 'sm'
           }
         ],
-        paddingAll: '20px',
-        backgroundColor: '#06C755'
+        paddingAll: flexTheme.padding,
+        backgroundColor: flexTheme.heroBackgroundColor
     },
       body: {
       type: 'box',
@@ -327,28 +350,28 @@ function generateTutorialPart1FlexMessage() {
             {
                 type: 'text',
                 text: '1️⃣ 輸入貼圖組名稱',
-                size: 'sm',
+                size: flexTheme.subtitleSize,
                 color: '#111827',
                 wrap: true
         },
         {
                 type: 'text',
                 text: '2️⃣ 上傳一張清晰大頭照',
-                size: 'sm',
+                size: flexTheme.subtitleSize,
                 color: '#111827',
                 wrap: true
               },
               {
             type: 'text',
                 text: '3️⃣ 選擇繪畫風格、人物大小、問侯話語',
-                size: 'sm',
+                size: flexTheme.subtitleSize,
                 color: '#111827',
                 wrap: true
               },
               {
                 type: 'text',
                 text: '4️⃣ AI 自動生成 8-40 張貼圖',
-                size: 'sm',
+                size: flexTheme.subtitleSize,
                 color: '#111827',
                 wrap: true
               }
@@ -362,9 +385,9 @@ function generateTutorialPart1FlexMessage() {
             type: 'text',
             text: '💡 小提示',
             weight: 'bold',
-            size: 'sm',
+            size: flexTheme.subtitleSize,
             margin: 'xl',
-            color: '#06C755'
+            color: flexTheme.primaryButtonColor
           },
           {
             type: 'text',
@@ -374,7 +397,7 @@ function generateTutorialPart1FlexMessage() {
             wrap: true
           }
       ],
-        paddingAll: '20px'
+        paddingAll: flexTheme.padding
     },
       footer: {
       type: 'box',
@@ -390,7 +413,7 @@ function generateTutorialPart1FlexMessage() {
               label: '下一頁：我的貼圖',
               text: '功能說明2'
             },
-            color: '#06C755'
+            color: flexTheme.primaryButtonColor
           },
           {
             type: 'button',
@@ -403,7 +426,7 @@ function generateTutorialPart1FlexMessage() {
             }
         }
         ],
-        paddingAll: '20px'
+        paddingAll: flexTheme.padding
       }
   }
   };
@@ -427,7 +450,7 @@ function generateTutorialPart2FlexMessage() {
             text: '📁 功能說明',
             weight: 'bold',
             size: 'xxl',
-            color: '#FFFFFF',
+            color: flexTheme.titleColor,
             align: 'center'
           },
           {
@@ -439,8 +462,8 @@ function generateTutorialPart2FlexMessage() {
             margin: 'sm'
           }
         ],
-        paddingAll: '20px',
-        backgroundColor: '#06C755'
+        paddingAll: flexTheme.padding,
+        backgroundColor: flexTheme.heroBackgroundColor
     },
     body: {
       type: 'box',
@@ -462,28 +485,28 @@ function generateTutorialPart2FlexMessage() {
               {
                 type: 'text',
                 text: '📥 查看已生成的貼圖組',
-                size: 'sm',
+                size: flexTheme.subtitleSize,
                 color: '#111827',
                 wrap: true
               },
               {
                 type: 'text',
                 text: '⬇️ 下載貼圖包（ZIP 格式）',
-                size: 'sm',
+                size: flexTheme.subtitleSize,
                 color: '#111827',
                 wrap: true
               },
               {
                 type: 'text',
                 text: '📤 一鍵上傳到 LINE Creators',
-                size: 'sm',
+                size: flexTheme.subtitleSize,
                 color: '#111827',
                 wrap: true
               },
               {
                 type: 'text',
                 text: '🗑️ 刪除不需要的貼圖組',
-                size: 'sm',
+                size: flexTheme.subtitleSize,
                 color: '#111827',
                 wrap: true
               }
@@ -497,9 +520,9 @@ function generateTutorialPart2FlexMessage() {
             type: 'text',
             text: '💡 小提示',
             weight: 'bold',
-            size: 'sm',
+            size: flexTheme.subtitleSize,
             margin: 'xl',
-            color: '#06C755'
+            color: flexTheme.primaryButtonColor
           },
           {
             type: 'text',
@@ -509,7 +532,7 @@ function generateTutorialPart2FlexMessage() {
             wrap: true
           }
         ],
-        paddingAll: '20px'
+        paddingAll: flexTheme.padding
       },
       footer: {
       type: 'box',
@@ -525,7 +548,7 @@ function generateTutorialPart2FlexMessage() {
               label: '下一頁：早安圖',
               text: '功能說明3'
             },
-            color: '#06C755'
+            color: flexTheme.primaryButtonColor
           },
           {
             type: 'button',
@@ -538,7 +561,7 @@ function generateTutorialPart2FlexMessage() {
             }
           }
         ],
-        paddingAll: '20px'
+        paddingAll: flexTheme.padding
       }
     }
   };
@@ -562,7 +585,7 @@ function generateTutorialPart3FlexMessage() {
             text: '🌅 功能說明',
             weight: 'bold',
             size: 'xxl',
-            color: '#FFFFFF',
+            color: flexTheme.titleColor,
             align: 'center'
           },
           {
@@ -574,8 +597,8 @@ function generateTutorialPart3FlexMessage() {
             margin: 'sm'
           }
         ],
-        paddingAll: '20px',
-        backgroundColor: '#06C755'
+        paddingAll: flexTheme.padding,
+        backgroundColor: flexTheme.heroBackgroundColor
     },
       body: {
       type: 'box',
@@ -597,28 +620,28 @@ function generateTutorialPart3FlexMessage() {
             {
                 type: 'text',
                 text: '📅 每日自動更新',
-                size: 'sm',
+                size: flexTheme.subtitleSize,
                 color: '#111827',
                 wrap: true
               },
               {
                 type: 'text',
                 text: '🎨 結合節氣與祝福語',
-                size: 'sm',
+                size: flexTheme.subtitleSize,
                 color: '#111827',
                 wrap: true
         },
         {
           type: 'text',
                 text: '💬 可分享給好友',
-                size: 'sm',
+                size: flexTheme.subtitleSize,
                 color: '#111827',
                 wrap: true
               },
               {
                 type: 'text',
                 text: '🆓 完全免費使用',
-                size: 'sm',
+                size: flexTheme.subtitleSize,
                 color: '#111827',
                 wrap: true
               }
@@ -632,9 +655,9 @@ function generateTutorialPart3FlexMessage() {
             type: 'text',
             text: '💡 小提示',
             weight: 'bold',
-            size: 'sm',
+            size: flexTheme.subtitleSize,
             margin: 'xl',
-            color: '#06C755'
+            color: flexTheme.primaryButtonColor
           },
           {
             type: 'text',
@@ -644,7 +667,7 @@ function generateTutorialPart3FlexMessage() {
             wrap: true
           }
       ],
-        paddingAll: '20px'
+        paddingAll: flexTheme.padding
     },
       footer: {
       type: 'box',
@@ -660,7 +683,7 @@ function generateTutorialPart3FlexMessage() {
               label: '🌅 查看早安圖',
               text: '早安圖'
             },
-            color: '#06C755'
+            color: flexTheme.primaryButtonColor
           },
           {
             type: 'button',
@@ -673,7 +696,7 @@ function generateTutorialPart3FlexMessage() {
             }
           }
         ],
-        paddingAll: '20px'
+        paddingAll: flexTheme.padding
       }
     }
   };
@@ -766,7 +789,7 @@ function generateStyleSelectionFlexMessage(styles) {
         label: `${styleEmoji} ${styleName}`,
         text: `繪畫風格:${styleId}`
       },
-      color: '#06C755' // 統一使用粉色
+      color: flexTheme.primaryButtonColor
     };
   });
 
@@ -775,7 +798,7 @@ function generateStyleSelectionFlexMessage(styles) {
     altText: '選擇繪畫風格',
     contents: {
       type: 'bubble',
-      size: 'giga',
+      size: flexTheme.bubbleSize,
       hero: {
         type: 'box',
         layout: 'vertical',
@@ -784,31 +807,31 @@ function generateStyleSelectionFlexMessage(styles) {
             type: 'text',
             text: '🎨 選擇繪畫風格',
             weight: 'bold',
-            size: 'xl',
-            color: '#FFFFFF',
+            size: flexTheme.titleSize,
+            color: flexTheme.titleColor,
             align: 'center'
           },
           {
             type: 'text',
             text: '請選擇一個你喜歡的繪畫風格',
-            size: 'sm',
-            color: '#FFFFFFE6',
+            size: flexTheme.subtitleSize,
+            color: flexTheme.subtitleColor,
             align: 'center',
             margin: 'sm'
           }
         ],
-        paddingAll: '20px',
-        backgroundColor: '#06C755' // 主題色改為粉色
+        paddingAll: flexTheme.padding,
+        backgroundColor: flexTheme.heroBackgroundColor
       },
       body: {
         type: 'box',
         layout: 'vertical',
-        spacing: 'md', // 增加按鈕間距
+        spacing: flexTheme.spacing,
         contents: styleButtons,
-        paddingTop: '20px',
-        paddingBottom: '20px',
-        paddingStart: '20px',
-        paddingEnd: '20px'
+        paddingTop: flexTheme.padding,
+        paddingBottom: flexTheme.padding,
+        paddingStart: flexTheme.padding,
+        paddingEnd: flexTheme.padding
       },
       footer: {
             type: 'box',
@@ -826,7 +849,7 @@ function generateStyleSelectionFlexMessage(styles) {
             }
           }
         ],
-        paddingAll: '20px'
+        paddingAll: flexTheme.padding
       }
     },
     quickReply: {
@@ -887,7 +910,7 @@ async function generateExpressionSelectionFlexMessage() {
       label: `${template.emoji} ${template.name}`,
       text: `問侯話語:${template.id}`
     },
-    color: '#06C755'
+    color: flexTheme.primaryButtonColor
   }));
 
   return {
@@ -895,7 +918,7 @@ async function generateExpressionSelectionFlexMessage() {
     altText: '選擇問侯話語',
     contents: {
       type: 'bubble',
-      size: 'giga',
+      size: flexTheme.bubbleSize,
       hero: {
         type: 'box',
         layout: 'vertical',
@@ -905,20 +928,20 @@ async function generateExpressionSelectionFlexMessage() {
             text: '💬 選擇問侯話語',
             weight: 'bold',
             size: 'xl',
-            color: '#FFFFFF',
+            color: flexTheme.titleColor,
             align: 'center'
           },
           {
             type: 'text',
             text: '選擇要生成的問侯話語分類',
-            size: 'sm',
-            color: '#FFFFFFE6',
+            size: flexTheme.subtitleSize,
+            color: flexTheme.subtitleColor,
             align: 'center',
             margin: 'sm'
           }
         ],
-        paddingAll: '20px',
-        backgroundColor: '#06C755'
+        paddingAll: flexTheme.padding,
+        backgroundColor: flexTheme.heroBackgroundColor
       },
       body: {
         type: 'box',
@@ -930,15 +953,15 @@ async function generateExpressionSelectionFlexMessage() {
               {
                 type: 'text',
                 text: '暫無可用問侯話語',
-                size: 'sm',
+                size: flexTheme.subtitleSize,
                 color: '#666666',
                 align: 'center'
               }
             ],
-        paddingTop: '20px',
-        paddingBottom: '20px',
-        paddingStart: '20px',
-        paddingEnd: '20px'
+        paddingTop: flexTheme.padding,
+        paddingBottom: flexTheme.padding,
+        paddingStart: flexTheme.padding,
+        paddingEnd: flexTheme.padding
       },
       footer: {
         type: 'box',
@@ -956,7 +979,7 @@ async function generateExpressionSelectionFlexMessage() {
             }
           }
         ],
-        paddingAll: '20px'
+        paddingAll: flexTheme.padding
       }
     },
     quickReply: {
