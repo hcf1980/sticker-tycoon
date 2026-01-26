@@ -402,6 +402,32 @@ function getStageDescription(stage) {
  * 處理創建流程中的輸入
  */
 async function handleCreationFlow(replyToken, userId, text, stage, state) {
+  // 🔒 方案 A：同一階段短時間連點/亂按防堵（不使用 push；每個 event 仍只 reply 一次）
+  // 目的：避免同一個 stage 的 handler 在短時間內被重複觸發，造成狀態覆寫或資料不一致
+  const STAGE_ACTION_COOLDOWN_MS = 1200;
+  if (!global.__creationStageCooldown) {
+    global.__creationStageCooldown = new Map();
+  }
+
+  const stageKey = `${userId}:${stage}`;
+  const now = Date.now();
+  const lastAt = global.__creationStageCooldown.get(stageKey) || 0;
+
+  if (now - lastAt < STAGE_ACTION_COOLDOWN_MS) {
+    return getLineClient().replyMessage(replyToken, {
+      type: 'text',
+      text: '⏳ 處理中請稍候，請不要連續點擊同一個選項',
+      quickReply: {
+        items: [
+          { type: 'action', action: { type: 'message', label: '❌ 取消', text: '取消' } },
+          { type: 'action', action: { type: 'message', label: '📋 查詢進度', text: '查詢進度' } }
+        ]
+      }
+    });
+  }
+
+  global.__creationStageCooldown.set(stageKey, now);
+
   let message;
 
   switch (stage) {
@@ -608,25 +634,63 @@ async function handleConfirmGeneration(replyToken, userId, state) {
     });
   }
 
-  // 🔒 防止重複點擊：檢查是否已有進行中的任務
-  const pendingTasks = await getUserPendingTasks(userId);
-  if (pendingTasks.length > 0) {
-    const task = pendingTasks[0];
+  // 🔒 防止「確認生成」連點造成並發競態（不使用 push；每個 event 仍只 reply 一次）
+  // 使用「記憶體鎖」做最佳努力保護：
+  // - 同一個 Function instance 內可阻止連點
+  // - 冷啟動/多 instance 下仍可能並發，所以下面仍保留 DB pendingTasks 檢查
+  const CONFIRM_LOCK_TTL_MS = 30_000;
+  if (!global.__confirmGenerationLock) {
+    global.__confirmGenerationLock = new Map();
+  }
+
+  const lock = global.__confirmGenerationLock.get(userId);
+  const now = Date.now();
+
+  if (lock && lock.expiresAtMs > now) {
+    // 注意：這裡仍然使用 replyToken 回覆一次，不會造成 reply token 重複使用
     return getLineClient().replyMessage(replyToken, {
       type: 'text',
-      text: '⚠️ 你已有任務正在生成中！\n\n' +
-            `📛 名稱：${task.sticker_set?.name || '處理中'}\n` +
-            `📊 進度：${task.progress || 0}%\n\n` +
-            '請等待目前的任務完成後再開始新任務。\n\n' +
-            '📋 輸入「查詢進度」查看生成進度',
+      text: '⏳ 已收到你的請求，正在處理中，請不要重複點擊「確認生成」\n\n' +
+            '📋 你可以輸入「查詢進度」查看狀態',
       quickReply: {
         items: [
           { type: 'action', action: { type: 'message', label: '📋 查詢進度', text: '查詢進度' } },
-          { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
-          { type: 'action', action: { type: 'message', label: '🎁 分享給好友', text: '分享給好友' } }
+          { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } }
         ]
       }
     });
+  }
+
+  // 上鎖（TTL 避免意外卡死）
+  global.__confirmGenerationLock.set(userId, { expiresAtMs: now + CONFIRM_LOCK_TTL_MS });
+
+  // 確保任何 return / throw 都會釋放鎖（避免卡住 30 秒）
+  try {
+    // DB 層面檢查：如果已經有任務在跑（pending/processing），直接阻擋新任務
+    const pendingTasks = await getUserPendingTasks(userId);
+    if (pendingTasks.length > 0) {
+      const task = pendingTasks[0];
+      return getLineClient().replyMessage(replyToken, {
+        type: 'text',
+        text: '⚠️ 你已有任務正在生成中！\n\n' +
+              `📛 名稱：${task.sticker_set?.name || '處理中'}\n` +
+              `📊 進度：${task.progress || 0}%\n\n` +
+              '請等待目前的任務完成後再開始新任務。\n\n' +
+              '📋 輸入「查詢進度」查看生成進度',
+        quickReply: {
+          items: [
+            { type: 'action', action: { type: 'message', label: '📋 查詢進度', text: '查詢進度' } },
+            { type: 'action', action: { type: 'message', label: '📁 我的貼圖', text: '我的貼圖' } },
+            { type: 'action', action: { type: 'message', label: '🎁 分享給好友', text: '分享給好友' } }
+          ]
+        }
+      });
+    }
+  } finally {
+    // 釋放鎖：
+    // - 允許使用者在真正「建立任務」後，透過 pendingTasks 檢查來阻止第二次提交
+    // - 避免因為任何早期 return/錯誤導致鎖卡住
+    global.__confirmGenerationLock.delete(userId);
   }
 
   // 計算需要的張數數量（生成幾張就扣幾張）
@@ -760,9 +824,29 @@ async function handleConfirmGeneration(replyToken, userId, state) {
     await resetConversationState(userId);
 
   } catch (error) {
+    // 重要：這裡「不能再 reply」，因為前面已經 reply 過（replyToken 一次性）
+    // 改成：
+    // 1) 如果是 DB 唯一性衝突（使用者同時已有 pending/processing），不要退款（本來也沒扣）
+    // 2) 其他錯誤：維持原本的加回張數邏輯（雖然目前流程是成功後才扣，但保留既有保護）
+    const message = (error && error.message) ? error.message : '';
+    const isUniquePendingConflict =
+      message.includes('generation_tasks_unique_pending_user') ||
+      message.includes('duplicate key') ||
+      message.includes('unique constraint');
+
     console.error('❌ 建立生成任務失敗:', error);
-    await addTokens(userId, tokenCost, 'refund', `任務建立失敗退款「${tempData.name}」`);
-    console.log(`💰 已退還 ${tokenCost} 張`);
+
+    if (isUniquePendingConflict) {
+      console.log('🔒 偵測到重複提交（DB 唯一性衝突），忽略本次建立。');
+      return;
+    }
+
+    try {
+      await addTokens(userId, tokenCost, 'refund', `任務建立失敗退款「${tempData.name}」`);
+      console.log(`💰 已退還 ${tokenCost} 張`);
+    } catch (refundError) {
+      console.error('❌ 退款失敗:', refundError.message);
+    }
   }
 
   return;

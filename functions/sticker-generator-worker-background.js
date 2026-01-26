@@ -70,7 +70,21 @@ async function createGenerationTask(userId, setData) {
         progress: 0
       }]);
 
-    if (taskError) throw taskError;
+    // DB 已加上 partial unique index：同一 user 同時只能有一筆 pending/processing
+    // 若使用者連點/多 instance 並發，這裡會觸發唯一性錯誤
+    if (taskError) {
+      // 避免留下孤兒 sticker_set
+      try {
+        await supabase
+          .from('sticker_sets')
+          .delete()
+          .eq('set_id', setId);
+      } catch (cleanupError) {
+        console.error('⚠️ 清理 sticker_set 失敗:', cleanupError.message);
+      }
+
+      throw taskError;
+    }
 
     console.log(`✅ 已建立生成任務：${taskId}, 貼圖組：${setId}`);
     return { taskId, setId };
