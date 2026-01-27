@@ -687,8 +687,12 @@
         }
 
         if (!res.ok || !data.success) {
+          const hint = rawText && String(rawText).trim().startsWith('<!DOCTYPE')
+            ? '（看起來 API 沒有命中 Function，回傳了 HTML。請確認 Netlify Functions 是否已部署，或本機是否用 netlify dev。）'
+            : '';
           const detail = data?.details ? `\n${JSON.stringify(data.details)}` : '';
-          throw new Error(`${data.error || 'create failed'} (HTTP ${res.status})${detail}`);
+          const raw = data?.raw ? `\nRAW: ${String(data.raw).slice(0, 500)}` : '';
+          throw new Error(`${data.error || 'create failed'} (HTTP ${res.status})${hint}${detail}${raw}`);
         }
 
         // 若使用者勾選未啟用，額外 set-active

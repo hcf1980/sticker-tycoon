@@ -123,7 +123,7 @@ async function persistCouponImageAndUpdateCampaign(supabase, campaignId, imageUr
 
   if (isDataUrl(imageUrl)) {
     const { buffer: baseImageBuffer } = parseDataUrl(imageUrl);
-    const qrCodePath = path.resolve(__dirname, '../../public/line-qr.png');
+    const qrCodePath = path.resolve(__dirname, '../public/line-qr.png');
     const qrCodeSize = 200;
     const margin = 24;
 
@@ -139,14 +139,14 @@ async function persistCouponImageAndUpdateCampaign(supabase, campaignId, imageUr
         .png()
         .toBuffer();
     } catch (e) {
-      console.error('❌ QR Code 合成失敗:', e.message);
-      // 如果合成失敗，仍然使用原圖，避免中斷流程
+      // QR 圖缺失或 sharp 失敗：降級為不合成 QR，避免整個建立流程掛掉（導致 502）
+      console.error('❌ QR Code 合成失敗（將使用原圖）:', e.message);
       finalImageBuffer = baseImageBuffer;
     }
   } else {
     console.warn('⚠️ 圖片非 data URL，無法合成 QR Code，將直接使用原圖');
-    // 如果是 URL，理論上也可以下載後再合成，但目前 AI Client 都回 data URL，暫不處理此分支
-    finalImageBuffer = Buffer.from([]); // or download and process
+    // 若 AI 回傳的是 URL，這裡不下載處理，直接回報錯誤更明確（避免空 buffer 造成 502）
+    throw new Error('AI 圖片回傳非 data URL，無法處理');
   }
 
   if (!finalImageBuffer || finalImageBuffer.length === 0) {
