@@ -3081,7 +3081,7 @@ async function handleTokenQuery(replyToken, userId) {
             backgroundColor: '#FFF3E0',
             cornerRadius: 'md',
             contents: [
-              { type: 'text', text: '🎁 分享給好友，雙方各得 10 張！', size: 'xs', color: '#E65100', align: 'center', weight: 'bold' },
+              { type: 'text', text: '🎁 分享給好友，雙方各得 30 張！', size: 'xs', color: '#E65100', align: 'center', weight: 'bold' },
               { type: 'text', text: `還可分享 ${3 - referralInfo.referralCount} 位好友`, size: 'xxs', color: '#FF8A00', align: 'center', margin: 'xs' }
             ]
           }] : [])
