@@ -49,10 +49,10 @@
 [functions."analyze-style-image"]
   timeout = 26
 
-# 排程生成早安圖（每日凌晨 2:00 台灣時間 = UTC 18:00）
+# 排程生成早安圖（每日早上 5:00 台灣時間）
 # 使用 Background Function 避免 timeout（最長 15 分鐘）
 [functions."scheduled-morning-greeting-background"]
-  schedule = "0 18 * * *"
+  schedule = "0 21 * * *"
 
 # Web API 函數
 [functions."web-api-auth-register"]
