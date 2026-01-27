@@ -745,7 +745,7 @@ async function handleConfirmGeneration(replyToken, userId, state) {
 
   // 如果未達推薦上限，加入推薦碼提醒
   if (showReferralReminder && referralInfo.referralCode) {
-    messageText += `\n\n🎁 分享推薦碼「${referralInfo.referralCode}」給好友，雙方各得 10 張！`;
+    messageText += `\n\n🎁 分享推薦碼「${referralInfo.referralCode}」給好友，雙方各得 30 張！`;
   }
 
   // 建立 QuickReply 按鈕
@@ -3626,7 +3626,7 @@ async function handleReferralInfo(replyToken, userId) {
     // 縮短分享文字（避免 URI 過長導致 400 錯誤）
     const shareText = `🎨 推薦貼圖製作工具！
 AI 幫你做專屬 LINE 貼圖 ✨
-🎁 新用戶 40 張+推薦碼「${referralCode}」再送 10！
+🎁 新用戶 40 張+推薦碼「${referralCode}」再送 30！
 👉 https://line.me/R/ti/p/@sticker-tycoon
 加入後輸入「輸入推薦碼 ${referralCode}」`;
 
@@ -3706,7 +3706,7 @@ async function handleApplyReferralCode(replyToken, userId, code) {
               ]
             },
             { type: 'text', text: `感謝 ${result.referrerName} 的推薦！`, size: 'sm', color: '#666666', align: 'center', margin: 'lg' },
-            { type: 'text', text: '對方也獲得了 10 張獎勵 🎁', size: 'xs', color: '#999999', align: 'center', margin: 'sm' }
+            { type: 'text', text: '對方也獲得了 30 張獎勵 🎁', size: 'xs', color: '#999999', align: 'center', margin: 'sm' }
           ]
         },
         footer: {

@@ -1101,7 +1101,7 @@ async function applyReferralCode(refereeUserId, referralCode) {
     }
 
     // 6. 開始發放獎勵
-    const REFERRAL_TOKENS = 10;
+    const REFERRAL_TOKENS = 30;
 
     // 6.1 更新被推薦者（使用 addTokens 統一處理，含 token_ledger）
     await addTokens(
