@@ -49,6 +49,13 @@ Layout requirements (must be big, clear, highly readable, no misspelling):
 - Validity: ${activateStartAt} ~ ${activateEndAt}
 - Brand slogan: ${safeSlogan}
 
+QR placeholder (IMPORTANT):
+- Reserve a fixed WHITE square placeholder for a QR code at the BOTTOM-RIGHT corner.
+- Placeholder must be a perfect square with clear margin from edges.
+- The placeholder must be EMPTY/BLANK (no pattern, no text) with a thin LINE-green border.
+- Target size: 240x240 px in a 1024x768 canvas.
+- Keep the bottom-right area clean and uncluttered; do not place any other elements inside that square.
+
 Other constraints:
 - no watermark
 - no characters, no faces
