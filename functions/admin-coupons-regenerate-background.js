@@ -56,6 +56,10 @@ QR placeholder (IMPORTANT):
 - Target size: 240x240 px in a 1024x768 canvas.
 - Keep the bottom-right area clean and uncluttered; do not place any other elements inside that square.
 
+STRICT prohibition:
+- Do NOT draw any QR code / barcode / matrix code patterns anywhere else on the poster.
+- Do NOT use any QR-like square pixel patterns as decoration.
+
 Other constraints:
 - no watermark
 - no characters, no faces
@@ -132,23 +136,111 @@ async function imageUrlToBuffer(imageUrl) {
 }
 
 async function getQrBufferFromPublicAsset(host, proto = 'https') {
-  // 直接從 public 資源拿 QR，避免 functions bundle 讀不到 public 檔案
   const url = `${proto}://${host}/line-qr.png`;
   return await downloadToBuffer(url);
 }
 
+async function findQrPlaceholderRect(posterBuffer) {
+  // 專注搜尋右下角區域，尋找 240x240 的「高白色比例」方塊
+  const candidateSize = 240;
+  const searchRegion = {
+    left: 1024 - 420,
+    top: 768 - 420,
+    width: 420,
+    height: 420
+  };
+
+  const { data, info } = await sharp(posterBuffer)
+    .extract(searchRegion)
+    .greyscale()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+
+  const regionW = info.width;
+  const regionH = info.height;
+
+  const step = 8; // 掃描步長，速度與精準度折衷
+
+  let best = null;
+
+  function scoreWindow(x0, y0) {
+    let white = 0;
+    let total = 0;
+
+    // 取樣而非全掃，提升效能
+    for (let y = y0; y < y0 + candidateSize; y += 6) {
+      for (let x = x0; x < x0 + candidateSize; x += 6) {
+        const idx = y * regionW + x;
+        const v = data[idx];
+        total += 1;
+        if (v >= 245) white += 1;
+      }
+    }
+
+    const ratio = total ? white / total : 0;
+    return ratio;
+  }
+
+  for (let y = 0; y <= regionH - candidateSize; y += step) {
+    for (let x = 0; x <= regionW - candidateSize; x += step) {
+      const ratio = scoreWindow(x, y);
+      if (!best || ratio > best.ratio) {
+        best = {
+          ratio,
+          x: searchRegion.left + x,
+          y: searchRegion.top + y,
+          size: candidateSize
+        };
+      }
+    }
+  }
+
+  // 門檻：白色比例要夠高才算是 placeholder
+  if (!best || best.ratio < 0.82) return null;
+
+  return best;
+}
+
 async function overlayQrOnPoster({ posterBuffer, qrBuffer }) {
-  const qrSize = 200;
-  const margin = 24;
+  const placeholderSize = 240;
+  const qrSize = 190;
+  const padding = 12;
 
   try {
-    const resizedQr = await sharp(qrBuffer).resize(qrSize, qrSize).toBuffer();
+    const rect = await findQrPlaceholderRect(posterBuffer);
+
+    // fallback：若找不到 placeholder，就用右下角固定位置
+    const leftBase = rect ? rect.x : 1024 - placeholderSize - 24;
+    const topBase = rect ? rect.y : 768 - placeholderSize - 24;
+
+    // 在 placeholder 內置中
+    const left = Math.round(leftBase + (placeholderSize - (qrSize + padding * 2)) / 2);
+    const top = Math.round(topBase + (placeholderSize - (qrSize + padding * 2)) / 2);
+
+    const resizedQr = await sharp(qrBuffer)
+      .resize(qrSize, qrSize)
+      .png()
+      .toBuffer();
+
+    // 白底 padding（避免框線或背景干擾）
+    const qrWithBg = await sharp({
+      create: {
+        width: qrSize + padding * 2,
+        height: qrSize + padding * 2,
+        channels: 4,
+        background: { r: 255, g: 255, b: 255, alpha: 1 }
+      }
+    })
+      .composite([{ input: resizedQr, top: padding, left: padding }])
+      .png()
+      .toBuffer();
+
     return await sharp(posterBuffer)
       .composite([
         {
-          input: resizedQr,
-          top: 768 - qrSize - margin,
-          left: 1024 - qrSize - margin
+          input: qrWithBg,
+          top,
+          left
         }
       ])
       .png()
