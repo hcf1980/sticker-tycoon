@@ -151,39 +151,6 @@ async function persistCouponImageAndUpdateCampaign(supabase, campaignId, imageUr
   return updated;
 }
 
-  const bucket = 'coupons';
-  const filePath = `campaigns/${campaignId}.png`;
-
-  try {
-    await supabase.storage.createBucket(bucket, { public: true });
-  } catch (_) {
-    // bucket already exists
-  }
-
-  const { error: uploadError } = await supabase.storage
-    .from(bucket)
-    .upload(filePath, finalImageBuffer, {
-      contentType: 'image/png',
-      upsert: true
-    });
-
-  if (uploadError) throw uploadError;
-
-  const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(filePath);
-  const publicUrl = urlData.publicUrl;
-
-  const { data: updated, error: updateError } = await supabase
-    .from('coupon_campaigns')
-    .update({ image_url: publicUrl, updated_at: new Date().toISOString() })
-    .eq('id', campaignId)
-    .select('*')
-    .single();
-
-  if (updateError) throw updateError;
-  return updated;
-}
-
-
 async function createCampaign(event) {
   requireAdmin(event);
 
