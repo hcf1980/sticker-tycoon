@@ -10,7 +10,6 @@
 const { z } = require('zod');
 const { getSupabaseClient } = require('./supabase-client');
 const { generateImage } = require('./utils/ai-api-client');
-const sharp = require('sharp');
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
@@ -48,17 +47,6 @@ Layout requirements (must be big, clear, highly readable, no misspelling):
 - Redeem code block: ${redeemCode} (monospace-like, very readable)
 - Validity: ${activateStartAt} ~ ${activateEndAt}
 - Brand slogan: ${safeSlogan}
-
-QR placeholder (IMPORTANT):
-- Reserve a fixed WHITE square placeholder for a QR code at the BOTTOM-RIGHT corner.
-- Placeholder must be a perfect square with clear margin from edges.
-- The placeholder must be EMPTY/BLANK (no pattern, no text) with a thin LINE-green border.
-- Target size: 240x240 px in a 1024x768 canvas.
-- Keep the bottom-right area clean and uncluttered; do not place any other elements inside that square.
-
-STRICT prohibition:
-- Do NOT draw any QR code / barcode / matrix code patterns anywhere else on the poster.
-- Do NOT use any QR-like square pixel patterns as decoration.
 
 Other constraints:
 - no watermark
@@ -135,134 +123,10 @@ async function imageUrlToBuffer(imageUrl) {
   throw new Error('AI 圖片回傳非 data URL/HTTP URL，無法處理');
 }
 
-async function getQrBufferFromPublicAsset(host, proto = 'https') {
-  const url = `${proto}://${host}/line-qr.png`;
-  return await downloadToBuffer(url);
-}
-
-async function findQrPlaceholderRect(posterBuffer) {
-  // 專注搜尋右下角區域，尋找 240x240 的「高白色比例」方塊
-  const candidateSize = 240;
-  const searchRegion = {
-    left: 1024 - 420,
-    top: 768 - 420,
-    width: 420,
-    height: 420
-  };
-
-  const { data, info } = await sharp(posterBuffer)
-    .extract(searchRegion)
-    .greyscale()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
-
-  const regionW = info.width;
-  const regionH = info.height;
-
-  const step = 8; // 掃描步長，速度與精準度折衷
-
-  let best = null;
-
-  function scoreWindow(x0, y0) {
-    let white = 0;
-    let total = 0;
-
-    // 取樣而非全掃，提升效能
-    for (let y = y0; y < y0 + candidateSize; y += 6) {
-      for (let x = x0; x < x0 + candidateSize; x += 6) {
-        const idx = y * regionW + x;
-        const v = data[idx];
-        total += 1;
-        if (v >= 245) white += 1;
-      }
-    }
-
-    const ratio = total ? white / total : 0;
-    return ratio;
-  }
-
-  for (let y = 0; y <= regionH - candidateSize; y += step) {
-    for (let x = 0; x <= regionW - candidateSize; x += step) {
-      const ratio = scoreWindow(x, y);
-      if (!best || ratio > best.ratio) {
-        best = {
-          ratio,
-          x: searchRegion.left + x,
-          y: searchRegion.top + y,
-          size: candidateSize
-        };
-      }
-    }
-  }
-
-  // 門檻：白色比例要夠高才算是 placeholder
-  if (!best || best.ratio < 0.82) return null;
-
-  return best;
-}
-
-async function overlayQrOnPoster({ posterBuffer, qrBuffer }) {
-  const placeholderSize = 240;
-  const qrSize = 190;
-  const padding = 12;
-
-  try {
-    const rect = await findQrPlaceholderRect(posterBuffer);
-
-    // fallback：若找不到 placeholder，就用右下角固定位置
-    const leftBase = rect ? rect.x : 1024 - placeholderSize - 24;
-    const topBase = rect ? rect.y : 768 - placeholderSize - 24;
-
-    // 在 placeholder 內置中
-    const left = Math.round(leftBase + (placeholderSize - (qrSize + padding * 2)) / 2);
-    const top = Math.round(topBase + (placeholderSize - (qrSize + padding * 2)) / 2);
-
-    const resizedQr = await sharp(qrBuffer)
-      .resize(qrSize, qrSize)
-      .png()
-      .toBuffer();
-
-    // 白底 padding（避免框線或背景干擾）
-    const qrWithBg = await sharp({
-      create: {
-        width: qrSize + padding * 2,
-        height: qrSize + padding * 2,
-        channels: 4,
-        background: { r: 255, g: 255, b: 255, alpha: 1 }
-      }
-    })
-      .composite([{ input: resizedQr, top: padding, left: padding }])
-      .png()
-      .toBuffer();
-
-    return await sharp(posterBuffer)
-      .composite([
-        {
-          input: qrWithBg,
-          top,
-          left
-        }
-      ])
-      .png()
-      .toBuffer();
-  } catch (e) {
-    console.error('❌ QR Code 合成失敗（將使用原圖）:', e.message);
-    return posterBuffer;
-  }
-}
-
-async function persistCouponImageAndUpdateCampaign({ supabase, campaignId, imageUrl, host, proto }) {
-  const posterBuffer = await imageUrlToBuffer(imageUrl);
-  if (!posterBuffer || posterBuffer.length === 0) {
+async function persistCouponImageAndUpdateCampaign({ supabase, campaignId, imageUrl }) {
+  const buffer = await imageUrlToBuffer(imageUrl);
+  if (!buffer || buffer.length === 0) {
     throw new Error('無法取得圖片 buffer');
-  }
-
-  let finalBuffer = posterBuffer;
-  try {
-    const qrBuffer = await getQrBufferFromPublicAsset(host, proto);
-    finalBuffer = await overlayQrOnPoster({ posterBuffer, qrBuffer });
-  } catch (e) {
-    console.error('❌ 取得/合成 QR 失敗（將使用原圖）:', e.message);
   }
 
   const bucket = 'coupons';
@@ -276,7 +140,7 @@ async function persistCouponImageAndUpdateCampaign({ supabase, campaignId, image
 
   const { error: uploadError } = await supabase.storage
     .from(bucket)
-    .upload(filePath, finalBuffer, {
+    .upload(filePath, buffer, {
       contentType: 'image/png',
       upsert: true
     });
@@ -304,9 +168,6 @@ exports.handler = async function handler(event) {
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 204, headers, body: '' };
   }
-
-  const host = event.headers?.host || event.headers?.Host;
-  const proto = 'https';
 
   try {
     const schema = z.object({
@@ -345,9 +206,7 @@ exports.handler = async function handler(event) {
     const updated = await persistCouponImageAndUpdateCampaign({
       supabase,
       campaignId: campaign.id,
-      imageUrl,
-      host,
-      proto
+      imageUrl
     });
 
     return json(200, { success: true, campaign: updated });
