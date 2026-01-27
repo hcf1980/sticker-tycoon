@@ -33,6 +33,10 @@
 [functions."admin-cleanup"]
   timeout = 60
 
+# Admin Coupons API（生成券圖可能較久）
+[functions."admin-coupons"]
+  timeout = 60
+
 # LINE 貼圖包打包（需要較長時間）
 [functions."pack-for-line"]
   timeout = 26
