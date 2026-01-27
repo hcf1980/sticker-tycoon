@@ -535,9 +535,31 @@
         method: 'GET',
         headers: adminHeaders()
       });
-      const data = await res.json();
-      if (!data.success) {
-        toast(`載入失敗：${data.error || 'unknown'}`);
+
+      const rawText = await res.text();
+      let data;
+      try {
+        data = rawText ? JSON.parse(rawText) : {};
+      } catch {
+        data = { success: false, error: 'Invalid JSON response', raw: rawText };
+      }
+
+      if (!res.ok || !data.success) {
+        const hint = rawText && String(rawText).trim().startsWith('<!DOCTYPE')
+          ? '（看起來 API 沒有命中 Function，回傳了 HTML。請確認 Netlify Functions 是否已部署。）'
+          : '';
+        const statusHint = res.status === 401
+          ? '（可能是 ADMIN_API_KEY 錯誤或未設定/未保存）'
+          : res.status === 404
+            ? '（Function 不存在或路由錯誤）'
+            : res.status === 504
+              ? '（上游逾時，請稍後重試）'
+              : '';
+
+        const detail = data?.details ? `\n${JSON.stringify(data.details)}` : '';
+        const raw = data?.raw ? `\nRAW: ${String(data.raw).slice(0, 500)}` : '';
+
+        toast(`載入失敗：${data.error || 'unknown'} (HTTP ${res.status})${hint}${statusHint}${detail}${raw}`);
         return;
       }
 
