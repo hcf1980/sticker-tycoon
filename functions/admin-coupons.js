@@ -189,28 +189,9 @@ async function createCampaign(event) {
 
   if (insertError) throw insertError;
 
-  const prompt = buildCouponPosterPrompt({
-    name: created.name,
-    slogan: created.slogan,
-    tokenAmount: created.token_amount,
-    redeemCode: created.redeem_code,
-    activateStartAt: new Date(created.activate_start_at).toISOString().slice(0, 10),
-    activateEndAt: new Date(created.activate_end_at).toISOString().slice(0, 10)
-  });
-
-  let imageUrl = null;
-  try {
-    imageUrl = await generateImage(prompt, { size: '1024x768' });
-  } catch (e) {
-    console.error('❌ 生成優惠券圖失敗:', e.message);
-  }
-
-  if (imageUrl) {
-    const updated = await persistCouponImageAndUpdateCampaign(supabase, created.id, imageUrl);
-    return json(200, { success: true, campaign: updated });
-  }
-
-  return json(200, { success: true, campaign: created, imageWarning: 'image_generation_failed' });
+  // 方案 A：建立活動時不同步生成圖片，避免 timeout
+  // 直接回傳建立的 campaign object，圖片由前端觸發 regenerate-image 生成
+  return json(200, { success: true, campaign: created });
 }
 
 async function regenerateImage(event) {

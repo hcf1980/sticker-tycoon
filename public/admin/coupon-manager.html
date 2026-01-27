@@ -178,7 +178,7 @@
             <div class="flex gap-2 pt-2">
               <button id="cancelCampaignBtn" class="btn-neon px-4 py-2 flex-1">取消</button>
               <button id="deleteCampaignBtn" class="btn-neon px-4 py-2 flex-1 hidden" style="background: linear-gradient(135deg, #ef4444, #b91c1c);">刪除活動</button>
-              <button id="createCampaignBtn" class="btn-neon-solid px-4 py-2 flex-1">建立活動（含生成券圖）</button>
+              <button id="createCampaignBtn" class="btn-neon-solid px-4 py-2 flex-1">建立活動</button>
             </div>
           </div>
 
@@ -723,7 +723,7 @@
           data.campaign.is_active = false;
         }
 
-        toast('✅ 建立成功');
+        toast('✅ 活動已建立！請點擊「重新生成券圖」來產生圖片。');
         // 直接切換到管理模式
         const created = data.campaign;
         await loadCampaigns();
