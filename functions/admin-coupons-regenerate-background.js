@@ -11,7 +11,6 @@ const { z } = require('zod');
 const { getSupabaseClient } = require('./supabase-client');
 const { generateImage } = require('./utils/ai-api-client');
 const sharp = require('sharp');
-const path = require('path');
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
@@ -86,54 +85,61 @@ function isHttpUrl(url) {
   return typeof url === 'string' && /^https?:\/\//i.test(url);
 }
 
-async function imageUrlToPngBuffer(imageUrl) {
+async function downloadToBuffer(url) {
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'User-Agent': 'sticker-tycoon/1.0'
+    }
+  });
+
+  if (!res.ok) {
+    throw new Error(`下載圖片失敗 (HTTP ${res.status})`);
+  }
+
+  const arrayBuffer = await res.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+
+  if (!buffer || buffer.length === 0) {
+    throw new Error('下載到的圖片內容為空');
+  }
+
+  return buffer;
+}
+
+async function imageUrlToBuffer(imageUrl) {
   if (isDataUrl(imageUrl)) {
     return parseDataUrl(imageUrl).buffer;
   }
 
   if (isHttpUrl(imageUrl)) {
-    const res = await fetch(imageUrl, {
-      method: 'GET',
-      headers: {
-        // 避免部分 CDN 擋預設 UA
-        'User-Agent': 'sticker-tycoon/1.0'
-      }
-    });
-
-    if (!res.ok) {
-      throw new Error(`下載圖片失敗 (HTTP ${res.status})`);
-    }
-
-    const arrayBuffer = await res.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
-    if (!buffer || buffer.length === 0) {
-      throw new Error('下載到的圖片內容為空');
-    }
-
-    return buffer;
+    return await downloadToBuffer(imageUrl);
   }
 
-  // 某些模型可能回傳一段文字內含 URL
   const maybeUrl = typeof imageUrl === 'string' ? extractUrlFromText(imageUrl) : null;
   if (maybeUrl && isHttpUrl(maybeUrl)) {
-    return await imageUrlToPngBuffer(maybeUrl);
+    return await downloadToBuffer(maybeUrl);
   }
 
   throw new Error('AI 圖片回傳非 data URL/HTTP URL，無法處理');
 }
 
-async function overlayQrOnPoster(posterBuffer) {
-  const qrPath = path.resolve(__dirname, '../public/line-qr.png');
+async function getQrBufferFromPublicAsset(host, proto = 'https') {
+  // 直接從 public 資源拿 QR，避免 functions bundle 讀不到 public 檔案
+  const url = `${proto}://${host}/line-qr.png`;
+  return await downloadToBuffer(url);
+}
+
+async function overlayQrOnPoster({ posterBuffer, qrBuffer }) {
   const qrSize = 200;
   const margin = 24;
 
   try {
-    const qrBuffer = await sharp(qrPath).resize(qrSize, qrSize).toBuffer();
+    const resizedQr = await sharp(qrBuffer).resize(qrSize, qrSize).toBuffer();
     return await sharp(posterBuffer)
       .composite([
         {
-          input: qrBuffer,
+          input: resizedQr,
           top: 768 - qrSize - margin,
           left: 1024 - qrSize - margin
         }
@@ -146,13 +152,19 @@ async function overlayQrOnPoster(posterBuffer) {
   }
 }
 
-async function persistCouponImageAndUpdateCampaign(supabase, campaignId, imageUrl) {
-  const baseBuffer = await imageUrlToPngBuffer(imageUrl);
-  if (!baseBuffer || baseBuffer.length === 0) {
+async function persistCouponImageAndUpdateCampaign({ supabase, campaignId, imageUrl, host, proto }) {
+  const posterBuffer = await imageUrlToBuffer(imageUrl);
+  if (!posterBuffer || posterBuffer.length === 0) {
     throw new Error('無法取得圖片 buffer');
   }
 
-  const buffer = await overlayQrOnPoster(baseBuffer);
+  let finalBuffer = posterBuffer;
+  try {
+    const qrBuffer = await getQrBufferFromPublicAsset(host, proto);
+    finalBuffer = await overlayQrOnPoster({ posterBuffer, qrBuffer });
+  } catch (e) {
+    console.error('❌ 取得/合成 QR 失敗（將使用原圖）:', e.message);
+  }
 
   const bucket = 'coupons';
   const filePath = `campaigns/${campaignId}.png`;
@@ -165,7 +177,7 @@ async function persistCouponImageAndUpdateCampaign(supabase, campaignId, imageUr
 
   const { error: uploadError } = await supabase.storage
     .from(bucket)
-    .upload(filePath, buffer, {
+    .upload(filePath, finalBuffer, {
       contentType: 'image/png',
       upsert: true
     });
@@ -193,6 +205,9 @@ exports.handler = async function handler(event) {
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 204, headers, body: '' };
   }
+
+  const host = event.headers?.host || event.headers?.Host;
+  const proto = 'https';
 
   try {
     const schema = z.object({
@@ -227,35 +242,18 @@ exports.handler = async function handler(event) {
       : promptBase;
 
     const imageUrl = await generateImage(prompt, { size: '1024x768' });
-    const updated = await persistCouponImageAndUpdateCampaign(supabase, campaign.id, imageUrl);
+
+    const updated = await persistCouponImageAndUpdateCampaign({
+      supabase,
+      campaignId: campaign.id,
+      imageUrl,
+      host,
+      proto
+    });
 
     return json(200, { success: true, campaign: updated });
   } catch (error) {
     console.error('Admin Coupons Regenerate Background error:', error);
-
-    try {
-      const parsed = (() => {
-        try {
-          return JSON.parse(event.body || '{}');
-        } catch {
-          return {};
-        }
-      })();
-
-      const campaignId = parsed?.campaignId;
-      if (campaignId) {
-        const supabase = getSupabaseClient();
-        await supabase
-          .from('coupon_campaigns')
-          .update({
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', campaignId);
-      }
-    } catch (e) {
-      console.error('Failed to persist background error status:', e.message);
-    }
-
     return json(500, { success: false, error: error.message || 'Internal error' });
   }
 };
