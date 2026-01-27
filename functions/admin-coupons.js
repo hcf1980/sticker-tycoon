@@ -10,8 +10,6 @@
 const { z } = require('zod');
 const { getSupabaseClient } = require('./supabase-client');
 const { generateImage } = require('./utils/ai-api-client');
-const sharp = require('sharp');
-const path = require('path');
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
@@ -91,17 +89,9 @@ Layout requirements (must be big, clear, highly readable, no misspelling):
 - Validity: ${activateStartAt} ~ ${activateEndAt}
 - Brand slogan: ${safeSlogan}
 
-QR placeholder (IMPORTANT):
-- Reserve a fixed white square placeholder for a QR code at the BOTTOM-RIGHT corner.
-- Placeholder must be a perfect square with clear margin from edges.
-- Size about 220x220 px in a 1024x768 canvas.
-- The placeholder must be empty/blank (no pattern), with a thin LINE-green border.
-- Add a small caption under the square: "掃描加入官方帳號".
-
 Other constraints:
 - no watermark
 - no characters, no faces
-- no QR code inside the placeholder (we will overlay a real QR later)
 - size: 1024x768 (4:3 poster)
 `;
 }
@@ -119,39 +109,47 @@ function parseDataUrl(dataUrl) {
 }
 
 async function persistCouponImageAndUpdateCampaign(supabase, campaignId, imageUrl) {
-  let finalImageBuffer;
-
-  if (isDataUrl(imageUrl)) {
-    const { buffer: baseImageBuffer } = parseDataUrl(imageUrl);
-    const qrCodePath = path.resolve(__dirname, '../public/line-qr.png');
-    const qrCodeSize = 200;
-    const margin = 24;
-
-    try {
-      finalImageBuffer = await sharp(baseImageBuffer)
-        .composite([
-          {
-            input: await sharp(qrCodePath).resize(qrCodeSize, qrCodeSize).toBuffer(),
-            top: 768 - qrCodeSize - margin,
-            left: 1024 - qrCodeSize - margin
-          }
-        ])
-        .png()
-        .toBuffer();
-    } catch (e) {
-      // QR 圖缺失或 sharp 失敗：降級為不合成 QR，避免整個建立流程掛掉（導致 502）
-      console.error('❌ QR Code 合成失敗（將使用原圖）:', e.message);
-      finalImageBuffer = baseImageBuffer;
-    }
-  } else {
-    console.warn('⚠️ 圖片非 data URL，無法合成 QR Code，將直接使用原圖');
-    // 若 AI 回傳的是 URL，這裡不下載處理，直接回報錯誤更明確（避免空 buffer 造成 502）
+  if (!isDataUrl(imageUrl)) {
+    console.warn('⚠️ 圖片非 data URL（目前不處理 URL 下載），將回報錯誤');
     throw new Error('AI 圖片回傳非 data URL，無法處理');
   }
 
-  if (!finalImageBuffer || finalImageBuffer.length === 0) {
+  const { buffer } = parseDataUrl(imageUrl);
+  if (!buffer || buffer.length === 0) {
     throw new Error('無法取得圖片 buffer');
   }
+
+  const bucket = 'coupons';
+  const filePath = `campaigns/${campaignId}.png`;
+
+  try {
+    await supabase.storage.createBucket(bucket, { public: true });
+  } catch (_) {
+    // bucket already exists
+  }
+
+  const { error: uploadError } = await supabase.storage
+    .from(bucket)
+    .upload(filePath, buffer, {
+      contentType: 'image/png',
+      upsert: true
+    });
+
+  if (uploadError) throw uploadError;
+
+  const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(filePath);
+  const publicUrl = urlData.publicUrl;
+
+  const { data: updated, error: updateError } = await supabase
+    .from('coupon_campaigns')
+    .update({ image_url: publicUrl, updated_at: new Date().toISOString() })
+    .eq('id', campaignId)
+    .select('*')
+    .single();
+
+  if (updateError) throw updateError;
+  return updated;
+}
 
   const bucket = 'coupons';
   const filePath = `campaigns/${campaignId}.png`;
