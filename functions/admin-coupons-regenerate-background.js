@@ -152,8 +152,6 @@ async function persistCouponImageAndUpdateCampaign(supabase, campaignId, imageUr
     .from('coupon_campaigns')
     .update({
       image_url: publicUrl,
-      image_status: 'ready',
-      image_error: null,
       updated_at: new Date().toISOString()
     })
     .eq('id', campaignId)
@@ -223,8 +221,6 @@ exports.handler = async function handler(event) {
         await supabase
           .from('coupon_campaigns')
           .update({
-            image_status: 'error',
-            image_error: error?.message || 'Internal error',
             updated_at: new Date().toISOString()
           })
           .eq('id', campaignId);
