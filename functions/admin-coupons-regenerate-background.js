@@ -10,6 +10,8 @@
 const { z } = require('zod');
 const { getSupabaseClient } = require('./supabase-client');
 const { generateImage } = require('./utils/ai-api-client');
+const sharp = require('sharp');
+const path = require('path');
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
@@ -121,11 +123,36 @@ async function imageUrlToPngBuffer(imageUrl) {
   throw new Error('AI 圖片回傳非 data URL/HTTP URL，無法處理');
 }
 
+async function overlayQrOnPoster(posterBuffer) {
+  const qrPath = path.resolve(__dirname, '../public/line-qr.png');
+  const qrSize = 200;
+  const margin = 24;
+
+  try {
+    const qrBuffer = await sharp(qrPath).resize(qrSize, qrSize).toBuffer();
+    return await sharp(posterBuffer)
+      .composite([
+        {
+          input: qrBuffer,
+          top: 768 - qrSize - margin,
+          left: 1024 - qrSize - margin
+        }
+      ])
+      .png()
+      .toBuffer();
+  } catch (e) {
+    console.error('❌ QR Code 合成失敗（將使用原圖）:', e.message);
+    return posterBuffer;
+  }
+}
+
 async function persistCouponImageAndUpdateCampaign(supabase, campaignId, imageUrl) {
-  const buffer = await imageUrlToPngBuffer(imageUrl);
-  if (!buffer || buffer.length === 0) {
+  const baseBuffer = await imageUrlToPngBuffer(imageUrl);
+  if (!baseBuffer || baseBuffer.length === 0) {
     throw new Error('無法取得圖片 buffer');
   }
+
+  const buffer = await overlayQrOnPoster(baseBuffer);
 
   const bucket = 'coupons';
   const filePath = `campaigns/${campaignId}.png`;
