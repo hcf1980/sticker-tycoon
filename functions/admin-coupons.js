@@ -195,6 +195,7 @@ async function createCampaign(event) {
 }
 
 async function regenerateImage(event) {
+  // 改為非同步：前台 function 只標記狀態並觸發 background，不等待 AI 回應
   requireAdmin(event);
 
   const schema = z.object({
@@ -212,25 +213,42 @@ async function regenerateImage(event) {
     .single();
 
   if (error) throw error;
-  if (!campaign) return json(404, { error: 'Campaign not found' });
+  if (!campaign) return json(404, { success: false, error: 'Campaign not found' });
 
-  let prompt = buildCouponPosterPrompt({
-    name: campaign.name,
-    slogan: campaign.slogan,
-    tokenAmount: campaign.token_amount,
-    redeemCode: campaign.redeem_code,
-    activateStartAt: new Date(campaign.activate_start_at).toISOString().slice(0, 10),
-    activateEndAt: new Date(campaign.activate_end_at).toISOString().slice(0, 10)
-  });
-
-  if (body.extraPrompt) {
-    prompt += `\nExtra constraints from admin:\n${body.extraPrompt}\n`;
+  // 標記生成中（就算欄位不存在也不會阻斷流程）
+  try {
+    await supabase
+      .from('coupon_campaigns')
+      .update({
+        image_status: 'generating',
+        image_error: null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', body.campaignId);
+  } catch (e) {
+    console.warn('⚠️ 無法更新 image_status（可能欄位尚未建立）:', e.message);
   }
 
-  const imageUrl = await generateImage(prompt, { size: '1024x768' });
-  const updated = await persistCouponImageAndUpdateCampaign(supabase, campaign.id, imageUrl);
+  // 觸發 background function（不等待結果）
+  try {
+    const baseUrl = `https://${event.headers?.host || event.headers?.Host}`;
+    const adminKey = event.headers?.['x-admin-api-key'] || event.headers?.['X-Admin-Api-Key'] || '';
 
-  return json(200, { success: true, campaign: updated });
+    await (globalThis.fetch)(`${baseUrl}/.netlify/functions/admin-coupons-regenerate-background`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Admin-Api-Key': adminKey
+      },
+      body: JSON.stringify({ campaignId: body.campaignId, extraPrompt: body.extraPrompt ?? null })
+    });
+  } catch (e) {
+    console.error('❌ 觸發 background 失敗:', e.message);
+    // 即便觸發失敗也回傳錯誤，讓前端不要一直輪詢
+    return json(500, { success: false, error: 'Failed to start background generation' });
+  }
+
+  return json(202, { success: true, campaignId: body.campaignId, status: 'generating' });
 }
 
 async function listCampaigns(event) {

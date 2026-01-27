@@ -811,27 +811,76 @@
       el('regenerateBtn').disabled = true;
       el('regenerateBtn').textContent = '生成中...';
 
+      const campaignId = state.selectedCampaign.id;
+
+      async function fetchCampaign(cId) {
+        const res = await fetch(`/.netlify/functions/admin-coupons?action=campaign-stats&campaignId=${encodeURIComponent(cId)}`, {
+          method: 'GET',
+          headers: adminHeaders()
+        });
+
+        const rawText = await res.text();
+        let data;
+        try {
+          data = rawText ? JSON.parse(rawText) : {};
+        } catch {
+          data = { success: false, error: 'Invalid JSON response', raw: rawText };
+        }
+
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || `HTTP ${res.status}`);
+        }
+
+        return data.campaign;
+      }
+
       try {
+        // 觸發後端啟動 background 生成（立即回 202）
         const res = await fetch('/.netlify/functions/admin-coupons?action=regenerate-image', {
           method: 'POST',
           headers: adminHeaders(),
-          body: JSON.stringify({ campaignId: state.selectedCampaign.id, extraPrompt })
+          body: JSON.stringify({ campaignId, extraPrompt })
         });
-        const data = await res.json();
-        if (!data.success) throw new Error(data.error || 'regenerate failed');
-        toast('✅ 已重新生成券圖');
 
-        // 更新 modal 預覽
-        const updated = data.campaign;
-        state.selectedCampaign = updated;
-        el('couponPreviewImg').src = updated.image_url;
-        el('couponPreviewImg').classList.remove('hidden');
-        el('couponPreviewPlaceholder').classList.add('hidden');
-        el('downloadImageLink').classList.remove('hidden');
-        el('downloadImageLink').href = updated.image_url;
+        const rawText = await res.text();
+        let data;
+        try {
+          data = rawText ? JSON.parse(rawText) : {};
+        } catch {
+          data = { success: false, error: 'Invalid JSON response', raw: rawText };
+        }
 
-        // 同步列表
-        await loadCampaigns();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'regenerate failed');
+        }
+
+        toast('✅ 已送出生成任務，系統正在背景生成券圖...');
+
+        // 輪詢直到 image_url 出現（最多 2 分鐘）
+        const start = Date.now();
+        const timeoutMs = 120000;
+        const intervalMs = 3000;
+
+        while (Date.now() - start < timeoutMs) {
+          await new Promise((r) => setTimeout(r, intervalMs));
+
+          const fresh = await fetchCampaign(campaignId);
+          state.selectedCampaign = fresh;
+
+          if (fresh?.image_url) {
+            el('couponPreviewImg').src = fresh.image_url;
+            el('couponPreviewImg').classList.remove('hidden');
+            el('couponPreviewPlaceholder').classList.add('hidden');
+            el('downloadImageLink').classList.remove('hidden');
+            el('downloadImageLink').href = fresh.image_url;
+
+            await loadCampaigns();
+            toast('✅ 券圖已生成');
+            return;
+          }
+        }
+
+        toast('⏳ 券圖仍在生成中，請稍後按刷新或再次開啟管理查看');
       } catch (e) {
         toast(`❌ 重新生成失敗：${e.message}`);
       } finally {
