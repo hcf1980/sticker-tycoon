@@ -67,12 +67,62 @@ function parseDataUrl(dataUrl) {
   return { buffer };
 }
 
-async function persistCouponImageAndUpdateCampaign(supabase, campaignId, imageUrl) {
-  if (!isDataUrl(imageUrl)) {
-    throw new Error('AI 圖片回傳非 data URL，無法處理');
+function extractUrlFromText(text) {
+  const markdownMatch = text.match(/!\[.*?\]\((https?:\/\/[^\s\)]+)\)/);
+  if (markdownMatch) return markdownMatch[1];
+
+  const urlMatch = text.match(/(https?:\/\/[^\s]+\.(png|jpg|jpeg|webp|gif))/i);
+  if (urlMatch) return urlMatch[1];
+
+  const anyUrlMatch = text.match(/(https?:\/\/[^\s\)\]"']+)/);
+  if (anyUrlMatch) return anyUrlMatch[1];
+
+  return null;
+}
+
+function isHttpUrl(url) {
+  return typeof url === 'string' && /^https?:\/\//i.test(url);
+}
+
+async function imageUrlToPngBuffer(imageUrl) {
+  if (isDataUrl(imageUrl)) {
+    return parseDataUrl(imageUrl).buffer;
   }
 
-  const { buffer } = parseDataUrl(imageUrl);
+  if (isHttpUrl(imageUrl)) {
+    const res = await fetch(imageUrl, {
+      method: 'GET',
+      headers: {
+        // 避免部分 CDN 擋預設 UA
+        'User-Agent': 'sticker-tycoon/1.0'
+      }
+    });
+
+    if (!res.ok) {
+      throw new Error(`下載圖片失敗 (HTTP ${res.status})`);
+    }
+
+    const arrayBuffer = await res.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    if (!buffer || buffer.length === 0) {
+      throw new Error('下載到的圖片內容為空');
+    }
+
+    return buffer;
+  }
+
+  // 某些模型可能回傳一段文字內含 URL
+  const maybeUrl = typeof imageUrl === 'string' ? extractUrlFromText(imageUrl) : null;
+  if (maybeUrl && isHttpUrl(maybeUrl)) {
+    return await imageUrlToPngBuffer(maybeUrl);
+  }
+
+  throw new Error('AI 圖片回傳非 data URL/HTTP URL，無法處理');
+}
+
+async function persistCouponImageAndUpdateCampaign(supabase, campaignId, imageUrl) {
+  const buffer = await imageUrlToPngBuffer(imageUrl);
   if (!buffer || buffer.length === 0) {
     throw new Error('無法取得圖片 buffer');
   }
