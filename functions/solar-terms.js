@@ -3,8 +3,6 @@
  * 用於早安圖生成，包含情緒與場景對照表
  */
 
-// 24 節氣資料（只記錄節氣當天的日期）
-// 注意：節氣日期每年略有不同，這裡使用 2025 年的日期
 const SOLAR_TERMS = [
   // 🌱 春季
   { name: '立春', nameEn: 'Beginning of Spring', month: 2, day: 3, emotion: '期待、甦醒', scene: '清晨微光、發芽盆栽、開窗的風', season: 'spring' },
@@ -39,55 +37,74 @@ const SOLAR_TERMS = [
   { name: '大寒', nameEn: 'Major Cold', month: 1, day: 20, emotion: '等待回暖', scene: '爐火、靜夜', season: 'winter' }
 ];
 
-// 增加每日變化的隨機元素池
-const RANDOM_ELEMENTS = {
-  objects: [
-    'a steaming cup of coffee on a wooden table',
-    'an open book with glasses resting on it',
-    'a cat sleeping in a patch of sunlight',
-    'freshly baked bread on a cutting board',
-    'a potted plant on a windowsill',
-    'a comfortable armchair with a knitted blanket',
+// ====================================================================
+// 多樣性變體庫
+// ====================================================================
+const VARIATION_LIBRARY = {
+  styles: [
+    'realistic lifestyle photograph',
+    'soft watercolor illustration',
+    'cozy flat illustration',
+    'minimalist line art with color wash',
+    'warm pastel drawing'
+  ],
+  compositions: [
+    'eye-level view, subject on the left, negative space on the right',
+    'top-down view of a scene',
+    'looking through a window frame',
+    'close-up shot with a shallow depth of field',
+    'wide shot of a quiet street corner'
   ],
   scenes: [
-    'looking out a window onto a quiet Taiwanese street',
-    'a cozy corner of a living room',
-    'a sun-drenched kitchen',
-    'a balcony with a view of the city waking up',
+    'a quiet Taiwanese breakfast shop (豆漿店) in the early morning',
+    'a traditional market (菜市場) with fresh produce',
+    'a balcony overlooking a city alley',
+    'a cozy corner of a living room with sunlight streaming in',
+    'a park with people doing morning exercises',
+    'a desk with a laptop, a cup of tea, and a notebook',
+    'a cat napping on a windowsill',
+    'a steaming bowl of noodles on a wooden table',
+    'freshly brewed coffee being poured into a cup'
   ],
-  moods: ['serene and peaceful', 'warm and cozy', 'bright and optimistic', 'calm and reflective'],
+  lighting: [
+    'soft, warm morning light',
+    'bright, crisp sunlight',
+    'gentle, diffused light through a window',
+    'cinematic golden hour lighting'
+  ]
 };
 
-function shuffleArray(array) {
-  const shuffled = [...array];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
+function getDailySeed(date = new Date()) {
+  const y = date.getFullYear();
+  const m = date.getMonth() + 1;
+  const d = date.getDate();
+  return (y * 10000 + m * 100 + d) % 31337; // Simple daily seed
 }
 
-// 一般日子的季節主題（非節氣當天使用）
+function selectBySeed(array, seed) {
+  if (!array || array.length === 0) return null;
+  return array[seed % array.length];
+}
+
+function getDailyVariations(date = new Date()) {
+  const seed = getDailySeed(date);
+  return {
+    style: selectBySeed(VARIATION_LIBRARY.styles, seed),
+    composition: selectBySeed(VARIATION_LIBRARY.compositions, seed + 1),
+    scene: selectBySeed(VARIATION_LIBRARY.scenes, seed + 2),
+    lighting: selectBySeed(VARIATION_LIBRARY.lighting, seed + 3)
+  };
+}
+
+// ====================================================================
+
 const GENERAL_THEMES = {
-  spring: { emotion: '溫暖、希望', scene: '春日陽光、花開、微風', greeting: '春天的早晨，充滿希望！' },
-  summer: { emotion: '活力、清爽', scene: '夏日清晨、綠蔭、涼風', greeting: '夏日早安，保持清爽！' },
-  autumn: { emotion: '寧靜、舒適', scene: '秋日暖陽、落葉、咖啡', greeting: '秋天的早晨，寧靜美好！' },
-  winter: { emotion: '溫馨、安穩', scene: '冬日暖陽、熱飲、窗邊', greeting: '冬日早安，溫暖相伴！' }
+  spring: { emotion: '溫暖、希望', greeting: '春天的早晨，充滿希望！' },
+  summer: { emotion: '活力、清爽', greeting: '夏日早安，保持清爽！' },
+  autumn: { emotion: '寧靜、舒適', greeting: '秋天的早晨，寧靜美好！' },
+  winter: { emotion: '溫馨、安穩', greeting: '冬日早安，溫暖相伴！' }
 };
 
-// 季節顏色主題
-const SEASON_THEMES = {
-  spring: { colors: ['#E8F5E9', '#C8E6C9', '#A5D6A7'], mood: '回暖、啟動、人心打開' },
-  summer: { colors: ['#FFF3E0', '#FFE0B2', '#FFCC80'], mood: '盛、熱、外放，但要顧身心' },
-  autumn: { colors: ['#FBE9E7', '#FFCCBC', '#FFAB91'], mood: '收、靜、回到自己' },
-  winter: { colors: ['#ECEFF1', '#CFD8DC', '#B0BEC5'], mood: '藏、守、陪伴' }
-};
-
-/**
- * 根據月份判斷季節
- * @param {number} month - 月份 (1-12)
- * @returns {string} 季節名稱
- */
 function getSeason(month) {
   if (month >= 3 && month <= 5) return 'spring';
   if (month >= 6 && month <= 8) return 'summer';
@@ -95,93 +112,105 @@ function getSeason(month) {
   return 'winter'; // 12, 1, 2
 }
 
-/**
- * 根據日期獲取當前節氣或一般主題
- * @param {Date} date - 日期對象
- * @returns {object} 節氣資訊或一般主題
- */
 function getCurrentSolarTerm(date = new Date()) {
-  const month = date.getMonth() + 1; // JavaScript 月份從 0 開始
+  const month = date.getMonth() + 1;
   const day = date.getDate();
   const season = getSeason(month);
 
-  // 檢查今天是否為節氣當天（允許前後 1 天的誤差）
   for (const term of SOLAR_TERMS) {
     if (term.month === month && Math.abs(day - term.day) <= 1) {
       return {
         ...term,
-        theme: SEASON_THEMES[term.season],
-        isSolarTermDay: true  // 標記為節氣當天
+        isSolarTermDay: true
       };
     }
   }
 
-  // 非節氣當天，返回一般季節主題
   const generalTheme = GENERAL_THEMES[season];
   return {
     name: '美好的一天',
     nameEn: 'A Beautiful Day',
     emotion: generalTheme.emotion,
-    scene: generalTheme.scene,
     season: season,
-    theme: SEASON_THEMES[season],
     greeting: generalTheme.greeting,
-    isSolarTermDay: false  // 標記為非節氣當天
+    isSolarTermDay: false
   };
 }
 
-/**
- * 生成早安圖的 AI Prompt
- * @param {object} solarTerm - 節氣資訊
- * @returns {object} { imagePrompt, textPrompt }
- */
-function generateMorningPrompts(solarTerm) {
+function generateMorningPrompts(solarTerm, date = new Date()) {
   const isSolarTermDay = solarTerm.isSolarTermDay;
 
   const greetingText = isSolarTermDay
     ? `${solarTerm.name}早安\n${solarTerm.emotion.split('、')[0]}的一天\n願你平安喜樂`
     : `早安\n${solarTerm.emotion.split('、')[0]}\n願你有美好的一天`;
 
-  let themeDescription;
   let sceneDescription;
+  let styleDescription;
+  let compositionDescription;
+  let lightingDescription;
+
+  const variations = getDailyVariations(date);
 
   if (isSolarTermDay) {
-    themeDescription = `inspired by the solar term \"${solarTerm.name}\" (${solarTerm.nameEn})`;
-    sceneDescription = `${solarTerm.scene}, a quiet Taiwanese daily life scene in the early morning, warm light, soft natural atmosphere`;
+    sceneDescription = `${solarTerm.scene}, a quiet Taiwanese daily life scene.`;
+    styleDescription = 'soft watercolor illustration';
+    compositionDescription = 'eye-level view';
+    lightingDescription = 'soft natural morning light';
   } else {
-    // For general days, add randomness
-    const randomObject = shuffleArray(RANDOM_ELEMENTS.objects)[0];
-    const randomScene = shuffleArray(RANDOM_ELEMENTS.scenes)[0];
-    const randomMood = shuffleArray(RANDOM_ELEMENTS.moods)[0];
-
-    themeDescription = `capturing a peaceful ${solarTerm.season} morning, with a ${randomMood} feeling.`;
-    sceneDescription = `${randomScene}, featuring ${randomObject}. The scene should evoke a sense of a quiet Taiwanese daily life in the early morning, with warm light and a soft natural atmosphere.`;
+    sceneDescription = variations.scene;
+    styleDescription = variations.style;
+    compositionDescription = variations.composition;
+    lightingDescription = variations.lighting;
   }
 
-  const imagePrompt = `MUST CREATE a vertical portrait image, 1080x1920 aspect ratio (9:16).\nThis is a strict requirement.\nThe image MUST be full-frame without any borders, suitable as a phone wallpaper or for sharing on LINE.\n\nCreate a warm, realistic lifestyle photograph ${themeDescription}.\nThe atmosphere reflects "${solarTerm.emotion}", without any instructional or symbolic elements.\n\nScene:\n${sceneDescription}\n\nMood & Lighting:\nsoft natural light, gentle contrast, calm and comforting tone, human warmth\n\nStyle:\nphotorealistic, cinematic depth of field, East Asian daily life, no fantasy, no symbols\n\nComposition:\nfocus on everyday objects and subtle human presence\n\nText overlay (IMPORTANT):\nAdd a short, gentle Chinese morning greeting text overlay on the image.\nThe text should be warm, encouraging, and suitable for sharing.\nUse a clean, readable font with good contrast against the background.\nText should be 2-4 short lines, positioned elegantly (bottom or side).\nExample style: "${greetingText}"\n\nEmotion goal:\nthe image should feel shareable, soothing, and emotionally relatable, perfect for sharing with family or friends in the morning`;
+  const imagePrompt = `MUST CREATE a vertical portrait image, 1080x1920 aspect ratio (9:16).
+This is a strict requirement.
+The image MUST be full-frame without any borders, suitable as a phone wallpaper or for sharing on LINE.
 
-  const textPrompt = isSolarTermDay
-    ? `Write a short, gentle morning message inspired by \"${solarTerm.name}\" (${solarTerm.nameEn}).\nDo not explain the solar term.\nDo not mention calendars or almanacs.\nUse everyday language and emotional warmth.\nThe message should feel natural to share with family or friends.\nLength: 2-4 short lines.\nEmotion: ${solarTerm.emotion}`
-    : `Write a short, gentle morning message for a ${solarTerm.season} day.\nUse everyday language and emotional warmth.\nThe message should feel natural to share with family or friends.\nLength: 2-4 short lines.\nEmotion: ${solarTerm.emotion}`;
+Create an image in the style of a ${styleDescription}.
+The atmosphere reflects "${solarTerm.emotion}".
 
-  return { imagePrompt, textPrompt };
+Scene:
+${sceneDescription}, capturing a quiet Taiwanese daily life moment in the early morning.
+
+Mood & Lighting:
+${lightingDescription}, gentle contrast, calm and comforting tone.
+
+Composition:
+${compositionDescription}.
+
+Text overlay (IMPORTANT):
+Add a short, gentle Chinese morning greeting text overlay on the image.
+The text should be warm, encouraging, and suitable for sharing.
+Use a clean, readable font with good contrast against the background.
+Text should be 2-4 short lines, positioned elegantly (bottom or side).
+Example style: "${greetingText}"
+
+Subtle Branding (VERY IMPORTANT):
+In one of the corners (bottom-left or bottom-right), add a very small, subtle, and unobtrusive text watermark: "Sticker Tycoon".
+It should be in a light grey color, very small font size, and blend in with the background.
+It must NOT be distracting.
+
+STRICT prohibition:
+- Do NOT draw any QR code / barcode / matrix code patterns anywhere on the poster.
+- Do NOT use any QR-like square pixel patterns as decoration.
+
+Other constraints:
+- no watermark (other than the one specified)
+- no characters, no faces
+- focus on everyday objects and subtle human presence`;
+
+  console.log('🌅 Daily Variations:', variations);
+
+  return { imagePrompt, greetingText };
 }
 
-/**
- * 獲取今天的日期字串（用於緩存 key）
- * @param {Date} date
- * @returns {string} YYYY-MM-DD 格式
- */
 function getDateString(date = new Date()) {
   return date.toISOString().split('T')[0];
 }
 
 module.exports = {
-  SOLAR_TERMS,
-  SEASON_THEMES,
-  GENERAL_THEMES,
   getCurrentSolarTerm,
-  getSeason,
   generateMorningPrompts,
   getDateString
 };
